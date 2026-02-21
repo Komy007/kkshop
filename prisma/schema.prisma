@@ -1,0 +1,59 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql" // PostgreSQL is highly recommended for e-commerce
+}
+
+model Language {
+  code       String  @id @db.VarChar(5) // e.g., 'ko', 'en', 'km', 'zh'
+  name       String  @db.VarChar(50) // e.g., Korean, English, Khmer, Chinese
+  isFrontend Boolean @default(true) @map("is_frontend") // 프론트엔드 노출 여부
+  isAdmin    Boolean @default(false) @map("is_admin") // 관리자 노출 여부
+
+  productTranslations ProductTranslation[]
+
+  @@map("languages")
+}
+
+model Product {
+  id         BigInt  @id @default(autoincrement())
+  sku        String  @unique @db.VarChar(100) // 상품 바코드/SKU
+  priceUsd   Decimal @map("price_usd") @db.Decimal(10, 2) // 가격 (USD 기준)
+  stockQty   Int     @default(0) @map("stock_qty") // 가용 재고
+  categoryId BigInt? @map("category_id") // 카테고리 ID (FK)
+  status     String  @db.VarChar(20) // 판매 상태 (ACTIVE, INACTIVE 등)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  translations ProductTranslation[]
+
+  @@map("products")
+}
+
+model ProductTranslation {
+  id          BigInt  @id @default(autoincrement())
+  productId   BigInt  @map("product_id")
+  langCode    String  @map("lang_code") @db.VarChar(5)
+  name        String  @db.VarChar(255) // 다국어 상품명
+  shortDesc   String? @map("short_desc") @db.VarChar(500) // 요약 설명
+  detailDesc  String? @map("detail_desc") @db.Text // 상세 설명 (HTML 등)
+  seoKeywords String? @map("seo_keywords") @db.VarChar(255) // SEO 키워드
+
+  // Relations
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  language Language @relation(fields: [langCode], references: [code], onDelete: Restrict)
+
+  // Composite Unique Index: 하나의 상품은 특정 언어에 대해 하나의 번역만 가져야 함
+  @@unique([productId, langCode])
+  @@index([name]) // 풀텍스트/이름 검색 성능 최적화를 위한 인덱스
+  @@map("product_translations")
+}

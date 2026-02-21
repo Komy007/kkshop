@@ -1,0 +1,13 @@
+node_modules
+.env
+.env.*
+.next
+out/
+build/
+dist/
+*.log
+/generated/prisma
+.DS_Store
+push*.log
+google-key.json
+*-key.json
