@@ -2,9 +2,10 @@ import NextAuth from "next-auth"
 import authConfig from "./auth.config"
 
 // We initialize NextAuth with the edge-compatible config for middleware
-export const { auth: middleware } = NextAuth(authConfig)
+const nextAuthEnv = NextAuth(authConfig);
+export const middleware = nextAuthEnv.auth as any;
 
-export default middleware((req) => {
+export default middleware((req: any) => {
     const { nextUrl } = req
     const isLoggedIn = !!req.auth
     const isApiAuthRoute = nextUrl.pathname.startsWith('/api/auth')
@@ -30,7 +31,7 @@ export default middleware((req) => {
     }
 
     return
-})
+}) as any;
 
 // Specify which routes the middleware should run on
 export const config = {
