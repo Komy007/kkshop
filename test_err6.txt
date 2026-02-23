@@ -1,0 +1,52 @@
+﻿node : D:\kkshop\node_
+modules\.prisma\client
+\default.js:43
+At line:1 char:1
++ node --env-file=.env
+ test-api.js 2>&1 | Ou
+t-File -FilePath test_
+err6. ...
++ ~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~
+    + CategoryInfo    
+          : NotSpeci  
+  fied: (D:\kkshop\   
+ node_...t\default    
+.js:43:String) []    ,
+ RemoteException
+    + FullyQualifiedE 
+   rrorId : NativeCo  
+  mmandError
+ 
+    throw new Error('@
+prisma/client did not 
+initialize yet. Please
+ run "prisma generate"
+ and try to import it 
+again.');
+          ^
+
+Error: @prisma/client 
+did not initialize yet
+. Please run "prisma g
+enerate" and try to im
+port it again.
+    at new PrismaClien
+t (D:\kkshop\node_modu
+les\.prisma\client\def
+ault.js:43:11)
+    at file:///D:/kksh
+op/test-api.js:3:16
+    at ModuleJob.run (
+node:internal/modules/
+esm/module_job:329:25)
+    at async onImport.
+tracePromise.__proto__
+ (node:internal/module
+s/esm/loader:644:26)
+    at async asyncRunE
+ntryPointWithESMLoader
+ (node:internal/module
+s/run_main:117:5)
+
+Node.js v22.17.1

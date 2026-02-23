@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Outfit } from "next/font/google";
 // @ts-ignore
 import "./globals.css";
+import GNB from "@/components/GNB";
 
 const outfit = Outfit({
     variable: "--font-outfit",
@@ -21,9 +22,13 @@ export default function RootLayout({
     return (
         <html lang="en">
             <body
+                suppressHydrationWarning
                 className={`${outfit.variable} antialiased font-sans`}
             >
-                {children}
+                <GNB />
+                <main className="min-h-screen pt-24 pb-16">
+                    {children}
+                </main>
             </body>
         </html>
     );

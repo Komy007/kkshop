@@ -2,27 +2,71 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 255, 255, 255;
-  --background-end-rgb: 255, 255, 255;
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 0, 0, 0;
+    --background: #09090b;
+    --foreground: #ffffff;
+    --muted: #272431;
+    --muted-foreground: #a1a1aa;
+    --accent: #6366f1;
+    --border: rgba(255, 255, 255, 0.1);
+
+    /* Cosmic glow effects */
+    --glow-primary: rgba(99, 102, 241, 0.4);
+    --glow-secondary: rgba(236, 72, 153, 0.4);
   }
 }
 
-body {
-  color: rgb(var(--foreground-rgb));
-  background: rgb(var(--background-end-rgb));
+@layer base {
+  body {
+    @apply bg-space-900 text-white selection:bg-brand-primary selection:text-white antialiased overflow-x-hidden;
+    /* Cosmic space background base */
+    background-image:
+      radial-gradient(circle at 15% 50%, rgba(99, 102, 241, 0.15), transparent 25%),
+      radial-gradient(circle at 85% 30%, rgba(236, 72, 153, 0.15), transparent 25%);
+    background-attachment: fixed;
+  }
 }
 
 @layer utilities {
-  .text-balance {
-    text-wrap: balance;
+  .glass-panel {
+    @apply bg-space-800/60 backdrop-blur-xl border border-white/10;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
   }
+
+  .glass-card {
+    @apply bg-gradient-to-br from-white/[0.05] to-white/[0.01] backdrop-blur-md border border-white/10;
+  }
+
+  .text-glow {
+    text-shadow: 0 0 20px var(--glow-primary);
+  }
+
+  .text-glow-secondary {
+    text-shadow: 0 0 20px var(--glow-secondary);
+  }
+
+  .bg-aurora {
+    background: linear-gradient(-45deg,
+        #09090b,
+        rgba(99, 102, 241, 0.2),
+        rgba(236, 72, 153, 0.2),
+        #09090b);
+    background-size: 400% 400%;
+    animation: aurora 15s ease infinite;
+  }
+}
+
+/* Custom Scrollbar for sleek look */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-space-900;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-space-700 rounded-full border border-space-900 hover:bg-space-400 transition-colors;
 }

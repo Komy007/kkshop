@@ -35,7 +35,7 @@ export default function AdminSidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-4 space-y-6">
-        
+
         {/* Dashboard Section */}
         <div className="px-4">
           <h3 className="text-xs uppercase text-gray-500 font-semibold mb-2 tracking-wider">
@@ -91,6 +91,7 @@ export default function AdminSidebar() {
             {icons.setting} 시스템 설정 (Settings)
           </h3>
           <ul className="space-y-1">
+            <SidebarItem href="/admin/landing-settings" icon="✨" label="랜딩 페이지 셋팅" isHighlighted={true} />
             <SidebarItem href="/admin/settings/localization" icon={icons.globe} label="언어 및 국가 설정" />
             <SidebarItem href="/admin/settings/roles" icon={icons.key} label="관리자 권한" />
           </ul>
@@ -113,16 +114,17 @@ export default function AdminSidebar() {
 }
 
 // Helper component for styled menu items
-function SidebarItem({ href, icon, label, active = false }: { href: string; icon: string; label: string; active?: boolean }) {
+function SidebarItem({ href, icon, label, active = false, isHighlighted = false }: { href: string; icon: string; label: string; active?: boolean, isHighlighted?: boolean }) {
   return (
     <li>
-      <Link 
+      <Link
         href={href}
-        className={`flex items-center px-3 py-2 rounded-md transition-colors duration-200 ${
-          active 
-            ? 'bg-blue-600/10 text-blue-400 font-medium' 
+        className={`flex items-center px-3 py-2 rounded-md transition-colors duration-200 ${active
+          ? 'bg-blue-600/10 text-blue-400 font-medium'
+          : isHighlighted
+            ? 'text-red-500 font-bold hover:bg-gray-800 hover:text-red-400 bg-red-500/10'
             : 'text-gray-400 hover:bg-gray-800 hover:text-white'
-        }`}
+          }`}
       >
         <span className="mr-3 text-lg opacity-75">{icon}</span>
         <span className="text-sm">{label}</span>
