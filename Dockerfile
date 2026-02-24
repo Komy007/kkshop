@@ -11,6 +11,9 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+# Ensure public directory exists
+RUN mkdir -p public
+
 # Generate Prisma Client
 RUN npx prisma generate
 
@@ -26,7 +29,7 @@ ENV PORT=8080
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Copy public assets
+# Copy public assets (created in builder stage)
 COPY --from=builder /app/public ./public
 
 # Copy standalone output
