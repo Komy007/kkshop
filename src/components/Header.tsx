@@ -79,9 +79,11 @@ export default function Header() {
                 <Link href="/" className="font-extrabold text-xl tracking-tighter text-white flex items-center">
                     <span className="text-brand-secondary mr-0.5">KK</span>shop
                 </Link>
-                {/* Language selector front and center on mobile */}
-                <LangSelector isMobile />
-                <div className="flex items-center gap-2">
+                {/* Language selector always visible, center of top bar */}
+                <div className="flex-1 flex justify-center">
+                    <LangSelector isMobile />
+                </div>
+                <div className="flex items-center gap-1">
                     <button className="text-white p-1.5">
                         <Search className="w-5 h-5" />
                     </button>
