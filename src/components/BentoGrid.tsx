@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useAppStore } from "@/store/useAppStore";
 import { ArrowUpRight } from "lucide-react";
+import Link from "next/link";
 
 export const bentoTranslations: Record<string, any> = {
     ko: {
@@ -94,13 +95,13 @@ export default function BentoGrid({ customData }: { customData?: any }) {
     }, []);
 
     return (
-        <section className="py-24 w-full relative">
+        <section className="py-12 sm:py-16 w-full relative">
             <div className="max-w-7xl mx-auto px-6">
-                <div className="mb-16 md:text-center text-left">
-                    <h2 className="text-4xl md:text-5xl font-bold text-white tracking-tight mb-4">
+                <div className="mb-8 md:mb-12 md:text-center text-left">
+                    <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white tracking-tight mb-2">
                         {displayTitle}
                     </h2>
-                    <p className="text-xl text-white/50">{displayDesc}</p>
+                    <p className="text-sm sm:text-base text-white/50">{displayDesc}</p>
                 </div>
 
                 <div
@@ -108,8 +109,9 @@ export default function BentoGrid({ customData }: { customData?: any }) {
                     className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 auto-rows-[250px] md:auto-rows-[300px]"
                 >
                     {/* Main Large Item */}
-                    <div
-                        className="md:col-span-2 md:row-span-2 group relative overflow-hidden rounded-3xl glass-card border border-white/10 scroll-reveal"
+                    <Link
+                        href="/products/1"
+                        className="md:col-span-2 md:row-span-2 group relative overflow-hidden rounded-2xl sm:rounded-3xl glass-card border border-white/10 scroll-reveal block"
                         style={{ transitionDelay: '0ms' }}
                     >
                         <img
@@ -119,23 +121,24 @@ export default function BentoGrid({ customData }: { customData?: any }) {
                             loading="lazy"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-space-900 via-space-900/40 to-transparent" />
-                        <div className="absolute bottom-0 left-0 p-8 w-full flex justify-between items-end">
+                        <div className="absolute bottom-0 left-0 p-4 sm:p-8 w-full flex justify-between items-end">
                             <div>
-                                <p className="text-brand-accent font-medium mb-2 tracking-wide uppercase text-sm">
+                                <p className="text-brand-accent font-medium mb-1 tracking-wide uppercase text-xs">
                                     Best Seller
                                 </p>
-                                <h3 className="text-3xl font-bold text-white mb-2">{items[0].title}</h3>
-                                <p className="text-white/70">{items[0].desc}</p>
+                                <h3 className="text-lg sm:text-2xl md:text-3xl font-bold text-white mb-1">{items[0].title}</h3>
+                                <p className="text-white/70 text-xs sm:text-sm">{items[0].desc}</p>
                             </div>
-                            <button className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-white hover:bg-white hover:text-space-900 transition-colors">
-                                <ArrowUpRight className="w-5 h-5" />
-                            </button>
+                            <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-white group-hover:bg-white group-hover:text-space-900 transition-colors flex-shrink-0">
+                                <ArrowUpRight className="w-4 h-4 sm:w-5 sm:h-5" />
+                            </div>
                         </div>
-                    </div>
+                    </Link>
 
                     {/* Vertical Item */}
-                    <div
-                        className="md:col-span-1 md:row-span-2 group relative overflow-hidden rounded-3xl glass-panel border border-white/10 scroll-reveal"
+                    <Link
+                        href="/products/2"
+                        className="md:col-span-1 md:row-span-2 group relative overflow-hidden rounded-2xl sm:rounded-3xl glass-panel border border-white/10 scroll-reveal block"
                         style={{ transitionDelay: '150ms' }}
                     >
                         <img
@@ -143,23 +146,22 @@ export default function BentoGrid({ customData }: { customData?: any }) {
                             alt={items[1].title}
                             className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 opacity-60 group-hover:opacity-80"
                             loading="lazy"
-                            onError={(e) => {
-                                (e.target as HTMLImageElement).src = items[1].image || defaultImages[1];
-                            }}
+                            onError={(e) => { (e.target as HTMLImageElement).src = items[1].image || defaultImages[1]; }}
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-space-900 via-space-900/40 to-transparent" />
-                        <div className="absolute bottom-0 left-0 p-6 w-full">
-                            <h3 className="text-2xl font-bold text-white mb-2 relative z-10">{items[1].title}</h3>
-                            <p className="text-white/60 text-sm mb-4 relative z-10">{items[1].desc}</p>
+                        <div className="absolute bottom-0 left-0 p-4 sm:p-6 w-full">
+                            <h3 className="text-lg sm:text-2xl font-bold text-white mb-1 relative z-10">{items[1].title}</h3>
+                            <p className="text-white/60 text-xs sm:text-sm mb-3 relative z-10">{items[1].desc}</p>
                             <span className="inline-flex items-center text-brand-primary text-sm font-semibold group-hover:translate-x-1 transition-transform relative z-10">
                                 Shop Now <ArrowUpRight className="w-4 h-4 ml-1" />
                             </span>
                         </div>
-                    </div>
+                    </Link>
 
                     {/* Standard Item 1 */}
-                    <div
-                        className="md:col-span-1 md:row-span-1 group relative overflow-hidden rounded-3xl bg-space-800 border border-white/5 scroll-reveal"
+                    <Link
+                        href="/products/3"
+                        className="md:col-span-1 md:row-span-1 group relative overflow-hidden rounded-2xl sm:rounded-3xl bg-space-800 border border-white/5 scroll-reveal block"
                         style={{ transitionDelay: '300ms' }}
                     >
                         <img
@@ -169,15 +171,16 @@ export default function BentoGrid({ customData }: { customData?: any }) {
                             loading="lazy"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-space-900 to-transparent" />
-                        <div className="absolute bottom-0 left-0 p-6 relative z-10">
-                            <h3 className="text-xl font-bold text-white mb-1">{items[2].title}</h3>
+                        <div className="absolute bottom-0 left-0 p-4 sm:p-6 relative z-10">
+                            <h3 className="text-base sm:text-xl font-bold text-white mb-1">{items[2].title}</h3>
                             <p className="text-white/50 text-xs">{items[2].desc}</p>
                         </div>
-                    </div>
+                    </Link>
 
                     {/* Standard Item 2 */}
-                    <div
-                        className="md:col-span-1 md:row-span-1 group relative overflow-hidden rounded-3xl bg-space-800 border border-white/10 flex items-center justify-center scroll-reveal"
+                    <Link
+                        href="/products/4"
+                        className="md:col-span-1 md:row-span-1 group relative overflow-hidden rounded-2xl sm:rounded-3xl bg-space-800 border border-white/10 flex items-center justify-center scroll-reveal block"
                         style={{ transitionDelay: '450ms' }}
                     >
                         <img
@@ -187,14 +190,14 @@ export default function BentoGrid({ customData }: { customData?: any }) {
                             loading="lazy"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-space-900 to-transparent" />
-                        <div className="relative z-10 p-6 text-center">
-                            <h3 className="text-2xl font-bold text-white mb-2 drop-shadow-lg">{items[3].title}</h3>
-                            <p className="text-white/80 text-sm drop-shadow-md">{items[3].desc}</p>
-                            <button className="mt-4 px-6 py-2 rounded-full bg-white text-space-900 text-sm font-bold opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 btn-micro">
+                        <div className="relative z-10 p-4 sm:p-6 text-center w-full">
+                            <h3 className="text-base sm:text-xl font-bold text-white mb-1 drop-shadow-lg">{items[3].title}</h3>
+                            <p className="text-white/80 text-xs drop-shadow-md">{items[3].desc}</p>
+                            <span className="mt-3 inline-block px-5 py-1.5 rounded-full bg-white text-space-900 text-xs font-bold opacity-0 group-hover:opacity-100 transform translate-y-3 group-hover:translate-y-0 transition-all duration-300">
                                 Explore
-                            </button>
+                            </span>
                         </div>
-                    </div>
+                    </Link>
 
                 </div>
             </div>

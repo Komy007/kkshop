@@ -1,0 +1,38 @@
+﻿python.exe : C:\Users\bbtca\AppData\Loc
+al\Google\Cloud SDK\google-cloud-sdk\li
+b\third_party\google\cloud\__init__.py:
+20: UserWarning: pkg_resources is depre
+cated as an API. See https://setuptools
+.pypa.io/en/latest/pkg_resources.html. 
+The pkg_resources package is slated for
+ removal as early as 2025-11-30. Refrai
+n from using this package or pin to Set
+uptools<81.
+At C:\Users\bbtca\AppData\Local\Google\
+Cloud SDK\google-cloud-sdk\bin\gcloud.p
+s1:114 char:3
++   & "$cloudsdk_python" $run_args_arra
+y
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~
+    + CategoryInfo          : NotSpeci 
+   fied: (C:\Users\bbtca\... Setuptoo  
+  ls<81.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCo 
+   mmandError
+ 
+  import pkg_resources
+----------------------------- REMOTE BUILD OUTPUT ------------------------------
+starting build "bdfac278-9e9f-4a9d-b825-a157fd4d3ac8"
+FETCHSOURCE
+From https://github.com/Komy007/kkshop
+ * branch            8f3fee2fc075cc11ff6aac092068794e16eb9efb -> FETCH_HEAD
+HEAD is now at 8f3fee2 fix: resolve NextAuth TS2742 build preventing deployment
+GitCommit:
+8f3fee2fc075cc11ff6aac092068794e16eb9efb
+BUILD
+Already have image (with digest): gcr.io/cloud-builders/docker
+unable to prepare context: unable to evaluate symlinks in Dockerfile path: lstat /workspace/Dockerfile: no such file or directory
+ERROR
+ERROR: build step 0 "gcr.io/cloud-builders/docker" failed: step exited with non-zero status: 1
+--------------------------------------------------------------------------------
