@@ -2,56 +2,134 @@
 
 import React, { useEffect, useState } from 'react';
 import AntiGravityHero from '@/components/AntiGravityHero';
-import BentoGrid from '@/components/BentoGrid';
-import ZigzagShowcase from '@/components/ZigzagShowcase';
-import TrustBadges from '@/components/TrustBadges';
-import ProductCard from '@/components/ProductCard';
-import Footer from '@/components/Footer';
 import CategoryShortcuts from '@/components/CategoryShortcuts';
 import CurationSection from '@/components/CurationSection';
+import Footer from '@/components/Footer';
 import { useAppStore } from '@/store/useAppStore';
-import { Star, ChevronRight } from 'lucide-react';
+import { Search, Star } from 'lucide-react';
+import Link from 'next/link';
 import { type TranslatedProduct } from '@/lib/api';
-import { getSiteSetting } from '@/actions/settingActions';
 
 const homeTranslations: Record<string, any> = {
     ko: {
-        mdPick: 'MD 추천 특별전',
-        mdDesc: '가장 신선한 한국의 맛, 지금 바로 프놈펜에서 만나보세요.',
-        realtimeReview: '실시간 고객 리뷰',
-        reviewSubtitle: '실제 프리미엄 고객님들의 생생한 후기',
-        catBeauty: '💄 K-Beauty',
-        catLiving: '🏠 생활/리빙',
-        catPopular: '👑 인기 상품'
+        searchPlaceholder: '상품명 또는 브랜드 입력',
+        curationTitle: '님을 위한 큐레이션',
+        forYou: 'FOR YOU',
+        flashTitle: '🔥 타임세일',
+        newArrival: '✨ 신상품',
+        popular: '👑 인기 상품',
+        viewAll: '전체보기',
+        freeShipping: '🚚 $30 이상 무료배송',
+        authentic: '✅ 100% 한국 정품',
+        fast: '⚡ 프놈펜 빠른 배송',
     },
     en: {
-        mdPick: "Live Flash Deals",
-        mdDesc: 'Exclusive limited-time offers. Premium products delivered to your door.',
-        realtimeReview: 'Real-time Customer Reviews',
-        reviewSubtitle: 'Genuine reviews from our premium customers',
-        catBeauty: '💄 K-Beauty',
-        catLiving: '🏠 Living/Lifestyle',
-        catPopular: '👑 Bestsellers'
+        searchPlaceholder: 'Search products or brands',
+        curationTitle: "'s Picks",
+        forYou: 'FOR YOU',
+        flashTitle: '🔥 Time Sale',
+        newArrival: '✨ New Arrivals',
+        popular: '👑 Popular',
+        viewAll: 'View All',
+        freeShipping: '🚚 Free shipping $30+',
+        authentic: '✅ 100% Authentic Korean',
+        fast: '⚡ Fast Phnom Penh Delivery',
     },
     km: {
-        mdPick: 'ការជ្រើសរើសពិសេសរបស់ MD',
-        mdDesc: 'រសជាតិថ្មីស្រស់ពីប្រទេសកូរ៉េ ឥឡូវនេះមាននៅទីក្រុងភ្នំពេញ។',
-        realtimeReview: 'មតិអតិថិជនជាក់ស្តែង',
-        reviewSubtitle: 'មតិពិតប្រាកដពីអតិថិជនរបស់យើង',
-        catBeauty: '💄 គ្រឿងសំអាងកូរ៉េ',
-        catLiving: '🏠 របៀបរស់នៅ',
-        catPopular: '👑 ការពេញនិយម'
+        searchPlaceholder: 'ស្វែងរកផលិតផល',
+        curationTitle: ' សម្រាប់អ្នក',
+        forYou: 'FOR YOU',
+        flashTitle: '🔥 ការលក់ពិសេស',
+        newArrival: '✨ ផលិតផលថ្មី',
+        popular: '👑 ពេញនិយម',
+        viewAll: 'មើលទាំងអស់',
+        freeShipping: '🚚 ដឹកជញ្ជូនឥតគិតថ្លៃ $30+',
+        authentic: '✅ ផលិតផលកូរ៉េ 100%',
+        fast: '⚡ ដឹកជញ្ជូនរហ័សភ្នំពេញ',
     },
     zh: {
-        mdPick: 'MD 专属推荐',
-        mdDesc: '最新鲜的韩国风味，金边即刻体验。',
-        realtimeReview: '实时买家秀',
-        reviewSubtitle: '来自我们高端客户的真实评价',
-        catBeauty: '💄 韩国美妆',
-        catLiving: '🏠 居家生活',
-        catPopular: '👑 热销商品'
+        searchPlaceholder: '搜索商品或品牌',
+        curationTitle: '为你推荐',
+        forYou: 'FOR YOU',
+        flashTitle: '🔥 限时特卖',
+        newArrival: '✨ 新品上市',
+        popular: '👑 热门商品',
+        viewAll: '查看全部',
+        freeShipping: '🚚 $30以上免费送货',
+        authentic: '✅ 100%韩国正品',
+        fast: '⚡ 金边快速配送',
     }
 };
+
+// Mock product data for display
+const mockProducts = [
+    { id: '1', name: '고재구전통쌀엿 1kg', nameEn: 'Traditional Rice Candy 1kg', price: 40000, salePrice: 4000, unit: '원', image: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&q=80&w=300', discount: 0, rating: 4.8 },
+    { id: '2', name: '호정가 찹쌀약과세트', nameEn: 'Rice Cookie Gift Set', price: 16000, salePrice: 13000, unit: '원', image: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&q=80&w=300', discount: 13, rating: 4.5 },
+    { id: '3', name: '동결건조 엿 파삭 100g', nameEn: 'Freeze-dried Snack 100g', price: 12000, salePrice: 12000, unit: '원', image: 'https://images.unsplash.com/photo-1596462502278-27bf85033e5a?auto=format&fit=crop&q=80&w=300', discount: 0, rating: 4.9 },
+    { id: '4', name: '프리미엄 선크림 SPF50', nameEn: 'Premium Sunscreen SPF50', price: 25000, salePrice: 18000, unit: '원', image: 'https://images.unsplash.com/photo-1556228578-8c89e6adf883?auto=format&fit=crop&q=80&w=300', discount: 28, rating: 4.7 },
+    { id: '5', name: '히알루론산 세럼 30ml', nameEn: 'Hyaluronic Acid Serum 30ml', price: 35000, salePrice: 22000, unit: '원', image: 'https://images.unsplash.com/photo-1599305090598-fe179d501227?auto=format&fit=crop&q=80&w=300', discount: 37, rating: 4.6 },
+    { id: '6', name: '클렌징 폼 150ml', nameEn: 'Cleansing Foam 150ml', price: 15000, salePrice: 11000, unit: '원', image: 'https://images.unsplash.com/photo-1563453392212-326f5e854473?auto=format&fit=crop&q=80&w=300', discount: 27, rating: 4.4 },
+];
+
+function ProductGrid({ products, title, showViewAll = true, t }: { products: typeof mockProducts; title: string; showViewAll?: boolean; t: any }) {
+    return (
+        <section className="px-3 mb-6">
+            <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-bold text-white">{title}</h3>
+                {showViewAll && (
+                    <Link href="/category" className="text-xs text-white/40 hover:text-white/60 transition-colors">
+                        {t.viewAll} &gt;
+                    </Link>
+                )}
+            </div>
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 sm:gap-3">
+                {products.map((product) => (
+                    <Link
+                        key={product.id}
+                        href={`/products/${product.id}`}
+                        className="group block"
+                    >
+                        {/* Image */}
+                        <div className="relative aspect-square rounded-xl overflow-hidden bg-space-800 mb-1.5">
+                            <img
+                                src={product.image}
+                                alt={product.name}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                loading="lazy"
+                            />
+                            {product.discount > 0 && (
+                                <div className="absolute top-1 left-1 bg-[#FF4444] text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded">
+                                    {product.discount}%
+                                </div>
+                            )}
+                        </div>
+                        {/* Text */}
+                        <p className="text-[11px] sm:text-xs text-white/80 leading-tight line-clamp-2 mb-1 min-h-[28px]">
+                            {product.name}
+                        </p>
+                        {/* Price */}
+                        <div>
+                            {product.discount > 0 && (
+                                <span className="text-[10px] text-white/30 line-through mr-1">
+                                    {product.price.toLocaleString()}
+                                </span>
+                            )}
+                            <span className="text-xs sm:text-sm font-extrabold text-white">
+                                {product.salePrice.toLocaleString()}
+                                <span className="text-[10px] font-normal text-white/50">{product.unit}</span>
+                            </span>
+                        </div>
+                        {/* Rating */}
+                        <div className="flex items-center gap-0.5 mt-0.5">
+                            <Star className="w-2.5 h-2.5 text-amber-400 fill-amber-400" />
+                            <span className="text-[10px] text-white/40">{product.rating}</span>
+                        </div>
+                    </Link>
+                ))}
+            </div>
+        </section>
+    );
+}
 
 export default function Home() {
     const { language } = useAppStore();
@@ -59,29 +137,14 @@ export default function Home() {
 
     const [mounted, setMounted] = useState(false);
     const [products, setProducts] = useState<TranslatedProduct[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
 
-    // Dynamic Site Settings
-    const [heroData, setHeroData] = useState<any>(null);
-    const [bentoData, setBentoData] = useState<any>(null);
-
-    // Hydration fix & Initial Load
     useEffect(() => {
         setMounted(true);
-
-        async function loadSettings() {
-            const hData = await getSiteSetting('landing_hero');
-            const bData = await getSiteSetting('landing_bento');
-            if (hData) setHeroData(hData);
-            if (bData) setBentoData(bData);
-        }
-        loadSettings();
     }, []);
 
-    // Fetch data when language changes or on mount
+    // Fetch products
     useEffect(() => {
         async function loadProducts() {
-            setIsLoading(true);
             try {
                 const response = await fetch(`/api/products?lang=${language}`);
                 if (response.ok) {
@@ -90,107 +153,63 @@ export default function Home() {
                 }
             } catch (error) {
                 console.error("Error fetching products", error);
-            } finally {
-                setIsLoading(false);
             }
         }
-
-        if (mounted) {
-            loadProducts();
-        }
+        if (mounted) loadProducts();
     }, [language, mounted]);
 
     if (!mounted) return null;
 
     return (
         <>
-            <main className="flex-grow">
-                {/* Hero Section */}
-                <AntiGravityHero customData={heroData} />
+            <main className="flex-grow pb-4">
+                {/* ── Search Bar ── */}
+                <div className="px-3 pt-2 pb-1">
+                    <Link href="/search" className="flex items-center gap-2 w-full px-4 py-2.5 rounded-xl bg-white/[0.06] border border-white/10 text-white/30 text-sm hover:border-white/20 transition-colors">
+                        <Search className="w-4 h-4 flex-shrink-0" />
+                        <span>{t.searchPlaceholder}</span>
+                    </Link>
+                </div>
 
-                {/* Category Shortcuts — Hick's Law: max 9 */}
+                {/* ── Promo Banner Carousel ── */}
+                <AntiGravityHero />
+
+                {/* ── Trust Strip (compact) ── */}
+                <div className="flex items-center gap-2 px-3 py-2 overflow-x-auto scrollbar-hide text-nowrap">
+                    {[t.freeShipping, t.authentic, t.fast].map((badge: string, i: number) => (
+                        <span key={i} className="flex-shrink-0 text-[10px] sm:text-xs text-white/50 bg-white/[0.04] border border-white/5 rounded-full px-2.5 py-1 font-medium">
+                            {badge}
+                        </span>
+                    ))}
+                </div>
+
+                {/* ── Category Shortcuts (round icons) ── */}
                 <CategoryShortcuts />
 
-                {/* Trust Badges — horizontal strip */}
-                <section className="py-6 border-y border-white/5">
-                    <div className="max-w-7xl mx-auto px-6 flex justify-center">
-                        <TrustBadges variant="horizontal" />
+                {/* ── Curation Banner ── */}
+                <div className="px-3 py-4">
+                    <div className="flex items-center gap-3 mb-3">
+                        <div className="w-10 h-10 rounded-full border-2 border-brand-primary/30 flex items-center justify-center">
+                            <span className="text-xs font-bold text-brand-primary">{t.forYou}</span>
+                        </div>
+                        <p className="text-sm text-white/70">
+                            <span className="font-bold text-white">Premium</span>{t.curationTitle}
+                        </p>
                     </div>
-                </section>
+                </div>
 
-                {/* Bento Grid — Living items */}
-                <BentoGrid customData={bentoData} />
-
-                {/* AI Curation Sections */}
+                {/* ── AI Curation (horizontal scroll) ── */}
                 <CurationSection products={products} />
 
-                {/* Z-Pattern Zigzag Showcase — Why KKshop */}
-                <ZigzagShowcase />
+                {/* ── Flash Sale Product Grid ── */}
+                <ProductGrid products={mockProducts.slice(0, 3)} title={t.flashTitle} t={t} />
 
-                {/* Marquee Review Section */}
-                <section className="bg-white py-12 sm:py-16 overflow-hidden border-t border-gray-100">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8 flex justify-between items-end">
-                        <div className="flex flex-col">
-                            <h2 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-gray-900 tracking-tight leading-[1.15] mb-1">{t.realtimeReview}</h2>
-                            <p className="text-gray-500 text-sm font-normal">{t.reviewSubtitle}</p>
-                        </div>
-                        <button className="hidden sm:flex items-center gap-1 text-blue-600 font-semibold hover:text-blue-800 transition-colors text-sm">
-                            View All <ChevronRight className="w-4 h-4" />
-                        </button>
-                    </div>
+                {/* ── New Arrivals Grid ── */}
+                <ProductGrid products={mockProducts.slice(3, 6)} title={t.newArrival} t={t} />
 
-                    <div className="relative flex overflow-x-hidden group">
-                        <div className="flex animate-marquee space-x-4 px-4 whitespace-nowrap group-hover:[animation-play-state:paused]">
-                            {[1, 2, 3, 4, 5].map((item) => (
-                                <article key={`review-1-${item}`} className="w-[280px] sm:w-[340px] bg-white p-5 sm:p-6 rounded-2xl border border-gray-100 hover:shadow-lg hover:border-blue-100 transition-all duration-300 flex-shrink-0 whitespace-normal group/card">
-                                    <div className="flex items-center mb-6">
-                                        <div className="w-12 h-12 bg-gray-50 rounded-full overflow-hidden mr-4 border border-gray-100 shadow-sm">
-                                            <img src={`https://i.pravatar.cc/150?img=${item * 10}`} alt="avatar" className="w-full h-full object-cover" loading="lazy" />
-                                        </div>
-                                        <div>
-                                            <h4 className="font-bold text-gray-900 text-sm">Premium Member K.</h4>
-                                            <div className="flex text-amber-400 mt-1">
-                                                <Star className="w-3.5 h-3.5 fill-current" />
-                                                <Star className="w-3.5 h-3.5 fill-current" />
-                                                <Star className="w-3.5 h-3.5 fill-current" />
-                                                <Star className="w-3.5 h-3.5 fill-current" />
-                                                <Star className="w-3.5 h-3.5 fill-current text-gray-300" />
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <p className="text-gray-600 leading-relaxed">
-                                        &quot;비주얼부터 압도적이네요. 상품 퀄리티는 물론이고, 쇼핑하는 과정 자체가 정말 프리미엄 서비스를 받는 느낌이 듭니다. 강력 추천해요!&quot;
-                                    </p>
-                                </article>
-                            ))}
-                        </div>
-                        {/* Duplicate for infinite effect */}
-                        <div className="flex animate-marquee2 space-x-6 px-6 whitespace-nowrap absolute top-0 group-hover:[animation-play-state:paused]">
-                            {[1, 2, 3, 4, 5].map((item) => (
-                                <article key={`review-2-${item}`} className="w-[380px] bg-white p-8 rounded-3xl border border-gray-100 hover:shadow-lg hover:border-blue-100 transition-all duration-300 flex-shrink-0 whitespace-normal group/card">
-                                    <div className="flex items-center mb-6">
-                                        <div className="w-12 h-12 bg-gray-50 rounded-full overflow-hidden mr-4 border border-gray-100 shadow-sm">
-                                            <img src={`https://i.pravatar.cc/150?img=${item * 10 + 5}`} alt="avatar" className="w-full h-full object-cover" loading="lazy" />
-                                        </div>
-                                        <div>
-                                            <h4 className="font-bold text-gray-900 text-sm">VIP User {item}</h4>
-                                            <div className="flex text-amber-400 mt-1">
-                                                <Star className="w-3.5 h-3.5 fill-current" />
-                                                <Star className="w-3.5 h-3.5 fill-current" />
-                                                <Star className="w-3.5 h-3.5 fill-current" />
-                                                <Star className="w-3.5 h-3.5 fill-current" />
-                                                <Star className="w-3.5 h-3.5 fill-current" />
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <p className="text-gray-600 leading-relaxed">
-                                        &quot;배송이 정말 빠르고 포장이 깔끔합니다! 프놈펜에서 이 정도 퀄리티를 누릴 수 있다니 감동이네요. 앱 디자인도 미쳤습니다.&quot;
-                                    </p>
-                                </article>
-                            ))}
-                        </div>
-                    </div>
-                </section>
+                {/* ── Popular Products Grid ── */}
+                <ProductGrid products={mockProducts} title={t.popular} t={t} />
+
             </main>
             <Footer />
         </>

@@ -75,24 +75,22 @@ export default function CategoryShortcuts() {
     const t = shortcutTranslations[language] ?? shortcutTranslations.en;
 
     return (
-        <section className="py-8" aria-label="Category shortcuts">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="grid grid-cols-5 sm:grid-cols-9 gap-3 sm:gap-4">
-                    {shortcuts.map((item) => (
-                        <Link
-                            key={item.key}
-                            href={item.href}
-                            className="group flex flex-col items-center gap-2 min-w-[44px]"
-                        >
-                            <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br ${item.gradient} border border-white/5 flex items-center justify-center text-2xl sm:text-3xl group-hover:scale-110 group-hover:border-white/20 transition-all duration-200 active:scale-95`}>
-                                {item.emoji}
-                            </div>
-                            <span className="text-[11px] sm:text-xs font-medium text-white/70 group-hover:text-white transition-colors text-center leading-tight line-clamp-1">
-                                {t?.[item.key] ?? item.key}
-                            </span>
-                        </Link>
-                    ))}
-                </div>
+        <section className="py-3 px-3" aria-label="Category shortcuts">
+            <div className="grid grid-cols-5 sm:grid-cols-9 gap-y-3 gap-x-2">
+                {shortcuts.map((item) => (
+                    <Link
+                        key={item.key}
+                        href={item.href}
+                        className="group flex flex-col items-center gap-1.5 min-w-[44px]"
+                    >
+                        <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br ${item.gradient} border border-white/5 flex items-center justify-center text-xl sm:text-2xl group-hover:scale-110 group-hover:border-white/20 transition-all duration-200 active:scale-95`}>
+                            {item.emoji}
+                        </div>
+                        <span className="text-[10px] sm:text-xs font-medium text-white/60 group-hover:text-white transition-colors text-center leading-tight line-clamp-1">
+                            {t?.[item.key] ?? item.key}
+                        </span>
+                    </Link>
+                ))}
             </div>
         </section>
     );

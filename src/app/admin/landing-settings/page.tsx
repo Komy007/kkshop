@@ -4,8 +4,17 @@ import React, { useState, useEffect } from 'react';
 import AdminSidebar from '@/components/admin/AdminSidebar';
 import { getSiteSetting, updateSiteSetting } from '@/actions/settingActions';
 import { Save, Image as ImageIcon, Type, Sparkles, Upload } from 'lucide-react';
-import { heroTranslations } from '@/components/AntiGravityHero';
-import { bentoTranslations } from '@/components/BentoGrid';
+
+// Inline defaults (hero/bento exports were removed during landing page redesign)
+const defaultHeroKo = {
+    topText: "100% 한국 정품 · 프놈펜 직배송",
+    badge: "오늘의 특가",
+    title: "K-뷰티의 진심,\n지금 바로 경험하세요",
+};
+const defaultBentoKo = {
+    title: "한국인 추천 생활용품관",
+    desc: "프놈펜 라이프를 한 단계 업그레이드할 필수 리빙 아이템",
+};
 
 export default function LandingSettingsPage() {
     const [isLoading, setIsLoading] = useState(true);
@@ -14,9 +23,9 @@ export default function LandingSettingsPage() {
 
     // Hero Section Settings State
     const [heroData, setHeroData] = useState({
-        topTextParams: { text: heroTranslations.ko.topText, fontSize: "1.125rem" },
-        badgeParams: { text: heroTranslations.ko.badge, fontSize: "0.875rem" },
-        titleParams: { text: heroTranslations.ko.title, fontSize: "3.75rem" },
+        topTextParams: { text: defaultHeroKo.topText, fontSize: "1.125rem" },
+        badgeParams: { text: defaultHeroKo.badge, fontSize: "0.875rem" },
+        titleParams: { text: defaultHeroKo.title, fontSize: "3.75rem" },
         images: [
             { url: "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&q=80&w=600", title: "Luminous Serum", label: "K-Premium" },
             { url: "https://images.unsplash.com/photo-1599305090598-fe179d501227?auto=format&fit=crop&q=80&w=400" },
@@ -26,8 +35,8 @@ export default function LandingSettingsPage() {
 
     // Bento Grid Section Settings State
     const [bentoData, setBentoData] = useState({
-        sectionTitle: bentoTranslations.ko.title,
-        sectionDesc: bentoTranslations.ko.desc,
+        sectionTitle: defaultBentoKo.title,
+        sectionDesc: defaultBentoKo.desc,
         items: [
             { title: "오가닉 코튼 샤워 타월", desc: "부드럽고 빠른 흡수력", image: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&q=80&w=800" },
             { title: "스마트 공기청정 미니", desc: "건기에도 탁월한 상쾌함", image: "https://images.unsplash.com/photo-1563453392212-326f5e854473?auto=format&fit=crop&q=80&w=600" },
