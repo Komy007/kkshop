@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Lock, Mail, ArrowRight, AlertCircle } from 'lucide-react';
-import { motion } from 'framer-motion';
 
 export default function AdminLoginPage() {
     const router = useRouter();
@@ -28,9 +27,8 @@ export default function AdminLoginPage() {
             if (res?.error) {
                 setError('이메일 또는 비밀번호가 일치하지 않습니다.');
             } else if (res?.ok) {
-                // 로그인 성공 시 관리자 메인 또는 상품 등록 페이지로 이동
                 router.push('/admin/products/new');
-                router.refresh(); // 세션 업데이트 반영
+                router.refresh();
             }
         } catch (err) {
             setError('로그인 처리 중 오류가 발생했습니다.');
@@ -45,11 +43,8 @@ export default function AdminLoginPage() {
             <div className="absolute top-1/2 left-1/4 -translate-y-1/2 w-[40vw] h-[40vw] max-w-[500px] max-h-[500px] bg-blue-500/20 rounded-full blur-[100px] pointer-events-none" />
             <div className="absolute top-1/2 right-1/4 -translate-y-1/2 w-[30vw] h-[30vw] max-w-[400px] max-h-[400px] bg-purple-500/20 rounded-full blur-[100px] pointer-events-none" />
 
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, ease: "easeOut" }}
-                className="w-full max-w-md bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl relative z-10"
+            <div
+                className="w-full max-w-md bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl relative z-10 animate-fade-in-up"
             >
                 <div className="text-center mb-10">
                     <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-blue-600 to-purple-600 text-white mb-6 shadow-lg shadow-blue-500/30">
@@ -60,14 +55,10 @@ export default function AdminLoginPage() {
                 </div>
 
                 {error && (
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 flex items-start gap-3 text-red-400"
-                    >
+                    <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 flex items-start gap-3 text-red-400 animate-scale-in">
                         <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
                         <p className="text-sm font-medium">{error}</p>
-                    </motion.div>
+                    </div>
                 )}
 
                 <form onSubmit={handleSubmit} className="space-y-6">
@@ -109,7 +100,7 @@ export default function AdminLoginPage() {
                         <button
                             type="submit"
                             disabled={isLoading}
-                            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white rounded-xl py-3.5 px-4 font-bold text-lg shadow-lg shadow-blue-500/25 transition-all transform active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
+                            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white rounded-xl py-3.5 px-4 font-bold text-lg shadow-lg shadow-blue-500/25 transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed btn-micro"
                         >
                             {isLoading ? (
                                 <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -130,7 +121,7 @@ export default function AdminLoginPage() {
                         허가되지 않은 접근은 시스템에 의해 모니터링됩니다.
                     </p>
                 </div>
-            </motion.div>
+            </div>
         </div>
     );
 }

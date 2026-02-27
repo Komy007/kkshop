@@ -27,6 +27,15 @@ const config: Config = {
                     primary: "#6366f1", // Indigo
                     secondary: "#ec4899", // Pink (cosmetics vibe)
                     accent: "#06b6d4", // Cyan
+                },
+                // High-Saturation palette for Z-Gen Cambodia market
+                vivid: {
+                    pink: "#FF2D78",
+                    cyan: "#00F5D4",
+                    yellow: "#FFD60A",
+                    green: "#39FF14",
+                    coral: "#FF6B6B",
+                    violet: "#8B5CF6",
                 }
             },
             animation: {

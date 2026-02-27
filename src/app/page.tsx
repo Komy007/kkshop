@@ -1,23 +1,25 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import Header from '@/components/Header';
 import AntiGravityHero from '@/components/AntiGravityHero';
-
 import BentoGrid from '@/components/BentoGrid';
+import ZigzagShowcase from '@/components/ZigzagShowcase';
+import TrustBadges from '@/components/TrustBadges';
 import ProductCard from '@/components/ProductCard';
 import Footer from '@/components/Footer';
+import CategoryShortcuts from '@/components/CategoryShortcuts';
+import CurationSection from '@/components/CurationSection';
 import { useAppStore } from '@/store/useAppStore';
-import { Star, TrendingUp, Clock, ChevronRight, Sparkles } from 'lucide-react';
-import { getProductsByLanguage, type TranslatedProduct } from '@/lib/api';
+import { Star, ChevronRight } from 'lucide-react';
+import { type TranslatedProduct } from '@/lib/api';
 import { getSiteSetting } from '@/actions/settingActions';
 
 const homeTranslations: Record<string, any> = {
-    // ... existing translations ...
     ko: {
         mdPick: 'MD 추천 특별전',
         mdDesc: '가장 신선한 한국의 맛, 지금 바로 프놈펜에서 만나보세요.',
         realtimeReview: '실시간 고객 리뷰',
+        reviewSubtitle: '실제 프리미엄 고객님들의 생생한 후기',
         catBeauty: '💄 K-Beauty',
         catLiving: '🏠 생활/리빙',
         catPopular: '👑 인기 상품'
@@ -26,6 +28,7 @@ const homeTranslations: Record<string, any> = {
         mdPick: "Live Flash Deals",
         mdDesc: 'Exclusive limited-time offers. Premium products delivered to your door.',
         realtimeReview: 'Real-time Customer Reviews',
+        reviewSubtitle: 'Genuine reviews from our premium customers',
         catBeauty: '💄 K-Beauty',
         catLiving: '🏠 Living/Lifestyle',
         catPopular: '👑 Bestsellers'
@@ -34,6 +37,7 @@ const homeTranslations: Record<string, any> = {
         mdPick: 'ការជ្រើសរើសពិសេសរបស់ MD',
         mdDesc: 'រសជាតិថ្មីស្រស់ពីប្រទេសកូរ៉េ ឥឡូវនេះមាននៅទីក្រុងភ្នំពេញ។',
         realtimeReview: 'មតិអតិថិជនជាក់ស្តែង',
+        reviewSubtitle: 'មតិពិតប្រាកដពីអតិថិជនរបស់យើង',
         catBeauty: '💄 គ្រឿងសំអាងកូរ៉េ',
         catLiving: '🏠 របៀបរស់នៅ',
         catPopular: '👑 ការពេញនិយម'
@@ -42,6 +46,7 @@ const homeTranslations: Record<string, any> = {
         mdPick: 'MD 专属推荐',
         mdDesc: '最新鲜的韩国风味，金边即刻体验。',
         realtimeReview: '实时买家秀',
+        reviewSubtitle: '来自我们高端客户的真实评价',
         catBeauty: '💄 韩国美妆',
         catLiving: '🏠 居家生活',
         catPopular: '👑 热销商品'
@@ -100,18 +105,34 @@ export default function Home() {
     return (
         <>
             <main className="flex-grow">
+                {/* Hero Section */}
                 <AntiGravityHero customData={heroData} />
 
+                {/* Category Shortcuts — Hick's Law: max 9 */}
+                <CategoryShortcuts />
 
+                {/* Trust Badges — horizontal strip */}
+                <section className="py-6 border-y border-white/5">
+                    <div className="max-w-7xl mx-auto px-6 flex justify-center">
+                        <TrustBadges variant="horizontal" />
+                    </div>
+                </section>
 
+                {/* Bento Grid — Living items */}
                 <BentoGrid customData={bentoData} />
+
+                {/* AI Curation Sections */}
+                <CurationSection products={products} />
+
+                {/* Z-Pattern Zigzag Showcase — Why KKshop */}
+                <ZigzagShowcase />
 
                 {/* Marquee Review Section */}
                 <section className="bg-white py-24 overflow-hidden border-t border-gray-100">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-12 flex justify-between items-end">
                         <div className="flex flex-col">
                             <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 tracking-tight leading-[1.15] mb-2">{t.realtimeReview}</h2>
-                            <p className="text-gray-500 font-normal">실제 프리미엄 고객님들의 생생한 후기</p>
+                            <p className="text-gray-500 font-normal">{t.reviewSubtitle}</p>
                         </div>
                         <button className="hidden sm:flex items-center gap-1 text-blue-600 font-semibold hover:text-blue-800 transition-colors">
                             View All <ChevronRight className="w-4 h-4" />
@@ -121,10 +142,10 @@ export default function Home() {
                     <div className="relative flex overflow-x-hidden group">
                         <div className="flex animate-marquee space-x-6 px-6 whitespace-nowrap group-hover:[animation-play-state:paused]">
                             {[1, 2, 3, 4, 5].map((item) => (
-                                <div key={`review-1-${item}`} className="w-[380px] bg-white p-8 rounded-3xl border border-gray-100 hover:shadow-lg hover:border-blue-100 transition-all duration-300 flex-shrink-0 whitespace-normal group/card">
+                                <article key={`review-1-${item}`} className="w-[380px] bg-white p-8 rounded-3xl border border-gray-100 hover:shadow-lg hover:border-blue-100 transition-all duration-300 flex-shrink-0 whitespace-normal group/card">
                                     <div className="flex items-center mb-6">
                                         <div className="w-12 h-12 bg-gray-50 rounded-full overflow-hidden mr-4 border border-gray-100 shadow-sm">
-                                            <img src={`https://i.pravatar.cc/150?img=${item * 10}`} alt="avatar" className="w-full h-full object-cover" />
+                                            <img src={`https://i.pravatar.cc/150?img=${item * 10}`} alt="avatar" className="w-full h-full object-cover" loading="lazy" />
                                         </div>
                                         <div>
                                             <h4 className="font-bold text-gray-900 text-sm">Premium Member K.</h4>
@@ -138,18 +159,18 @@ export default function Home() {
                                         </div>
                                     </div>
                                     <p className="text-gray-600 leading-relaxed">
-                                        "비주얼부터 압도적이네요. 상품 퀄리티는 물론이고, 쇼핑하는 과정 자체가 정말 프리미엄 서비스를 받는 느낌이 듭니다. 강력 추천해요!"
+                                        &quot;비주얼부터 압도적이네요. 상품 퀄리티는 물론이고, 쇼핑하는 과정 자체가 정말 프리미엄 서비스를 받는 느낌이 듭니다. 강력 추천해요!&quot;
                                     </p>
-                                </div>
+                                </article>
                             ))}
                         </div>
                         {/* Duplicate for infinite effect */}
                         <div className="flex animate-marquee2 space-x-6 px-6 whitespace-nowrap absolute top-0 group-hover:[animation-play-state:paused]">
                             {[1, 2, 3, 4, 5].map((item) => (
-                                <div key={`review-2-${item}`} className="w-[380px] bg-white p-8 rounded-3xl border border-gray-100 hover:shadow-lg hover:border-blue-100 transition-all duration-300 flex-shrink-0 whitespace-normal group/card">
+                                <article key={`review-2-${item}`} className="w-[380px] bg-white p-8 rounded-3xl border border-gray-100 hover:shadow-lg hover:border-blue-100 transition-all duration-300 flex-shrink-0 whitespace-normal group/card">
                                     <div className="flex items-center mb-6">
                                         <div className="w-12 h-12 bg-gray-50 rounded-full overflow-hidden mr-4 border border-gray-100 shadow-sm">
-                                            <img src={`https://i.pravatar.cc/150?img=${item * 10 + 5}`} alt="avatar" className="w-full h-full object-cover" />
+                                            <img src={`https://i.pravatar.cc/150?img=${item * 10 + 5}`} alt="avatar" className="w-full h-full object-cover" loading="lazy" />
                                         </div>
                                         <div>
                                             <h4 className="font-bold text-gray-900 text-sm">VIP User {item}</h4>
@@ -163,14 +184,14 @@ export default function Home() {
                                         </div>
                                     </div>
                                     <p className="text-gray-600 leading-relaxed">
-                                        "배송이 정말 빠르고 포장이 깔끔합니다! 프놈펜에서 이 정도 퀄리티를 누릴 수 있다니 감동이네요. 앱 디자인도 미쳤습니다."
+                                        &quot;배송이 정말 빠르고 포장이 깔끔합니다! 프놈펜에서 이 정도 퀄리티를 누릴 수 있다니 감동이네요. 앱 디자인도 미쳤습니다.&quot;
                                     </p>
-                                </div>
+                                </article>
                             ))}
                         </div>
                     </div>
                 </section>
-            </main >
+            </main>
             <Footer />
         </>
     );
