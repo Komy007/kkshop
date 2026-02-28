@@ -33,11 +33,13 @@ model Product {
   stockQty   Int     @default(0) @map("stock_qty") // 가용 재고
   categoryId BigInt? @map("category_id") // 카테고리 ID (FK)
   status     String  @db.VarChar(20) // 판매 상태 (ACTIVE, INACTIVE 등)
+  imageUrl   String? @map("image_url") @db.VarChar(500) // 썸네일/상품 대표 이미지
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   translations ProductTranslation[]
+  orderItems   OrderItem[]
 
   @@map("products")
 }
@@ -79,6 +81,7 @@ model User {
   postalCode    String?   @map("postal_code") @db.VarChar(20) // 우편번호
   accounts      Account[]
   sessions      Session[]
+  orders        Order[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -137,4 +140,42 @@ model SiteSetting {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("site_settings")
+}
+
+// ---------------------------------------------------------------------------
+// Checkout and Orders Models
+// ---------------------------------------------------------------------------
+
+model Order {
+  id            String      @id @default(cuid())
+  userId        String?     @map("user_id") // Optional for guest checkout
+  customerName  String      @map("customer_name") @db.VarChar(100)
+  customerPhone String      @map("customer_phone") @db.VarChar(50)
+  customerEmail String?     @map("customer_email") @db.VarChar(255)
+  address       String      @db.VarChar(255)
+  detailAddress String?     @map("detail_address") @db.VarChar(255)
+  totalUsd      Decimal     @map("total_usd") @db.Decimal(10, 2)
+  status        String      @default("PENDING") @db.VarChar(50) // PENDING, PROCESSING, COMPLETED, CANCELLED
+
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+
+  items         OrderItem[]
+  user          User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String  @map("order_id")
+  productId BigInt  @map("product_id")
+  quantity  Int
+  priceUsd  Decimal @map("price_usd") @db.Decimal(10, 2) // Price at the time of purchase
+
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@index([orderId])
+  @@map("order_items")
 }

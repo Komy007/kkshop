@@ -18,6 +18,7 @@ export interface TranslatedProduct {
     stockQty: number;
     categoryId?: string | null;
     status: string;
+    imageUrl?: string | null;
 
     // Transformed fields from Translation table matched to current language
     name: string;
@@ -74,6 +75,7 @@ export async function getProductsByLanguage(langCode: string, categorySlug?: str
                 stockQty: product.stockQty,
                 categoryId: product.categoryId?.toString() || null,
                 status: product.status,
+                imageUrl: product.imageUrl,
                 name: translation.name,
                 shortDesc: translation.shortDesc,
                 detailDesc: translation.detailDesc,

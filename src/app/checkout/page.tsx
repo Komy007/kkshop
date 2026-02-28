@@ -2,267 +2,290 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronLeft, CreditCard, Building, QrCode, Smartphone, Tag, Truck } from 'lucide-react';
-import { useCartStore, selectTotalItems, selectTotalPrice } from '@/store/useCartStore';
-import { useTranslations } from '@/i18n/useTranslations';
-import { paymentGateway, type PaymentResult } from '@/lib/paymentGateway';
-import Footer from '@/components/Footer';
+import { useCartStore, selectTotalPrice } from '@/store/useCartStore';
+import { useAppStore } from '@/store/useAppStore';
 
-const PAYMENT_METHODS = [
-    { id: 'aba_payway', label: 'ABA PayWay', icon: Building, color: 'text-blue-400' },
-    { id: 'khqr', label: 'KHQR', icon: QrCode, color: 'text-vivid-cyan' },
-    { id: 'credit_card', label: 'Credit / Debit Card', icon: CreditCard, color: 'text-vivid-yellow' },
-    { id: 'bank_transfer', label: 'Bank Transfer', icon: Smartphone, color: 'text-vivid-green' },
-];
+const checkoutTranslations: Record<string, any> = {
+    ko: {
+        title: '결제하기',
+        subtitle: '주문을 완료하기 위해 배송 정보를 입력해주세요.',
+        name: '받는 분 성함',
+        phone: '연락처 (전화번호)',
+        email: '이메일 (선택)',
+        address: '기본 배송지 주소',
+        detailAddress: '상세 주소 (선택)',
+        orderSummary: '주문 요약',
+        total: '총 결제 금액',
+        placeOrder: '주문 확정하기',
+        processing: '처리 중...',
+        cancel: '취소 돌아가기',
+        empty: '장바구니가 비어있습니다. 상품을 먼저 담아주세요.',
+        goHome: '홈으로 이동',
+        success: '주문이 성공적으로 접수되었습니다!',
+        error: '주문 처리 중 오류가 발생했습니다. 다시 시도해주세요.',
+    },
+    en: {
+        title: 'Checkout',
+        subtitle: 'Enter your shipping details to complete the order.',
+        name: 'Full Name',
+        phone: 'Phone Number',
+        email: 'Email (Optional)',
+        address: 'Shipping Address',
+        detailAddress: 'Apt, Suite, etc. (Optional)',
+        orderSummary: 'Order Summary',
+        total: 'Total',
+        placeOrder: 'Place Order',
+        processing: 'Processing...',
+        cancel: 'Cancel & Return',
+        empty: 'Your cart is empty. Please add items to checkout.',
+        goHome: 'Go to Home',
+        success: 'Order placed successfully!',
+        error: 'An error occurred. Please try again.',
+    },
+    km: {
+        title: 'ពិនិត្យចេញ',
+        subtitle: 'បញ្ចូលព័ត៌មានលម្អិតសម្រាប់ការដឹកជញ្ជូនរបស់អ្នកដើម្បីបញ្ចប់ការបញ្ជាទិញ។',
+        name: 'ឈ្មោះ​ពេញ',
+        phone: 'លេខទូរស័ព្ទ',
+        email: 'អ៊ីមែល',
+        address: 'អាសយដ្ឋានដឹកជញ្ជូន',
+        detailAddress: 'អាសយដ្ឋានលម្អិត',
+        orderSummary: 'សេចក្តីសង្ខេបនៃការបញ្ជាទិញ',
+        total: 'សរុប',
+        placeOrder: 'បញ្ជាទិញ',
+        processing: 'កំពុងដំណើរការ...',
+        cancel: 'បោះបង់',
+        empty: 'រទេះរបស់អ្នកទទេ',
+        goHome: 'ទៅកាន់គេហទំព័រ',
+        success: 'ការបញ្ជាទិញទទួលបានជោគជ័យ!',
+        error: 'មានកំហុសសូមព្យាយាមម្តងទៀត។',
+    },
+    zh: {
+        title: '结账',
+        subtitle: '输入您的送货信息以完成订单。',
+        name: '姓名',
+        phone: '电话号码',
+        email: '电子邮件（选填）',
+        address: '送货地址',
+        detailAddress: '详细地址',
+        orderSummary: '订单摘要',
+        total: '总计',
+        placeOrder: '提交订单',
+        processing: '处理中...',
+        cancel: '取消返回',
+        empty: '购物车是空的。请先添加商品。',
+        goHome: '返回主页',
+        success: '订单提交成功！',
+        error: '发生错误，请重试。',
+    }
+};
 
 export default function CheckoutPage() {
     const router = useRouter();
-    const t = useTranslations();
+    const { language } = useAppStore();
+    const t = checkoutTranslations[language] || checkoutTranslations.en;
+
     const items = useCartStore((s) => s.items);
-    const totalItems = useCartStore(selectTotalItems);
-    const totalPrice = useCartStore(selectTotalPrice);
     const clearCart = useCartStore((s) => s.clearCart);
+    const totalPrice = useCartStore(selectTotalPrice);
 
-    const [paymentMethod, setPaymentMethod] = useState('aba_payway');
-    const [isProcessing, setIsProcessing] = useState(false);
-    const [coupon, setCoupon] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [statusMessage, setStatusMessage] = useState<{ type: 'error' | 'success', text: string } | null>(null);
+
     const [form, setForm] = useState({
-        fullName: '',
-        phone: '',
+        customerName: '',
+        customerPhone: '',
+        customerEmail: '',
         address: '',
-        city: 'Phnom Penh',
-        notes: '',
+        detailAddress: '',
     });
-
-    const shippingFee = totalPrice >= 30 ? 0 : 3.00;
-    const discount = 0; // Coupon logic placeholder
-    const grandTotal = totalPrice + shippingFee - discount;
 
     const formatUsd = (price: number) =>
         new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(price);
 
-    const handlePlaceOrder = async () => {
-        setIsProcessing(true);
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setForm({ ...form, [e.target.name]: e.target.value });
+    };
+
+    const handleCancel = () => {
+        // Just go back to home without clearing cart
+        router.push('/');
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+        setStatusMessage(null);
+
         try {
-            // TODO: Replace with actual payment API
-            const result: PaymentResult = await paymentGateway.processPayment({
-                amount: grandTotal,
-                currency: 'USD',
-                method: paymentMethod,
-                customerName: form.fullName,
-                customerPhone: form.phone,
-                customerAddress: form.address,
-                customerCity: form.city,
-                items: items.map((item) => ({
-                    productId: item.productId,
-                    name: item.name,
-                    qty: item.qty,
-                    priceUsd: item.priceUsd,
-                })),
+            const payload = {
+                ...form,
+                items,
+                totalUsd: totalPrice,
+            };
+
+            const res = await fetch('/api/orders', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
             });
 
-            if (result.success) {
+            const data = await res.json();
+
+            if (res.ok && data.success) {
+                setStatusMessage({ type: 'success', text: t.success });
                 clearCart();
-                // Store result for thank you page
-                sessionStorage.setItem('lastOrder', JSON.stringify(result));
-                router.push('/checkout/complete');
+                // Optionally redirect to a thank you page. We'll just redirect to home after 3s.
+                setTimeout(() => {
+                    router.push('/');
+                }, 3000);
+            } else {
+                setStatusMessage({ type: 'error', text: data.error || t.error });
             }
-        } catch (error) {
-            console.error('Payment error:', error);
+        } catch (err) {
+            console.error(err);
+            setStatusMessage({ type: 'error', text: t.error });
         } finally {
-            setIsProcessing(false);
+            setIsSubmitting(false);
         }
     };
 
-    if (items.length === 0) {
+    if (items.length === 0 && !statusMessage) {
         return (
-            <div className="min-h-screen flex flex-col items-center justify-center gap-4 text-white/60 px-4">
-                <Truck className="w-16 h-16 text-white/10" />
-                <p className="text-xl font-bold text-white">{t.cart.empty}</p>
-                <a href="/" className="text-brand-primary hover:underline">{t.cart.continueShopping}</a>
+            <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 text-center">
+                <h2 className="text-2xl font-bold text-white mb-4">{t.empty}</h2>
+                <button
+                    onClick={() => router.push('/')}
+                    className="px-6 py-3 bg-brand-primary text-white rounded-xl font-bold hover:bg-brand-primary/90"
+                >
+                    {t.goHome}
+                </button>
             </div>
         );
     }
 
     return (
-        <>
-            <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {/* Back link */}
-                <a href="/" className="inline-flex items-center gap-2 text-white/50 hover:text-white transition-colors mb-8 text-sm">
-                    <ChevronLeft className="w-4 h-4" />
-                    {t.cart.continueShopping}
-                </a>
+        <div className="max-w-4xl mx-auto px-4 py-12 md:py-20">
+            <h1 className="text-3xl font-extrabold text-white mb-2">{t.title}</h1>
+            <p className="text-white/60 mb-8">{t.subtitle}</p>
 
-                <h1 className="text-3xl font-extrabold text-white mb-8">{t.checkout.pageTitle}</h1>
+            {statusMessage && (
+                <div className={`p-4 rounded-xl mb-6 font-bold text-center ${statusMessage.type === 'success' ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'bg-red-500/20 text-red-400 border border-red-500/30'}`}>
+                    {statusMessage.text}
+                </div>
+            )}
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Left — Form */}
-                    <div className="lg:col-span-2 space-y-8">
-                        {/* Shipping Address */}
-                        <section className="p-6 rounded-3xl border border-white/5 bg-white/[0.02]">
-                            <h2 className="text-lg font-bold text-white mb-5 flex items-center gap-2">
-                                <Truck className="w-5 h-5 text-brand-primary" />
-                                {t.checkout.shippingAddress}
-                            </h2>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {!statusMessage || statusMessage.type === 'error' ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                        {/* Form Fields */}
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-white/80 mb-1">{t.name} *</label>
                                 <input
+                                    required
                                     type="text"
-                                    placeholder={t.checkout.fullName}
-                                    value={form.fullName}
-                                    onChange={(e) => setForm({ ...form, fullName: e.target.value })}
-                                    className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-brand-primary transition-colors text-sm min-h-[44px]"
+                                    name="customerName"
+                                    value={form.customerName}
+                                    onChange={handleChange}
+                                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/30 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary outline-none transition-all"
                                 />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-white/80 mb-1">{t.phone} *</label>
                                 <input
+                                    required
                                     type="tel"
-                                    placeholder={t.checkout.phone}
-                                    value={form.phone}
-                                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                                    className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-brand-primary transition-colors text-sm min-h-[44px]"
+                                    name="customerPhone"
+                                    value={form.customerPhone}
+                                    onChange={handleChange}
+                                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/30 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary outline-none transition-all"
                                 />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-white/80 mb-1">{t.email}</label>
                                 <input
+                                    type="email"
+                                    name="customerEmail"
+                                    value={form.customerEmail}
+                                    onChange={handleChange}
+                                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/30 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary outline-none transition-all"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-white/80 mb-1">{t.address} *</label>
+                                <input
+                                    required
                                     type="text"
-                                    placeholder={t.checkout.address}
+                                    name="address"
                                     value={form.address}
-                                    onChange={(e) => setForm({ ...form, address: e.target.value })}
-                                    className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-brand-primary transition-colors text-sm sm:col-span-2 min-h-[44px]"
+                                    onChange={handleChange}
+                                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/30 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary outline-none transition-all"
                                 />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-white/80 mb-1">{t.detailAddress}</label>
                                 <input
                                     type="text"
-                                    placeholder={t.checkout.city}
-                                    value={form.city}
-                                    onChange={(e) => setForm({ ...form, city: e.target.value })}
-                                    className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-brand-primary transition-colors text-sm min-h-[44px]"
-                                />
-                                <textarea
-                                    placeholder={t.checkout.notes}
-                                    value={form.notes}
-                                    onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                                    rows={2}
-                                    className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-brand-primary transition-colors text-sm sm:col-span-2 min-h-[44px] resize-none"
+                                    name="detailAddress"
+                                    value={form.detailAddress}
+                                    onChange={handleChange}
+                                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/30 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary outline-none transition-all"
                                 />
                             </div>
-                        </section>
+                        </div>
 
-                        {/* Payment Method */}
-                        <section className="p-6 rounded-3xl border border-white/5 bg-white/[0.02]">
-                            <h2 className="text-lg font-bold text-white mb-5 flex items-center gap-2">
-                                <CreditCard className="w-5 h-5 text-brand-primary" />
-                                {t.checkout.paymentMethod}
-                            </h2>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                {PAYMENT_METHODS.map((method) => {
-                                    const Icon = method.icon;
-                                    const selected = paymentMethod === method.id;
-                                    return (
-                                        <button
-                                            key={method.id}
-                                            onClick={() => setPaymentMethod(method.id)}
-                                            className={`flex items-center gap-3 p-4 rounded-2xl border transition-all text-left min-h-[56px] ${selected
-                                                ? 'border-brand-primary bg-brand-primary/10 text-white'
-                                                : 'border-white/5 text-white/60 hover:border-white/10 hover:bg-white/[0.02]'
-                                                }`}
-                                        >
-                                            <div className={`w-10 h-10 rounded-xl ${selected ? 'bg-brand-primary/20' : 'bg-white/5'} flex items-center justify-center`}>
-                                                <Icon className={`w-5 h-5 ${selected ? method.color : 'text-white/40'}`} />
-                                            </div>
-                                            <span className="font-semibold text-sm">{method.label}</span>
-                                            {/* Radio indicator */}
-                                            <div className={`ml-auto w-5 h-5 rounded-full border-2 flex items-center justify-center ${selected ? 'border-brand-primary' : 'border-white/20'
-                                                }`}>
-                                                {selected && <div className="w-2.5 h-2.5 rounded-full bg-brand-primary" />}
-                                            </div>
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        </section>
-                    </div>
-
-                    {/* Right — Order Summary */}
-                    <div className="lg:col-span-1">
-                        <div className="sticky top-28 p-6 rounded-3xl border border-white/5 bg-white/[0.02] space-y-6">
-                            <h2 className="text-lg font-bold text-white">{t.checkout.orderSummary}</h2>
-
-                            {/* Items list */}
-                            <ul className="space-y-3 max-h-[300px] overflow-y-auto">
-                                {items.map((item) => (
-                                    <li key={item.productId} className="flex items-center gap-3">
-                                        <div className="w-12 h-12 rounded-lg bg-space-800 overflow-hidden flex-shrink-0">
-                                            <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" loading="lazy" />
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-medium text-white truncate">{item.name}</p>
-                                            <p className="text-xs text-white/40">× {item.qty}</p>
-                                        </div>
-                                        <span className="text-sm font-bold text-white">{formatUsd(item.priceUsd * item.qty)}</span>
-                                    </li>
-                                ))}
-                            </ul>
-
-                            {/* Coupon */}
-                            <div className="flex gap-2">
-                                <div className="relative flex-1">
-                                    <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
-                                    <input
-                                        type="text"
-                                        placeholder={t.checkout.couponPlaceholder}
-                                        value={coupon}
-                                        onChange={(e) => setCoupon(e.target.value)}
-                                        className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-brand-primary transition-colors text-sm"
-                                    />
-                                </div>
-                                <button className="px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white/60 text-sm font-semibold hover:bg-white/10 transition-colors">
-                                    {t.checkout.applyCoupon}
-                                </button>
-                            </div>
-
-                            {/* Price Breakdown */}
-                            <div className="space-y-2 pt-4 border-t border-white/10">
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-white/50">{t.cart.subtotal} ({totalItems})</span>
-                                    <span className="text-white">{formatUsd(totalPrice)}</span>
-                                </div>
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-white/50">{t.checkout.shippingFee}</span>
-                                    <span className={shippingFee === 0 ? 'text-vivid-green font-semibold' : 'text-white'}>
-                                        {shippingFee === 0 ? 'FREE' : formatUsd(shippingFee)}
-                                    </span>
-                                </div>
-                                {discount > 0 && (
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-white/50">{t.checkout.discount}</span>
-                                        <span className="text-vivid-green font-semibold">-{formatUsd(discount)}</span>
-                                    </div>
-                                )}
-                                <div className="flex justify-between text-lg font-black pt-3 border-t border-white/10">
-                                    <span className="text-white">{t.checkout.total}</span>
-                                    <span className="text-brand-primary">{formatUsd(grandTotal)}</span>
-                                </div>
-                            </div>
-
-                            {/* Place Order Button */}
+                        {/* Actions */}
+                        <div className="flex gap-4 pt-4 border-t border-white/10">
                             <button
-                                onClick={handlePlaceOrder}
-                                disabled={isProcessing || !form.fullName || !form.phone || !form.address}
-                                className={`w-full py-4 rounded-2xl font-bold text-lg transition-all active:scale-[0.98] min-h-[56px] ${isProcessing || !form.fullName || !form.phone || !form.address
-                                    ? 'bg-white/10 text-white/30 cursor-not-allowed'
-                                    : 'bg-brand-primary text-white hover:bg-brand-primary/90 hover:shadow-[0_0_30px_rgba(99,102,241,0.3)]'
-                                    }`}
+                                type="button"
+                                onClick={handleCancel}
+                                disabled={isSubmitting}
+                                className="flex-1 py-4 px-4 bg-white/5 hover:bg-white/10 text-white rounded-xl font-bold transition-all disabled:opacity-50"
                             >
-                                {isProcessing ? (
-                                    <div className="flex items-center justify-center gap-3">
-                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                        Processing...
-                                    </div>
-                                ) : (
-                                    t.checkout.placeOrder
-                                )}
+                                {t.cancel}
                             </button>
+                            <button
+                                type="submit"
+                                disabled={isSubmitting || items.length === 0}
+                                className="flex-[2] py-4 px-4 bg-brand-primary hover:bg-brand-primary/90 text-white rounded-xl font-bold shadow-lg shadow-brand-primary/20 transition-all disabled:opacity-50"
+                            >
+                                {isSubmitting ? t.processing : t.placeOrder}
+                            </button>
+                        </div>
+                    </form>
+
+                    {/* Order Summary */}
+                    <div className="bg-white/5 border border-white/10 p-6 rounded-3xl h-fit sticky top-24">
+                        <h2 className="text-xl font-bold text-white mb-6 flex items-center justify-between">
+                            {t.orderSummary}
+                            <span className="text-brand-primary text-sm font-black bg-brand-primary/20 px-3 py-1 rounded-full">{items.length} items</span>
+                        </h2>
+
+                        <ul className="space-y-4 mb-6">
+                            {items.map(item => (
+                                <li key={item.productId} className="flex gap-4">
+                                    <div className="w-16 h-16 rounded-lg bg-space-800 flex-shrink-0 overflow-hidden">
+                                        <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-bold text-white truncate">{item.name}</p>
+                                        <p className="text-xs text-white/50 mt-1">Qty: {item.qty}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="font-bold text-brand-primary">{formatUsd(item.priceUsd * item.qty)}</p>
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+
+                        <div className="pt-4 border-t border-white/10 flex items-center justify-between">
+                            <span className="text-lg text-white/70 font-medium">{t.total}</span>
+                            <span className="text-3xl font-black text-white">{formatUsd(totalPrice)}</span>
                         </div>
                     </div>
                 </div>
-            </div>
-            <Footer />
-        </>
+            ) : null}
+        </div>
     );
 }
