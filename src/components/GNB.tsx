@@ -7,10 +7,10 @@ import { useAppStore } from "@/store/useAppStore";
 import { useCartStore, selectTotalItems } from "@/store/useCartStore";
 
 const LANGUAGES = [
-    { code: "ko" as const, label: "한국어" },
-    { code: "en" as const, label: "English" },
-    { code: "km" as const, label: "ភាសាខ្មែរ" },
-    { code: "zh" as const, label: "中文" },
+    { code: "ko" as const, label: "한국어", flag: "🇰🇷" },
+    { code: "en" as const, label: "English", flag: "🇺🇸" },
+    { code: "km" as const, label: "ភាសាខ្មែរ", flag: "🇰🇭" },
+    { code: "zh" as const, label: "中文", flag: "🇨🇳" },
 ];
 
 export default function GNB() {
@@ -141,10 +141,11 @@ export default function GNB() {
 
                     {/* Mobile Toggle */}
                     <button
-                        className="md:hidden text-white p-2"
+                        className="md:hidden flex items-center gap-1.5 p-1 px-2 rounded-full border border-white/20 bg-white/5 hover:bg-white/10 transition-colors"
                         onClick={() => setMobileMenuOpen(true)}
                     >
-                        <Menu className="w-6 h-6" />
+                        <span className="text-base leading-none mt-0.5">{currentLang?.flag}</span>
+                        <Menu className="w-5 h-5 text-white" />
                     </button>
                 </div>
             </header>
