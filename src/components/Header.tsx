@@ -110,7 +110,11 @@ export default function Header() {
             {/* ── Mobile Top Bar (visible only on small screens) ── */}
             <div className="flex sm:hidden items-center justify-between px-4 py-2 bg-space-900 border-b border-white/10">
                 <Link href="/" className="font-extrabold text-xl tracking-tighter text-white flex items-center">
-                    <span className="text-brand-secondary mr-0.5">KK</span>shop
+                    <span className="text-white mr-0.5">KK</span>
+                    <span className="text-[#Ef4444]">S</span>
+                    <span className="text-[#EAB308]">h</span>
+                    <span className="text-[#22C55E]">o</span>
+                    <span className="text-[#38BDF8]">p</span>
                 </Link>
                 <div className="flex-1" />
                 <div className="flex items-center gap-1">
@@ -178,7 +182,12 @@ export default function Header() {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center justify-between h-16">
                         <Link href="/" className="font-extrabold text-2xl tracking-tighter text-gray-900 flex items-center lg:mr-6">
-                            <span className="text-blue-600 mr-1">KK</span>shop.cc
+                            <span className="text-gray-900 mr-1">KK</span>
+                            <span className="text-[#Ef4444]">S</span>
+                            <span className="text-[#EAB308]">h</span>
+                            <span className="text-[#22C55E]">o</span>
+                            <span className="text-[#38BDF8]">p</span>
+                            <span className="text-gray-400 text-sm ml-1">.cc</span>
                         </Link>
 
                         <div className="hidden lg:flex items-center space-x-2 mr-auto">

@@ -65,8 +65,12 @@ export default function GNB() {
                         <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-brand-primary to-brand-accent flex items-center justify-center">
                             <span className="text-white font-bold text-lg leading-none">K</span>
                         </div>
-                        <span className="text-2xl font-bold tracking-tighter text-white group-hover:text-glow transition-all">
-                            KK<span className="text-brand-primary">Shop</span>
+                        <span className="text-2xl font-bold tracking-tighter group-hover:text-glow transition-all">
+                            <span className="text-white">KK</span>
+                            <span className="text-[#Ef4444]">S</span>
+                            <span className="text-[#EAB308]">h</span>
+                            <span className="text-[#22C55E]">o</span>
+                            <span className="text-[#38BDF8]">p</span>
                         </span>
                     </Link>
 
@@ -154,8 +158,12 @@ export default function GNB() {
             >
                 <div className="absolute inset-0 glass-panel bg-space-900/95 flex flex-col p-6">
                     <div className="flex items-center justify-between mb-8">
-                        <span className="text-2xl font-bold tracking-tighter text-white">
-                            KK<span className="text-brand-primary">Shop</span>
+                        <span className="text-2xl font-bold tracking-tighter">
+                            <span className="text-white">KK</span>
+                            <span className="text-[#Ef4444]">S</span>
+                            <span className="text-[#EAB308]">h</span>
+                            <span className="text-[#22C55E]">o</span>
+                            <span className="text-[#38BDF8]">p</span>
                         </span>
                         <button
                             className="p-2 text-white/60 hover:text-white transition-colors"
@@ -165,15 +173,10 @@ export default function GNB() {
                         </button>
                     </div>
 
-                    <nav className="flex flex-col gap-6 text-xl">
-                        <Link href="/cosmetics" className="text-white hover:text-brand-primary transition-colors" onClick={() => setMobileMenuOpen(false)}>Cosmetics</Link>
-                        <Link href="/living" className="text-white hover:text-brand-accent transition-colors" onClick={() => setMobileMenuOpen(false)}>Living</Link>
-                        <Link href="/about" className="text-white hover:text-brand-secondary transition-colors" onClick={() => setMobileMenuOpen(false)}>About</Link>
-                    </nav>
-
-                    <div className="mt-auto flex flex-col gap-4">
-                        <p className="text-sm text-white/40 mb-2">Language / 언어</p>
-                        <div className="grid grid-cols-2 gap-2">
+                    {/* Mobile Menu Body - Only Languages and About Us */}
+                    <div className="flex flex-col flex-1 mt-6">
+                        <p className="text-sm font-medium text-white/50 uppercase tracking-widest mb-4">Select Language</p>
+                        <div className="flex flex-col gap-3">
                             {LANGUAGES.map((lang) => (
                                 <button
                                     key={lang.code}
@@ -181,14 +184,31 @@ export default function GNB() {
                                         setLanguage(lang.code);
                                         setMobileMenuOpen(false);
                                     }}
-                                    className={`py-3 rounded-xl border transition-colors ${language === lang.code
-                                        ? "bg-brand-primary/20 border-brand-primary text-brand-primary"
-                                        : "border-white/10 text-white/70 hover:bg-white/5"
+                                    className={`py-4 px-5 rounded-2xl border flex items-center justify-between transition-all ${language === lang.code
+                                        ? "bg-brand-primary/20 border-brand-primary text-white shadow-[0_0_15px_rgba(99,102,241,0.2)]"
+                                        : "border-white/10 text-white/70 hover:bg-white/10"
                                         }`}
                                 >
-                                    {lang.label}
+                                    <span className={`text-lg ${language === lang.code ? "font-bold" : "font-medium"}`}>{lang.label}</span>
+                                    {language === lang.code && <div className="w-2 h-2 rounded-full bg-brand-primary" />}
                                 </button>
                             ))}
+                        </div>
+
+                        {/* Pushed to the bottom */}
+                        <div className="mt-auto pb-4">
+                            <div className="h-px w-full bg-white/10 mb-6" />
+                            <Link
+                                href="/about"
+                                className="flex items-center justify-between w-full py-4 px-5 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors group"
+                                onClick={() => setMobileMenuOpen(false)}
+                            >
+                                <div className="flex flex-col">
+                                    <span className="text-xl font-bold text-white group-hover:text-brand-primary transition-colors">About Us</span>
+                                    <span className="text-xs text-white/50 mt-1">회사 소개 및 철학</span>
+                                </div>
+                                <span className="text-white/40 group-hover:translate-x-1 transition-transform">→</span>
+                            </Link>
                         </div>
                     </div>
                 </div>
