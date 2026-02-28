@@ -63,12 +63,12 @@ const homeTranslations: Record<string, any> = {
 
 // Mock product data for display
 const mockProducts = [
-    { id: '1', name: '고재구전통쌀엿 1kg', nameEn: 'Traditional Rice Candy 1kg', price: 40000, salePrice: 4000, unit: '원', image: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&q=80&w=300', discount: 0, rating: 4.8 },
-    { id: '2', name: '호정가 찹쌀약과세트', nameEn: 'Rice Cookie Gift Set', price: 16000, salePrice: 13000, unit: '원', image: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&q=80&w=300', discount: 13, rating: 4.5 },
-    { id: '3', name: '동결건조 엿 파삭 100g', nameEn: 'Freeze-dried Snack 100g', price: 12000, salePrice: 12000, unit: '원', image: 'https://images.unsplash.com/photo-1596462502278-27bf85033e5a?auto=format&fit=crop&q=80&w=300', discount: 0, rating: 4.9 },
-    { id: '4', name: '프리미엄 선크림 SPF50', nameEn: 'Premium Sunscreen SPF50', price: 25000, salePrice: 18000, unit: '원', image: 'https://images.unsplash.com/photo-1556228578-8c89e6adf883?auto=format&fit=crop&q=80&w=300', discount: 28, rating: 4.7 },
-    { id: '5', name: '히알루론산 세럼 30ml', nameEn: 'Hyaluronic Acid Serum 30ml', price: 35000, salePrice: 22000, unit: '원', image: 'https://images.unsplash.com/photo-1599305090598-fe179d501227?auto=format&fit=crop&q=80&w=300', discount: 37, rating: 4.6 },
-    { id: '6', name: '클렌징 폼 150ml', nameEn: 'Cleansing Foam 150ml', price: 15000, salePrice: 11000, unit: '원', image: 'https://images.unsplash.com/photo-1563453392212-326f5e854473?auto=format&fit=crop&q=80&w=300', discount: 27, rating: 4.4 },
+    { id: '1', name: '고재구전통쌀엿 1kg', nameEn: 'Traditional Rice Candy 1kg', price: 40.0, salePrice: 30.0, unit: '$', image: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&q=80&w=300', discount: 25, rating: 4.8 },
+    { id: '2', name: '호정가 찹쌀약과세트', nameEn: 'Rice Cookie Gift Set', price: 15.0, salePrice: 12.0, unit: '$', image: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&q=80&w=300', discount: 20, rating: 4.5 },
+    { id: '3', name: '동결건조 엿 파삭 100g', nameEn: 'Freeze-dried Snack 100g', price: 10.0, salePrice: 10.0, unit: '$', image: 'https://images.unsplash.com/photo-1596462502278-27bf85033e5a?auto=format&fit=crop&q=80&w=300', discount: 0, rating: 4.9 },
+    { id: '4', name: '프리미엄 선크림 SPF50', nameEn: 'Premium Sunscreen SPF50', price: 25.0, salePrice: 18.0, unit: '$', image: 'https://images.unsplash.com/photo-1556228578-8c89e6adf883?auto=format&fit=crop&q=80&w=300', discount: 28, rating: 4.7 },
+    { id: '5', name: '히알루론산 세럼 30ml', nameEn: 'Hyaluronic Acid Serum 30ml', price: 35.0, salePrice: 22.0, unit: '$', image: 'https://images.unsplash.com/photo-1599305090598-fe179d501227?auto=format&fit=crop&q=80&w=300', discount: 37, rating: 4.6 },
+    { id: '6', name: '클렌징 폼 150ml', nameEn: 'Cleansing Foam 150ml', price: 15.0, salePrice: 11.0, unit: '$', image: 'https://images.unsplash.com/photo-1563453392212-326f5e854473?auto=format&fit=crop&q=80&w=300', discount: 27, rating: 4.4 },
 ];
 
 function ProductGrid({ products, title, showViewAll = true, t }: { products: typeof mockProducts; title: string; showViewAll?: boolean; t: any }) {
@@ -111,12 +111,12 @@ function ProductGrid({ products, title, showViewAll = true, t }: { products: typ
                         <div>
                             {product.discount > 0 && (
                                 <span className="text-[10px] text-white/30 line-through mr-1">
-                                    {product.price.toLocaleString()}
+                                    {product.unit}{product.price.toLocaleString()}
                                 </span>
                             )}
                             <span className="text-xs sm:text-sm font-extrabold text-white">
+                                <span className="text-[11px] font-medium mr-px">{product.unit}</span>
                                 {product.salePrice.toLocaleString()}
-                                <span className="text-[10px] font-normal text-white/50">{product.unit}</span>
                             </span>
                         </div>
                         {/* Rating */}
