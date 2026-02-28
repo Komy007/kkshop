@@ -28,13 +28,21 @@ export interface TranslatedProduct {
 
 /**
  * Fetch products and map their translations to a specific language.
+ * Filters by SKU prefix if categorySlug is provided.
  */
-export async function getProductsByLanguage(langCode: string): Promise<TranslatedProduct[]> {
+export async function getProductsByLanguage(langCode: string, categorySlug?: string | null): Promise<TranslatedProduct[]> {
     try {
+        const whereClause: any = { status: 'ACTIVE' };
+
+        // Handle category filtering by checking if SKU starts with SAMP-<CATEGORY>
+        if (categorySlug) {
+            whereClause.sku = {
+                startsWith: `SAMP-${categorySlug.toUpperCase()}-`
+            };
+        }
+
         const products = await prisma.product.findMany({
-            where: {
-                status: 'ACTIVE',
-            },
+            where: whereClause,
             include: {
                 translations: {
                     where: {
