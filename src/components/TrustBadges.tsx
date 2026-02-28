@@ -4,25 +4,25 @@ import { useAppStore } from "@/store/useAppStore";
 
 const trustTranslations: Record<string, any> = {
     ko: {
-        authentic: "100% 한국 정품",
+        authentic: "100% 한국화장품",
         mohCertified: "캄보디아 보건부 인증",
         freeShipping: "프놈펜 무료 배송",
         securePayment: "안전한 결제",
     },
     en: {
-        authentic: "100% Korean Authentic",
+        authentic: "100% Authentic Korean Cosmetics",
         mohCertified: "MoH Certified",
         freeShipping: "Free Phnom Penh Delivery",
         securePayment: "Secure Payment",
     },
     km: {
-        authentic: "ផលិតផលកូរ៉េពិតប្រាកដ 100%",
+        authentic: "គ្រឿងសំអាងកូរ៉េ 100%",
         mohCertified: "មានវិញ្ញាបនបត្រ MoH",
         freeShipping: "ដឹកដោយឥតគិតថ្លៃ",
         securePayment: "ការទូទាត់សុវត្ថិភាព",
     },
     zh: {
-        authentic: "100% 韩国正品",
+        authentic: "100% 韩国正品化妆品",
         mohCertified: "柬埔寨卫生部认证",
         freeShipping: "金边免费配送",
         securePayment: "安全支付",

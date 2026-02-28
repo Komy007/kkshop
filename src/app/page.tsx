@@ -20,7 +20,7 @@ const homeTranslations: Record<string, any> = {
         popular: '👑 인기 상품',
         viewAll: '전체보기',
         freeShipping: '🚚 $30 이상 무료배송',
-        authentic: '✅ 100% 한국 정품',
+        authentic: '✅ 100% 한국화장품',
         fast: '⚡ 프놈펜 빠른 배송',
     },
     en: {
@@ -32,7 +32,7 @@ const homeTranslations: Record<string, any> = {
         popular: '👑 Popular',
         viewAll: 'View All',
         freeShipping: '🚚 Free shipping $30+',
-        authentic: '✅ 100% Authentic Korean',
+        authentic: '✅ 100% Authentic Korean Cosmetics',
         fast: '⚡ Fast Phnom Penh Delivery',
     },
     km: {
@@ -44,7 +44,7 @@ const homeTranslations: Record<string, any> = {
         popular: '👑 ពេញនិយម',
         viewAll: 'មើលទាំងអស់',
         freeShipping: '🚚 ដឹកជញ្ជូនឥតគិតថ្លៃ $30+',
-        authentic: '✅ ផលិតផលកូរ៉េ 100%',
+        authentic: '✅ គ្រឿងសំអាងកូរ៉េ 100%',
         fast: '⚡ ដឹកជញ្ជូនរហ័សភ្នំពេញ',
     },
     zh: {
@@ -56,7 +56,7 @@ const homeTranslations: Record<string, any> = {
         popular: '👑 热门商品',
         viewAll: '查看全部',
         freeShipping: '🚚 $30以上免费送货',
-        authentic: '✅ 100%韩国正品',
+        authentic: '✅ 100%韩国正品化妆品',
         fast: '⚡ 金边快速配送',
     }
 };

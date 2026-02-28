@@ -13,19 +13,52 @@ const LANGS = [
 ] as const;
 
 const translations: Record<string, any> = {
-    ko: { searchPlaceholder: '상품을 검색해보세요', catBeauty: '💄 K-Beauty', catLiving: '🏠 생활/리빙', catPopular: '👑 인기 상품' },
-    en: { searchPlaceholder: 'Search for products', catBeauty: '💄 K-Beauty', catLiving: '🏠 Living', catPopular: '👑 Bestsellers' },
-    km: { searchPlaceholder: 'ស្វែងរកផលិតផល', catBeauty: '💄 K-Beauty', catLiving: '🏠 ជីវភាព', catPopular: '👑 ពេញនិយម' },
-    zh: { searchPlaceholder: '搜索商品', catBeauty: '💄 韩国美妆', catLiving: '🏠 居家生活', catPopular: '👑 热销商品' },
+    ko: {
+        searchPlaceholder: '상품을 검색해보세요', catBeauty: '💄 K-Beauty', catLiving: '🏠 생활/리빙', catPopular: '👑 인기 상품',
+        aboutUsTitle: '회사 소개',
+        aboutUsText: 'KKshop은 Khmer/Korea의 약자입니다. 캄보디아 No.1 프리미엄 크로스보더 이커머스. 한국의 진짜 맛과 품질을 프놈펜으로 직배송합니다. 화장품은 100% 한국산이며, 나머지 생활용품은 한국산 및 외국산 중 한국에서 선택된 가성비 좋은 상품만 캄보디아에 판매합니다.',
+        langSelect: '언어 선택',
+    },
+    en: {
+        searchPlaceholder: 'Search for products', catBeauty: '💄 K-Beauty', catLiving: '🏠 Living', catPopular: '👑 Bestsellers',
+        aboutUsTitle: 'About Us',
+        aboutUsText: "KKshop stands for Khmer/Korea. Cambodia's No.1 Premium Cross-Border E-commerce. Bringing the authentic taste and quality of Korea directly to Phnom Penh. Cosmetics are 100% Korean, and other daily necessities include both Korean and foreign products, carefully selected in Korea for their cost-effectiveness and sold in Cambodia.",
+        langSelect: 'Select Language',
+    },
+    km: {
+        searchPlaceholder: 'ស្វែងរកផលិតផល', catBeauty: '💄 K-Beauty', catLiving: '🏠 ជីវភាព', catPopular: '👑 ពេញនិយម',
+        aboutUsTitle: 'អំពីយើង',
+        aboutUsText: 'KKshop មកពីពាក្យ Khmer/Korea។ ជាវេទិកាពាណិជ្ជកម្មតាមប្រព័ន្ធអេឡិចត្រូនិកឆ្លងដែនកម្រិតខ្ពស់លេខ១នៅកម្ពុជា។ នាំយករសជាតិ និងគុណភាពពិតប្រាកដរបស់កូរ៉េមកកាន់រាជធានីភ្នំពេញដោយផ្ទាល់។ គ្រឿងសំអាងគឺជារបស់កូរ៉េ 100% ហើយទំនិញប្រើប្រាស់ប្រចាំថ្ងៃផ្សេងទៀតរួមមានទាំងផលិតផលកូរ៉េ និងបរទេស ដែលត្រូវបានជ្រើសរើសយ៉ាងយកចិត្តទុកដាក់នៅប្រទេសកូរ៉េដើម្បីទទួលបានតម្លៃសមរម្យល្អបំផុត និងដាក់លក់នៅកម្ពុជា។',
+        langSelect: 'ជ្រើសរើសភាសា',
+    },
+    zh: {
+        searchPlaceholder: '搜索商品', catBeauty: '💄 韩国美妆', catLiving: '🏠 居家生活', catPopular: '👑 热销商品',
+        aboutUsTitle: '关于我们',
+        aboutUsText: 'KKshop是Khmer/Korea的缩写。柬埔寨第一的高端跨境电商。将韩国地道的味道和品质直接送到金边。化妆品为100%韩国原装，其他生活用品包括在韩国精心挑选的高性价比中外产品，在柬埔寨销售。',
+        langSelect: '选择语言',
+    },
 };
 
 export default function Header() {
     const { language, setLanguage } = useAppStore();
     const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
-    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [isLangDrawerOpen, setIsLangDrawerOpen] = useState(false);
     const [mounted, setMounted] = useState(false);
 
-    useEffect(() => setMounted(true), []);
+    useEffect(() => {
+        setMounted(true);
+        if (typeof window !== 'undefined' && !localStorage.getItem('kkshop-lang-initialized')) {
+            requestAnimationFrame(() => {
+                const browserLang = navigator.language.slice(0, 2);
+                const supported = LANGS.map(l => l.code);
+                if (supported.includes(browserLang as any)) {
+                    setLanguage(browserLang as any);
+                }
+                localStorage.setItem('kkshop-lang-initialized', 'true');
+            });
+        }
+    }, [setLanguage]);
+
     if (!mounted) return null;
 
     const t = translations[language] ?? translations['en']!;
@@ -79,10 +112,7 @@ export default function Header() {
                 <Link href="/" className="font-extrabold text-xl tracking-tighter text-white flex items-center">
                     <span className="text-brand-secondary mr-0.5">KK</span>shop
                 </Link>
-                {/* Language selector always visible, center of top bar */}
-                <div className="flex-1 flex justify-center">
-                    <LangSelector isMobile />
-                </div>
+                <div className="flex-1" />
                 <div className="flex items-center gap-1">
                     <button className="text-white p-1.5">
                         <Search className="w-5 h-5" />
@@ -91,18 +121,48 @@ export default function Header() {
                         <ShoppingCart className="w-5 h-5" />
                         <span className="absolute top-0 right-0 w-4 h-4 flex items-center justify-center text-[9px] font-bold bg-rose-500 text-white rounded-full">3</span>
                     </button>
-                    <button onClick={() => setIsMobileMenuOpen(v => !v)} className="text-white p-1.5">
-                        {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                    <button onClick={() => setIsLangDrawerOpen(v => !v)} className="text-white p-1.5">
+                        {isLangDrawerOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
                     </button>
                 </div>
             </div>
 
-            {/* ── Mobile Category Drawer ── */}
-            {isMobileMenuOpen && (
-                <div className="sm:hidden bg-space-900 border-b border-white/10 px-4 py-3 flex flex-col gap-2">
-                    <button className="text-left text-white/80 py-2 px-3 rounded-xl hover:bg-white/10 text-sm font-medium">{t.catBeauty}</button>
-                    <button className="text-left text-white/80 py-2 px-3 rounded-xl hover:bg-white/10 text-sm font-medium">{t.catLiving}</button>
-                    <button className="text-left text-white/80 py-2 px-3 rounded-xl hover:bg-white/10 text-sm font-medium">{t.catPopular}</button>
+            {/* ── Mobile Language Drawer ── */}
+            {isLangDrawerOpen && (
+                <div className="sm:hidden fixed inset-x-0 top-[53px] bottom-0 bg-space-900 border-t border-white/10 z-40 flex flex-col pt-6 pb-8 overflow-y-auto">
+                    <div className="px-6 flex-1">
+                        <h3 className="text-white/60 text-xs font-bold uppercase tracking-wider mb-4">{t.langSelect}</h3>
+                        <div className="flex flex-col gap-3">
+                            {LANGS.map(l => (
+                                <button
+                                    key={l.code}
+                                    onClick={() => { setLanguage(l.code); setIsLangDrawerOpen(false); }}
+                                    className={`flex items-center gap-4 w-full p-4 rounded-2xl transition-all border
+                                        ${language === l.code
+                                            ? 'bg-blue-600/20 border-blue-500/50 text-white font-bold'
+                                            : 'bg-white/5 border-white/5 text-white/80 hover:bg-white/10'
+                                        }`}
+                                >
+                                    <span className="text-2xl">{l.flag}</span>
+                                    <span className="text-base flex-1 text-left">{l.label}</span>
+                                    {language === l.code && (
+                                        <div className="w-2 h-2 rounded-full bg-blue-400"></div>
+                                    )}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="mt-8 px-6">
+                        <div className="bg-white/5 border border-white/10 rounded-2xl p-5 backdrop-blur-md">
+                            <h4 className="text-white font-bold mb-2 flex items-center gap-2">
+                                <span className="text-brand-secondary">KK</span>shop - {t.aboutUsTitle}
+                            </h4>
+                            <p className="text-sm text-white/70 leading-relaxed text-left">
+                                {t.aboutUsText}
+                            </p>
+                        </div>
+                    </div>
                 </div>
             )}
 
