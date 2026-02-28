@@ -73,6 +73,10 @@ model User {
   image         String?
   hashedPassword String?
   role          String    @default("USER")
+  phone         String?   @db.VarChar(50) // 연락처
+  address       String?   @db.VarChar(255) // 기본 배송지 주소
+  detailAddress String?   @map("detail_address") @db.VarChar(255) // 상세 주소
+  postalCode    String?   @map("postal_code") @db.VarChar(20) // 우편번호
   accounts      Account[]
   sessions      Session[]
 

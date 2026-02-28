@@ -1,5 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
+import { auth } from '@/auth';
 
 // Icon placeholders (using simple emoji or text for now, can be replaced with Lucide/Heroicons later)
 const icons = {
@@ -25,28 +26,35 @@ const icons = {
   key: '🔑'
 };
 
-export default function AdminSidebar() {
+export default async function AdminSidebar() {
+  const session = await auth();
+  const role = session?.user?.role || "USER";
+  const userInitial = session?.user?.name ? session.user.name.charAt(0).toUpperCase() : "A";
+  const isSuperAdmin = role === 'SUPERADMIN';
+
   return (
-    <aside className="w-64 min-h-screen bg-gray-900 text-gray-300 flex flex-col font-sans">
+    <aside className="w-64 min-h-screen bg-gray-900 text-gray-300 flex flex-col font-sans mb-0">
       {/* Brand Header */}
-      <div className="h-16 flex items-center px-6 bg-gray-950 font-bold text-xl text-white tracking-wider">
+      <div className="h-16 flex items-center px-6 bg-gray-950 font-bold text-xl text-white tracking-wider flex-shrink-0">
         <span className="text-blue-500 mr-2">KK</span>shop.cc Admin
       </div>
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-4 space-y-6">
 
-        {/* Dashboard Section */}
-        <div className="px-4">
-          <h3 className="text-xs uppercase text-gray-500 font-semibold mb-2 tracking-wider">
-            {icons.dashboard} 대시보드 (Dashboard)
-          </h3>
-          <ul className="space-y-1">
-            <SidebarItem href="/admin" icon={icons.revenue} label="일간 USD 매출 요약" />
-            <SidebarItem href="/admin/traffic" icon={icons.traffic} label="트래픽 통계" />
-            <SidebarItem href="/admin/alerts" icon={icons.alert} label="긴급 알림" />
-          </ul>
-        </div>
+        {/* Dashboard Section (SUPERADMIN Only) */}
+        {isSuperAdmin && (
+          <div className="px-4">
+            <h3 className="text-xs uppercase text-gray-500 font-semibold mb-2 tracking-wider">
+              {icons.dashboard} 대시보드 (Dashboard)
+            </h3>
+            <ul className="space-y-1">
+              <SidebarItem href="/admin" icon={icons.revenue} label="일간 USD 매출 요약" />
+              <SidebarItem href="/admin/traffic" icon={icons.traffic} label="트래픽 통계" />
+              <SidebarItem href="/admin/alerts" icon={icons.alert} label="긴급 알림" />
+            </ul>
+          </div>
+        )}
 
         {/* Products Section */}
         <div className="px-4">
@@ -85,28 +93,30 @@ export default function AdminSidebar() {
           </ul>
         </div>
 
-        {/* Settings Section */}
-        <div className="px-4 pb-6">
-          <h3 className="text-xs uppercase text-gray-500 font-semibold mb-2 tracking-wider">
-            {icons.setting} 시스템 설정 (Settings)
-          </h3>
-          <ul className="space-y-1">
-            <SidebarItem href="/admin/landing-settings" icon="✨" label="랜딩 페이지 셋팅" isHighlighted={true} />
-            <SidebarItem href="/admin/settings/localization" icon={icons.globe} label="언어 및 국가 설정" />
-            <SidebarItem href="/admin/settings/roles" icon={icons.key} label="관리자 권한" />
-          </ul>
-        </div>
+        {/* Settings Section (SUPERADMIN Only) */}
+        {isSuperAdmin && (
+          <div className="px-4 pb-6">
+            <h3 className="text-xs uppercase text-gray-500 font-semibold mb-2 tracking-wider">
+              {icons.setting} 시스템 설정 (Settings)
+            </h3>
+            <ul className="space-y-1">
+              <SidebarItem href="/admin/landing-settings" icon="✨" label="랜딩 페이지 셋팅" isHighlighted={true} />
+              <SidebarItem href="/admin/settings/localization" icon={icons.globe} label="언어 및 국가 설정" />
+              <SidebarItem href="/admin/settings/roles" icon={icons.key} label="관리자 권한" />
+            </ul>
+          </div>
+        )}
 
       </nav>
 
       {/* User Info Footer Component */}
       <div className="p-4 bg-gray-950 flex items-center space-x-3 border-t border-gray-800">
         <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold">
-          A
+          {userInitial}
         </div>
         <div>
-          <p className="text-sm font-medium text-white">Admin User</p>
-          <p className="text-xs text-gray-500">Super Administrator</p>
+          <p className="text-sm font-medium text-white">{session?.user?.name || "Admin User"}</p>
+          <p className="text-xs text-gray-500">{isSuperAdmin ? 'Super Administrator' : 'Administrator'}</p>
         </div>
       </div>
     </aside>
