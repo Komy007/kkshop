@@ -123,7 +123,7 @@ async function seed() {
                             priceUsd: data.defaultPrice + (i * 2),
                             stockQty: 100,
                             status: 'ACTIVE',
-                            imageUrl: imageUrl,
+                            imageUrl: imageUrl || null,
                         }
                     });
 

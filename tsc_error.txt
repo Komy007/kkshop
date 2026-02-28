@@ -1,0 +1,6 @@
+src/scripts/seed-samples.ts(121,25): error TS2375: Type '{ sku: string; priceUsd: number; stockQty: number; status: string; imageUrl: string | undefined; }' is not assignable to type '(Without<ProductCreateInput, ProductUncheckedCreateInput> & ProductUncheckedCreateInput) | (Without<...> & ProductCreateInput)' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Type '{ sku: string; priceUsd: number; stockQty: number; status: string; imageUrl: string | undefined; }' is not assignable to type 'Without<ProductUncheckedCreateInput, ProductCreateInput> & ProductCreateInput' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+    Type '{ sku: string; priceUsd: number; stockQty: number; status: string; imageUrl: string | undefined; }' is not assignable to type 'ProductCreateInput' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+      Types of property 'imageUrl' are incompatible.
+        Type 'string | undefined' is not assignable to type 'string | null'.
+          Type 'undefined' is not assignable to type 'string | null'.
