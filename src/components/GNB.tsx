@@ -140,101 +140,64 @@ export default function GNB() {
                     </div>
 
                     {/* Mobile Toggle */}
-                    <button
-                        className="md:hidden flex items-center gap-1.5 p-1 px-2 rounded-full border border-gray-200 bg-white hover:bg-gray-50 transition-colors shadow-sm text-gray-700"
-                        onClick={() => setMobileMenuOpen(true)}
-                    >
-                        <span className="text-base leading-none mt-0.5">{currentLang?.flag}</span>
-                        <Menu className="w-5 h-5 text-gray-700" />
-                    </button>
-                </div>
-            </header>
-
-            {/* Mobile Menu — CSS transition overlay */}
-            <div
-                className={`fixed inset-0 z-[60] transition-all duration-300 ${mobileMenuOpen
-                    ? "opacity-100 pointer-events-auto"
-                    : "opacity-0 pointer-events-none"
-                    }`}
-            >
-                <div className="absolute inset-0 bg-white flex flex-col p-6 shadow-2xl">
-                    <div className="flex items-center justify-between mb-8">
-                        <span className="text-2xl font-bold tracking-tighter">
-                            <span className="text-gray-900">KK</span>
-                            <span className="text-[#Ef4444]">S</span>
-                            <span className="text-[#EAB308]">h</span>
-                            <span className="text-[#22C55E]">o</span>
-                            <span className="text-[#38BDF8]">p</span>
-                        </span>
+                    <div className="md:hidden relative" ref={langRef}>
                         <button
-                            className="p-2 text-gray-400 hover:text-gray-900 transition-colors"
-                            onClick={() => setMobileMenuOpen(false)}
+                            className="flex items-center gap-1.5 p-1 px-2.5 rounded-full border border-gray-200 bg-white hover:bg-gray-50 transition-colors shadow-sm text-gray-700"
+                            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                         >
-                            <X className="w-6 h-6" />
+                            <span className="text-sm font-bold mt-0.5">{currentLang?.code.toUpperCase()}</span>
+                            <Menu className="w-5 h-5 text-gray-700" />
                         </button>
-                    </div>
 
-                    {/* Mobile Menu Body - Only Languages and About Us */}
-                    <div className="flex flex-col flex-1 mt-6">
-                        <div className="flex flex-col gap-2 relative">
-                            <button
-                                onClick={() => setLangOpen(!langOpen)}
-                                className="flex items-center justify-between w-full py-4 px-5 rounded-2xl bg-gray-50 border border-gray-200 text-gray-900 hover:bg-gray-100 transition-colors"
-                            >
-                                <div className="flex items-center gap-3">
-                                    <Globe className="w-5 h-5 text-gray-500" />
-                                    <span className="text-lg font-bold">언어 선택 ({currentLang?.label})</span>
-                                </div>
-                                <span className="text-gray-400 text-xs">{langOpen ? '▲' : '▼'}</span>
-                            </button>
+                        {/* Mobile Dropdown Menu */}
+                        <div
+                            className={`absolute right-0 mt-2 w-48 py-2 bg-white rounded-2xl shadow-xl border border-gray-100 flex flex-col overflow-hidden transition-all duration-200 origin-top-right ${mobileMenuOpen
+                                ? "opacity-100 scale-100 pointer-events-auto"
+                                : "opacity-0 scale-95 pointer-events-none"
+                                }`}
+                        >
+                            <div className="px-3 pb-2 mb-2 border-b border-gray-100 flex items-center justify-between">
+                                <span className="text-xs font-bold text-gray-500">언어 선택</span>
+                            </div>
 
-                            {langOpen && (
-                                <div className="flex flex-col px-2 py-1 bg-gray-50 rounded-2xl border border-gray-200 mb-2">
-                                    {LANGUAGES.map((lang) => (
-                                        <button
-                                            key={lang.code}
-                                            onClick={() => {
-                                                setLanguage(lang.code);
-                                                setLangOpen(false);
-                                            }}
-                                            className={`py-3 px-4 flex items-center justify-between transition-all rounded-xl ${language === lang.code
-                                                ? "bg-brand-primary/10 text-brand-primary font-bold"
-                                                : "text-gray-600 hover:bg-white"
-                                                }`}
-                                        >
-                                            <span className="text-base">{lang.flag} {lang.label}</span>
-                                            {language === lang.code && <div className="w-1.5 h-1.5 rounded-full bg-brand-primary" />}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
+                            {LANGUAGES.map((lang) => (
+                                <button
+                                    key={lang.code}
+                                    onClick={() => {
+                                        setLanguage(lang.code);
+                                        setMobileMenuOpen(false);
+                                    }}
+                                    className={`px-4 py-2.5 text-left text-sm flex items-center justify-between transition-colors ${currentLang?.code === lang.code ? "bg-brand-primary/5 text-brand-primary font-bold" : "text-gray-700 hover:bg-gray-50"
+                                        }`}
+                                >
+                                    <span>{lang.flag} {lang.label}</span>
+                                    {currentLang?.code === lang.code && <div className="w-1.5 h-1.5 rounded-full bg-brand-primary" />}
+                                </button>
+                            ))}
 
-                        {/* Pushed to the bottom */}
-                        <div className="mt-auto pb-4">
-                            <div className="h-px w-full bg-gray-200 mb-6" />
-                            {/* Close Menu Explicitly Button */}
-                            <button
-                                onClick={() => setMobileMenuOpen(false)}
-                                className="flex items-center justify-center w-full py-3.5 mb-2 rounded-xl bg-gray-100 text-gray-600 font-bold hover:bg-gray-200 transition-colors"
-                            >
-                                닫기 (Close)
-                            </button>
+                            <div className="h-px w-full bg-gray-100 my-1" />
 
                             <Link
                                 href="/about"
-                                className="flex items-center justify-between w-full py-4 px-5 rounded-2xl bg-white border border-gray-200 hover:bg-gray-50 transition-colors group"
+                                className="px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 hover:text-brand-primary transition-colors flex items-center justify-between"
                                 onClick={() => setMobileMenuOpen(false)}
                             >
-                                <div className="flex flex-col">
-                                    <span className="text-lg font-bold text-gray-900 group-hover:text-brand-primary transition-colors">회사 소개 (About Us)</span>
-                                </div>
-                                <span className="text-gray-400 group-hover:translate-x-1 transition-transform">→</span>
+                                <span>회사 소개 (About Us)</span>
                             </Link>
+
+                            <div className="h-px w-full bg-gray-100 my-1" />
+
+                            <button
+                                onClick={() => setMobileMenuOpen(false)}
+                                className="px-4 py-2.5 text-sm font-bold text-gray-500 hover:bg-gray-50 hover:text-gray-800 transition-colors flex items-center justify-center gap-2"
+                            >
+                                <X className="w-4 h-4" />
+                                <span>닫기 (Close)</span>
+                            </button>
                         </div>
                     </div>
                 </div>
-            </div>
+            </header>
         </>
     );
 }

@@ -1,0 +1,1055 @@
+﻿[
+  {
+    "apiVersion": "serving.knative.dev/v1",
+    "kind": "Revision",
+    "metadata": {
+      "annotations": {
+        "autoscaling.knative.dev/maxScale": "20",
+        "run.googleapis.com/build-source-location": "{\"placeholder-1\":\"gs://run-sources-kkshop-487905-asia-southeast1/services/kkshop/1772339009.471118-625271644536419fa7263c3e082d0f25.zip#1772339010771518\"}",
+        "run.googleapis.com/client-name": "gcloud",
+        "run.googleapis.com/client-version": "550.0.0",
+        "run.googleapis.com/operation-id": "2703fa68-f766-4fd6-ac47-9f85ca592305",
+        "run.googleapis.com/startup-cpu-boost": "true",
+        "serving.knative.dev/creator": "cambodia.bae@gmail.com"
+      },
+      "creationTimestamp": "2026-03-01T04:27:04.278253Z",
+      "generation": 1,
+      "labels": {
+        "client.knative.dev/nonce": "tkbkoiqbmu",
+        "cloud.googleapis.com/location": "asia-southeast1",
+        "run.googleapis.com/satisfiesPzs": "true",
+        "run.googleapis.com/startupProbeType": "Default",
+        "serving.knative.dev/configuration": "kkshop",
+        "serving.knative.dev/configurationGeneration": "23",
+        "serving.knative.dev/route": "kkshop",
+        "serving.knative.dev/service": "kkshop",
+        "serving.knative.dev/serviceUid": "332908dd-f5ec-419e-9031-9e1c63abde3e"
+      },
+      "name": "kkshop-00023-gcz",
+      "namespace": "580694915945",
+      "ownerReferences": [
+        {
+          "apiVersion": "serving.knative.dev/v1",
+          "blockOwnerDeletion": true,
+          "controller": true,
+          "kind": "Configuration",
+          "name": "kkshop",
+          "uid": "10d51957-09e4-45ad-bbda-cbb87db2c237"
+        }
+      ],
+      "resourceVersion": "AAZL7uKAPBQ",
+      "selfLink": "/apis/serving.knative.dev/v1/namespaces/580694915945/revisions/kkshop-00023-gcz",
+      "uid": "c6e313f5-5026-447b-8404-b6356ce56764"
+    },
+    "spec": {
+      "containerConcurrency": 80,
+      "containers": [
+        {
+          "env": [
+            {
+              "name": "DATABASE_URL",
+              "value": "postgresql://postgres.owvbguetunpubznhenhp:kkshop617561@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
+            },
+            {
+              "name": "DIRECT_URL",
+              "value": "postgresql://postgres.owvbguetunpubznhenhp:kkshop617561@aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres"
+            },
+            {
+              "name": "AUTH_SECRET",
+              "value": "fkrfD021l/Q7WxzGfXk/2+2H6yZfP+M1J62P8+U/75o="
+            },
+            {
+              "name": "NEXTAUTH_URL",
+              "value": "https://kkshop.cc"
+            }
+          ],
+          "image": "asia-southeast1-docker.pkg.dev/kkshop-487905/cloud-run-source-deploy/kkshop@sha256:80cda1f2a39d985abe36c1998ba47115de32f54e9d1573ca8cc89573eff4b2d3",
+          "name": "placeholder-1",
+          "ports": [
+            {
+              "containerPort": 8080,
+              "name": "http1"
+            }
+          ],
+          "resources": {
+            "limits": {
+              "cpu": "1000m",
+              "memory": "512Mi"
+            }
+          },
+          "startupProbe": {
+            "failureThreshold": 1,
+            "periodSeconds": 240,
+            "tcpSocket": {
+              "port": 8080
+            },
+            "timeoutSeconds": 240
+          }
+        }
+      ],
+      "serviceAccountName": "580694915945-compute@developer.gserviceaccount.com",
+      "timeoutSeconds": 300
+    },
+    "status": {
+      "conditions": [
+        {
+          "lastTransitionTime": "2026-03-01T04:27:12.219715Z",
+          "message": "Deploying revision succeeded in 7.94s.",
+          "status": "True",
+          "type": "Ready"
+        },
+        {
+          "lastTransitionTime": "2026-03-01T04:27:12.298193Z",
+          "severity": "Info",
+          "status": "True",
+          "type": "Active"
+        },
+        {
+          "lastTransitionTime": "2026-03-01T04:27:12.170287Z",
+          "message": "Containers became healthy in 1.08s.",
+          "status": "True",
+          "type": "ContainerHealthy"
+        },
+        {
+          "lastTransitionTime": "2026-03-01T04:27:08.525281Z",
+          "message": "Container image import completed in 3.58s.",
+          "status": "True",
+          "type": "ContainerReady"
+        },
+        {
+          "lastTransitionTime": "2026-03-01T04:27:10.891139Z",
+          "message": "Provisioning imported containers completed in 2.36s. Checking container health. This will wait for up to 4m for the configured startup probe, including an initial delay of 0s.",
+          "status": "True",
+          "type": "ResourcesAvailable"
+        }
+      ],
+      "imageDigest": "asia-southeast1-docker.pkg.dev/kkshop-487905/cloud-run-source-deploy/kkshop@sha256:80cda1f2a39d985abe36c1998ba47115de32f54e9d1573ca8cc89573eff4b2d3",
+      "logUrl": "https://console.cloud.google.com/logs/viewer?project=kkshop-487905&resource=cloud_run_revision/service_name/kkshop/revision_name/kkshop-00023-gcz&advancedFilter=resource.type%3D%22cloud_run_revision%22%0Aresource.labels.service_name%3D%22kkshop%22%0Aresource.labels.revision_name%3D%22kkshop-00023-gcz%22",
+      "observedGeneration": 1
+    }
+  },
+  {
+    "apiVersion": "serving.knative.dev/v1",
+    "kind": "Revision",
+    "metadata": {
+      "annotations": {
+        "autoscaling.knative.dev/maxScale": "20",
+        "run.googleapis.com/build-source-location": "{\"placeholder-1\":\"gs://run-sources-kkshop-487905-asia-southeast1/services/kkshop/1772333076.128644-7870c9566bc94797b4b3992f43298bd8.zip#1772333076790853\"}",
+        "run.googleapis.com/client-name": "gcloud",
+        "run.googleapis.com/client-version": "550.0.0",
+        "run.googleapis.com/operation-id": "2703fa68-f766-4fd6-ac47-9f85ca592305",
+        "run.googleapis.com/startup-cpu-boost": "true",
+        "serving.knative.dev/creator": "cambodia.bae@gmail.com"
+      },
+      "creationTimestamp": "2026-03-01T02:49:32.198584Z",
+      "generation": 1,
+      "labels": {
+        "client.knative.dev/nonce": "pebzavbgjq",
+        "cloud.googleapis.com/location": "asia-southeast1",
+        "run.googleapis.com/satisfiesPzs": "true",
+        "run.googleapis.com/startupProbeType": "Default",
+        "serving.knative.dev/configuration": "kkshop",
+        "serving.knative.dev/configurationGeneration": "22",
+        "serving.knative.dev/service": "kkshop",
+        "serving.knative.dev/serviceUid": "332908dd-f5ec-419e-9031-9e1c63abde3e"
+      },
+      "name": "kkshop-00022-zgv",
+      "namespace": "580694915945",
+      "ownerReferences": [
+        {
+          "apiVersion": "serving.knative.dev/v1",
+          "blockOwnerDeletion": true,
+          "controller": true,
+          "kind": "Configuration",
+          "name": "kkshop",
+          "uid": "10d51957-09e4-45ad-bbda-cbb87db2c237"
+        }
+      ],
+      "resourceVersion": "AAZL7uKBaMI",
+      "selfLink": "/apis/serving.knative.dev/v1/namespaces/580694915945/revisions/kkshop-00022-zgv",
+      "uid": "a566e254-8ce0-4246-a30e-395296929004"
+    },
+    "spec": {
+      "containerConcurrency": 80,
+      "containers": [
+        {
+          "env": [
+            {
+              "name": "DATABASE_URL",
+              "value": "postgresql://postgres.owvbguetunpubznhenhp:kkshop617561@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
+            },
+            {
+              "name": "DIRECT_URL",
+              "value": "postgresql://postgres.owvbguetunpubznhenhp:kkshop617561@aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres"
+            },
+            {
+              "name": "AUTH_SECRET",
+              "value": "fkrfD021l/Q7WxzGfXk/2+2H6yZfP+M1J62P8+U/75o="
+            },
+            {
+              "name": "NEXTAUTH_URL",
+              "value": "https://kkshop.cc"
+            }
+          ],
+          "image": "asia-southeast1-docker.pkg.dev/kkshop-487905/cloud-run-source-deploy/kkshop@sha256:3beca895989a8bf39bfb28cf1f4a93f4f9e1196f1926f5c9cecbccb27b5e2c0b",
+          "name": "placeholder-1",
+          "ports": [
+            {
+              "containerPort": 8080,
+              "name": "http1"
+            }
+          ],
+          "resources": {
+            "limits": {
+              "cpu": "1000m",
+              "memory": "512Mi"
+            }
+          },
+          "startupProbe": {
+            "failureThreshold": 1,
+            "periodSeconds": 240,
+            "tcpSocket": {
+              "port": 8080
+            },
+            "timeoutSeconds": 240
+          }
+        }
+      ],
+      "serviceAccountName": "580694915945-compute@developer.gserviceaccount.com",
+      "timeoutSeconds": 300
+    },
+    "status": {
+      "conditions": [
+        {
+          "lastTransitionTime": "2026-03-01T04:27:14.695362Z",
+          "message": "Deploying revision succeeded in 8.3s.",
+          "reason": "Retired",
+          "status": "True",
+          "type": "Ready"
+        },
+        {
+          "lastTransitionTime": "2026-03-01T04:27:14.695362Z",
+          "message": "Revision retired.",
+          "reason": "Retired",
+          "severity": "Info",
+          "status": "False",
+          "type": "Active"
+        },
+        {
+          "lastTransitionTime": "2026-03-01T02:49:40.439817Z",
+          "message": "Containers became healthy in 1.07s.",
+          "status": "True",
+          "type": "ContainerHealthy"
+        },
+        {
+          "lastTransitionTime": "2026-03-01T02:49:37.662195Z",
+          "message": "Container image import completed in 4.74s.",
+          "status": "True",
+          "type": "ContainerReady"
+        },
+        {
+          "lastTransitionTime": "2026-03-01T04:27:14.695362Z",
+          "message": "Revision retired.",
+          "reason": "Retired",
+          "status": "Unknown",
+          "type": "ResourcesAvailable"
+        }
+      ],
+      "imageDigest": "asia-southeast1-docker.pkg.dev/kkshop-487905/cloud-run-source-deploy/kkshop@sha256:3beca895989a8bf39bfb28cf1f4a93f4f9e1196f1926f5c9cecbccb27b5e2c0b",
+      "logUrl": "https://console.cloud.google.com/logs/viewer?project=kkshop-487905&resource=cloud_run_revision/service_name/kkshop/revision_name/kkshop-00022-zgv&advancedFilter=resource.type%3D%22cloud_run_revision%22%0Aresource.labels.service_name%3D%22kkshop%22%0Aresource.labels.revision_name%3D%22kkshop-00022-zgv%22",
+      "observedGeneration": 1
+    }
+  },
+  {
+    "apiVersion": "serving.knative.dev/v1",
+    "kind": "Revision",
+    "metadata": {
+      "annotations": {
+        "autoscaling.knative.dev/maxScale": "20",
+        "run.googleapis.com/build-source-location": "{\"placeholder-1\":\"gs://run-sources-kkshop-487905-asia-southeast1/services/kkshop/1772331938.149918-f610c8bc6b39473bb814bfbf2d5a6f99.zip#1772331938959025\"}",
+        "run.googleapis.com/client-name": "gcloud",
+        "run.googleapis.com/client-version": "550.0.0",
+        "run.googleapis.com/operation-id": "0ffc0b08-a61b-4b5f-b0a4-6e148ad2a47f",
+        "run.googleapis.com/startup-cpu-boost": "true",
+        "serving.knative.dev/creator": "cambodia.bae@gmail.com"
+      },
+      "creationTimestamp": "2026-03-01T02:29:11.351075Z",
+      "generation": 1,
+      "labels": {
+        "client.knative.dev/nonce": "qzckdyprhf",
+        "cloud.googleapis.com/location": "asia-southeast1",
+        "run.googleapis.com/satisfiesPzs": "true",
+        "run.googleapis.com/startupProbeType": "Default",
+        "serving.knative.dev/configuration": "kkshop",
+        "serving.knative.dev/configurationGeneration": "21",
+        "serving.knative.dev/service": "kkshop",
+        "serving.knative.dev/serviceUid": "332908dd-f5ec-419e-9031-9e1c63abde3e"
+      },
+      "name": "kkshop-00021-qmc",
+      "namespace": "580694915945",
+      "ownerReferences": [
+        {
+          "apiVersion": "serving.knative.dev/v1",
+          "blockOwnerDeletion": true,
+          "controller": true,
+          "kind": "Configuration",
+          "name": "kkshop",
+          "uid": "10d51957-09e4-45ad-bbda-cbb87db2c237"
+        }
+      ],
+      "resourceVersion": "AAZL7YWmBjE",
+      "selfLink": "/apis/serving.knative.dev/v1/namespaces/580694915945/revisions/kkshop-00021-qmc",
+      "uid": "15691a5d-26d7-4679-b8cd-e89aedee2581"
+    },
+    "spec": {
+      "containerConcurrency": 80,
+      "containers": [
+        {
+          "env": [
+            {
+              "name": "DATABASE_URL",
+              "value": "postgresql://postgres.owvbguetunpubznhenhp:kkshop617561@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
+            },
+            {
+              "name": "DIRECT_URL",
+              "value": "postgresql://postgres.owvbguetunpubznhenhp:kkshop617561@aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres"
+            },
+            {
+              "name": "AUTH_SECRET",
+              "value": "fkrfD021l/Q7WxzGfXk/2+2H6yZfP+M1J62P8+U/75o="
+            },
+            {
+              "name": "NEXTAUTH_URL",
+              "value": "https://kkshop.cc"
+            }
+          ],
+          "image": "asia-southeast1-docker.pkg.dev/kkshop-487905/cloud-run-source-deploy/kkshop@sha256:18c130500a2bb1d9e8b2f406a12a0feb2d28ab9fcb30412fd4af192236b978a9",
+          "name": "placeholder-1",
+          "ports": [
+            {
+              "containerPort": 8080,
+              "name": "http1"
+            }
+          ],
+          "resources": {
+            "limits": {
+              "cpu": "1000m",
+              "memory": "512Mi"
+            }
+          },
+          "startupProbe": {
+            "failureThreshold": 1,
+            "periodSeconds": 240,
+            "tcpSocket": {
+              "port": 8080
+            },
+            "timeoutSeconds": 240
+          }
+        }
+      ],
+      "serviceAccountName": "580694915945-compute@developer.gserviceaccount.com",
+      "timeoutSeconds": 300
+    },
+    "status": {
+      "conditions": [
+        {
+          "lastTransitionTime": "2026-03-01T02:49:41.846577Z",
+          "message": "Deploying revision succeeded in 13.14s.",
+          "reason": "Retired",
+          "status": "True",
+          "type": "Ready"
+        },
+        {
+          "lastTransitionTime": "2026-03-01T02:49:41.846577Z",
+          "message": "Revision retired.",
+          "reason": "Retired",
+          "severity": "Info",
+          "status": "False",
+          "type": "Active"
+        },
+        {
+          "lastTransitionTime": "2026-03-01T02:29:24.403951Z",
+          "message": "Containers became healthy in 1.45s.",
+          "status": "True",
+          "type": "ContainerHealthy"
+        },
+        {
+          "lastTransitionTime": "2026-03-01T02:29:18.777206Z",
+          "message": "Container image import completed in 6.75s.",
+          "status": "True",
+          "type": "ContainerReady"
+        },
+        {
+          "lastTransitionTime": "2026-03-01T02:49:41.846577Z",
+          "message": "Revision retired.",
+          "reason": "Retired",
+          "status": "Unknown",
+          "type": "ResourcesAvailable"
+        }
+      ],
+      "imageDigest": "asia-southeast1-docker.pkg.dev/kkshop-487905/cloud-run-source-deploy/kkshop@sha256:18c130500a2bb1d9e8b2f406a12a0feb2d28ab9fcb30412fd4af192236b978a9",
+      "logUrl": "https://console.cloud.google.com/logs/viewer?project=kkshop-487905&resource=cloud_run_revision/service_name/kkshop/revision_name/kkshop-00021-qmc&advancedFilter=resource.type%3D%22cloud_run_revision%22%0Aresource.labels.service_name%3D%22kkshop%22%0Aresource.labels.revision_name%3D%22kkshop-00021-qmc%22",
+      "observedGeneration": 1
+    }
+  },
+  {
+    "apiVersion": "serving.knative.dev/v1",
+    "kind": "Revision",
+    "metadata": {
+      "annotations": {
+        "autoscaling.knative.dev/maxScale": "20",
+        "run.googleapis.com/build-source-location": "{\"placeholder-1\":\"gs://run-sources-kkshop-487905-asia-southeast1/services/kkshop/1772299261.821278-e8e43f8418bf4bbdb05ecdfe5c810367.zip#1772299262157192\"}",
+        "run.googleapis.com/client-name": "gcloud",
+        "run.googleapis.com/client-version": "550.0.0",
+        "run.googleapis.com/operation-id": "bf5f2862-4080-496e-b41e-f848f7a79c3d",
+        "run.googleapis.com/startup-cpu-boost": "true",
+        "serving.knative.dev/creator": "cambodia.bae@gmail.com"
+      },
+      "creationTimestamp": "2026-02-28T17:24:36.420298Z",
+      "generation": 1,
+      "labels": {
+        "client.knative.dev/nonce": "pbnqmwqtda",
+        "cloud.googleapis.com/location": "asia-southeast1",
+        "run.googleapis.com/satisfiesPzs": "true",
+        "run.googleapis.com/startupProbeType": "Default",
+        "serving.knative.dev/configuration": "kkshop",
+        "serving.knative.dev/configurationGeneration": "20",
+        "serving.knative.dev/service": "kkshop",
+        "serving.knative.dev/serviceUid": "332908dd-f5ec-419e-9031-9e1c63abde3e"
+      },
+      "name": "kkshop-00020-54w",
+      "namespace": "580694915945",
+      "ownerReferences": [
+        {
+          "apiVersion": "serving.knative.dev/v1",
+          "blockOwnerDeletion": true,
+          "controller": true,
+          "kind": "Configuration",
+          "name": "kkshop",
+          "uid": "10d51957-09e4-45ad-bbda-cbb87db2c237"
+        }
+      ],
+      "resourceVersion": "AAZL7T01jBY",
+      "selfLink": "/apis/serving.knative.dev/v1/namespaces/580694915945/revisions/kkshop-00020-54w",
+      "uid": "d9ec761c-b899-460d-9fb8-9aec36e48368"
+    },
+    "spec": {
+      "containerConcurrency": 80,
+      "containers": [
+        {
+          "env": [
+            {
+              "name": "DATABASE_URL",
+              "value": "postgresql://postgres.owvbguetunpubznhenhp:kkshop617561@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
+            },
+            {
+              "name": "DIRECT_URL",
+              "value": "postgresql://postgres.owvbguetunpubznhenhp:kkshop617561@aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres"
+            },
+            {
+              "name": "AUTH_SECRET",
+              "value": "fkrfD021l/Q7WxzGfXk/2+2H6yZfP+M1J62P8+U/75o="
+            },
+            {
+              "name": "NEXTAUTH_URL",
+              "value": "https://kkshop.cc"
+            }
+          ],
+          "image": "asia-southeast1-docker.pkg.dev/kkshop-487905/cloud-run-source-deploy/kkshop@sha256:e2c7275984a447c9f1822234290a0e48683231a190d7e657734d19f68427f354",
+          "name": "placeholder-1",
+          "ports": [
+            {
+              "containerPort": 8080,
+              "name": "http1"
+            }
+          ],
+          "resources": {
+            "limits": {
+              "cpu": "1000m",
+              "memory": "512Mi"
+            }
+          },
+          "startupProbe": {
+            "failureThreshold": 1,
+            "periodSeconds": 240,
+            "tcpSocket": {
+              "port": 8080
+            },
+            "timeoutSeconds": 240
+          }
+        }
+      ],
+      "serviceAccountName": "580694915945-compute@developer.gserviceaccount.com",
+      "timeoutSeconds": 300
+    },
+    "status": {
+      "conditions": [
+        {
+          "lastTransitionTime": "2026-03-01T02:29:26.515734Z",
+          "message": "Deploying revision succeeded in 7.24s.",
+          "reason": "Retired",
+          "status": "True",
+          "type": "Ready"
+        },
+        {
+          "lastTransitionTime": "2026-03-01T02:29:26.515734Z",
+          "message": "Revision retired.",
+          "reason": "Retired",
+          "severity": "Info",
+          "status": "False",
+          "type": "Active"
+        },
+        {
+          "lastTransitionTime": "2026-02-28T17:24:43.615655Z",
+          "message": "Containers became healthy in 1.24s.",
+          "status": "True",
+          "type": "ContainerHealthy"
+        },
+        {
+          "lastTransitionTime": "2026-02-28T17:24:40.641937Z",
+          "message": "Container image import completed in 3.57s.",
+          "status": "True",
+          "type": "ContainerReady"
+        },
+        {
+          "lastTransitionTime": "2026-03-01T02:29:26.515734Z",
+          "message": "Revision retired.",
+          "reason": "Retired",
+          "status": "Unknown",
+          "type": "ResourcesAvailable"
+        }
+      ],
+      "imageDigest": "asia-southeast1-docker.pkg.dev/kkshop-487905/cloud-run-source-deploy/kkshop@sha256:e2c7275984a447c9f1822234290a0e48683231a190d7e657734d19f68427f354",
+      "logUrl": "https://console.cloud.google.com/logs/viewer?project=kkshop-487905&resource=cloud_run_revision/service_name/kkshop/revision_name/kkshop-00020-54w&advancedFilter=resource.type%3D%22cloud_run_revision%22%0Aresource.labels.service_name%3D%22kkshop%22%0Aresource.labels.revision_name%3D%22kkshop-00020-54w%22",
+      "observedGeneration": 1
+    }
+  },
+  {
+    "apiVersion": "serving.knative.dev/v1",
+    "kind": "Revision",
+    "metadata": {
+      "annotations": {
+        "autoscaling.knative.dev/maxScale": "20",
+        "run.googleapis.com/build-source-location": "{\"placeholder-1\":\"gs://run-sources-kkshop-487905-asia-southeast1/services/kkshop/1772270171.635366-00d1b0f0f57c4ba6b574cda187c62008.zip#1772270172658423\"}",
+        "run.googleapis.com/client-name": "gcloud",
+        "run.googleapis.com/client-version": "550.0.0",
+        "run.googleapis.com/operation-id": "b3681da7-248b-4a39-b7f1-ae6e180a8024",
+        "run.googleapis.com/startup-cpu-boost": "true",
+        "serving.knative.dev/creator": "cambodia.bae@gmail.com"
+      },
+      "creationTimestamp": "2026-02-28T09:19:45.270297Z",
+      "generation": 1,
+      "labels": {
+        "client.knative.dev/nonce": "byzppfzxsv",
+        "cloud.googleapis.com/location": "asia-southeast1",
+        "run.googleapis.com/satisfiesPzs": "true",
+        "run.googleapis.com/startupProbeType": "Default",
+        "serving.knative.dev/configuration": "kkshop",
+        "serving.knative.dev/configurationGeneration": "19",
+        "serving.knative.dev/service": "kkshop",
+        "serving.knative.dev/serviceUid": "332908dd-f5ec-419e-9031-9e1c63abde3e"
+      },
+      "name": "kkshop-00019-xzc",
+      "namespace": "580694915945",
+      "ownerReferences": [
+        {
+          "apiVersion": "serving.knative.dev/v1",
+          "blockOwnerDeletion": true,
+          "controller": true,
+          "kind": "Configuration",
+          "name": "kkshop",
+          "uid": "10d51957-09e4-45ad-bbda-cbb87db2c237"
+        }
+      ],
+      "resourceVersion": "AAZL5aE86Uo",
+      "selfLink": "/apis/serving.knative.dev/v1/namespaces/580694915945/revisions/kkshop-00019-xzc",
+      "uid": "ce7636fb-0880-41b8-844c-4247831ff7ac"
+    },
+    "spec": {
+      "containerConcurrency": 80,
+      "containers": [
+        {
+          "env": [
+            {
+              "name": "DATABASE_URL",
+              "value": "postgresql://postgres.owvbguetunpubznhenhp:kkshop617561@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
+            },
+            {
+              "name": "DIRECT_URL",
+              "value": "postgresql://postgres.owvbguetunpubznhenhp:kkshop617561@aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres"
+            },
+            {
+              "name": "AUTH_SECRET",
+              "value": "fkrfD021l/Q7WxzGfXk/2+2H6yZfP+M1J62P8+U/75o="
+            },
+            {
+              "name": "NEXTAUTH_URL",
+              "value": "https://kkshop.cc"
+            }
+          ],
+          "image": "asia-southeast1-docker.pkg.dev/kkshop-487905/cloud-run-source-deploy/kkshop@sha256:5d4bddbdcc86cfcbcf1b003f5073425b697838ad4e86e265b55ac6941de5f6ee",
+          "name": "placeholder-1",
+          "ports": [
+            {
+              "containerPort": 8080,
+              "name": "http1"
+            }
+          ],
+          "resources": {
+            "limits": {
+              "cpu": "1000m",
+              "memory": "512Mi"
+            }
+          },
+          "startupProbe": {
+            "failureThreshold": 1,
+            "periodSeconds": 240,
+            "tcpSocket": {
+              "port": 8080
+            },
+            "timeoutSeconds": 240
+          }
+        }
+      ],
+      "serviceAccountName": "580694915945-compute@developer.gserviceaccount.com",
+      "timeoutSeconds": 300
+    },
+    "status": {
+      "conditions": [
+        {
+          "lastTransitionTime": "2026-02-28T17:24:44.981578Z",
+          "message": "Deploying revision succeeded in 9.77s.",
+          "reason": "Retired",
+          "status": "True",
+          "type": "Ready"
+        },
+        {
+          "lastTransitionTime": "2026-02-28T17:24:44.981578Z",
+          "message": "Revision retired.",
+          "reason": "Retired",
+          "severity": "Info",
+          "status": "False",
+          "type": "Active"
+        },
+        {
+          "lastTransitionTime": "2026-02-28T09:19:54.992024Z",
+          "message": "Containers became healthy in 1.48s.",
+          "status": "True",
+          "type": "ContainerHealthy"
+        },
+        {
+          "lastTransitionTime": "2026-02-28T09:19:50.660888Z",
+          "message": "Container image import completed in 4.75s.",
+          "status": "True",
+          "type": "ContainerReady"
+        },
+        {
+          "lastTransitionTime": "2026-02-28T17:24:44.981578Z",
+          "message": "Revision retired.",
+          "reason": "Retired",
+          "status": "Unknown",
+          "type": "ResourcesAvailable"
+        }
+      ],
+      "imageDigest": "asia-southeast1-docker.pkg.dev/kkshop-487905/cloud-run-source-deploy/kkshop@sha256:5d4bddbdcc86cfcbcf1b003f5073425b697838ad4e86e265b55ac6941de5f6ee",
+      "logUrl": "https://console.cloud.google.com/logs/viewer?project=kkshop-487905&resource=cloud_run_revision/service_name/kkshop/revision_name/kkshop-00019-xzc&advancedFilter=resource.type%3D%22cloud_run_revision%22%0Aresource.labels.service_name%3D%22kkshop%22%0Aresource.labels.revision_name%3D%22kkshop-00019-xzc%22",
+      "observedGeneration": 1
+    }
+  },
+  {
+    "apiVersion": "serving.knative.dev/v1",
+    "kind": "Revision",
+    "metadata": {
+      "annotations": {
+        "autoscaling.knative.dev/maxScale": "20",
+        "run.googleapis.com/build-source-location": "{\"placeholder-1\":\"gs://run-sources-kkshop-487905-asia-southeast1/services/kkshop/1772269518.019401-2e86ec5621804013ad017b1b59e77fea.zip#1772269518784552\"}",
+        "run.googleapis.com/client-name": "gcloud",
+        "run.googleapis.com/client-version": "550.0.0",
+        "run.googleapis.com/operation-id": "12f2cb6a-a3a5-4e79-8e68-6619a6db12bc",
+        "run.googleapis.com/startup-cpu-boost": "true",
+        "serving.knative.dev/creator": "cambodia.bae@gmail.com"
+      },
+      "creationTimestamp": "2026-02-28T09:08:53.689883Z",
+      "generation": 1,
+      "labels": {
+        "client.knative.dev/nonce": "dzhzcvqejq",
+        "cloud.googleapis.com/location": "asia-southeast1",
+        "run.googleapis.com/satisfiesPzs": "true",
+        "run.googleapis.com/startupProbeType": "Default",
+        "serving.knative.dev/configuration": "kkshop",
+        "serving.knative.dev/configurationGeneration": "18",
+        "serving.knative.dev/service": "kkshop",
+        "serving.knative.dev/serviceUid": "332908dd-f5ec-419e-9031-9e1c63abde3e"
+      },
+      "name": "kkshop-00018-x5q",
+      "namespace": "580694915945",
+      "ownerReferences": [
+        {
+          "apiVersion": "serving.knative.dev/v1",
+          "blockOwnerDeletion": true,
+          "controller": true,
+          "kind": "Configuration",
+          "name": "kkshop",
+          "uid": "10d51957-09e4-45ad-bbda-cbb87db2c237"
+        }
+      ],
+      "resourceVersion": "AAZL3ttr7JY",
+      "selfLink": "/apis/serving.knative.dev/v1/namespaces/580694915945/revisions/kkshop-00018-x5q",
+      "uid": "4c8ed4dc-27b6-420a-8cbe-4f7aace9974e"
+    },
+    "spec": {
+      "containerConcurrency": 80,
+      "containers": [
+        {
+          "env": [
+            {
+              "name": "DATABASE_URL",
+              "value": "postgresql://postgres.owvbguetunpubznhenhp:kkshop617561@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
+            },
+            {
+              "name": "DIRECT_URL",
+              "value": "postgresql://postgres.owvbguetunpubznhenhp:kkshop617561@aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres"
+            },
+            {
+              "name": "AUTH_SECRET",
+              "value": "fkrfD021l/Q7WxzGfXk/2+2H6yZfP+M1J62P8+U/75o="
+            },
+            {
+              "name": "NEXTAUTH_URL",
+              "value": "https://kkshop.cc"
+            }
+          ],
+          "image": "asia-southeast1-docker.pkg.dev/kkshop-487905/cloud-run-source-deploy/kkshop@sha256:e3750ab53def3a4a1fe77e959163160f7570565e1129bf43ac8946db443167d5",
+          "name": "placeholder-1",
+          "ports": [
+            {
+              "containerPort": 8080,
+              "name": "http1"
+            }
+          ],
+          "resources": {
+            "limits": {
+              "cpu": "1000m",
+              "memory": "512Mi"
+            }
+          },
+          "startupProbe": {
+            "failureThreshold": 1,
+            "periodSeconds": 240,
+            "tcpSocket": {
+              "port": 8080
+            },
+            "timeoutSeconds": 240
+          }
+        }
+      ],
+      "serviceAccountName": "580694915945-compute@developer.gserviceaccount.com",
+      "timeoutSeconds": 300
+    },
+    "status": {
+      "conditions": [
+        {
+          "lastTransitionTime": "2026-02-28T09:19:56.370070Z",
+          "message": "Deploying revision succeeded in 8.68s.",
+          "reason": "Retired",
+          "status": "True",
+          "type": "Ready"
+        },
+        {
+          "lastTransitionTime": "2026-02-28T09:19:56.370070Z",
+          "message": "Revision retired.",
+          "reason": "Retired",
+          "severity": "Info",
+          "status": "False",
+          "type": "Active"
+        },
+        {
+          "lastTransitionTime": "2026-02-28T09:09:02.318579Z",
+          "message": "Containers became healthy in 1.35s.",
+          "status": "True",
+          "type": "ContainerHealthy"
+        },
+        {
+          "lastTransitionTime": "2026-02-28T09:08:58.170633Z",
+          "message": "Container image import completed in 3.79s.",
+          "status": "True",
+          "type": "ContainerReady"
+        },
+        {
+          "lastTransitionTime": "2026-02-28T09:19:56.370070Z",
+          "message": "Revision retired.",
+          "reason": "Retired",
+          "status": "Unknown",
+          "type": "ResourcesAvailable"
+        }
+      ],
+      "imageDigest": "asia-southeast1-docker.pkg.dev/kkshop-487905/cloud-run-source-deploy/kkshop@sha256:e3750ab53def3a4a1fe77e959163160f7570565e1129bf43ac8946db443167d5",
+      "logUrl": "https://console.cloud.google.com/logs/viewer?project=kkshop-487905&resource=cloud_run_revision/service_name/kkshop/revision_name/kkshop-00018-x5q&advancedFilter=resource.type%3D%22cloud_run_revision%22%0Aresource.labels.service_name%3D%22kkshop%22%0Aresource.labels.revision_name%3D%22kkshop-00018-x5q%22",
+      "observedGeneration": 1
+    }
+  },
+  {
+    "apiVersion": "serving.knative.dev/v1",
+    "kind": "Revision",
+    "metadata": {
+      "annotations": {
+        "autoscaling.knative.dev/maxScale": "20",
+        "run.googleapis.com/build-source-location": "{\"placeholder-1\":\"gs://run-sources-kkshop-487905-asia-southeast1/services/kkshop/1772268935.602782-bd30e09004d04e5d950cb763b7791f5c.zip#1772268936122938\"}",
+        "run.googleapis.com/client-name": "gcloud",
+        "run.googleapis.com/client-version": "550.0.0",
+        "run.googleapis.com/operation-id": "82fd1579-7688-4f90-b8c9-a4e0c01fcf2f",
+        "run.googleapis.com/startup-cpu-boost": "true",
+        "serving.knative.dev/creator": "cambodia.bae@gmail.com"
+      },
+      "creationTimestamp": "2026-02-28T08:59:07.634801Z",
+      "generation": 1,
+      "labels": {
+        "client.knative.dev/nonce": "cwzvgbpnlz",
+        "cloud.googleapis.com/location": "asia-southeast1",
+        "run.googleapis.com/satisfiesPzs": "true",
+        "run.googleapis.com/startupProbeType": "Default",
+        "serving.knative.dev/configuration": "kkshop",
+        "serving.knative.dev/configurationGeneration": "17",
+        "serving.knative.dev/service": "kkshop",
+        "serving.knative.dev/serviceUid": "332908dd-f5ec-419e-9031-9e1c63abde3e"
+      },
+      "name": "kkshop-00017-697",
+      "namespace": "580694915945",
+      "ownerReferences": [
+        {
+          "apiVersion": "serving.knative.dev/v1",
+          "blockOwnerDeletion": true,
+          "controller": true,
+          "kind": "Configuration",
+          "name": "kkshop",
+          "uid": "10d51957-09e4-45ad-bbda-cbb87db2c237"
+        }
+      ],
+      "resourceVersion": "AAZL3rSE9ds",
+      "selfLink": "/apis/serving.knative.dev/v1/namespaces/580694915945/revisions/kkshop-00017-697",
+      "uid": "057920b6-7b9d-42ad-b2e3-09a3773881db"
+    },
+    "spec": {
+      "containerConcurrency": 80,
+      "containers": [
+        {
+          "env": [
+            {
+              "name": "DATABASE_URL",
+              "value": "postgresql://postgres.owvbguetunpubznhenhp:kkshop617561@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
+            },
+            {
+              "name": "DIRECT_URL",
+              "value": "postgresql://postgres.owvbguetunpubznhenhp:kkshop617561@aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres"
+            },
+            {
+              "name": "AUTH_SECRET",
+              "value": "fkrfD021l/Q7WxzGfXk/2+2H6yZfP+M1J62P8+U/75o="
+            },
+            {
+              "name": "NEXTAUTH_URL",
+              "value": "https://kkshop.cc"
+            }
+          ],
+          "image": "asia-southeast1-docker.pkg.dev/kkshop-487905/cloud-run-source-deploy/kkshop@sha256:68dd03ec4d0bc814d59c2fcaf011fadec7ce0d83bf4954f1f1d06f3145999335",
+          "name": "placeholder-1",
+          "ports": [
+            {
+              "containerPort": 8080,
+              "name": "http1"
+            }
+          ],
+          "resources": {
+            "limits": {
+              "cpu": "1000m",
+              "memory": "512Mi"
+            }
+          },
+          "startupProbe": {
+            "failureThreshold": 1,
+            "periodSeconds": 240,
+            "tcpSocket": {
+              "port": 8080
+            },
+            "timeoutSeconds": 240
+          }
+        }
+      ],
+      "serviceAccountName": "580694915945-compute@developer.gserviceaccount.com",
+      "timeoutSeconds": 300
+    },
+    "status": {
+      "conditions": [
+        {
+          "lastTransitionTime": "2026-02-28T09:09:03.699419Z",
+          "message": "Deploying revision succeeded in 11.03s.",
+          "reason": "Retired",
+          "status": "True",
+          "type": "Ready"
+        },
+        {
+          "lastTransitionTime": "2026-02-28T09:09:03.699419Z",
+          "message": "Revision retired.",
+          "reason": "Retired",
+          "severity": "Info",
+          "status": "False",
+          "type": "Active"
+        },
+        {
+          "lastTransitionTime": "2026-02-28T08:59:18.611956Z",
+          "message": "Containers became healthy in 1.19s.",
+          "status": "True",
+          "type": "ContainerHealthy"
+        },
+        {
+          "lastTransitionTime": "2026-02-28T08:59:15.333140Z",
+          "message": "Container image import completed in 7.05s.",
+          "status": "True",
+          "type": "ContainerReady"
+        },
+        {
+          "lastTransitionTime": "2026-02-28T09:09:03.699419Z",
+          "message": "Revision retired.",
+          "reason": "Retired",
+          "status": "Unknown",
+          "type": "ResourcesAvailable"
+        }
+      ],
+      "imageDigest": "asia-southeast1-docker.pkg.dev/kkshop-487905/cloud-run-source-deploy/kkshop@sha256:68dd03ec4d0bc814d59c2fcaf011fadec7ce0d83bf4954f1f1d06f3145999335",
+      "logUrl": "https://console.cloud.google.com/logs/viewer?project=kkshop-487905&resource=cloud_run_revision/service_name/kkshop/revision_name/kkshop-00017-697&advancedFilter=resource.type%3D%22cloud_run_revision%22%0Aresource.labels.service_name%3D%22kkshop%22%0Aresource.labels.revision_name%3D%22kkshop-00017-697%22",
+      "observedGeneration": 1
+    }
+  },
+  {
+    "apiVersion": "serving.knative.dev/v1",
+    "kind": "Revision",
+    "metadata": {
+      "annotations": {
+        "autoscaling.knative.dev/maxScale": "20",
+        "run.googleapis.com/build-source-location": "{\"placeholder-1\":\"gs://run-sources-kkshop-487905-asia-southeast1/services/kkshop/1772267390.586087-cba8df16df95402699ac1f1ed84e824f.zip#1772267391396722\"}",
+        "run.googleapis.com/client-name": "gcloud",
+        "run.googleapis.com/client-version": "550.0.0",
+        "run.googleapis.com/operation-id": "93fed999-9286-49f4-a54b-9c729b9980d7",
+        "run.googleapis.com/startup-cpu-boost": "true",
+        "serving.knative.dev/creator": "cambodia.bae@gmail.com"
+      },
+      "creationTimestamp": "2026-02-28T08:34:46.097219Z",
+      "generation": 1,
+      "labels": {
+        "client.knative.dev/nonce": "pteehcnecs",
+        "cloud.googleapis.com/location": "asia-southeast1",
+        "run.googleapis.com/satisfiesPzs": "true",
+        "run.googleapis.com/startupProbeType": "Default",
+        "serving.knative.dev/configuration": "kkshop",
+        "serving.knative.dev/configurationGeneration": "16",
+        "serving.knative.dev/service": "kkshop",
+        "serving.knative.dev/serviceUid": "332908dd-f5ec-419e-9031-9e1c63abde3e"
+      },
+      "name": "kkshop-00016-k2k",
+      "namespace": "580694915945",
+      "ownerReferences": [
+        {
+          "apiVersion": "serving.knative.dev/v1",
+          "blockOwnerDeletion": true,
+          "controller": true,
+          "kind": "Configuration",
+          "name": "kkshop",
+          "uid": "10d51957-09e4-45ad-bbda-cbb87db2c237"
+        }
+      ],
+      "resourceVersion": "AAZL3pG6cZ4",
+      "selfLink": "/apis/serving.knative.dev/v1/namespaces/580694915945/revisions/kkshop-00016-k2k",
+      "uid": "4975321b-0e93-4963-8bbf-4840c5add550"
+    },
+    "spec": {
+      "containerConcurrency": 80,
+      "containers": [
+        {
+          "env": [
+            {
+              "name": "DATABASE_URL",
+              "value": "postgresql://postgres.owvbguetunpubznhenhp:kkshop617561@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
+            },
+            {
+              "name": "DIRECT_URL",
+              "value": "postgresql://postgres.owvbguetunpubznhenhp:kkshop617561@aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres"
+            },
+            {
+              "name": "AUTH_SECRET",
+              "value": "fkrfD021l/Q7WxzGfXk/2+2H6yZfP+M1J62P8+U/75o="
+            },
+            {
+              "name": "NEXTAUTH_URL",
+              "value": "https://kkshop.cc"
+            }
+          ],
+          "image": "asia-southeast1-docker.pkg.dev/kkshop-487905/cloud-run-source-deploy/kkshop@sha256:56c3c53a55adb3f833c1834f48e55978ae6b66c72da069638f07d9b19b852d6c",
+          "name": "placeholder-1",
+          "ports": [
+            {
+              "containerPort": 8080,
+              "name": "http1"
+            }
+          ],
+          "resources": {
+            "limits": {
+              "cpu": "1000m",
+              "memory": "512Mi"
+            }
+          },
+          "startupProbe": {
+            "failureThreshold": 1,
+            "periodSeconds": 240,
+            "tcpSocket": {
+              "port": 8080
+            },
+            "timeoutSeconds": 240
+          }
+        }
+      ],
+      "serviceAccountName": "580694915945-compute@developer.gserviceaccount.com",
+      "timeoutSeconds": 300
+    },
+    "status": {
+      "conditions": [
+        {
+          "lastTransitionTime": "2026-02-28T08:59:20.001950Z",
+          "message": "Deploying revision succeeded in 7.75s.",
+          "reason": "Retired",
+          "status": "True",
+          "type": "Ready"
+        },
+        {
+          "lastTransitionTime": "2026-02-28T08:59:20.001950Z",
+          "message": "Revision retired.",
+          "reason": "Retired",
+          "severity": "Info",
+          "status": "False",
+          "type": "Active"
+        },
+        {
+          "lastTransitionTime": "2026-02-28T08:34:53.788602Z",
+          "message": "Containers became healthy in 1.27s.",
+          "status": "True",
+          "type": "ContainerHealthy"
+        },
+        {
+          "lastTransitionTime": "2026-02-28T08:34:50.327950Z",
+          "message": "Container image import completed in 3.6s.",
+          "status": "True",
+          "type": "ContainerReady"
+        },
+        {
+          "lastTransitionTime": "2026-02-28T08:59:20.001950Z",
+          "message": "Revision retired.",
+          "reason": "Retired",
+          "status": "Unknown",
+          "type": "ResourcesAvailable"
+        }
+      ],
+      "imageDigest": "asia-southeast1-docker.pkg.dev/kkshop-487905/cloud-run-source-deploy/kkshop@sha256:56c3c53a55adb3f833c1834f48e55978ae6b66c72da069638f07d9b19b852d6c",
+      "logUrl": "https://console.cloud.google.com/logs/viewer?project=kkshop-487905&resource=cloud_run_revision/service_name/kkshop/revision_name/kkshop-00016-k2k&advancedFilter=resource.type%3D%22cloud_run_revision%22%0Aresource.labels.service_name%3D%22kkshop%22%0Aresource.labels.revision_name%3D%22kkshop-00016-k2k%22",
+      "observedGeneration": 1
+    }
+  }
+]

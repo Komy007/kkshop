@@ -45,7 +45,7 @@ export default function BottomTabBar() {
 
     return (
         <nav
-            className="fixed bottom-0 inset-x-0 z-40 md:hidden bg-space-900/95 backdrop-blur-xl border-t border-white/10"
+            className="fixed bottom-0 inset-x-0 z-40 md:hidden bg-white/95 backdrop-blur-xl border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]"
             style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
             role="navigation"
             aria-label="Bottom navigation"
@@ -59,7 +59,7 @@ export default function BottomTabBar() {
 
                     const content = (
                         <div
-                            className={`flex flex-col items-center justify-center gap-0.5 min-w-[44px] min-h-[44px] rounded-xl transition-colors duration-200 ${active ? 'text-brand-primary' : 'text-white/50 hover:text-white/80'
+                            className={`flex flex-col items-center justify-center gap-0.5 min-w-[44px] min-h-[44px] rounded-xl transition-colors duration-200 ${active ? 'text-brand-primary' : 'text-gray-400 hover:text-gray-800'
                                 }`}
                         >
                             <div className="relative">
