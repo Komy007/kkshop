@@ -126,17 +126,17 @@ export default function AntiGravityHero() {
 
             {/* Nav arrows — desktop only */}
             <div className="hidden sm:flex justify-center gap-2 mt-2">
-                <button onClick={prev} className="w-7 h-7 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/50 hover:text-white transition-colors">
+                <button onClick={prev} className="w-7 h-7 rounded-full bg-white border border-gray-200 shadow-sm flex items-center justify-center text-gray-400 hover:text-gray-900 hover:border-gray-300 transition-colors">
                     <ChevronLeft className="w-3.5 h-3.5" />
                 </button>
                 {slides.map((_, i) => (
                     <button
                         key={i}
                         onClick={() => setCurrent(i)}
-                        className={`w-2 h-2 rounded-full transition-colors ${i === current ? 'bg-white' : 'bg-white/20'}`}
+                        className={`w-2 h-2 rounded-full transition-colors ${i === current ? 'bg-gray-800' : 'bg-gray-300'}`}
                     />
                 ))}
-                <button onClick={next} className="w-7 h-7 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/50 hover:text-white transition-colors">
+                <button onClick={next} className="w-7 h-7 rounded-full bg-white border border-gray-200 shadow-sm flex items-center justify-center text-gray-400 hover:text-gray-900 hover:border-gray-300 transition-colors">
                     <ChevronRight className="w-3.5 h-3.5" />
                 </button>
             </div>

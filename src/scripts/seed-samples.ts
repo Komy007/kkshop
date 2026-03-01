@@ -53,6 +53,46 @@ const sampleData = [
             'https://images.unsplash.com/photo-1512069772995-ec65ed45afd6?auto=format&fit=crop&q=80&w=500'
         ]
     },
+    {
+        categoryTitle: '베스트', categoryPrefix: 'best', maxItems: 3, defaultPrice: 30,
+        images: [
+            'https://images.unsplash.com/photo-1588731234159-8b9963143fca?auto=format&fit=crop&q=80&w=500',
+            'https://images.unsplash.com/photo-1599305090598-fe179d501227?auto=format&fit=crop&q=80&w=500',
+            'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&q=80&w=500'
+        ]
+    },
+    {
+        categoryTitle: '신상품', categoryPrefix: 'new', maxItems: 3, defaultPrice: 35,
+        images: [
+            'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&q=80&w=500',
+            'https://images.unsplash.com/photo-1534639633288-724d193ed963?auto=format&fit=crop&q=80&w=500',
+            'https://images.unsplash.com/photo-1494597564530-871f2b93ac55?auto=format&fit=crop&q=80&w=500'
+        ]
+    },
+    {
+        categoryTitle: '할인', categoryPrefix: 'discount', maxItems: 3, defaultPrice: 10,
+        images: [
+            'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&q=80&w=500',
+            'https://images.unsplash.com/photo-1595166664984-7acb2a36b306?auto=format&fit=crop&q=80&w=500',
+            'https://images.unsplash.com/photo-1491553895911-0055eca6402d?auto=format&fit=crop&q=80&w=500'
+        ]
+    },
+    {
+        categoryTitle: '전체보기', categoryPrefix: 'all', maxItems: 3, defaultPrice: 20,
+        images: [
+            'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&q=80&w=500',
+            'https://images.unsplash.com/photo-1596462502278-27bf85033e5a?auto=format&fit=crop&q=80&w=500',
+            'https://images.unsplash.com/photo-1556228578-8c89e6adf883?auto=format&fit=crop&q=80&w=500'
+        ]
+    },
+    {
+        categoryTitle: 'FOR YOU', categoryPrefix: 'foryou', maxItems: 3, defaultPrice: 25,
+        images: [
+            'https://images.unsplash.com/photo-1612817288484-6f916006741a?auto=format&fit=crop&q=80&w=500',
+            'https://images.unsplash.com/photo-1571781526291-c477ebefa68c?auto=format&fit=crop&q=80&w=500',
+            'https://images.unsplash.com/photo-1580870059942-159fd87aa04f?auto=format&fit=crop&q=80&w=500'
+        ]
+    }
 ];
 
 async function seed() {

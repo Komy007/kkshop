@@ -57,7 +57,7 @@ export default function GNB() {
                     }`}
             >
                 <div
-                    className={`w-[95%] max-w-7xl mx-auto flex items-center justify-between px-6 py-4 rounded-full transition-all duration-300 ${scrolled ? "glass-panel bg-space-900/40" : "bg-transparent"
+                    className={`w-[95%] max-w-7xl mx-auto flex items-center justify-between px-6 py-4 rounded-full transition-all duration-300 ${scrolled ? "glass-panel bg-white/90 border border-gray-100 shadow-sm" : "bg-transparent"
                         }`}
                 >
                     {/* Logo */}
@@ -65,8 +65,8 @@ export default function GNB() {
                         <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-brand-primary to-brand-accent flex items-center justify-center">
                             <span className="text-white font-bold text-lg leading-none">K</span>
                         </div>
-                        <span className="text-2xl font-bold tracking-tighter group-hover:text-glow transition-all">
-                            <span className="text-white">KK</span>
+                        <span className="text-2xl font-bold tracking-tighter transition-all">
+                            <span className="text-gray-900">KK</span>
                             <span className="text-[#Ef4444]">S</span>
                             <span className="text-[#EAB308]">h</span>
                             <span className="text-[#22C55E]">o</span>
@@ -76,13 +76,13 @@ export default function GNB() {
 
                     {/* Desktop Nav */}
                     <nav className="hidden md:flex items-center gap-8">
-                        <Link href="/cosmetics" className="text-sm font-medium text-white/80 hover:text-brand-primary transition-colors">
+                        <Link href="/cosmetics" className="text-sm font-bold text-gray-700 hover:text-brand-primary transition-colors">
                             Cosmetics
                         </Link>
-                        <Link href="/living" className="text-sm font-medium text-white/80 hover:text-brand-accent transition-colors">
+                        <Link href="/living" className="text-sm font-bold text-gray-700 hover:text-brand-secondary transition-colors">
                             Living
                         </Link>
-                        <Link href="/about" className="text-sm font-medium text-white/80 hover:text-brand-secondary transition-colors">
+                        <Link href="/about" className="text-sm font-bold text-gray-700 hover:text-brand-accent transition-colors">
                             About
                         </Link>
                     </nav>
@@ -93,7 +93,7 @@ export default function GNB() {
                         <div className="relative" ref={langRef}>
                             <button
                                 onClick={() => setLangOpen(!langOpen)}
-                                className="flex items-center gap-2 px-3 py-2 rounded-full hover:bg-white/5 transition-colors text-sm text-white/90"
+                                className="flex items-center gap-2 px-3 py-2 rounded-full hover:bg-gray-100 transition-colors text-sm text-gray-700 font-bold"
                             >
                                 <Globe className="w-4 h-4" />
                                 <span>{currentLang?.label}</span>
@@ -101,7 +101,7 @@ export default function GNB() {
 
                             {/* Dropdown — CSS transition */}
                             <div
-                                className={`absolute right-0 mt-2 w-32 py-2 glass-panel rounded-2xl border border-white/10 flex flex-col overflow-hidden transition-all duration-200 origin-top-right ${langOpen
+                                className={`absolute right-0 mt-2 w-28 py-1 glass-panel rounded-xl border border-gray-200 flex flex-col overflow-hidden transition-all duration-200 origin-top-right ${langOpen
                                     ? "opacity-100 scale-100 pointer-events-auto"
                                     : "opacity-0 scale-95 pointer-events-none"
                                     }`}
@@ -113,7 +113,7 @@ export default function GNB() {
                                             setLanguage(lang.code);
                                             setLangOpen(false);
                                         }}
-                                        className={`px-4 py-2 text-left text-sm hover:bg-white/10 transition-colors ${currentLang?.code === lang.code ? "text-brand-primary font-medium" : "text-white/80"
+                                        className={`px-3 py-1.5 text-left text-sm hover:bg-gray-50 transition-colors ${currentLang?.code === lang.code ? "text-brand-primary font-bold" : "text-gray-700"
                                             }`}
                                     >
                                         {lang.label}
@@ -123,7 +123,7 @@ export default function GNB() {
                         </div>
 
                         {/* User Login */}
-                        <button className="flex items-center justify-center w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 hover:text-brand-secondary border border-white/10 transition-all text-white/80">
+                        <button className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-gray-200 hover:border-gray-300 hover:text-brand-primary transition-all text-gray-700 shadow-sm">
                             <User className="w-4 h-4" />
                         </button>
 
@@ -141,11 +141,11 @@ export default function GNB() {
 
                     {/* Mobile Toggle */}
                     <button
-                        className="md:hidden flex items-center gap-1.5 p-1 px-2 rounded-full border border-white/20 bg-white/5 hover:bg-white/10 transition-colors"
+                        className="md:hidden flex items-center gap-1.5 p-1 px-2 rounded-full border border-gray-200 bg-white hover:bg-gray-50 transition-colors shadow-sm text-gray-700"
                         onClick={() => setMobileMenuOpen(true)}
                     >
                         <span className="text-base leading-none mt-0.5">{currentLang?.flag}</span>
-                        <Menu className="w-5 h-5 text-white" />
+                        <Menu className="w-5 h-5 text-gray-700" />
                     </button>
                 </div>
             </header>
@@ -157,17 +157,17 @@ export default function GNB() {
                     : "opacity-0 pointer-events-none"
                     }`}
             >
-                <div className="absolute inset-0 glass-panel bg-space-900/95 flex flex-col p-6">
+                <div className="absolute inset-0 bg-white flex flex-col p-6 shadow-2xl">
                     <div className="flex items-center justify-between mb-8">
                         <span className="text-2xl font-bold tracking-tighter">
-                            <span className="text-white">KK</span>
+                            <span className="text-gray-900">KK</span>
                             <span className="text-[#Ef4444]">S</span>
                             <span className="text-[#EAB308]">h</span>
                             <span className="text-[#22C55E]">o</span>
                             <span className="text-[#38BDF8]">p</span>
                         </span>
                         <button
-                            className="p-2 text-white/60 hover:text-white transition-colors"
+                            className="p-2 text-gray-400 hover:text-gray-900 transition-colors"
                             onClick={() => setMobileMenuOpen(false)}
                         >
                             <X className="w-6 h-6" />
@@ -176,39 +176,53 @@ export default function GNB() {
 
                     {/* Mobile Menu Body - Only Languages and About Us */}
                     <div className="flex flex-col flex-1 mt-6">
-                        <p className="text-sm font-medium text-white/50 uppercase tracking-widest mb-4">Select Language</p>
-                        <div className="flex flex-col gap-3">
-                            {LANGUAGES.map((lang) => (
-                                <button
-                                    key={lang.code}
-                                    onClick={() => {
-                                        setLanguage(lang.code);
-                                        setMobileMenuOpen(false);
-                                    }}
-                                    className={`py-4 px-5 rounded-2xl border flex items-center justify-between transition-all ${language === lang.code
-                                        ? "bg-brand-primary/20 border-brand-primary text-white shadow-[0_0_15px_rgba(99,102,241,0.2)]"
-                                        : "border-white/10 text-white/70 hover:bg-white/10"
-                                        }`}
-                                >
-                                    <span className={`text-lg ${language === lang.code ? "font-bold" : "font-medium"}`}>{lang.label}</span>
-                                    {language === lang.code && <div className="w-2 h-2 rounded-full bg-brand-primary" />}
-                                </button>
-                            ))}
+                        <div className="flex flex-col gap-2">
+                            <button
+                                onClick={() => setLangOpen(!langOpen)}
+                                className="flex items-center justify-between w-full py-4 px-5 rounded-2xl bg-gray-50 border border-gray-200 text-gray-900 hover:bg-gray-100 transition-colors"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <Globe className="w-5 h-5 text-gray-500" />
+                                    <span className="text-lg font-bold">언어 선택 ({currentLang?.label})</span>
+                                </div>
+                                <span className="text-gray-400 text-xs">{langOpen ? '▲' : '▼'}</span>
+                            </button>
+
+                            {langOpen && (
+                                <div className="flex flex-col px-2 py-1 bg-gray-50 rounded-2xl border border-gray-200 mb-2">
+                                    {LANGUAGES.map((lang) => (
+                                        <button
+                                            key={lang.code}
+                                            onClick={() => {
+                                                setLanguage(lang.code);
+                                                setLangOpen(false);
+                                            }}
+                                            className={`py-3 px-4 flex items-center justify-between transition-all rounded-xl ${language === lang.code
+                                                ? "bg-brand-primary/10 text-brand-primary font-bold"
+                                                : "text-gray-600 hover:bg-white"
+                                                }`}
+                                        >
+                                            <span className="text-base">{lang.flag} {lang.label}</span>
+                                            {language === lang.code && <div className="w-1.5 h-1.5 rounded-full bg-brand-primary" />}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
                         </div>
 
                         {/* Pushed to the bottom */}
                         <div className="mt-auto pb-4">
-                            <div className="h-px w-full bg-white/10 mb-6" />
+                            <div className="h-px w-full bg-gray-200 mb-6" />
                             <Link
                                 href="/about"
-                                className="flex items-center justify-between w-full py-4 px-5 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors group"
+                                className="flex items-center justify-between w-full py-4 px-5 rounded-2xl bg-white border border-gray-200 hover:bg-gray-50 transition-colors group"
                                 onClick={() => setMobileMenuOpen(false)}
                             >
                                 <div className="flex flex-col">
-                                    <span className="text-xl font-bold text-white group-hover:text-brand-primary transition-colors">About Us</span>
-                                    <span className="text-xs text-white/50 mt-1">회사 소개 및 철학</span>
+                                    <span className="text-xl font-bold text-gray-900 group-hover:text-brand-primary transition-colors">회사 소개 (About Us)</span>
+                                    <span className="text-xs text-gray-500 mt-1">회사 소개 및 철학</span>
                                 </div>
-                                <span className="text-white/40 group-hover:translate-x-1 transition-transform">→</span>
+                                <span className="text-gray-400 group-hover:translate-x-1 transition-transform">→</span>
                             </Link>
                         </div>
                     </div>

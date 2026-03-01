@@ -83,10 +83,10 @@ export default function CategoryShortcuts() {
                         href={item.href}
                         className="group flex flex-col items-center gap-1.5 min-w-[44px]"
                     >
-                        <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br ${item.gradient} border border-white/5 flex items-center justify-center text-xl sm:text-2xl group-hover:scale-110 group-hover:border-white/20 transition-all duration-200 active:scale-95`}>
+                        <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br ${item.gradient} border border-gray-200 flex items-center justify-center text-xl sm:text-2xl group-hover:scale-110 group-hover:border-brand-primary transition-all duration-200 active:scale-95 bg-white shadow-sm`}>
                             {item.emoji}
                         </div>
-                        <span className="text-[10px] sm:text-xs font-medium text-white/60 group-hover:text-white transition-colors text-center leading-tight line-clamp-1">
+                        <span className="text-[10px] sm:text-xs font-medium text-gray-600 group-hover:text-brand-primary transition-colors text-center leading-tight line-clamp-1">
                             {t?.[item.key] ?? item.key}
                         </span>
                     </Link>

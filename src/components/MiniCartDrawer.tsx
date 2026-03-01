@@ -15,6 +15,7 @@ const drawerTranslations: Record<string, any> = {
         continueShopping: '쇼핑 계속하기',
         crossSellTitle: '이 상품도 함께 구매하세요',
         remove: '삭제',
+        confirmRemove: '정말 삭제하시겠습니까?',
     },
     en: {
         title: 'Cart',
@@ -25,6 +26,7 @@ const drawerTranslations: Record<string, any> = {
         continueShopping: 'Continue Shopping',
         crossSellTitle: 'You might also like',
         remove: 'Remove',
+        confirmRemove: 'Are you sure you want to remove this item?',
     },
     km: {
         title: 'រទេះ',
@@ -35,6 +37,7 @@ const drawerTranslations: Record<string, any> = {
         continueShopping: 'បន្តទិញទំនិញ',
         crossSellTitle: 'អ្នកក៏អាចចូលចិត្ត',
         remove: 'លុប',
+        confirmRemove: 'តើអ្នកពិតជាចង់លុបមុខទំនិញនេះមែនទេ?',
     },
     zh: {
         title: '购物车',
@@ -45,6 +48,7 @@ const drawerTranslations: Record<string, any> = {
         continueShopping: '继续购物',
         crossSellTitle: '猜你喜欢',
         remove: '删除',
+        confirmRemove: '您确定要删除此商品吗？',
     },
 };
 
@@ -167,7 +171,11 @@ export default function MiniCartDrawer() {
 
                                             {/* Remove */}
                                             <button
-                                                onClick={() => removeItem(item.productId)}
+                                                onClick={() => {
+                                                    if (window.confirm(t.confirmRemove)) {
+                                                        removeItem(item.productId);
+                                                    }
+                                                }}
                                                 className="w-8 h-8 flex items-center justify-center text-white/30 hover:text-vivid-coral transition-colors rounded-lg hover:bg-vivid-coral/10"
                                                 aria-label={t.remove}
                                             >

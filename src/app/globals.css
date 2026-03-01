@@ -4,11 +4,12 @@
 
 @layer base {
   :root {
-    --background: #09090b;
-    --foreground: #ffffff;
-    --muted: #272431;
-    --muted-foreground: #a1a1aa;
-    --accent: #6366f1;
+    --background: #ffffff;
+    --foreground: #111827;
+    --muted: #f3f4f6;
+    --muted-foreground: #6b7280;
+    --accent: #0073e9;
+    --border: #e5e7eb;
     --border: rgba(255, 255, 255, 0.1);
 
     /* Cosmic glow effects */
@@ -25,11 +26,7 @@
 
 @layer base {
   body {
-    @apply bg-space-900 text-white selection:bg-brand-primary selection:text-white antialiased overflow-x-hidden;
-    background-image:
-      radial-gradient(circle at 15% 50%, rgba(99, 102, 241, 0.15), transparent 25%),
-      radial-gradient(circle at 85% 30%, rgba(236, 72, 153, 0.15), transparent 25%);
-    background-attachment: fixed;
+    @apply bg-white text-gray-900 selection:bg-brand-primary selection:text-white antialiased overflow-x-hidden;
   }
 }
 
@@ -266,12 +263,12 @@
 
 @layer utilities {
   .glass-panel {
-    @apply bg-space-800/60 backdrop-blur-xl border border-white/10;
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+    @apply bg-white/95 backdrop-blur-xl border border-gray-200;
+    box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.05);
   }
 
   .glass-card {
-    @apply bg-gradient-to-br from-white/[0.05] to-white/[0.01] backdrop-blur-md border border-white/10;
+    @apply bg-white border border-gray-100 shadow-sm rounded-2xl;
   }
 
   .text-glow {
@@ -443,9 +440,9 @@
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-space-900;
+  @apply bg-gray-50;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-space-700 rounded-full border border-space-900 hover:bg-space-400 transition-colors;
+  @apply bg-gray-300 rounded-full border border-gray-50 hover:bg-gray-400 transition-colors;
 }

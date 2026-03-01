@@ -75,9 +75,9 @@ function ProductGrid({ products, title, showViewAll = true, t }: { products: typ
     return (
         <section className="px-3 mb-6">
             <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-bold text-white">{title}</h3>
+                <h3 className="text-sm font-bold text-gray-900">{title}</h3>
                 {showViewAll && (
-                    <Link href="/category" className="text-xs text-white/40 hover:text-white/60 transition-colors">
+                    <Link href="/category" className="text-xs text-gray-500 hover:text-gray-700 transition-colors">
                         {t.viewAll} &gt;
                     </Link>
                 )}
@@ -90,7 +90,7 @@ function ProductGrid({ products, title, showViewAll = true, t }: { products: typ
                         className="group block"
                     >
                         {/* Image */}
-                        <div className="relative aspect-square rounded-xl overflow-hidden bg-space-800 mb-1.5">
+                        <div className="relative aspect-square rounded-xl overflow-hidden bg-gray-100 mb-1.5 border border-gray-200">
                             <img
                                 src={product.image}
                                 alt={product.name}
@@ -98,23 +98,23 @@ function ProductGrid({ products, title, showViewAll = true, t }: { products: typ
                                 loading="lazy"
                             />
                             {product.discount > 0 && (
-                                <div className="absolute top-1 left-1 bg-[#FF4444] text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded">
+                                <div className="absolute top-1 left-1 bg-[#FF4444] text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded shadow-sm">
                                     {product.discount}%
                                 </div>
                             )}
                         </div>
                         {/* Text */}
-                        <p className="text-[11px] sm:text-xs text-white/80 leading-tight line-clamp-2 mb-1 min-h-[28px]">
+                        <p className="text-[11px] sm:text-xs text-gray-700 leading-tight line-clamp-2 mb-1 min-h-[28px]">
                             {product.name}
                         </p>
                         {/* Price */}
                         <div>
                             {product.discount > 0 && (
-                                <span className="text-[10px] text-white/30 line-through mr-1">
+                                <span className="text-[10px] text-gray-400 line-through mr-1">
                                     {product.unit}{product.price.toLocaleString()}
                                 </span>
                             )}
-                            <span className="text-xs sm:text-sm font-extrabold text-white">
+                            <span className="text-xs sm:text-sm font-extrabold text-gray-900">
                                 <span className="text-[11px] font-medium mr-px">{product.unit}</span>
                                 {product.salePrice.toLocaleString()}
                             </span>
@@ -122,7 +122,7 @@ function ProductGrid({ products, title, showViewAll = true, t }: { products: typ
                         {/* Rating */}
                         <div className="flex items-center gap-0.5 mt-0.5">
                             <Star className="w-2.5 h-2.5 text-amber-400 fill-amber-400" />
-                            <span className="text-[10px] text-white/40">{product.rating}</span>
+                            <span className="text-[10px] text-gray-400">{product.rating}</span>
                         </div>
                     </Link>
                 ))}
@@ -165,7 +165,7 @@ export default function Home() {
             <main className="flex-grow pb-4">
                 {/* ── Search Bar ── */}
                 <div className="px-3 pt-2 pb-1">
-                    <Link href="/search" className="flex items-center gap-2 w-full px-4 py-2.5 rounded-xl bg-white/[0.06] border border-white/10 text-white/30 text-sm hover:border-white/20 transition-colors">
+                    <Link href="/search" className="flex items-center gap-2 w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-gray-500 text-sm hover:border-gray-300 transition-colors">
                         <Search className="w-4 h-4 flex-shrink-0" />
                         <span>{t.searchPlaceholder}</span>
                     </Link>
@@ -177,7 +177,7 @@ export default function Home() {
                 {/* ── Trust Strip (compact) ── */}
                 <div className="flex items-center gap-2 px-3 py-2 overflow-x-auto scrollbar-hide text-nowrap">
                     {[t.freeShipping, t.authentic, t.fast].map((badge: string, i: number) => (
-                        <span key={i} className="flex-shrink-0 text-[10px] sm:text-xs text-white/50 bg-white/[0.04] border border-white/5 rounded-full px-2.5 py-1 font-medium">
+                        <span key={i} className="flex-shrink-0 text-[10px] sm:text-xs text-gray-600 bg-white border border-gray-200 shadow-sm rounded-full px-2.5 py-1 font-medium">
                             {badge}
                         </span>
                     ))}
@@ -192,8 +192,8 @@ export default function Home() {
                         <div className="w-10 h-10 rounded-full border-2 border-brand-primary/30 flex items-center justify-center">
                             <span className="text-xs font-bold text-brand-primary">{t.forYou}</span>
                         </div>
-                        <p className="text-sm text-white/70">
-                            <span className="font-bold text-white">Premium</span>{t.curationTitle}
+                        <p className="text-sm text-gray-600">
+                            <span className="font-bold text-gray-900">Premium</span>{t.curationTitle}
                         </p>
                     </div>
                 </div>

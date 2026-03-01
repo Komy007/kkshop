@@ -69,8 +69,8 @@ function Section({ icon: Icon, iconColor, title, subtitle, viewAllText, children
                             <Icon className="w-5 h-5 text-white" />
                         </div>
                         <div>
-                            <h2 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">{title}</h2>
-                            <p className="text-sm text-white/40 mt-0.5">{subtitle}</p>
+                            <h2 className="text-xl sm:text-2xl font-extrabold text-gray-900 tracking-tight">{title}</h2>
+                            <p className="text-sm text-gray-500 mt-0.5">{subtitle}</p>
                         </div>
                     </div>
                     <button className="hidden sm:flex items-center gap-1 text-brand-primary font-semibold text-sm hover:text-brand-primary/80 transition-colors">
@@ -117,7 +117,7 @@ export default function CurationSection({ products }: CurationSectionProps) {
     if (products.length === 0) return null;
 
     return (
-        <div className="border-t border-white/5">
+        <div className="border-t border-gray-200 bg-gray-50/50">
             {/* Today's Picks */}
             {todayPicks.length > 0 && (
                 <Section

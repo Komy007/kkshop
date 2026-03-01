@@ -24,9 +24,9 @@ const config: Config = {
                     100: "#e6e4ec", // Starlight white
                 },
                 brand: {
-                    primary: "#6366f1", // Indigo
-                    secondary: "#ec4899", // Pink (cosmetics vibe)
-                    accent: "#06b6d4", // Cyan
+                    primary: "#0073e9", // Coupang Blue
+                    secondary: "#E52528", // Coupang Red
+                    accent: "#333333", // Dark Gray
                 },
                 // High-Saturation palette for Z-Gen Cambodia market
                 vivid: {

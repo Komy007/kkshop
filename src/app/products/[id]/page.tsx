@@ -155,7 +155,7 @@ export default function ProductDetailPage() {
 
     if (!product) {
         return (
-            <div className="min-h-screen flex flex-col items-center justify-center gap-4 text-white/60">
+            <div className="min-h-screen flex flex-col items-center justify-center gap-4 text-gray-500">
                 <p className="text-xl">Product not found</p>
                 <a href="/" className="text-brand-primary hover:underline">{t.back}</a>
             </div>
@@ -207,7 +207,7 @@ export default function ProductDetailPage() {
 
             <article className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" ref={contentRef}>
                 {/* Back link */}
-                <a href="/" className="inline-flex items-center gap-2 text-white/50 hover:text-white transition-colors mb-8 text-sm">
+                <a href="/" className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors mb-8 text-sm font-medium">
                     <ChevronLeft className="w-4 h-4" />
                     {t.back}
                 </a>
@@ -217,7 +217,7 @@ export default function ProductDetailPage() {
 
                     {/* LEFT: Product Image */}
                     <div className="scroll-reveal">
-                        <div className="relative rounded-3xl overflow-hidden aspect-[3/4] bg-space-800 group">
+                        <div className="relative rounded-3xl overflow-hidden aspect-[3/4] bg-gray-50 group border border-gray-100 shadow-sm">
                             <img
                                 src={productImage}
                                 alt={product.name}
@@ -225,8 +225,8 @@ export default function ProductDetailPage() {
                                 loading="eager"
                             />
                             {product.stockQty <= 0 && (
-                                <div className="absolute inset-0 bg-space-900/60 backdrop-blur-sm flex items-center justify-center">
-                                    <span className="bg-white text-space-900 font-bold py-2 px-6 rounded-full text-lg">{t.outOfStock}</span>
+                                <div className="absolute inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center">
+                                    <span className="bg-gray-900 text-white font-bold py-2 px-6 rounded-full text-lg">{t.outOfStock}</span>
                                 </div>
                             )}
                         </div>
@@ -239,7 +239,7 @@ export default function ProductDetailPage() {
                         <TrustBadges variant="compact" />
 
                         {/* Product Name */}
-                        <h1 className="text-3xl md:text-4xl font-black text-white leading-tight tracking-tight">
+                        <h1 className="text-3xl md:text-4xl font-black text-gray-900 leading-tight tracking-tight">
                             {product.name}
                         </h1>
 
@@ -250,24 +250,24 @@ export default function ProductDetailPage() {
                                     {[...Array(5)].map((_, i) => (
                                         <Star
                                             key={i}
-                                            className={`w-5 h-5 ${i < Math.round(product.rating!) ? 'fill-current' : 'text-white/20'}`}
+                                            className={`w-5 h-5 ${i < Math.round(product.rating!) ? 'fill-current' : 'text-gray-300'}`}
                                         />
                                     ))}
                                 </div>
-                                <span className="text-white font-bold">{product.rating.toFixed(1)}</span>
-                                <span className="text-white/40 text-sm">({product.reviewCount})</span>
+                                <span className="text-gray-700 font-bold">{product.rating.toFixed(1)}</span>
+                                <span className="text-gray-400 text-sm">({product.reviewCount})</span>
                             </div>
                         )}
 
                         {/* Short Description */}
                         {product.shortDesc && (
-                            <p className="text-white/60 text-lg leading-relaxed">{product.shortDesc}</p>
+                            <p className="text-gray-500 text-lg leading-relaxed">{product.shortDesc}</p>
                         )}
 
                         {/* Price */}
                         <div className="flex items-end gap-3">
-                            <span className="text-4xl font-black text-vivid-pink">{formatUsd(product.priceUsd)}</span>
-                            <span className="text-white/40 text-sm pb-1">USD</span>
+                            <span className="text-4xl font-black text-brand-secondary">{formatUsd(product.priceUsd)}</span>
+                            <span className="text-gray-400 text-sm pb-1">USD</span>
                         </div>
 
                         {/* Stock Status */}
@@ -280,34 +280,34 @@ export default function ProductDetailPage() {
 
                         {/* Quantity Selector */}
                         <div className="flex items-center gap-4">
-                            <span className="text-sm font-semibold text-white/60">{t.qty}</span>
-                            <div className="flex items-center border border-white/10 rounded-xl overflow-hidden">
+                            <span className="text-sm font-semibold text-gray-500">{t.qty}</span>
+                            <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden shadow-sm">
                                 <button
                                     onClick={() => setQty(Math.max(1, qty - 1))}
-                                    className="px-3 py-2 text-white/60 hover:bg-white/10 transition-colors"
+                                    className="px-3 py-2 text-gray-400 hover:bg-gray-50 transition-colors"
                                 >
-                                    <Minus className="w-4 h-4" />
+                                    <Minus className="w-4 h-4 text-gray-700" />
                                 </button>
-                                <span className="px-4 py-2 text-white font-bold min-w-[3rem] text-center">{qty}</span>
+                                <span className="px-4 py-2 text-gray-900 font-bold min-w-[3rem] text-center bg-white">{qty}</span>
                                 <button
                                     onClick={() => setQty(qty + 1)}
-                                    className="px-3 py-2 text-white/60 hover:bg-white/10 transition-colors"
+                                    className="px-3 py-2 text-gray-400 hover:bg-gray-50 transition-colors"
                                 >
-                                    <Plus className="w-4 h-4" />
+                                    <Plus className="w-4 h-4 text-gray-700" />
                                 </button>
                             </div>
                         </div>
 
-                        {/* CTA Buttons — Micro-interaction */}
-                        <div className="flex flex-col sm:flex-row gap-3 mt-2">
+                        {/* CTA Buttons — Coupang Style */}
+                        <div className="flex gap-3 mt-4">
                             <button
                                 onClick={handleAddToCart}
                                 disabled={product.stockQty <= 0}
-                                className={`flex-1 flex items-center justify-center gap-3 py-4 px-8 rounded-2xl font-bold text-lg transition-all active:scale-95 btn-micro ${cartAdded
-                                    ? 'bg-vivid-green text-space-900'
+                                className={`flex-1 flex items-center justify-center gap-3 py-4 rounded-xl font-bold text-lg transition-all active:scale-95 btn-micro ${cartAdded
+                                    ? 'bg-vivid-green text-white border-none'
                                     : product.stockQty > 0
-                                        ? 'bg-white text-space-900 hover:shadow-[0_0_30px_rgba(255,255,255,0.2)] hover:scale-[1.02]'
-                                        : 'bg-white/10 text-white/30 cursor-not-allowed'
+                                        ? 'bg-white border text-brand-primary border-brand-primary hover:bg-brand-primary hover:text-white'
+                                        : 'bg-gray-100 text-gray-400 cursor-not-allowed border-none'
                                     }`}
                             >
                                 {cartAdded ? (
@@ -317,15 +317,24 @@ export default function ProductDetailPage() {
                                     </>
                                 ) : (
                                     <>
-                                        <ShoppingCart className="w-5 h-5" />
                                         {t.addToCart}
                                     </>
                                 )}
                             </button>
                             <button
-                                className="flex items-center justify-center gap-2 py-4 px-6 rounded-2xl font-bold border border-white/10 text-white hover:bg-white/5 transition-all active:scale-95"
+                                onClick={() => {
+                                    handleAddToCart();
+                                    setTimeout(() => {
+                                        window.location.href = '/checkout';
+                                    }, 500);
+                                }}
+                                disabled={product.stockQty <= 0}
+                                className={`flex-1 flex items-center justify-center gap-2 py-4 rounded-xl font-bold text-lg transition-all active:scale-95 ${product.stockQty > 0
+                                        ? 'bg-brand-primary border text-white hover:bg-brand-primary/90'
+                                        : 'bg-gray-200 text-gray-400 cursor-not-allowed hidden'
+                                    }`}
                             >
-                                <Heart className="w-5 h-5" />
+                                {t.buyNow}
                             </button>
                         </div>
 
@@ -337,14 +346,14 @@ export default function ProductDetailPage() {
                 {/* Tabs Section — scroll into view for detailed content */}
                 <div className="mt-16 scroll-reveal" style={{ transitionDelay: '300ms' }}>
                     {/* Tab Header */}
-                    <nav className="flex border-b border-white/10 mb-8">
+                    <nav className="flex border-b border-gray-200 mb-8">
                         {(['desc', 'ingredients', 'reviews'] as const).map((tab) => (
                             <button
                                 key={tab}
                                 onClick={() => setActiveTab(tab)}
                                 className={`py-4 px-6 text-sm font-bold transition-all border-b-2 ${activeTab === tab
-                                    ? 'border-brand-primary text-white'
-                                    : 'border-transparent text-white/40 hover:text-white/70'
+                                    ? 'border-brand-primary text-gray-900'
+                                    : 'border-transparent text-gray-500 hover:text-gray-800'
                                     }`}
                             >
                                 {t.tabs[tab]}
@@ -353,46 +362,52 @@ export default function ProductDetailPage() {
                     </nav>
 
                     {/* Tab Content */}
-                    <div className="min-h-[200px] animate-fade-in">
+                    <div className="min-h-[200px] animate-fade-in text-gray-700">
                         {activeTab === 'desc' && (
-                            <div className="prose prose-invert max-w-none">
+                            <div className="prose max-w-none">
                                 {product.detailDesc ? (
                                     <div dangerouslySetInnerHTML={{ __html: product.detailDesc }} />
                                 ) : (
-                                    <p className="text-white/50">{product.shortDesc || 'No description available.'}</p>
+                                    <p className="text-gray-500">{product.shortDesc || 'No description available.'}</p>
                                 )}
                             </div>
                         )}
                         {activeTab === 'ingredients' && (
-                            <p className="text-white/50">Coming soon — product ingredient details will appear here.</p>
+                            <p className="text-gray-500">Coming soon — product ingredient details will appear here.</p>
                         )}
                         {activeTab === 'reviews' && (
-                            <p className="text-white/50">Coming soon — customer reviews will appear here.</p>
+                            <p className="text-gray-500">Coming soon — customer reviews will appear here.</p>
                         )}
                     </div>
                 </div>
             </article>
 
             {/* Sticky Bottom CTA — Mobile only */}
-            <div className="fixed bottom-16 md:bottom-0 inset-x-0 z-30 md:hidden bg-space-900/95 backdrop-blur-xl border-t border-white/10 px-4 py-3 flex gap-3">
+            <div className="fixed bottom-16 md:bottom-0 inset-x-0 z-30 md:hidden bg-white border-t border-gray-200 px-4 py-3 flex gap-3 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
                 <button
                     onClick={handleAddToCart}
                     disabled={product.stockQty <= 0}
-                    className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold transition-all active:scale-95 ${cartAdded
-                            ? 'bg-vivid-green text-space-900'
-                            : product.stockQty > 0
-                                ? 'bg-white text-space-900'
-                                : 'bg-white/10 text-white/30 cursor-not-allowed'
+                    className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold border transition-all active:scale-95 ${cartAdded
+                        ? 'bg-vivid-green text-white border-none'
+                        : product.stockQty > 0
+                            ? 'bg-white text-brand-primary border-brand-primary'
+                            : 'bg-gray-100 text-gray-400 cursor-not-allowed border-none'
                         }`}
                 >
                     {cartAdded ? (
-                        <><Check className="w-5 h-5" />{t.added}</>
+                        <>{t.added}</>
                     ) : (
-                        <><ShoppingCart className="w-4 h-4" />{t.addToCart}</>
+                        <>{t.addToCart}</>
                     )}
                 </button>
                 <button
-                    className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold bg-brand-primary text-white hover:bg-brand-primary/90 transition-all active:scale-95"
+                    onClick={() => {
+                        handleAddToCart();
+                        setTimeout(() => {
+                            window.location.href = '/checkout';
+                        }, 500);
+                    }}
+                    className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold bg-brand-primary text-white hover:bg-brand-primary/90 transition-all active:scale-95 border border-brand-primary"
                 >
                     {t.buyNow}
                 </button>
