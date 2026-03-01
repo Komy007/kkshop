@@ -17,8 +17,8 @@ RUN mkdir -p public
 # Generate Prisma Client
 RUN npx prisma generate
 
-# Build Next.js
-RUN npm run build
+# Force clear any cached built files and Build Next.js
+RUN rm -rf .next && npm run build
 
 # ---- Stage 3: Production runner ----
 FROM node:22-alpine AS runner
