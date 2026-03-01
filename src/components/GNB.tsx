@@ -57,7 +57,7 @@ export default function GNB() {
                     }`}
             >
                 <div
-                    className={`w-[95%] max-w-7xl mx-auto flex items-center justify-between px-6 py-4 rounded-full transition-all duration-300 ${scrolled ? "glass-panel bg-white/90 border border-gray-100 shadow-sm" : "bg-transparent"
+                    className={`w-[95%] max-w-7xl mx-auto flex items-center justify-between px-6 py-4 rounded-full transition-all duration-300 ${scrolled ? "bg-white/95 backdrop-blur-md border border-gray-100 shadow-sm" : "bg-white/80 backdrop-blur-sm border border-gray-100 shadow-sm"
                         }`}
                 >
                     {/* Logo */}
@@ -176,7 +176,7 @@ export default function GNB() {
 
                     {/* Mobile Menu Body - Only Languages and About Us */}
                     <div className="flex flex-col flex-1 mt-6">
-                        <div className="flex flex-col gap-2">
+                        <div className="flex flex-col gap-2 relative">
                             <button
                                 onClick={() => setLangOpen(!langOpen)}
                                 className="flex items-center justify-between w-full py-4 px-5 rounded-2xl bg-gray-50 border border-gray-200 text-gray-900 hover:bg-gray-100 transition-colors"
@@ -213,14 +213,21 @@ export default function GNB() {
                         {/* Pushed to the bottom */}
                         <div className="mt-auto pb-4">
                             <div className="h-px w-full bg-gray-200 mb-6" />
+                            {/* Close Menu Explicitly Button */}
+                            <button
+                                onClick={() => setMobileMenuOpen(false)}
+                                className="flex items-center justify-center w-full py-3.5 mb-2 rounded-xl bg-gray-100 text-gray-600 font-bold hover:bg-gray-200 transition-colors"
+                            >
+                                닫기 (Close)
+                            </button>
+
                             <Link
                                 href="/about"
                                 className="flex items-center justify-between w-full py-4 px-5 rounded-2xl bg-white border border-gray-200 hover:bg-gray-50 transition-colors group"
                                 onClick={() => setMobileMenuOpen(false)}
                             >
                                 <div className="flex flex-col">
-                                    <span className="text-xl font-bold text-gray-900 group-hover:text-brand-primary transition-colors">회사 소개 (About Us)</span>
-                                    <span className="text-xs text-gray-500 mt-1">회사 소개 및 철학</span>
+                                    <span className="text-lg font-bold text-gray-900 group-hover:text-brand-primary transition-colors">회사 소개 (About Us)</span>
                                 </div>
                                 <span className="text-gray-400 group-hover:translate-x-1 transition-transform">→</span>
                             </Link>

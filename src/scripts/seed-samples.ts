@@ -139,19 +139,30 @@ async function seed() {
                             seoKeywords: baseKeywords,
                         });
                     } else {
-                        // Google Cloud Translate
-                        const [translatedName] = await translate.translate(baseName, lang);
-                        const [translatedShortDesc] = await translate.translate(baseShortDesc, lang);
-                        const [translatedDetailDesc] = await translate.translate(baseDetailDesc, lang);
-                        const [translatedKeywords] = await translate.translate(baseKeywords, lang);
+                        try {
+                            // Try Google Cloud Translate
+                            const [translatedName] = await translate.translate(baseName, lang);
+                            const [translatedShortDesc] = await translate.translate(baseShortDesc, lang);
+                            const [translatedDetailDesc] = await translate.translate(baseDetailDesc, lang);
+                            const [translatedKeywords] = await translate.translate(baseKeywords, lang);
 
-                        translationsData.push({
-                            langCode: lang,
-                            name: translatedName,
-                            shortDesc: translatedShortDesc,
-                            detailDesc: translatedDetailDesc,
-                            seoKeywords: translatedKeywords,
-                        });
+                            translationsData.push({
+                                langCode: lang,
+                                name: translatedName,
+                                shortDesc: translatedShortDesc,
+                                detailDesc: translatedDetailDesc,
+                                seoKeywords: translatedKeywords,
+                            });
+                        } catch (err) {
+                            console.warn(`Translation failed for ${lang}. Using fallback...`);
+                            translationsData.push({
+                                langCode: lang,
+                                name: `[${lang.toUpperCase()}] ${baseName}`,
+                                shortDesc: `[${lang.toUpperCase()}] ${baseShortDesc}`,
+                                detailDesc: `[${lang.toUpperCase()}] ${baseDetailDesc}`,
+                                seoKeywords: `[${lang.toUpperCase()}] ${baseKeywords}`,
+                            });
+                        }
                     }
                 }
 

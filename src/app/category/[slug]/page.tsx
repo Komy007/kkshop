@@ -60,13 +60,13 @@ export default function CategoryDetailPage() {
     }, [slug, language]);
 
     return (
-        <main className="min-h-screen bg-space-950 text-white pb-24">
+        <main className="min-h-screen bg-gray-50 text-gray-900 pb-24">
             {/* Header Area */}
-            <div className="sticky top-0 z-40 bg-space-950/80 backdrop-blur-md border-b border-white/5 px-4 py-4 flex items-center gap-4">
-                <Link href="/" className="p-2 rounded-full bg-white/5 hover:bg-white/10 transition-colors">
-                    <ArrowLeft className="w-5 h-5 text-brand-primary" />
+            <div className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-gray-200 px-4 py-4 flex items-center justify-center relative shadow-sm">
+                <Link href="/" className="absolute left-4 p-2 rounded-full hover:bg-gray-100 transition-colors">
+                    <ArrowLeft className="w-5 h-5 text-gray-900" />
                 </Link>
-                <h1 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-brand-primary to-brand-secondary">
+                <h1 className="text-lg font-extrabold text-gray-900">
                     {currentTitle}
                 </h1>
             </div>
@@ -75,51 +75,58 @@ export default function CategoryDetailPage() {
             <div className="max-w-7xl mx-auto px-4 pt-6">
                 {isLoading ? (
                     <div className="flex justify-center py-20">
-                        <div className="w-8 h-8 border-4 border-brand-secondary border-t-transparent rounded-full animate-spin"></div>
+                        <div className="w-8 h-8 border-4 border-brand-primary border-t-transparent rounded-full animate-spin"></div>
                     </div>
                 ) : products.length === 0 ? (
                     <div className="text-center py-24 px-4">
-                        <div className="text-6xl mb-4 opacity-50">📦</div>
-                        <p className="text-white/60 font-medium">{uiText}</p>
-                        <Link href="/" className="inline-block mt-6 px-6 py-2.5 bg-brand-primary rounded-full text-white font-bold text-sm hover:brightness-110 transition-all">
+                        <div className="text-6xl mb-4 opacity-30 grayscale">📦</div>
+                        <p className="text-gray-500 font-medium">{uiText}</p>
+                        <Link href="/" className="inline-block mt-6 px-8 py-3 bg-white border border-gray-300 rounded-full text-gray-700 font-bold text-sm hover:bg-gray-50 hover:text-brand-primary transition-all shadow-sm">
                             쇼핑 홈으로 가기
                         </Link>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
                         {products.map((product) => (
-                            <Link key={product.id} href={`/products/${product.id}`} className="group block bg-space-900 rounded-2xl overflow-hidden hover:ring-2 hover:ring-brand-primary/50 transition-all border border-white/5 shadow-xl">
-                                <div className="aspect-square relative flex bg-gradient-to-br from-white/10 to-transparent items-center justify-center p-8">
-                                    <div className="text-6xl group-hover:scale-125 transition-transform duration-500 will-change-transform">
-                                        ✨
-                                    </div>
-                                    <div className="absolute top-2 left-2 flex gap-1 z-10">
+                            <Link key={product.id} href={`/products/${product.id}`} className="group flex flex-col bg-white rounded-2xl overflow-hidden hover:shadow-lg transition-all border border-gray-200">
+                                {/* Image Container */}
+                                <div className="aspect-[4/5] relative w-full bg-gray-100 overflow-hidden">
+                                    {product.imageUrl ? (
+                                        <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 will-change-transform" />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center text-4xl opacity-50">✨</div>
+                                    )}
+
+                                    {/* Badges */}
+                                    <div className="absolute top-2 left-2 flex flex-col gap-1 items-start z-10">
                                         {slug === 'new' && (
-                                            <span className="bg-brand-primary text-white text-[9px] font-bold px-2 py-0.5 rounded-full">NEW</span>
+                                            <span className="bg-brand-primary text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm">NEW</span>
                                         )}
-                                        <span className="bg-rose-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full">특가</span>
+                                        <span className="bg-[#E52528] text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm">특가</span>
                                     </div>
                                 </div>
 
-                                <div className="p-4">
-                                    <p className="text-xs sm:text-sm text-white/90 leading-snug line-clamp-2 min-h-[36px] font-medium mb-3 group-hover:text-brand-primary transition-colors">
+                                {/* Content Container */}
+                                <div className="p-4 flex flex-col flex-1">
+                                    <p className="text-sm text-gray-800 leading-snug line-clamp-2 min-h-[40px] font-medium mb-3 group-hover:text-brand-primary transition-colors">
                                         {product.name}
                                     </p>
 
-                                    <div className="flex items-end justify-between">
+                                    <div className="mt-auto">
+                                        {/* Price */}
                                         <div className="flex flex-col">
-                                            <span className="text-xs text-white/40 line-through mb-0.5">
+                                            <span className="text-xs text-gray-400 line-through mb-0.5">
                                                 $ {(product.priceUsd * 1.5).toFixed(2)}
                                             </span>
-                                            <span className="text-sm sm:text-lg font-black text-white leading-none">
+                                            <span className="text-lg font-extrabold text-[#E52528] leading-none">
                                                 $ {product.priceUsd.toLocaleString()}
                                             </span>
                                         </div>
-                                        <div className="flex flex-col items-end gap-1">
-                                            <div className="flex items-center gap-0.5">
-                                                <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
-                                                <span className="text-[10px] text-white/50">4.9</span>
-                                            </div>
+                                        {/* Rating */}
+                                        <div className="flex items-center gap-1 mt-2">
+                                            <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400 drop-shadow-sm" />
+                                            <span className="text-xs font-bold text-gray-700">4.9</span>
+                                            <span className="text-xs text-gray-400">(128)</span>
                                         </div>
                                     </div>
                                 </div>
