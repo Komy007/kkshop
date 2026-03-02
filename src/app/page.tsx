@@ -75,9 +75,9 @@ function ProductGrid({ products, title, showViewAll = true, t }: { products: typ
     return (
         <section className="px-3 mb-6">
             <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-bold text-gray-900">{title}</h3>
+                <h3 className="text-base font-extrabold text-black">{title}</h3>
                 {showViewAll && (
-                    <Link href="/category" className="text-xs text-gray-500 hover:text-gray-700 transition-colors">
+                    <Link href="/category" className="text-xs font-semibold text-gray-800 hover:text-black transition-colors">
                         {t.viewAll} &gt;
                     </Link>
                 )}
@@ -104,18 +104,18 @@ function ProductGrid({ products, title, showViewAll = true, t }: { products: typ
                             )}
                         </div>
                         {/* Text */}
-                        <p className="text-[11px] sm:text-xs text-gray-700 leading-tight line-clamp-2 mb-1 min-h-[28px]">
+                        <p className="text-[12px] sm:text-[13px] font-bold text-gray-900 leading-[1.3] line-clamp-2 mb-1 min-h-[34px]">
                             {product.name}
                         </p>
                         {/* Price */}
                         <div>
                             {product.discount > 0 && (
-                                <span className="text-[10px] text-gray-400 line-through mr-1">
+                                <span className="text-[11px] text-gray-400 line-through mr-1 font-medium">
                                     {product.unit}{product.price.toLocaleString()}
                                 </span>
                             )}
-                            <span className="text-xs sm:text-sm font-extrabold text-gray-900">
-                                <span className="text-[11px] font-medium mr-px">{product.unit}</span>
+                            <span className="text-[13px] sm:text-[15px] font-black text-[#E52528]">
+                                <span className="text-[11px] font-bold mr-px">{product.unit}</span>
                                 {product.salePrice.toLocaleString()}
                             </span>
                         </div>
@@ -165,8 +165,8 @@ export default function Home() {
             <main className="flex-grow pb-4">
                 {/* ── Search Bar ── */}
                 <div className="px-3 pt-2 pb-1">
-                    <Link href="/search" className="flex items-center gap-2 w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-gray-500 text-sm hover:border-gray-300 transition-colors">
-                        <Search className="w-4 h-4 flex-shrink-0" />
+                    <Link href="/search" className="flex items-center gap-2 w-full px-4 py-3 rounded-full bg-white border-[1.5px] border-gray-800 text-gray-800 text-sm font-bold hover:border-black shadow-sm transition-colors">
+                        <Search className="w-5 h-5 flex-shrink-0 text-black" strokeWidth={2.5} />
                         <span>{t.searchPlaceholder}</span>
                     </Link>
                 </div>
@@ -177,7 +177,7 @@ export default function Home() {
                 {/* ── Trust Strip (compact) ── */}
                 <div className="flex items-center gap-2 px-3 py-2 overflow-x-auto scrollbar-hide text-nowrap">
                     {[t.freeShipping, t.authentic, t.fast].map((badge: string, i: number) => (
-                        <span key={i} className="flex-shrink-0 text-[10px] sm:text-xs text-gray-600 bg-white border border-gray-200 shadow-sm rounded-full px-2.5 py-1 font-medium">
+                        <span key={i} className="flex-shrink-0 text-[11px] sm:text-xs text-gray-800 bg-white border border-gray-300 shadow-sm rounded-full px-2.5 py-1 font-bold">
                             {badge}
                         </span>
                     ))}
@@ -187,13 +187,13 @@ export default function Home() {
                 <CategoryShortcuts />
 
                 {/* ── Curation Banner ── */}
-                <div className="px-3 py-4">
+                <div className="px-3 py-4 mt-2">
                     <div className="flex items-center gap-3 mb-3">
-                        <div className="w-10 h-10 rounded-full border-2 border-brand-primary/30 flex items-center justify-center">
-                            <span className="text-xs font-bold text-brand-primary">{t.forYou}</span>
+                        <div className="w-10 h-10 rounded-full border-2 border-brand-primary flex items-center justify-center">
+                            <span className="text-xs font-extrabold text-brand-primary">{t.forYou}</span>
                         </div>
-                        <p className="text-sm text-gray-600">
-                            <span className="font-bold text-gray-900">Premium</span>{t.curationTitle}
+                        <p className="text-base text-black font-extrabold">
+                            Premium{t.curationTitle}
                         </p>
                     </div>
                 </div>

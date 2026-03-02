@@ -111,13 +111,13 @@ export default function ProductCard({ product }: ProductCardProps) {
                 )}
 
                 {/* Title */}
-                <h3 className="font-extrabold text-gray-900 text-lg leading-[1.3] line-clamp-2 mb-2 cursor-pointer group-hover:text-blue-600 transition-colors">
+                <h3 className="font-extrabold text-black text-[15px] sm:text-base leading-[1.35] line-clamp-2 mb-2 cursor-pointer group-hover:text-blue-600 transition-colors">
                     {product.name}
                 </h3>
 
                 {/* Subtitle */}
                 {product.shortDesc && (
-                    <p className="text-sm text-gray-500 line-clamp-2 mb-4 font-normal leading-relaxed">
+                    <p className="text-[13px] text-gray-600 line-clamp-2 mb-4 font-medium leading-[1.45]">
                         {product.shortDesc}
                     </p>
                 )}
@@ -127,8 +127,8 @@ export default function ProductCard({ product }: ProductCardProps) {
                 {/* Price */}
                 <div className="flex items-end justify-between mt-6 pt-4 border-t border-gray-100">
                     <div className="flex flex-col">
-                        <span className="text-xs font-semibold tracking-wider text-gray-400 uppercase mb-1">USD Price</span>
-                        <span className="font-extrabold text-2xl text-rose-600 tracking-tight">
+                        <span className="text-[11px] font-bold tracking-wider text-gray-500 uppercase mb-0.5">USD Price</span>
+                        <span className="font-black text-2xl text-[#E52528] tracking-tight">
                             {formatUsd(product.priceUsd)}
                         </span>
                     </div>

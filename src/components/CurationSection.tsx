@@ -69,8 +69,8 @@ function Section({ icon: Icon, iconColor, title, subtitle, viewAllText, children
                             <Icon className="w-5 h-5 text-white" />
                         </div>
                         <div>
-                            <h2 className="text-xl sm:text-2xl font-extrabold text-gray-900 tracking-tight">{title}</h2>
-                            <p className="text-sm text-gray-500 mt-0.5">{subtitle}</p>
+                            <h2 className="text-xl sm:text-[22px] font-black text-black tracking-tight">{title}</h2>
+                            <p className="text-[14px] font-semibold text-gray-600 mt-1">{subtitle}</p>
                         </div>
                     </div>
                     <button className="hidden sm:flex items-center gap-1 text-brand-primary font-semibold text-sm hover:text-brand-primary/80 transition-colors">
