@@ -1,97 +1,95 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Star } from 'lucide-react';
+import { ArrowLeft, Search } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
-import { type TranslatedProduct } from '@/lib/api';
+import Footer from '@/components/Footer';
 
-const translations: Record<string, any> = {
-    ko: { title: '모든 상품', empty: '등록된 상품이 없습니다.' },
-    en: { title: 'All Products', empty: 'No products found.' },
-    km: { title: 'ផលិតផលទាំងអស់', empty: 'រកមិនឃើញផលិតផលទេ។' },
-    zh: { title: '所有商品', empty: '未找商品。' }
+const categoryTranslations: Record<string, any> = {
+    ko: {
+        title: '카테고리',
+        skincare: '스킨케어', makeup: '메이크업', hairBody: '헤어/바디',
+        living: '생활용품', health: '건강식품', best: '베스트',
+        newArrivals: '신상품', sale: '할인', all: '전체 상품 보기'
+    },
+    en: {
+        title: 'Category',
+        skincare: 'Skincare', makeup: 'Makeup', hairBody: 'Hair/Body',
+        living: 'Living', health: 'Health', best: 'Bestseller',
+        newArrivals: 'New', sale: 'Sale', all: 'View All Products'
+    },
+    km: {
+        title: 'ប្រភេទ',
+        skincare: 'ថែស្បែក', makeup: 'គ្រឿងសំអាង', hairBody: 'សក់/រាងកាយ',
+        living: 'គ្រឿងប្រើប្រាស់', health: 'សុខភាព', best: 'ពេញនិយម',
+        newArrivals: 'ថ្មី', sale: 'បញ្ចុះតម្លៃ', all: 'ផលិតផលទាំងអស់'
+    },
+    zh: {
+        title: '分类',
+        skincare: '护肤', makeup: '彩妆', hairBody: '洗护',
+        living: '生活用品', health: '保健品', best: '热销',
+        newArrivals: '新品', sale: '折扣', all: '全部商品'
+    }
 };
+
+const categories = [
+    { key: 'skincare', emoji: '🧴', href: '/category/skincare', bg: 'bg-pink-50 text-pink-500' },
+    { key: 'makeup', emoji: '💄', href: '/category/makeup', bg: 'bg-rose-50 text-rose-500' },
+    { key: 'hairBody', emoji: '🧖', href: '/category/hair-body', bg: 'bg-cyan-50 text-cyan-500' },
+    { key: 'living', emoji: '🏠', href: '/category/living', bg: 'bg-green-50 text-green-500' },
+    { key: 'health', emoji: '💊', href: '/category/health', bg: 'bg-amber-50 text-amber-500' },
+    { key: 'best', emoji: '👑', href: '/category/best', bg: 'bg-yellow-50 text-yellow-500' },
+    { key: 'newArrivals', emoji: '✨', href: '/category/new', bg: 'bg-violet-50 text-violet-500' },
+    { key: 'sale', emoji: '🔥', href: '/category/sale', bg: 'bg-red-50 text-red-500' },
+];
 
 export default function CategoryIndexPage() {
     const { language } = useAppStore();
-    const t = translations[language] || translations.en;
-
-    const [products, setProducts] = useState<TranslatedProduct[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-
-    useEffect(() => {
-        async function fetchProducts() {
-            try {
-                // Fetch ALL products without specific category slug
-                const res = await fetch(`/api/products?lang=${language}`);
-                if (res.ok) {
-                    const data = await res.json();
-                    setProducts(data);
-                }
-            } catch (error) {
-                console.error('Failed to load products', error);
-            } finally {
-                setIsLoading(false);
-            }
-        }
-        fetchProducts();
-    }, [language]);
+    const t = categoryTranslations[language] || categoryTranslations.en;
 
     return (
-        <main className="min-h-screen bg-space-900 text-white pb-24">
+        <main className="min-h-screen bg-gray-50 text-gray-900 pb-24">
             {/* Header Area */}
-            <div className="sticky top-0 z-40 bg-space-900/80 backdrop-blur-md border-b border-white/10 px-4 py-4 flex items-center gap-4">
-                <Link href="/" className="p-2 rounded-full hover:bg-white/10 transition-colors">
-                    <ArrowLeft className="w-6 h-6" />
+            <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-200 px-4 py-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <Link href="/" className="p-2 -ml-2 rounded-full hover:bg-gray-100 transition-colors text-black">
+                        <ArrowLeft className="w-6 h-6" />
+                    </Link>
+                    <h1 className="text-xl font-extrabold text-black tracking-tight">{t.title}</h1>
+                </div>
+                <Link href="/search" className="p-2 text-gray-600 hover:text-black hover:bg-gray-100 rounded-full transition-colors">
+                    <Search className="w-6 h-6" />
                 </Link>
-                <h1 className="text-xl font-bold">{t.title}</h1>
             </div>
 
-            {/* Product Grid */}
-            <div className="px-4 pt-6">
-                {isLoading ? (
-                    <div className="flex justify-center py-20">
-                        <div className="w-8 h-8 border-4 border-brand-primary border-t-transparent rounded-full animate-spin"></div>
-                    </div>
-                ) : products.length === 0 ? (
-                    <div className="text-center py-20 text-white/50">{t.empty}</div>
-                ) : (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
-                        {products.map((product) => (
-                            <Link key={product.id} href={`/products/${product.id}`} className="group block bg-space-800 rounded-2xl overflow-hidden hover:ring-2 hover:ring-brand-primary/50 transition-all">
-                                <div className="aspect-square relative bg-white/5">
-                                    {/* Placeholder Image for Samples */}
-                                    <div className="absolute inset-0 flex items-center justify-center text-4xl group-hover:scale-110 transition-transform">
-                                        🛍️
-                                    </div>
-                                    <div className="absolute top-2 left-2 bg-brand-primary text-white text-[10px] font-bold px-2 py-0.5 rounded-full z-10">
-                                        Free Ship
-                                    </div>
-                                </div>
+            {/* Content Array */}
+            <div className="px-4 py-6 max-w-lg mx-auto">
+                <div className="grid grid-cols-3 gap-x-4 gap-y-6">
+                    {categories.map((item) => (
+                        <Link
+                            key={item.key}
+                            href={item.href}
+                            className="group flex flex-col items-center gap-2"
+                        >
+                            <div className={`w-20 h-20 sm:w-24 sm:h-24 rounded-2xl ${item.bg} flex items-center justify-center text-4xl group-hover:scale-105 group-active:scale-95 transition-all shadow-sm border border-gray-100`}>
+                                {item.emoji}
+                            </div>
+                            <span className="text-[13px] sm:text-[14px] font-bold text-gray-800 group-hover:text-brand-primary text-center">
+                                {t[item.key]}
+                            </span>
+                        </Link>
+                    ))}
+                </div>
 
-                                <div className="p-3">
-                                    <p className="text-xs sm:text-sm text-white/90 leading-tight line-clamp-2 min-h-[32px] font-medium mb-2 group-hover:text-brand-primary transition-colors">
-                                        {product.name}
-                                    </p>
-
-                                    <div className="flex items-end justify-between">
-                                        <div className="flex flex-col">
-                                            <span className="text-sm sm:text-base font-extrabold text-white">
-                                                $ {product.priceUsd.toLocaleString()}
-                                            </span>
-                                        </div>
-                                        <div className="flex items-center gap-1">
-                                            <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
-                                            <span className="text-[10px] text-white/60">5.0</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </Link>
-                        ))}
-                    </div>
-                )}
+                <div className="mt-8 pt-6 border-t border-gray-200">
+                    <Link href="/category/all" className="w-full flex items-center justify-center p-4 bg-white border border-gray-300 rounded-xl font-bold text-gray-900 shadow-sm active:bg-gray-50 hover:bg-gray-50 transition-colors">
+                        📦 {t.all}
+                    </Link>
+                </div>
             </div>
+
+            <Footer />
         </main>
     );
 }

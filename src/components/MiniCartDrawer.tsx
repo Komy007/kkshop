@@ -79,44 +79,44 @@ export default function MiniCartDrawer() {
 
             {/* Drawer panel */}
             <aside
-                className={`fixed top-0 right-0 z-[75] h-full w-full max-w-md bg-space-900 border-l border-white/10 shadow-2xl flex flex-col transition-transform duration-300 ease-out ${isDrawerOpen ? 'translate-x-0' : 'translate-x-full'
+                className={`fixed top-0 right-0 z-[75] h-full w-full max-w-md bg-white border-l border-gray-200 shadow-2xl flex flex-col transition-transform duration-300 ease-out ${isDrawerOpen ? 'translate-x-0' : 'translate-x-full'
                     }`}
                 role="dialog"
                 aria-modal="true"
                 aria-label={t.title}
             >
                 {/* Header */}
-                <div className="flex items-center justify-between px-6 py-5 border-b border-white/10">
+                <div className="flex items-center justify-between px-6 py-5 border-b border-gray-200">
                     <div className="flex items-center gap-3">
-                        <ShoppingBag className="w-5 h-5 text-brand-primary" />
-                        <h2 className="text-lg font-bold text-white">{t.title}</h2>
+                        <ShoppingBag className="w-6 h-6 text-black" />
+                        <h2 className="text-xl font-extrabold text-black">{t.title}</h2>
                         {totalItems > 0 && (
-                            <span className="bg-brand-primary/20 text-brand-primary text-xs font-bold px-2 py-0.5 rounded-full">
+                            <span className="bg-brand-primary text-white text-xs font-bold px-2.5 py-0.5 rounded-full">
                                 {totalItems}
                             </span>
                         )}
                     </div>
                     <button
                         onClick={closeDrawer}
-                        className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-colors"
+                        className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-400 hover:text-black transition-colors"
                         aria-label="Close"
                     >
-                        <X className="w-5 h-5" />
+                        <X className="w-6 h-6" />
                     </button>
                 </div>
 
                 {/* Cart Items */}
-                <div className="flex-1 overflow-y-auto px-6 py-4">
+                <div className="flex-1 overflow-y-auto px-6 py-4 bg-gray-50">
                     {items.length === 0 ? (
                         <div className="flex flex-col items-center justify-center h-full text-center gap-4">
-                            <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center">
-                                <ShoppingBag className="w-10 h-10 text-white/20" />
+                            <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mb-2">
+                                <ShoppingBag className="w-10 h-10 text-gray-300" />
                             </div>
-                            <p className="text-white/60 font-medium">{t.empty}</p>
-                            <p className="text-white/30 text-sm">{t.emptyDesc}</p>
+                            <p className="text-gray-900 font-extrabold text-lg">{t.empty}</p>
+                            <p className="text-gray-500 font-medium">{t.emptyDesc}</p>
                             <button
                                 onClick={closeDrawer}
-                                className="mt-4 px-6 py-3 rounded-xl bg-brand-primary text-white font-semibold hover:bg-brand-primary/90 transition-colors text-sm"
+                                className="mt-6 px-8 py-3.5 rounded-xl bg-white border border-gray-300 text-gray-900 font-bold hover:bg-gray-50 transition-colors shadow-sm"
                             >
                                 {t.continueShopping}
                             </button>
@@ -126,10 +126,10 @@ export default function MiniCartDrawer() {
                             {items.map((item) => (
                                 <li
                                     key={item.productId}
-                                    className="flex gap-4 p-3 rounded-2xl border border-white/5 hover:border-white/10 transition-colors bg-white/[0.02]"
+                                    className="flex gap-4 p-4 rounded-2xl border border-gray-200 hover:border-brand-primary/30 transition-colors bg-white shadow-sm"
                                 >
                                     {/* Image */}
-                                    <div className="w-20 h-20 rounded-xl bg-space-800 overflow-hidden flex-shrink-0">
+                                    <div className="w-24 h-24 rounded-xl bg-gray-100 border border-gray-100 overflow-hidden flex-shrink-0 relative">
                                         <img
                                             src={item.imageUrl}
                                             alt={item.name}
@@ -139,33 +139,33 @@ export default function MiniCartDrawer() {
                                     </div>
 
                                     {/* Info */}
-                                    <div className="flex-1 min-w-0 flex flex-col justify-between">
+                                    <div className="flex-1 min-w-0 flex flex-col justify-between py-1">
                                         <div>
-                                            <h3 className="text-sm font-bold text-white truncate">{item.name}</h3>
-                                            <p className="text-brand-primary font-bold text-sm mt-0.5">
+                                            <h3 className="text-[15px] font-extrabold text-black leading-snug line-clamp-2">{item.name}</h3>
+                                            <p className="font-extrabold text-[#E52528] text-lg mt-1 tracking-tight">
                                                 {formatUsd(item.priceUsd)}
                                             </p>
                                         </div>
 
-                                        <div className="flex items-center justify-between mt-2">
+                                        <div className="flex items-center justify-between mt-3">
                                             {/* Quantity controls */}
-                                            <div className="flex items-center border border-white/10 rounded-lg overflow-hidden">
+                                            <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden bg-white shadow-sm">
                                                 <button
                                                     onClick={() => updateQty(item.productId, item.qty - 1)}
-                                                    className="w-8 h-8 flex items-center justify-center text-white/60 hover:bg-white/10 transition-colors"
+                                                    className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors"
                                                     aria-label="Decrease quantity"
                                                 >
-                                                    <Minus className="w-3 h-3" />
+                                                    <Minus className="w-3.5 h-3.5 flex-shrink-0" />
                                                 </button>
-                                                <span className="w-8 h-8 flex items-center justify-center text-white text-sm font-bold">
+                                                <span className="w-8 h-8 flex items-center justify-center text-black text-sm font-bold border-x border-gray-200">
                                                     {item.qty}
                                                 </span>
                                                 <button
                                                     onClick={() => updateQty(item.productId, item.qty + 1)}
-                                                    className="w-8 h-8 flex items-center justify-center text-white/60 hover:bg-white/10 transition-colors"
+                                                    className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors"
                                                     aria-label="Increase quantity"
                                                 >
-                                                    <Plus className="w-3 h-3" />
+                                                    <Plus className="w-3.5 h-3.5 flex-shrink-0" />
                                                 </button>
                                             </div>
 
@@ -176,10 +176,10 @@ export default function MiniCartDrawer() {
                                                         removeItem(item.productId);
                                                     }
                                                 }}
-                                                className="w-8 h-8 flex items-center justify-center text-white/30 hover:text-vivid-coral transition-colors rounded-lg hover:bg-vivid-coral/10"
+                                                className="p-2 text-gray-400 hover:text-red-500 transition-colors rounded-lg hover:bg-red-50"
                                                 aria-label={t.remove}
                                             >
-                                                <Trash2 className="w-4 h-4" />
+                                                <Trash2 className="w-5 h-5 flex-shrink-0" />
                                             </button>
                                         </div>
                                     </div>
@@ -191,25 +191,20 @@ export default function MiniCartDrawer() {
 
                 {/* Footer — Subtotal + Checkout */}
                 {items.length > 0 && (
-                    <div className="border-t border-white/10 px-6 py-5 space-y-4">
-                        {/* Cross-sell block placeholder */}
-                        <div className="p-3 rounded-xl bg-brand-primary/5 border border-brand-primary/10">
-                            <p className="text-xs font-semibold text-brand-primary mb-1">{t.crossSellTitle}</p>
-                            <p className="text-[11px] text-white/40">Coming soon...</p>
-                        </div>
-
-                        <div className="flex items-center justify-between">
-                            <span className="text-white/60 font-medium">{t.subtotal}</span>
-                            <span className="text-xl font-black text-white">{formatUsd(totalPrice)}</span>
+                    <div className="border-t border-gray-200 bg-white px-6 py-5 space-y-5 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+                        <div className="flex items-end justify-between">
+                            <span className="text-gray-600 font-bold mb-1">{t.subtotal}</span>
+                            <span className="text-2xl font-black text-[#E52528]">{formatUsd(totalPrice)}</span>
                         </div>
 
                         <button
-                            className="w-full py-4 rounded-2xl bg-brand-primary text-white font-bold text-lg hover:bg-brand-primary/90 hover:shadow-[0_0_30px_rgba(99,102,241,0.3)] transition-all active:scale-[0.98]"
+                            className="w-full py-4 rounded-xl bg-brand-primary text-white font-extrabold text-lg hover:bg-brand-primary/90 transition-all active:scale-[0.98] shadow-md flex justify-center items-center gap-2"
                             onClick={() => {
                                 closeDrawer();
                                 window.location.href = '/checkout';
                             }}
                         >
+                            <ShoppingBag className="w-5 h-5" />
                             {t.checkout}
                         </button>
                     </div>
