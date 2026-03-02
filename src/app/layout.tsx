@@ -4,7 +4,7 @@ import { Outfit } from "next/font/google";
 import "./globals.css";
 import GNB from "@/components/GNB";
 import BottomTabBar from "@/components/BottomTabBar";
-import FloatingChat from "@/components/FloatingChat";
+
 import MiniCartDrawer from "@/components/MiniCartDrawer";
 
 const outfit = Outfit({
@@ -70,7 +70,7 @@ export default function RootLayout({
                     {children}
                 </main>
                 <MiniCartDrawer />
-                <FloatingChat />
+
                 <BottomTabBar />
             </body>
         </html>

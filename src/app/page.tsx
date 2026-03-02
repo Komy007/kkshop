@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import AntiGravityHero from '@/components/AntiGravityHero';
+
 import CategoryShortcuts from '@/components/CategoryShortcuts';
 import CurationSection from '@/components/CurationSection';
 import Footer from '@/components/Footer';
@@ -172,7 +172,7 @@ export default function Home() {
                 </div>
 
                 {/* ── Promo Banner Carousel ── */}
-                <AntiGravityHero />
+
 
                 {/* ── Trust Strip (compact) ── */}
                 <div className="flex items-center gap-2 px-3 py-2 overflow-x-auto scrollbar-hide text-nowrap">
