@@ -19,6 +19,8 @@ const pdpTranslations: Record<string, any> = {
         back: '뒤로 가기',
         qty: '수량',
         freeShipping: '$30 이상 무료 배송',
+        sampleNotice: '테스트용 샘플 상품입니다',
+        sampleDesc: '본 상품은 쇼핑몰 결제 및 UI 테스트를 위해 등록된 가상의 샘플 상품입니다. 실제 배송되지 않습니다.',
     },
     en: {
         tabs: { desc: 'Description', ingredients: 'Ingredients', reviews: 'Reviews' },
@@ -30,6 +32,8 @@ const pdpTranslations: Record<string, any> = {
         back: 'Go Back',
         qty: 'Qty',
         freeShipping: 'Free shipping over $30',
+        sampleNotice: 'Sample product for testing',
+        sampleDesc: 'This is a virtual sample product registered for UI and payment testing. It will not be shipped.',
     },
     km: {
         tabs: { desc: 'ការពិពណ៌នា', ingredients: 'សមាសធាតុ', reviews: 'មតិអតិថិជន' },
@@ -41,6 +45,8 @@ const pdpTranslations: Record<string, any> = {
         back: 'ថយក្រោយ',
         qty: 'ចំនួន',
         freeShipping: 'ដឹកដោយឥតគិតថ្លៃលើសពី $30',
+        sampleNotice: 'ផលិតផលគំរូសម្រាប់ការសាកល្បង',
+        sampleDesc: 'នេះគឺជាផលិតផលគំរូនិម្មិតសម្រាប់ការសាកល្បង UI និងការទូទាត់។ វានឹងមិនត្រូវបានដឹកជញ្ជូនទេ។',
     },
     zh: {
         tabs: { desc: '详细描述', ingredients: '成分信息', reviews: '用户评价' },
@@ -52,6 +58,8 @@ const pdpTranslations: Record<string, any> = {
         back: '返回',
         qty: '数量',
         freeShipping: '满$30免费配送',
+        sampleNotice: '用于测试的样品',
+        sampleDesc: '本商品是为测试UI和付款而注册的虚拟样品。不会进行实际发货。',
     },
 };
 
@@ -238,6 +246,11 @@ export default function ProductDetailPage() {
                         {/* Trust Badges — top of info for credibility */}
                         <TrustBadges variant="compact" />
 
+                        {/* Sample Notice Badge */}
+                        <div className="bg-red-50 text-red-600 border border-red-200 px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 shadow-sm">
+                            ⚠️ {t.sampleNotice}
+                        </div>
+
                         {/* Product Name */}
                         <h1 className="text-3xl md:text-4xl font-black text-gray-900 leading-tight tracking-tight">
                             {product.name}
@@ -330,8 +343,8 @@ export default function ProductDetailPage() {
                                 }}
                                 disabled={product.stockQty <= 0}
                                 className={`flex-1 flex items-center justify-center gap-2 py-4 rounded-xl font-bold text-lg transition-all active:scale-95 ${product.stockQty > 0
-                                        ? 'bg-brand-primary border text-white hover:bg-brand-primary/90'
-                                        : 'bg-gray-200 text-gray-400 cursor-not-allowed hidden'
+                                    ? 'bg-brand-primary border text-white hover:bg-brand-primary/90'
+                                    : 'bg-gray-200 text-gray-400 cursor-not-allowed hidden'
                                     }`}
                             >
                                 {t.buyNow}
@@ -365,6 +378,16 @@ export default function ProductDetailPage() {
                     <div className="min-h-[200px] animate-fade-in text-gray-700">
                         {activeTab === 'desc' && (
                             <div className="prose max-w-none">
+                                {/* Sample Description Warning Block */}
+                                <div className="bg-gray-50 border border-gray-200 p-6 rounded-2xl mb-8">
+                                    <h3 className="text-red-600 font-extrabold flex items-center gap-2 mt-0 mb-2">
+                                        🚨 {t.sampleNotice}
+                                    </h3>
+                                    <p className="text-gray-700 font-bold m-0 leading-relaxed">
+                                        {t.sampleDesc}
+                                    </p>
+                                </div>
+
                                 {product.detailDesc ? (
                                     <div dangerouslySetInnerHTML={{ __html: product.detailDesc }} />
                                 ) : (
