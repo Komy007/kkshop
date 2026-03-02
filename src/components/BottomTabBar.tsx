@@ -59,7 +59,7 @@ export default function BottomTabBar() {
 
                     const content = (
                         <div
-                            className={`flex flex-col items-center justify-center gap-0.5 min-w-[44px] min-h-[44px] rounded-xl transition-colors duration-200 ${active ? 'text-brand-primary' : 'text-gray-400 hover:text-gray-800'
+                            className={`flex flex-col items-center justify-center gap-0.5 min-w-[44px] min-h-[44px] rounded-xl transition-colors duration-200 ${active ? 'text-brand-primary' : 'text-gray-600 hover:text-gray-900'
                                 }`}
                         >
                             <div className="relative">
@@ -70,7 +70,7 @@ export default function BottomTabBar() {
                                     </span>
                                 )}
                             </div>
-                            <span className="text-[10px] font-medium leading-tight">{label}</span>
+                            <span className="text-[11px] font-bold leading-tight tracking-tight">{label}</span>
                         </div>
                     );
 
