@@ -27,5 +27,4 @@ export default {
             return session;
         },
     },
-    ...(process.env.AUTH_SECRET ? { secret: process.env.AUTH_SECRET } : {}),
 } satisfies NextAuthConfig;

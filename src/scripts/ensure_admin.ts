@@ -8,21 +8,29 @@ dotenv.config({ path: path.resolve('D:/kkshop/.env') });
 const prisma = new PrismaClient();
 
 async function main() {
-    const password = 'KKshop2024!';
-    const hashed = await bcrypt.hash(password, 10);
+    const email = 'admin@kkshop.cc';
+    const plainPassword = 'KKshop2024!';
 
-    const user = await prisma.user.upsert({
-        where: { email: 'admin@kkshop.cc' },
-        update: { hashedPassword: hashed, role: 'ADMIN', name: 'Admin' },
-        create: { email: 'admin@kkshop.cc', hashedPassword: hashed, role: 'ADMIN', name: 'Admin' },
-    });
+    // 1. Find user
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+        console.log('❌ User NOT FOUND in DB!');
+        return;
+    }
+    console.log('✅ User found:', user.email, '| Role:', user.role, '| hashedPassword:', user.hashedPassword ? user.hashedPassword.substring(0, 20) + '...' : 'NULL');
 
-    console.log('Admin password reset successfully!');
-    console.log('Email:', user.email, '| Role:', user.role);
+    // 2. Verify match
+    const match = await bcrypt.compare(plainPassword, user.hashedPassword || '');
+    console.log('Password match test:', match ? '✅ MATCH — Login should work' : '❌ NO MATCH — Need to reset');
 
-    // Verify
-    const check = await bcrypt.compare(password, hashed);
-    console.log('Password verify test:', check ? '✅ OK' : '❌ FAIL');
+    if (!match) {
+        // Reset password
+        console.log('Resetting password...');
+        const newHash = await bcrypt.hash(plainPassword, 10);
+        await prisma.user.update({ where: { email }, data: { hashedPassword: newHash } });
+        const check = await bcrypt.compare(plainPassword, newHash);
+        console.log('After reset, verify:', check ? '✅ DONE' : '❌ STILL FAILING');
+    }
 }
 
 main().catch(console.error).finally(() => prisma.$disconnect());
