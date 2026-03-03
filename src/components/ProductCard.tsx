@@ -4,6 +4,8 @@ import React from 'react';
 import Image from 'next/image';
 import { ShoppingCart, Star } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
+import { useCartStore } from '@/store/useCartStore';
+import Link from 'next/link';
 
 interface ProductData {
     id: string;
@@ -35,6 +37,7 @@ interface ProductCardProps {
 
 export default function ProductCard({ product }: ProductCardProps) {
     const { language } = useAppStore();
+    const addItem = useCartStore((s) => s.addItem);
 
     const [mounted, setMounted] = React.useState(false);
     React.useEffect(() => setMounted(true), []);
@@ -62,7 +65,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             </div>
 
             {/* Product Image Region */}
-            <div className="relative aspect-[4/5] w-full bg-gray-50 overflow-hidden cursor-pointer">
+            <Link href={`/products/${product.id}`} className="relative aspect-[4/5] w-full bg-gray-50 overflow-hidden cursor-pointer block">
                 <img
                     src={product.imageUrl}
                     alt={product.name}
@@ -77,7 +80,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                         </span>
                     </div>
                 )}
-            </div>
+            </Link>
 
             {/* Product Info Region */}
             <div className="p-6 flex flex-col flex-1 relative bg-white">
@@ -85,6 +88,17 @@ export default function ProductCard({ product }: ProductCardProps) {
                 {/* Add to Cart Overlay Button (Hovers up) */}
                 <div className="absolute -top-6 right-6 opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 z-20">
                     <button
+                        onClick={(e) => {
+                            e.preventDefault();
+                            if (product.stockQty > 0) {
+                                addItem({
+                                    productId: product.id,
+                                    name: product.name,
+                                    priceUsd: product.priceUsd,
+                                    imageUrl: product.imageUrl,
+                                });
+                            }
+                        }}
                         disabled={product.stockQty <= 0}
                         className={`w-12 h-12 rounded-full flex items-center justify-center shadow-xl border border-gray-100 ${product.stockQty > 0
                             ? 'bg-blue-600 text-white hover:bg-blue-700 hover:scale-110'
@@ -111,9 +125,9 @@ export default function ProductCard({ product }: ProductCardProps) {
                 )}
 
                 {/* Title */}
-                <h3 className="font-extrabold text-black text-[15px] sm:text-base leading-[1.35] line-clamp-2 mb-2 cursor-pointer group-hover:text-blue-600 transition-colors">
+                <Link href={`/products/${product.id}`} className="font-extrabold text-black text-[15px] sm:text-base leading-[1.35] line-clamp-2 mb-2 cursor-pointer hover:text-blue-600 transition-colors">
                     {product.name}
-                </h3>
+                </Link>
 
                 {/* Subtitle */}
                 {product.shortDesc && (
