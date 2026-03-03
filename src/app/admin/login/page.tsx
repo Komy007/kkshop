@@ -27,11 +27,8 @@ export default function AdminLoginPage() {
             if (res?.error) {
                 setError('이메일 또는 비밀번호가 일치하지 않습니다.');
             } else if (res?.ok) {
-                // IMPORTANT: Send to the root /admin url. 
-                // The updated middleware.ts will catch this and smart-redirect 
-                // SUPERADMINs to Dashboard and ADMINs to Product Registration.
-                router.push('/admin');
-                router.refresh();
+                // Let the middleware handle the redirect based on role
+                window.location.href = '/admin/products/new';
             }
         } catch (err) {
             setError('로그인 처리 중 오류가 발생했습니다.');

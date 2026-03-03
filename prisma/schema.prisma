@@ -1,9 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
   engineType = "library"
@@ -16,10 +13,10 @@ datasource db {
 }
 
 model Language {
-  code       String  @id @db.VarChar(5) // e.g., 'ko', 'en', 'km', 'zh'
-  name       String  @db.VarChar(50) // e.g., Korean, English, Khmer, Chinese
-  isFrontend Boolean @default(true) @map("is_frontend") // 프론트엔드 노출 여부
-  isAdmin    Boolean @default(false) @map("is_admin") // 관리자 노출 여부
+  code       String  @id @db.VarChar(5)
+  name       String  @db.VarChar(50)
+  isFrontend Boolean @default(true) @map("is_frontend")
+  isAdmin    Boolean @default(false) @map("is_admin")
 
   productTranslations ProductTranslation[]
 
@@ -27,40 +24,82 @@ model Language {
 }
 
 model Product {
-  id         BigInt  @id @default(autoincrement())
-  sku        String  @unique @db.VarChar(100) // 상품 바코드/SKU
-  priceUsd   Decimal @map("price_usd") @db.Decimal(10, 2) // 가격 (USD 기준)
-  stockQty   Int     @default(0) @map("stock_qty") // 가용 재고
-  categoryId BigInt? @map("category_id") // 카테고리 ID (FK)
-  status     String  @db.VarChar(20) // 판매 상태 (ACTIVE, INACTIVE 등)
-  imageUrl   String? @map("image_url") @db.VarChar(500) // 썸네일/상품 대표 이미지
+  id         BigInt   @id @default(autoincrement())
+  sku        String   @unique @db.VarChar(100)
+  priceUsd   Decimal  @map("price_usd") @db.Decimal(10, 2)
+  stockQty   Int      @default(0) @map("stock_qty")
+  categoryId BigInt?  @map("category_id")
+  status     String   @db.VarChar(20)
+  imageUrl   String?  @map("image_url") @db.VarChar(500)
+  supplierId String?  @map("supplier_id")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   translations ProductTranslation[]
   orderItems   OrderItem[]
+  images       ProductImage[]
+  supplier     Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
 
   @@map("products")
+}
+
+model ProductImage {
+  id        BigInt  @id @default(autoincrement())
+  productId BigInt  @map("product_id")
+  url       String  @db.VarChar(500)
+  altText   String? @map("alt_text") @db.VarChar(255)
+  sortOrder Int     @default(0) @map("sort_order")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@map("product_images")
 }
 
 model ProductTranslation {
   id          BigInt  @id @default(autoincrement())
   productId   BigInt  @map("product_id")
   langCode    String  @map("lang_code") @db.VarChar(5)
-  name        String  @db.VarChar(255) // 다국어 상품명
-  shortDesc   String? @map("short_desc") @db.VarChar(500) // 요약 설명
-  detailDesc  String? @map("detail_desc") @db.Text // 상세 설명 (HTML 등)
-  seoKeywords String? @map("seo_keywords") @db.VarChar(255) // SEO 키워드
+  name        String  @db.VarChar(255)
+  shortDesc   String? @map("short_desc") @db.VarChar(500)
+  detailDesc  String? @map("detail_desc") @db.Text
+  seoKeywords String? @map("seo_keywords") @db.VarChar(255)
 
-  // Relations
   product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   language Language @relation(fields: [langCode], references: [code], onDelete: Restrict)
 
-  // Composite Unique Index: 하나의 상품은 특정 언어에 대해 하나의 번역만 가져야 함
   @@unique([productId, langCode])
-  @@index([name]) // 풀텍스트/이름 검색 성능 최적화를 위한 인덱스
+  @@index([name])
   @@map("product_translations")
+}
+
+// ---------------------------------------------------------------------------
+// Supplier (공급자/브랜드) System
+// ---------------------------------------------------------------------------
+
+model Supplier {
+  id             String  @id @default(cuid())
+  userId         String  @unique @map("user_id")
+  companyName    String  @map("company_name") @db.VarChar(200)
+  brandName      String? @map("brand_name") @db.VarChar(100)
+  country        String? @db.VarChar(50)
+  phone          String? @db.VarChar(50)
+  contactEmail   String  @map("contact_email") @db.VarChar(255)
+  logoUrl        String? @map("logo_url") @db.VarChar(500)
+  description    String? @db.Text
+  commissionRate Decimal @default(30) @map("commission_rate") @db.Decimal(5, 2)
+  status         String  @default("PENDING") @db.VarChar(20)
+  // PENDING, APPROVED, REJECTED, SUSPENDED
+  adminNote      String? @map("admin_note") @db.Text
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  products Product[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("suppliers")
 }
 
 // ---------------------------------------------------------------------------
@@ -68,20 +107,22 @@ model ProductTranslation {
 // ---------------------------------------------------------------------------
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String?   @unique
-  emailVerified DateTime? @map("email_verified")
-  image         String?
+  id             String    @id @default(cuid())
+  name           String?
+  email          String?   @unique
+  emailVerified  DateTime? @map("email_verified")
+  image          String?
   hashedPassword String?
-  role          String    @default("USER")
-  phone         String?   @db.VarChar(50) // 연락처
-  address       String?   @db.VarChar(255) // 기본 배송지 주소
-  detailAddress String?   @map("detail_address") @db.VarChar(255) // 상세 주소
-  postalCode    String?   @map("postal_code") @db.VarChar(20) // 우편번호
-  accounts      Account[]
-  sessions      Session[]
-  orders        Order[]
+  role           String    @default("USER")
+  // USER, ADMIN, SUPERADMIN, SUPPLIER
+  phone          String?   @db.VarChar(50)
+  address        String?   @db.VarChar(255)
+  detailAddress  String?   @map("detail_address") @db.VarChar(255)
+  postalCode     String?   @map("postal_code") @db.VarChar(20)
+  accounts       Account[]
+  sessions       Session[]
+  orders         Order[]
+  supplier       Supplier?
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -129,13 +170,13 @@ model VerificationToken {
 }
 
 // ---------------------------------------------------------------------------
-// Site Settings (Dynamic Configuration for UI/Landing Pages)
+// Site Settings
 // ---------------------------------------------------------------------------
 
 model SiteSetting {
   id        String   @id @default(cuid())
-  key       String   @unique @db.VarChar(100) // e.g., 'landing_hero', 'landing_bento'
-  value     Json     // Flexible JSON payload containing text, font sizes, image URLs
+  key       String   @unique @db.VarChar(100)
+  value     Json
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -148,20 +189,20 @@ model SiteSetting {
 
 model Order {
   id            String      @id @default(cuid())
-  userId        String?     @map("user_id") // Optional for guest checkout
+  userId        String?     @map("user_id")
   customerName  String      @map("customer_name") @db.VarChar(100)
   customerPhone String      @map("customer_phone") @db.VarChar(50)
   customerEmail String?     @map("customer_email") @db.VarChar(255)
   address       String      @db.VarChar(255)
   detailAddress String?     @map("detail_address") @db.VarChar(255)
   totalUsd      Decimal     @map("total_usd") @db.Decimal(10, 2)
-  status        String      @default("PENDING") @db.VarChar(50) // PENDING, PROCESSING, COMPLETED, CANCELLED
+  status        String      @default("PENDING") @db.VarChar(50)
 
-  createdAt     DateTime    @default(now()) @map("created_at")
-  updatedAt     DateTime    @updatedAt @map("updated_at")
+  createdAt DateTime    @default(now()) @map("created_at")
+  updatedAt DateTime    @updatedAt @map("updated_at")
 
-  items         OrderItem[]
-  user          User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  items OrderItem[]
+  user  User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@map("orders")
 }
@@ -171,10 +212,10 @@ model OrderItem {
   orderId   String  @map("order_id")
   productId BigInt  @map("product_id")
   quantity  Int
-  priceUsd  Decimal @map("price_usd") @db.Decimal(10, 2) // Price at the time of purchase
+  priceUsd  Decimal @map("price_usd") @db.Decimal(10, 2)
 
-  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Restrict)
 
   @@index([orderId])
   @@map("order_items")

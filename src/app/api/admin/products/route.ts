@@ -23,11 +23,13 @@ export async function POST(req: Request) {
             priceUsd,
             stockQty,
             categoryId,
-            baseLang, // e.g., 'ko' or 'en'
+            baseLang,
             name,
             shortDesc,
             detailDesc,
-            seoKeywords
+            seoKeywords,
+            imageUrls = [], // Array of uploaded image URLs
+            supplierId = null,
         } = body;
 
         if (!sku || !priceUsd || !name || !baseLang) {
@@ -35,7 +37,6 @@ export async function POST(req: Request) {
         }
 
         // 2. Perform Translations
-        // We need to translate the base text into all target languages EXCEPT the baseLang itself.
         const translationsData: Array<{
             langCode: string;
             name: string;
@@ -46,7 +47,6 @@ export async function POST(req: Request) {
 
         for (const lang of TARGET_LANGS) {
             if (lang === baseLang) {
-                // Keep the original text for the base language
                 translationsData.push({
                     langCode: lang,
                     name: name,
@@ -55,24 +55,17 @@ export async function POST(req: Request) {
                     seoKeywords: seoKeywords || null,
                 });
             } else {
-                // Call Google Cloud Translate for the other languages
                 try {
                     const [translatedName] = await translate.translate(name, lang);
 
                     let translatedShortDesc = shortDesc;
-                    if (shortDesc) {
-                        [translatedShortDesc] = await translate.translate(shortDesc, lang);
-                    }
+                    if (shortDesc) { [translatedShortDesc] = await translate.translate(shortDesc, lang); }
 
                     let translatedDetailDesc = detailDesc;
-                    if (detailDesc) {
-                        [translatedDetailDesc] = await translate.translate(detailDesc, lang);
-                    }
+                    if (detailDesc) { [translatedDetailDesc] = await translate.translate(detailDesc, lang); }
 
                     let translatedSeoKeywords = seoKeywords;
-                    if (seoKeywords) {
-                        [translatedSeoKeywords] = await translate.translate(seoKeywords, lang);
-                    }
+                    if (seoKeywords) { [translatedSeoKeywords] = await translate.translate(seoKeywords, lang); }
 
                     translationsData.push({
                         langCode: lang,
@@ -83,7 +76,6 @@ export async function POST(req: Request) {
                     });
                 } catch (translationError) {
                     console.error(`Translation failed for language: ${lang}`, translationError);
-                    // Fallback to English/Base text with a warning if translation fails
                     translationsData.push({
                         langCode: lang,
                         name: `[Auto-failed] ${name}`,
@@ -105,21 +97,28 @@ export async function POST(req: Request) {
                     stockQty: parseInt(stockQty) || 0,
                     categoryId: categoryId ? BigInt(categoryId) : null,
                     status: 'ACTIVE',
+                    imageUrl: imageUrls[0] || null, // First image = thumbnail (legacy field)
+                    supplierId: supplierId || null,
                 }
             });
 
-            // Make sure to attach the newly generated absolute productId
-            const translationsToInsert = translationsData.map(t => ({
-                ...t,
-                productId: product.id
-            }));
+            // Save all images to ProductImage table
+            if (imageUrls.length > 0) {
+                await tx.productImage.createMany({
+                    data: imageUrls.map((url: string, idx: number) => ({
+                        productId: product.id,
+                        url,
+                        sortOrder: idx,
+                    })),
+                });
+            }
 
             // Create all ProductTranslation objects
             await tx.productTranslation.createMany({
-                data: translationsToInsert
+                data: translationsData.map(t => ({ ...t, productId: product.id }))
             });
 
-            return product; // Return main product
+            return product;
         });
 
         // Convert BigInt to string for JSON serialization
