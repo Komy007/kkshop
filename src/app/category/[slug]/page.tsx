@@ -40,8 +40,21 @@ export default function CategoryDetailPage() {
 
         async function fetchCategoryProducts() {
             try {
-                // If the slug is 'hair-body', 'hairbody' is the prefix matching the backend SKU seed logic
-                const apiSlug = slug.replace('-', '');
+                // Map URL slug to DB SKU prefix
+                // DB seeds: SAMP-SKINCARE-, SAMP-MAKEUP-, SAMP-HAIRBODY-, SAMP-LIVING-, SAMP-HEALTH-,
+                //            SAMP-BEST-, SAMP-NEW-, SAMP-DISCOUNT-, SAMP-ALL-, SAMP-FORYOU-
+                const slugToSku: Record<string, string> = {
+                    'skincare': 'skincare',
+                    'makeup': 'makeup',
+                    'hair-body': 'hairbody',
+                    'living': 'living',
+                    'health': 'health',
+                    'best': 'best',
+                    'new': 'new',
+                    'sale': 'discount',
+                    'all': 'all',
+                };
+                const apiSlug = slugToSku[slug] || slug.replace('-', '');
 
                 // Fetch filtered products
                 const res = await fetch(`/api/products?lang=${language}&category=${apiSlug}`);
@@ -92,7 +105,14 @@ export default function CategoryDetailPage() {
                                 {/* Image Container */}
                                 <div className="aspect-[4/5] relative w-full bg-gray-100 overflow-hidden">
                                     {product.imageUrl ? (
-                                        <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 will-change-transform" />
+                                        <img
+                                            src={product.imageUrl}
+                                            alt={product.name}
+                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 will-change-transform"
+                                            onError={(e) => {
+                                                (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&q=80&w=500';
+                                            }}
+                                        />
                                     ) : (
                                         <div className="w-full h-full flex items-center justify-center text-4xl opacity-50">✨</div>
                                     )}

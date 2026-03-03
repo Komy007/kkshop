@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Search as SearchIcon, X, Star } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
@@ -8,62 +8,129 @@ import { type TranslatedProduct } from '@/lib/api';
 import Footer from '@/components/Footer';
 
 type LanguageKey = 'ko' | 'en' | 'km' | 'zh';
+
 const searchTranslations: Record<LanguageKey, Record<string, string>> = {
     ko: {
         placeholder: '검색어를 입력하세요',
         recent: '최근 검색어',
-        popular: '인기 검색어',
+        popular: '인기 카테고리',
         clear: '전체 삭제',
         noResults: '에 대한 검색 결과가 없습니다.',
+        allProducts: '전체 상품',
         productsFound: '개의 상품',
     },
     en: {
         placeholder: 'Search products',
         recent: 'Recent Searches',
-        popular: 'Popular Searches',
+        popular: 'Popular Categories',
         clear: 'Clear All',
         noResults: 'No results found for',
+        allProducts: 'All Products',
         productsFound: 'products found',
     },
     km: {
         placeholder: 'ស្វែងរកផលិតផល',
         recent: 'ការស្វែងរកថ្មីៗ',
-        popular: 'ការស្វែងរកពេញនិយម',
+        popular: 'ប្រភេទពេញនិយម',
         clear: 'លុបទាំងអស់',
         noResults: 'រកមិនឃើញលទ្ធផលសម្រាប់',
+        allProducts: 'ផលិតផលទាំងអស់',
         productsFound: 'ផលិតផលរកឃើញ',
     },
     zh: {
         placeholder: '搜索商品',
         recent: '最近搜索',
-        popular: '热门搜索',
+        popular: '热门分类',
         clear: '清除全部',
         noResults: '没有找到相关结果：',
+        allProducts: '全部商品',
         productsFound: '个商品',
     },
 };
 
-const popularSearches = ['Skincare', 'Makeup', 'Serum', 'Lipstick', 'Cream'];
+// Popular category tags - multilingual, linking to category pages
+const popularCategories: Record<LanguageKey, { label: string; href: string }[]> = {
+    ko: [
+        { label: '스킨케어', href: '/category/skincare' },
+        { label: '메이크업', href: '/category/makeup' },
+        { label: '헤어/바디', href: '/category/hair-body' },
+        { label: '생활용품', href: '/category/living' },
+        { label: '건강식품', href: '/category/health' },
+        { label: '신상품', href: '/category/new' },
+        { label: '베스트', href: '/category/best' },
+        { label: '할인', href: '/category/sale' },
+    ],
+    en: [
+        { label: 'Skincare', href: '/category/skincare' },
+        { label: 'Makeup', href: '/category/makeup' },
+        { label: 'Hair/Body', href: '/category/hair-body' },
+        { label: 'Living', href: '/category/living' },
+        { label: 'Health', href: '/category/health' },
+        { label: 'New Arrivals', href: '/category/new' },
+        { label: 'Bestsellers', href: '/category/best' },
+        { label: 'Sale', href: '/category/sale' },
+    ],
+    km: [
+        { label: 'ថែស្បែក', href: '/category/skincare' },
+        { label: 'គ្រឿងសំអាង', href: '/category/makeup' },
+        { label: 'សក់/រាងកាយ', href: '/category/hair-body' },
+        { label: 'គ្រឿងប្រើប្រាស់', href: '/category/living' },
+        { label: 'សុខភាព', href: '/category/health' },
+        { label: 'ផលិតផលថ្មី', href: '/category/new' },
+        { label: 'ពេញនិយម', href: '/category/best' },
+        { label: 'បញ្ចុះតម្លៃ', href: '/category/sale' },
+    ],
+    zh: [
+        { label: '护肤', href: '/category/skincare' },
+        { label: '彩妆', href: '/category/makeup' },
+        { label: '洗护', href: '/category/hair-body' },
+        { label: '生活用品', href: '/category/living' },
+        { label: '保健品', href: '/category/health' },
+        { label: '新品', href: '/category/new' },
+        { label: '热销', href: '/category/best' },
+        { label: '折扣', href: '/category/sale' },
+    ],
+};
 
 export default function SearchPage() {
     const { language } = useAppStore();
-    const t = searchTranslations[language as LanguageKey] || searchTranslations.en;
+    const lang = (language as LanguageKey) in searchTranslations ? (language as LanguageKey) : 'en';
+    const t = searchTranslations[lang];
+    const categories = popularCategories[lang];
 
     const [query, setQuery] = useState('');
-    const [submittedQuery, setSubmittedQuery] = useState('');
-    const [products, setProducts] = useState<TranslatedProduct[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
+    const [allProducts, setAllProducts] = useState<TranslatedProduct[]>([]);
+    const [displayed, setDisplayed] = useState<TranslatedProduct[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [recentSearches, setRecentSearches] = useState<string[]>([]);
 
+    // Load recent searches from localStorage
     useEffect(() => {
-        // Load recent searches from local storage
         const saved = localStorage.getItem('recentSearches');
         if (saved) {
-            try {
-                setRecentSearches(JSON.parse(saved));
-            } catch (e) { }
+            try { setRecentSearches(JSON.parse(saved)); } catch (e) { }
         }
     }, []);
+
+    // Pre-fetch ALL products on mount so search is instant
+    useEffect(() => {
+        async function fetchAll() {
+            setIsLoading(true);
+            try {
+                const res = await fetch(`/api/products?lang=${language}`);
+                if (res.ok) {
+                    const data: TranslatedProduct[] = await res.json();
+                    setAllProducts(data);
+                    setDisplayed(data); // show all by default
+                }
+            } catch (e) {
+                console.error('Failed to prefetch products', e);
+            } finally {
+                setIsLoading(false);
+            }
+        }
+        fetchAll();
+    }, [language]);
 
     const saveSearch = (q: string) => {
         if (!q.trim()) return;
@@ -77,53 +144,47 @@ export default function SearchPage() {
         localStorage.removeItem('recentSearches');
     };
 
+    // Filter products as the user types (live search)
+    const doSearch = useCallback((q: string) => {
+        const term = q.trim().toLowerCase();
+        if (!term) {
+            setDisplayed(allProducts);
+            return;
+        }
+        const filtered = allProducts.filter(p =>
+            p.name.toLowerCase().includes(term) ||
+            (p.shortDesc && p.shortDesc.toLowerCase().includes(term)) ||
+            (p.seoKeywords && p.seoKeywords.toLowerCase().includes(term))
+        );
+        setDisplayed(filtered);
+    }, [allProducts]);
+
     const handleSearch = (e?: React.FormEvent) => {
         if (e) e.preventDefault();
-        if (!query.trim()) return;
-        setSubmittedQuery(query);
-        saveSearch(query);
+        if (query.trim()) saveSearch(query.trim());
+        doSearch(query);
     };
 
+    // Live search on every keystroke
     useEffect(() => {
-        if (!submittedQuery) return;
-
-        async function fetchResults() {
-            setIsLoading(true);
-            try {
-                // Fetch all products, then filter client-side for simplicity since the API doesn't support complex search yet
-                const res = await fetch(`/api/products?lang=${language}`);
-                if (res.ok) {
-                    const data: TranslatedProduct[] = await res.json();
-                    const filtered = data.filter(p =>
-                        p.name.toLowerCase().includes(submittedQuery.toLowerCase()) ||
-                        (p.shortDesc && p.shortDesc.toLowerCase().includes(submittedQuery.toLowerCase())) ||
-                        (p.detailDesc && p.detailDesc.toLowerCase().includes(submittedQuery.toLowerCase()))
-                    );
-                    setProducts(filtered);
-                }
-            } catch (error) {
-                console.error('Failed to search products', error);
-            } finally {
-                setIsLoading(false);
-            }
-        }
-        fetchResults();
-    }, [submittedQuery, language]);
+        doSearch(query);
+    }, [query, doSearch]);
 
     return (
         <main className="min-h-screen bg-white text-gray-900 pb-24">
-            {/* Header / Search Bar */}
+            {/* Sticky Search Bar */}
             <div className="sticky top-0 z-40 bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3">
                 <Link href="/" className="p-1 -ml-1 text-gray-900 hover:bg-gray-100 rounded-full transition-colors">
                     <ArrowLeft className="w-6 h-6" />
                 </Link>
                 <form onSubmit={handleSearch} className="flex-1 relative flex items-center">
+                    <SearchIcon className="absolute left-3 w-4 h-4 text-gray-400" />
                     <input
                         type="search"
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
                         placeholder={t.placeholder}
-                        className="w-full bg-gray-100 border-2 border-transparent focus:bg-white focus:border-brand-primary rounded-xl py-2.5 pl-4 pr-10 outline-none text-base font-bold text-gray-900 transition-all"
+                        className="w-full bg-gray-100 border-2 border-transparent focus:bg-white focus:border-brand-primary rounded-xl py-2.5 pl-9 pr-10 outline-none text-base font-bold text-gray-900 transition-all"
                         autoFocus
                     />
                     {query && (
@@ -132,117 +193,115 @@ export default function SearchPage() {
                         </button>
                     )}
                 </form>
-                <button onClick={() => handleSearch()} className="p-1 -mr-1 text-gray-900 font-bold hover:text-brand-primary transition-colors">
-                    <SearchIcon className="w-6 h-6" />
-                </button>
             </div>
 
-            {/* Main Content Area */}
-            {!submittedQuery ? (
-                <div className="px-4 py-6 max-w-lg mx-auto space-y-8 animate-fade-in">
-                    {/* Recent Searches */}
-                    {recentSearches.length > 0 && (
-                        <section>
-                            <div className="flex items-center justify-between mb-3">
-                                <h2 className="font-extrabold text-gray-900">{t.recent}</h2>
-                                <button onClick={clearRecent} className="text-xs font-bold text-gray-400 hover:text-gray-600">
-                                    {t.clear}
-                                </button>
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                                {recentSearches.map(s => (
-                                    <button
-                                        key={s}
-                                        onClick={() => {
-                                            setQuery(s);
-                                            setSubmittedQuery(s);
-                                        }}
-                                        className="px-4 py-2 rounded-full border border-gray-200 text-sm font-semibold text-gray-700 hover:border-brand-primary hover:text-brand-primary transition-colors"
-                                    >
-                                        {s}
-                                    </button>
-                                ))}
-                            </div>
-                        </section>
-                    )}
-
-                    {/* Popular Searches */}
-                    <section>
-                        <h2 className="font-extrabold text-gray-900 mb-3">{t.popular}</h2>
-                        <div className="flex flex-wrap gap-2">
-                            {popularSearches.map(s => (
-                                <button
-                                    key={s}
-                                    onClick={() => {
-                                        setQuery(s);
-                                        setSubmittedQuery(s);
-                                    }}
-                                    className="px-4 py-2 rounded-full bg-brand-primary/5 text-brand-primary text-sm font-bold hover:bg-brand-primary/10 transition-colors"
-                                >
-                                    {s}
-                                </button>
-                            ))}
-                        </div>
-                    </section>
-                </div>
-            ) : (
-                <div className="bg-gray-50 min-h-screen pt-4 pb-20">
-                    <div className="px-4 mb-4 font-bold text-gray-600 text-sm">
-                        <span className="text-black text-base ml-1">'{submittedQuery}'</span> {t.productsFound} ({products.length})
+            {/* Recent Searches */}
+            {recentSearches.length > 0 && !query && (
+                <div className="px-4 pt-4">
+                    <div className="flex items-center justify-between mb-2">
+                        <h2 className="font-extrabold text-gray-900 text-sm">{t.recent}</h2>
+                        <button onClick={clearRecent} className="text-xs font-bold text-gray-400 hover:text-gray-600">{t.clear}</button>
                     </div>
-
-                    {isLoading ? (
-                        <div className="flex justify-center py-20">
-                            <div className="w-8 h-8 border-4 border-brand-primary border-t-transparent rounded-full animate-spin"></div>
-                        </div>
-                    ) : products.length === 0 ? (
-                        <div className="text-center py-24 px-4">
-                            <div className="text-6xl mb-4 opacity-30 grayscale">🔍</div>
-                            <p className="text-gray-500 font-medium">'{submittedQuery}' {t.noResults}</p>
-                        </div>
-                    ) : (
-                        <div className="px-4 max-w-7xl mx-auto grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
-                            {products.map((product) => (
-                                <Link key={product.id} href={`/products/${product.id}`} className="group flex flex-col bg-white rounded-2xl overflow-hidden hover:shadow-lg transition-all border border-gray-200">
-                                    <div className="aspect-[4/5] relative w-full bg-gray-100 overflow-hidden">
-                                        {product.imageUrl ? (
-                                            <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 will-change-transform" />
-                                        ) : (
-                                            <div className="w-full h-full flex items-center justify-center text-4xl opacity-50">✨</div>
-                                        )}
-                                        <div className="absolute top-2 left-2 flex flex-col gap-1 items-start z-10">
-                                            <span className="bg-[#E52528] text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm">특가</span>
-                                        </div>
-                                    </div>
-
-                                    <div className="p-4 flex flex-col flex-1">
-                                        <p className="text-sm text-gray-800 leading-snug line-clamp-2 min-h-[40px] font-medium mb-3 group-hover:text-brand-primary transition-colors">
-                                            {product.name}
-                                        </p>
-
-                                        <div className="mt-auto">
-                                            <div className="flex flex-col">
-                                                <span className="text-xs text-gray-400 line-through mb-0.5">
-                                                    $ {(product.priceUsd * 1.5).toFixed(2)}
-                                                </span>
-                                                <span className="text-lg font-extrabold text-[#E52528] leading-none">
-                                                    $ {product.priceUsd.toLocaleString()}
-                                                </span>
-                                            </div>
-                                            <div className="flex items-center gap-1 mt-2">
-                                                <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400 drop-shadow-sm" />
-                                                <span className="text-xs font-bold text-gray-700">4.9</span>
-                                                <span className="text-xs text-gray-400">(128)</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </Link>
-                            ))}
-                        </div>
-                    )}
+                    <div className="flex flex-wrap gap-2 mb-4">
+                        {recentSearches.map(s => (
+                            <button
+                                key={s}
+                                onClick={() => setQuery(s)}
+                                className="px-3 py-1.5 rounded-full border border-gray-200 text-sm font-semibold text-gray-700 hover:border-brand-primary hover:text-brand-primary transition-colors"
+                            >
+                                {s}
+                            </button>
+                        ))}
+                    </div>
                 </div>
             )}
-            {submittedQuery && <Footer />}
+
+            {/* Popular Category Tags */}
+            {!query && (
+                <div className="px-4 pt-2 pb-3 border-b border-gray-100">
+                    <h2 className="font-extrabold text-gray-900 text-sm mb-2">{t.popular}</h2>
+                    <div className="flex flex-wrap gap-2">
+                        {categories.map(cat => (
+                            <Link
+                                key={cat.href}
+                                href={cat.href}
+                                className="px-3 py-1.5 rounded-full bg-brand-primary/10 text-brand-primary text-sm font-bold hover:bg-brand-primary/20 transition-colors"
+                            >
+                                {cat.label}
+                            </Link>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Product Grid — always shown (all products or filtered) */}
+            <div className="bg-gray-50 min-h-screen pt-4 pb-20">
+                {query && (
+                    <div className="px-4 mb-3 text-sm font-bold text-gray-600">
+                        <span className="text-black text-base">'{query}'</span> — {displayed.length} {t.productsFound}
+                    </div>
+                )}
+                {!query && (
+                    <div className="px-4 mb-3 text-sm font-extrabold text-gray-900">{t.allProducts} ({displayed.length})</div>
+                )}
+
+                {isLoading ? (
+                    <div className="flex justify-center py-20">
+                        <div className="w-8 h-8 border-4 border-brand-primary border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                ) : displayed.length === 0 ? (
+                    <div className="text-center py-24 px-4">
+                        <div className="text-6xl mb-4 opacity-30 grayscale">🔍</div>
+                        <p className="text-gray-500 font-medium">'{query}' {t.noResults}</p>
+                    </div>
+                ) : (
+                    <div className="px-4 max-w-7xl mx-auto grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
+                        {displayed.map((product) => (
+                            <Link key={product.id} href={`/products/${product.id}`} className="group flex flex-col bg-white rounded-2xl overflow-hidden hover:shadow-lg transition-all border border-gray-200">
+                                <div className="aspect-[4/5] relative w-full bg-gray-100 overflow-hidden">
+                                    {product.imageUrl ? (
+                                        <img
+                                            src={product.imageUrl}
+                                            alt={product.name}
+                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 will-change-transform"
+                                            onError={(e) => {
+                                                (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&q=80&w=500';
+                                            }}
+                                        />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center text-4xl opacity-50">✨</div>
+                                    )}
+                                    <div className="absolute top-2 left-2 flex flex-col gap-1 items-start z-10">
+                                        <span className="bg-[#E52528] text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm">특가</span>
+                                    </div>
+                                </div>
+
+                                <div className="p-4 flex flex-col flex-1">
+                                    <p className="text-sm text-gray-800 leading-snug line-clamp-2 min-h-[40px] font-bold mb-3 group-hover:text-brand-primary transition-colors">
+                                        {product.name}
+                                    </p>
+                                    <div className="mt-auto">
+                                        <div className="flex flex-col">
+                                            <span className="text-xs text-gray-400 line-through mb-0.5">
+                                                ${(product.priceUsd * 1.3).toFixed(2)}
+                                            </span>
+                                            <span className="text-lg font-extrabold text-[#E52528] leading-none">
+                                                ${product.priceUsd.toLocaleString()}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-1 mt-2">
+                                            <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400 drop-shadow-sm" />
+                                            <span className="text-xs font-bold text-gray-700">4.9</span>
+                                            <span className="text-xs text-gray-400">(128)</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </Link>
+                        ))}
+                    </div>
+                )}
+            </div>
+            <Footer />
         </main>
     );
 }
