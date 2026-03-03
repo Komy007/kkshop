@@ -224,13 +224,16 @@ export default function ProductDetailPage() {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16">
 
                     {/* LEFT: Product Image */}
-                    <div className="scroll-reveal">
+                    <div>
                         <div className="relative rounded-3xl overflow-hidden aspect-[3/4] bg-gray-50 group border border-gray-100 shadow-sm">
                             <img
                                 src={productImage}
                                 alt={product.name}
                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                                 loading="eager"
+                                onError={(e) => {
+                                    (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&q=80&w=800';
+                                }}
                             />
                             {product.stockQty <= 0 && (
                                 <div className="absolute inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center">
@@ -241,7 +244,7 @@ export default function ProductDetailPage() {
                     </div>
 
                     {/* RIGHT: Product Info (F-pattern: top-heavy reading) */}
-                    <div className="flex flex-col gap-6 scroll-reveal" style={{ transitionDelay: '150ms' }}>
+                    <div className="flex flex-col gap-6">
 
                         {/* Trust Badges — top of info for credibility */}
                         <TrustBadges variant="compact" />
