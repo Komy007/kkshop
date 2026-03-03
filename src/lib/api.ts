@@ -54,8 +54,7 @@ export async function getProductsByLanguage(langCode: string, categorySlug?: str
             orderBy: {
                 createdAt: 'desc'
             },
-            // Limit to 10 for display purposes on the homepage
-            take: 10,
+            // No limit — we need all products accessible by detail pages
         });
 
         return products.map(product => {

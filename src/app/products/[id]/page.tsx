@@ -98,11 +98,11 @@ export default function ProductDetailPage() {
         async function loadProduct() {
             setIsLoading(true);
             try {
-                const res = await fetch(`/api/products?lang=${language}`);
+                // Use the dedicated single-product endpoint for reliability
+                const res = await fetch(`/api/products/${params.id}?lang=${language}`);
                 if (res.ok) {
-                    const products = await res.json();
-                    const found = products.find((p: any) => p.id === String(params.id));
-                    if (found) setProduct(found);
+                    const data = await res.json();
+                    if (!data.error) setProduct(data);
                 }
             } catch (err) {
                 console.error('Error loading product:', err);
