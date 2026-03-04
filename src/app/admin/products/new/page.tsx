@@ -86,13 +86,12 @@ export default function NewProductPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (images.length === 0) { setErrorMsg('상품 이미지를 최소 1장 업로드해주세요.'); return; }
         setIsLoading(true);
         setErrorMsg('');
         setSuccessMsg('');
 
         try {
-            const imageUrls = await uploadImages();
+            const imageUrls = images.length > 0 ? await uploadImages() : [];
             const res = await fetch('/api/admin/products', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -141,8 +140,8 @@ export default function NewProductPage() {
                 <div className="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-100">
                     <SectionHeader
                         icon={<ImagePlus className="w-5 h-5 text-blue-500" />}
-                        title="상품 이미지 (1~3장, 필수)"
-                        desc="첫 번째 이미지 = 대표사진. 정사각형(1:1) 비율 권장"
+                        title="상품 이미지 (선택사항, 최대 3장)"
+                        desc="첫 번째 이미지 = 대표사진. 정사각형(1:1) 비율 권장. 나중에 추가도 가능합니다."
                     />
                     <div className="p-6">
                         {images.length < MAX_IMAGES && (
