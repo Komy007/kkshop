@@ -24,14 +24,21 @@ model Language {
 }
 
 model Product {
-  id         BigInt   @id @default(autoincrement())
-  sku        String   @unique @db.VarChar(100)
-  priceUsd   Decimal  @map("price_usd") @db.Decimal(10, 2)
-  stockQty   Int      @default(0) @map("stock_qty")
-  categoryId BigInt?  @map("category_id")
-  status     String   @db.VarChar(20)
-  imageUrl   String?  @map("image_url") @db.VarChar(500)
-  supplierId String?  @map("supplier_id")
+  id             BigInt   @id @default(autoincrement())
+  sku            String   @unique @db.VarChar(100)
+  priceUsd       Decimal  @map("price_usd") @db.Decimal(10, 2)
+  stockQty       Int      @default(0) @map("stock_qty")
+  categoryId     BigInt?  @map("category_id")
+  status         String   @db.VarChar(20)
+  imageUrl       String?  @map("image_url") @db.VarChar(500)
+  supplierId     String?  @map("supplier_id")
+  // Rich product detail fields (non-translatable)
+  volume         String?  @db.VarChar(100)   // 용량 e.g. '150ml', '50g'
+  skinType       String?  @map("skin_type") @db.VarChar(100) // 피부타입 e.g. '건성,지성'
+  origin         String?  @db.VarChar(100)   // 원산지 e.g. '대한민국'
+  expiryMonths   Int?     @map("expiry_months") // 유통기한(개월)
+  certifications String?  @db.VarChar(255)   // 인증 e.g. 'VEGAN,CRUELTY-FREE'
+  brandName      String?  @map("brand_name") @db.VarChar(100) // 브랜드명
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -65,6 +72,10 @@ model ProductTranslation {
   shortDesc   String? @map("short_desc") @db.VarChar(500)
   detailDesc  String? @map("detail_desc") @db.Text
   seoKeywords String? @map("seo_keywords") @db.VarChar(255)
+  // Rich translatable fields
+  ingredients String? @db.Text  // 주요 성분
+  howToUse    String? @map("how_to_use") @db.Text  // 사용 방법
+  benefits    String? @db.Text  // 효능/특징 (bullet points)
 
   product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   language Language @relation(fields: [langCode], references: [code], onDelete: Restrict)

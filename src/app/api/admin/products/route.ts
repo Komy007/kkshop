@@ -27,9 +27,19 @@ export async function POST(req: Request) {
             name,
             shortDesc,
             detailDesc,
+            ingredients,
+            howToUse,
+            benefits,
             seoKeywords,
-            imageUrls = [], // Array of uploaded image URLs
+            imageUrls = [],
             supplierId = null,
+            // Non-translatable spec fields
+            brandName = null,
+            volume = null,
+            skinType = null,
+            origin = null,
+            expiryMonths = null,
+            certifications = null,
         } = body;
 
         if (!sku || !priceUsd || !name || !baseLang) {
@@ -43,6 +53,9 @@ export async function POST(req: Request) {
             shortDesc: string | null;
             detailDesc: string | null;
             seoKeywords: string | null;
+            ingredients: string | null;
+            howToUse: string | null;
+            benefits: string | null;
         }> = [];
 
         for (const lang of TARGET_LANGS) {
@@ -53,6 +66,9 @@ export async function POST(req: Request) {
                     shortDesc: shortDesc || null,
                     detailDesc: detailDesc || null,
                     seoKeywords: seoKeywords || null,
+                    ingredients: ingredients || null,
+                    howToUse: howToUse || null,
+                    benefits: benefits || null,
                 });
             } else {
                 try {
@@ -67,12 +83,24 @@ export async function POST(req: Request) {
                     let translatedSeoKeywords = seoKeywords;
                     if (seoKeywords) { [translatedSeoKeywords] = await translate.translate(seoKeywords, lang); }
 
+                    let translatedIngredients = ingredients;
+                    if (ingredients) { [translatedIngredients] = await translate.translate(ingredients, lang); }
+
+                    let translatedHowToUse = howToUse;
+                    if (howToUse) { [translatedHowToUse] = await translate.translate(howToUse, lang); }
+
+                    let translatedBenefits = benefits;
+                    if (benefits) { [translatedBenefits] = await translate.translate(benefits, lang); }
+
                     translationsData.push({
                         langCode: lang,
                         name: translatedName,
                         shortDesc: translatedShortDesc || null,
                         detailDesc: translatedDetailDesc || null,
                         seoKeywords: translatedSeoKeywords || null,
+                        ingredients: translatedIngredients || null,
+                        howToUse: translatedHowToUse || null,
+                        benefits: translatedBenefits || null,
                     });
                 } catch (translationError) {
                     console.error(`Translation failed for language: ${lang}`, translationError);
@@ -82,6 +110,9 @@ export async function POST(req: Request) {
                         shortDesc: shortDesc || null,
                         detailDesc: detailDesc || null,
                         seoKeywords: seoKeywords || null,
+                        ingredients: ingredients || null,
+                        howToUse: howToUse || null,
+                        benefits: benefits || null,
                     });
                 }
             }
@@ -97,8 +128,14 @@ export async function POST(req: Request) {
                     stockQty: parseInt(stockQty) || 0,
                     categoryId: categoryId ? BigInt(categoryId) : null,
                     status: 'ACTIVE',
-                    imageUrl: imageUrls[0] || null, // First image = thumbnail (legacy field)
+                    imageUrl: imageUrls[0] || null,
                     supplierId: supplierId || null,
+                    brandName: brandName || null,
+                    volume: volume || null,
+                    skinType: skinType || null,
+                    origin: origin || null,
+                    expiryMonths: expiryMonths ? parseInt(expiryMonths) : null,
+                    certifications: certifications || null,
                 }
             });
 
