@@ -23,22 +23,40 @@ model Language {
   @@map("languages")
 }
 
+model Category {
+  id       BigInt  @id @default(autoincrement())
+  slug     String  @unique @db.VarChar(50)   // e.g. skincare, makeup, new, best
+  nameKo   String  @map("name_ko") @db.VarChar(100)
+  nameEn   String  @map("name_en") @db.VarChar(100)
+  nameKm   String  @map("name_km") @db.VarChar(100)
+  nameZh   String  @map("name_zh") @db.VarChar(100)
+  sortOrder Int    @default(0) @map("sort_order")
+  isSystem  Boolean @default(false) @map("is_system") // true = 신상품/베스트 등 시스템 카테고리
+
+  products Product[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("categories")
+}
+
 model Product {
-  id             BigInt   @id @default(autoincrement())
-  sku            String   @unique @db.VarChar(100)
-  priceUsd       Decimal  @map("price_usd") @db.Decimal(10, 2)
-  stockQty       Int      @default(0) @map("stock_qty")
-  categoryId     BigInt?  @map("category_id")
-  status         String   @db.VarChar(20)
-  imageUrl       String?  @map("image_url") @db.VarChar(500)
-  supplierId     String?  @map("supplier_id")
+  id             BigInt    @id @default(autoincrement())
+  sku            String    @unique @db.VarChar(100)
+  priceUsd       Decimal   @map("price_usd") @db.Decimal(10, 2)
+  stockQty       Int       @default(0) @map("stock_qty")
+  categoryId     BigInt?   @map("category_id")
+  status         String    @db.VarChar(20)   // ACTIVE | INACTIVE | SOLDOUT
+  imageUrl       String?   @map("image_url") @db.VarChar(500)
+  supplierId     String?   @map("supplier_id")
+  isNew          Boolean   @default(false) @map("is_new")  // 신상품 여부
   // Rich product detail fields (non-translatable)
-  volume         String?  @db.VarChar(100)   // 용량 e.g. '150ml', '50g'
-  skinType       String?  @map("skin_type") @db.VarChar(100) // 피부타입 e.g. '건성,지성'
-  origin         String?  @db.VarChar(100)   // 원산지 e.g. '대한민국'
-  expiryMonths   Int?     @map("expiry_months") // 유통기한(개월)
-  certifications String?  @db.VarChar(255)   // 인증 e.g. 'VEGAN,CRUELTY-FREE'
-  brandName      String?  @map("brand_name") @db.VarChar(100) // 브랜드명
+  volume         String?  @db.VarChar(100)
+  skinType       String?  @map("skin_type") @db.VarChar(100)
+  origin         String?  @db.VarChar(100)
+  expiryMonths   Int?     @map("expiry_months")
+  certifications String?  @db.VarChar(255)
+  brandName      String?  @map("brand_name") @db.VarChar(100)
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -46,8 +64,11 @@ model Product {
   translations ProductTranslation[]
   orderItems   OrderItem[]
   images       ProductImage[]
-  supplier     Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  supplier     Supplier?  @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  category     Category?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
+  @@index([categoryId])
+  @@index([isNew])
   @@map("products")
 }
 

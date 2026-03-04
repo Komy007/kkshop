@@ -37,38 +37,16 @@ export default function CategoryDetailPage() {
 
     useEffect(() => {
         if (!slug) return;
-
         async function fetchCategoryProducts() {
             try {
-                // Map URL slug to DB SKU prefix
-                // DB seeds: SAMP-SKINCARE-, SAMP-MAKEUP-, SAMP-HAIRBODY-, SAMP-LIVING-, SAMP-HEALTH-,
-                //            SAMP-BEST-, SAMP-NEW-, SAMP-DISCOUNT-, SAMP-ALL-, SAMP-FORYOU-
-                const slugToSku: Record<string, string> = {
-                    'skincare': 'skincare',
-                    'makeup': 'makeup',
-                    'hair-body': 'hairbody',
-                    'living': 'living',
-                    'health': 'health',
-                    'best': 'best',
-                    'new': 'new',
-                    'sale': 'discount',
-                    'all': 'all',
-                };
-                const apiSlug = slugToSku[slug] || slug.replace('-', '');
-
-                // Fetch filtered products
-                const res = await fetch(`/api/products?lang=${language}&category=${apiSlug}`);
-                if (res.ok) {
-                    const data = await res.json();
-                    setProducts(data);
-                }
+                const res = await fetch(`/api/products?lang=${language}&category=${slug}`);
+                if (res.ok) setProducts(await res.json());
             } catch (error) {
                 console.error('Failed to load category products', error);
             } finally {
                 setIsLoading(false);
             }
         }
-
         fetchCategoryProducts();
     }, [slug, language]);
 

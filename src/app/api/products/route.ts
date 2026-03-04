@@ -3,9 +3,7 @@ import { getProductsByLanguage } from '@/lib/api';
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
-    // Default to Korean if language is not specified
     const lang = searchParams.get('lang') || 'ko';
-    // Optional category filter (e.g. ?category=skincare)
     const category = searchParams.get('category');
 
     try {

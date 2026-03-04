@@ -24,10 +24,11 @@ export async function GET(req: Request) {
                     where: { langCode: 'ko' },
                     select: { langCode: true, name: true },
                 },
+                category: { select: { id: true, slug: true, nameKo: true } },
                 images: { orderBy: { sortOrder: 'asc' }, take: 1 },
                 _count: { select: { images: true } },
             },
-            orderBy: { createdAt: 'desc' },
+            orderBy: [{ isNew: 'desc' }, { createdAt: 'desc' }],
         });
 
         // Serialize BigInt
@@ -65,6 +66,32 @@ export async function DELETE(req: Request) {
     }
 }
 
+// ── PATCH: update product (category move, isNew toggle, status, stock) ─────
+export async function PATCH(req: Request) {
+    try {
+        const session = await auth();
+        if (!session?.user || !['ADMIN', 'SUPERADMIN'].includes(session.user.role ?? '')) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+        }
+        const body = await req.json();
+        const { id, categoryId, isNew, status, stockQty, priceUsd } = body;
+        if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
+
+        const data: any = {};
+        if (categoryId !== undefined) data.categoryId = categoryId ? BigInt(categoryId) : null;
+        if (isNew !== undefined) data.isNew = Boolean(isNew);
+        if (status !== undefined) data.status = status;
+        if (stockQty !== undefined) data.stockQty = parseInt(stockQty);
+        if (priceUsd !== undefined) data.priceUsd = parseFloat(priceUsd);
+
+        await prisma.product.update({ where: { id: BigInt(id) }, data });
+        return NextResponse.json({ success: true });
+    } catch (error: any) {
+        console.error('PATCH /api/admin/products error:', error);
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    }
+}
+
 // ── POST: create new product ─────────────────────────────────────────────────
 export async function POST(req: Request) {
     try {
@@ -80,6 +107,7 @@ export async function POST(req: Request) {
             priceUsd,
             stockQty,
             categoryId,
+            isNew = false,
             baseLang,
             name,
             shortDesc,
@@ -90,7 +118,6 @@ export async function POST(req: Request) {
             seoKeywords,
             imageUrls = [],
             supplierId = null,
-            // Non-translatable spec fields
             brandName = null,
             volume = null,
             skinType = null,

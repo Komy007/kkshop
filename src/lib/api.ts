@@ -5,84 +5,144 @@ const globalForPrisma = global as unknown as { prisma: PrismaClient };
 export const prisma =
     globalForPrisma.prisma ||
     new PrismaClient({
-        log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+        log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
     });
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 
-// Type definition for translated product response
+// ── Types ──────────────────────────────────────────────────────────────────
 export interface TranslatedProduct {
-    id: string; // Using string to bypass BigInt JSON serialization issues
+    id: string;
     sku: string;
     priceUsd: number;
     stockQty: number;
     categoryId?: string | null;
+    categorySlug?: string | null;
     status: string;
     imageUrl?: string | null;
-
-    // Transformed fields from Translation table matched to current language
+    isNew: boolean;
+    brandName?: string | null;
+    volume?: string | null;
+    skinType?: string | null;
+    origin?: string | null;
+    certifications?: string | null;
+    expiryMonths?: number | null;
+    // Translated fields
     name: string;
     shortDesc: string | null;
     detailDesc: string | null;
     seoKeywords: string | null;
+    ingredients?: string | null;
+    howToUse?: string | null;
+    benefits?: string | null;
 }
 
-/**
- * Fetch products and map their translations to a specific language.
- * Filters by SKU prefix if categorySlug is provided.
- */
-export async function getProductsByLanguage(langCode: string, categorySlug?: string | null): Promise<TranslatedProduct[]> {
-    try {
-        const whereClause: any = { status: 'ACTIVE' };
+export interface CategoryInfo {
+    id: string;
+    slug: string;
+    nameKo: string;
+    nameEn: string;
+    nameKm: string;
+    nameZh: string;
+    sortOrder: number;
+    isSystem: boolean;
+    productCount?: number;
+}
 
-        // Handle category filtering by checking if SKU starts with SAMP-<CATEGORY>
+// ── Helpers ────────────────────────────────────────────────────────────────
+
+function serializeProduct(product: any, langCode: string): TranslatedProduct {
+    const translation = product.translations?.[0] || {
+        name: product.sku,
+        shortDesc: null,
+        detailDesc: null,
+        seoKeywords: null,
+        ingredients: null,
+        howToUse: null,
+        benefits: null,
+    };
+    return {
+        id: product.id.toString(),
+        sku: product.sku,
+        priceUsd: Number(product.priceUsd),
+        stockQty: product.stockQty,
+        categoryId: product.categoryId?.toString() ?? null,
+        categorySlug: product.category?.slug ?? null,
+        status: product.status,
+        imageUrl: product.imageUrl,
+        isNew: product.isNew ?? false,
+        brandName: product.brandName ?? null,
+        volume: product.volume ?? null,
+        skinType: product.skinType ?? null,
+        origin: product.origin ?? null,
+        certifications: product.certifications ?? null,
+        expiryMonths: product.expiryMonths ?? null,
+        name: translation.name,
+        shortDesc: translation.shortDesc,
+        detailDesc: translation.detailDesc,
+        seoKeywords: translation.seoKeywords,
+        ingredients: translation.ingredients ?? null,
+        howToUse: translation.howToUse ?? null,
+        benefits: translation.benefits ?? null,
+    };
+}
+
+// ── Fetch by Category Slug ─────────────────────────────────────────────────
+export async function getProductsByLanguage(
+    langCode: string,
+    categorySlug?: string | null
+): Promise<TranslatedProduct[]> {
+    try {
+        const where: any = { status: 'ACTIVE' };
+
         if (categorySlug) {
-            whereClause.sku = {
-                startsWith: `SAMP-${categorySlug.toUpperCase()}-`
-            };
+            if (categorySlug === 'new') {
+                // 신상품: isNew=true 이거나 신상품 카테고리
+                where.OR = [
+                    { isNew: true },
+                    { category: { slug: 'new' } },
+                ];
+            } else if (categorySlug === 'all') {
+                // 전체보기: 필터 없음
+            } else {
+                where.category = { slug: categorySlug };
+            }
         }
 
         const products = await prisma.product.findMany({
-            where: whereClause,
+            where,
             include: {
-                translations: {
-                    where: {
-                        langCode: langCode,
-                    }
-                }
+                translations: { where: { langCode } },
+                category: { select: { slug: true } },
             },
-            orderBy: {
-                createdAt: 'desc'
-            },
-            // No limit — we need all products accessible by detail pages
+            orderBy: [
+                { isNew: 'desc' },
+                { createdAt: 'desc' },
+            ],
         });
 
-        return products.map(product => {
-            // Find the translation for the requested language
-            // Fallback: If translation is missing (edge case), use first available or empty string
-            const translation = product.translations[0] || {
-                name: `[${langCode}] ${product.sku}`,
-                shortDesc: null,
-                detailDesc: null,
-                seoKeywords: null
-            };
-
-            return {
-                id: product.id.toString(), // Convert BigInt to string for Next.js Serializability
-                sku: product.sku,
-                priceUsd: Number(product.priceUsd), // Decimal -> Number
-                stockQty: product.stockQty,
-                categoryId: product.categoryId?.toString() || null,
-                status: product.status,
-                imageUrl: product.imageUrl,
-                name: translation.name,
-                shortDesc: translation.shortDesc,
-                detailDesc: translation.detailDesc,
-                seoKeywords: translation.seoKeywords,
-            };
-        });
+        return products.map(p => serializeProduct(p, langCode));
     } catch (error) {
         console.error('Error fetching products:', error);
         return [];
     }
+}
+
+// ── Fetch all categories ───────────────────────────────────────────────────
+export async function getAllCategories(): Promise<CategoryInfo[]> {
+    const cats = await prisma.category.findMany({
+        orderBy: { sortOrder: 'asc' },
+        include: { _count: { select: { products: true } } },
+    });
+    return cats.map(c => ({
+        id: c.id.toString(),
+        slug: c.slug,
+        nameKo: c.nameKo,
+        nameEn: c.nameEn,
+        nameKm: c.nameKm,
+        nameZh: c.nameZh,
+        sortOrder: c.sortOrder,
+        isSystem: c.isSystem,
+        productCount: (c as any)._count?.products ?? 0,
+    }));
 }
