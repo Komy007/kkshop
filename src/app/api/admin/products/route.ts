@@ -3,12 +3,69 @@ import { prisma } from '@/lib/api';
 import { auth } from '@/auth';
 import { Translate } from '@google-cloud/translate/build/src/v2';
 
-// Initialize Google Cloud Translation API Client
-// Important: This requires GOOGLE_APPLICATION_CREDENTIALS in .env
 const translate = new Translate();
-
 const TARGET_LANGS = ['ko', 'en', 'km', 'zh'];
 
+// ── GET: list all products (admin) ──────────────────────────────────────────
+export async function GET(req: Request) {
+    try {
+        const session = await auth();
+        if (!session?.user || session.user.role === 'USER') {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+        }
+
+        const { searchParams } = new URL(req.url);
+        const status = searchParams.get('status');
+
+        const products = await prisma.product.findMany({
+            where: status ? { status } : {},
+            include: {
+                translations: {
+                    where: { langCode: 'ko' },
+                    select: { langCode: true, name: true },
+                },
+                images: { orderBy: { sortOrder: 'asc' }, take: 1 },
+                _count: { select: { images: true } },
+            },
+            orderBy: { createdAt: 'desc' },
+        });
+
+        // Serialize BigInt
+        const safe = products.map(p => ({
+            ...p,
+            id: p.id.toString(),
+            categoryId: p.categoryId?.toString() ?? null,
+            priceUsd: p.priceUsd.toString(),
+        }));
+
+        return NextResponse.json(safe);
+    } catch (error: any) {
+        console.error('GET /api/admin/products error:', error);
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    }
+}
+
+// ── DELETE: remove a product by id ──────────────────────────────────────────
+export async function DELETE(req: Request) {
+    try {
+        const session = await auth();
+        if (!session?.user || !['ADMIN', 'SUPERADMIN'].includes(session.user.role ?? '')) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+        }
+
+        const { searchParams } = new URL(req.url);
+        const id = searchParams.get('id');
+        if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
+
+        await prisma.product.delete({ where: { id: BigInt(id) } });
+        return NextResponse.json({ success: true });
+    } catch (error: any) {
+        console.error('DELETE /api/admin/products error:', error);
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    }
+}
+
+// ── POST: create new product ─────────────────────────────────────────────────
 export async function POST(req: Request) {
     try {
         // 1. Authenticate Admin/SuperAdmin User
