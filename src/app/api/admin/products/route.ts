@@ -16,9 +16,13 @@ export async function GET(req: Request) {
 
         const { searchParams } = new URL(req.url);
         const status = searchParams.get('status');
+        const approvalStatus = searchParams.get('approvalStatus');
 
+        const where: any = {};
+        if (status) where.status = status;
+        if (approvalStatus) where.approvalStatus = approvalStatus;
         const products = await prisma.product.findMany({
-            where: status ? { status } : {},
+            where,
             include: {
                 translations: {
                     where: { langCode: 'ko' },
@@ -74,13 +78,17 @@ export async function PATCH(req: Request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
         }
         const body = await req.json();
-        const { id, categoryId, isNew, status, stockQty, priceUsd } = body;
+        const { id, categoryId, isNew, status, approvalStatus, adminNote, stockQty, priceUsd, isHotSale, hotSalePrice } = body;
         if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
 
         const data: any = {};
         if (categoryId !== undefined) data.categoryId = categoryId ? BigInt(categoryId) : null;
         if (isNew !== undefined) data.isNew = Boolean(isNew);
+        if (isHotSale !== undefined) data.isHotSale = Boolean(isHotSale);
+        if (hotSalePrice !== undefined) data.hotSalePrice = hotSalePrice ? parseFloat(hotSalePrice) : null;
         if (status !== undefined) data.status = status;
+        if (approvalStatus !== undefined) data.approvalStatus = approvalStatus;
+        if (adminNote !== undefined) data.adminNote = adminNote;
         if (stockQty !== undefined) data.stockQty = parseInt(stockQty);
         if (priceUsd !== undefined) data.priceUsd = parseFloat(priceUsd);
 

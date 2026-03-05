@@ -166,7 +166,8 @@ export default function AdminProductsPage() {
                         <tbody className="divide-y divide-gray-50">
                             {filtered.map(p => {
                                 const koName = p.translations.find(t => t.langCode === 'ko')?.name || p.sku;
-                                const badge = STATUS_BADGE[p.status] ?? STATUS_BADGE.INACTIVE!;
+                                const badge = STATUS_BADGE[p.status] ?? { label: '숨김', className: 'bg-gray-100 text-gray-500' };
+
                                 return (
                                     <React.Fragment key={p.id}>
                                         <tr className="hover:bg-gray-50 transition-colors">

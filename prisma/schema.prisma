@@ -12,6 +12,10 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+// ---------------------------------------------------------------------------
+// Language
+// ---------------------------------------------------------------------------
+
 model Language {
   code       String  @id @db.VarChar(5)
   name       String  @db.VarChar(50)
@@ -19,44 +23,59 @@ model Language {
   isAdmin    Boolean @default(false) @map("is_admin")
 
   productTranslations ProductTranslation[]
+  reviewTranslations  ProductReviewTranslation[]
 
   @@map("languages")
 }
 
-model Category {
-  id       BigInt  @id @default(autoincrement())
-  slug     String  @unique @db.VarChar(50)   // e.g. skincare, makeup, new, best
-  nameKo   String  @map("name_ko") @db.VarChar(100)
-  nameEn   String  @map("name_en") @db.VarChar(100)
-  nameKm   String  @map("name_km") @db.VarChar(100)
-  nameZh   String  @map("name_zh") @db.VarChar(100)
-  sortOrder Int    @default(0) @map("sort_order")
-  isSystem  Boolean @default(false) @map("is_system") // true = 신상품/베스트 등 시스템 카테고리
+// ---------------------------------------------------------------------------
+// Category
+// ---------------------------------------------------------------------------
 
-  products Product[]
+model Category {
+  id        BigInt   @id @default(autoincrement())
+  slug      String   @unique @db.VarChar(50)
+  nameKo    String   @map("name_ko") @db.VarChar(100)
+  nameEn    String   @map("name_en") @db.VarChar(100)
+  nameKm    String   @map("name_km") @db.VarChar(100)
+  nameZh    String   @map("name_zh") @db.VarChar(100)
+  sortOrder Int      @default(0) @map("sort_order")
+  isSystem  Boolean  @default(false) @map("is_system")
+
+  products  Product[]
 
   createdAt DateTime @default(now()) @map("created_at")
 
   @@map("categories")
 }
 
+// ---------------------------------------------------------------------------
+// Product
+// ---------------------------------------------------------------------------
+
 model Product {
-  id             BigInt    @id @default(autoincrement())
-  sku            String    @unique @db.VarChar(100)
-  priceUsd       Decimal   @map("price_usd") @db.Decimal(10, 2)
-  stockQty       Int       @default(0) @map("stock_qty")
-  categoryId     BigInt?   @map("category_id")
-  status         String    @db.VarChar(20)   // ACTIVE | INACTIVE | SOLDOUT
-  imageUrl       String?   @map("image_url") @db.VarChar(500)
-  supplierId     String?   @map("supplier_id")
-  isNew          Boolean   @default(false) @map("is_new")  // 신상품 여부
-  // Rich product detail fields (non-translatable)
-  volume         String?  @db.VarChar(100)
-  skinType       String?  @map("skin_type") @db.VarChar(100)
-  origin         String?  @db.VarChar(100)
-  expiryMonths   Int?     @map("expiry_months")
-  certifications String?  @db.VarChar(255)
-  brandName      String?  @map("brand_name") @db.VarChar(100)
+  id               BigInt   @id @default(autoincrement())
+  sku              String   @unique @db.VarChar(100)
+  priceUsd         Decimal  @map("price_usd") @db.Decimal(10, 2)
+  stockQty         Int      @default(0) @map("stock_qty")
+  categoryId       BigInt?  @map("category_id")
+  status           String   @db.VarChar(20)       // ACTIVE | INACTIVE | SOLDOUT
+  approvalStatus   String   @default("APPROVED") @map("approval_status") @db.VarChar(20)
+  // PENDING (seller 미검수) | APPROVED | REJECTED
+  imageUrl         String?  @map("image_url") @db.VarChar(500)
+  supplierId       String?  @map("supplier_id")
+  isNew            Boolean  @default(false) @map("is_new")
+  isHotSale        Boolean  @default(false) @map("is_hot_sale")
+  hotSalePrice     Decimal? @map("hot_sale_price") @db.Decimal(10, 2)  // 핫세일 협의가격
+  reviewAvg        Decimal  @default(0) @map("review_avg") @db.Decimal(3, 2)
+  reviewCount      Int      @default(0) @map("review_count")
+  // Non-translatable spec fields
+  volume           String?  @db.VarChar(100)
+  skinType         String?  @map("skin_type") @db.VarChar(100)
+  origin           String?  @db.VarChar(100)
+  expiryMonths     Int?     @map("expiry_months")
+  certifications   String?  @db.VarChar(255)
+  brandName        String?  @map("brand_name") @db.VarChar(100)
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -64,11 +83,15 @@ model Product {
   translations ProductTranslation[]
   orderItems   OrderItem[]
   images       ProductImage[]
+  options      ProductOption[]
+  reviews      ProductReview[]
   supplier     Supplier?  @relation(fields: [supplierId], references: [id], onDelete: SetNull)
   category     Category?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
   @@index([categoryId])
   @@index([isNew])
+  @@index([approvalStatus])
+  @@index([isHotSale])
   @@map("products")
 }
 
@@ -93,10 +116,9 @@ model ProductTranslation {
   shortDesc   String? @map("short_desc") @db.VarChar(500)
   detailDesc  String? @map("detail_desc") @db.Text
   seoKeywords String? @map("seo_keywords") @db.VarChar(255)
-  // Rich translatable fields
-  ingredients String? @db.Text  // 주요 성분
-  howToUse    String? @map("how_to_use") @db.Text  // 사용 방법
-  benefits    String? @db.Text  // 효능/특징 (bullet points)
+  ingredients String? @db.Text
+  howToUse    String? @map("how_to_use") @db.Text
+  benefits    String? @db.Text
 
   product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   language Language @relation(fields: [langCode], references: [code], onDelete: Restrict)
@@ -106,24 +128,80 @@ model ProductTranslation {
   @@map("product_translations")
 }
 
+// ── 수량별 가격/혜택 옵션 ──────────────────────────────────────────────────
+model ProductOption {
+  id           BigInt   @id @default(autoincrement())
+  productId    BigInt   @map("product_id")
+  minQty       Int      @map("min_qty")           // 최소 수량
+  maxQty       Int?     @map("max_qty")           // 최대 수량 (null = 무제한)
+  discountPct  Decimal  @default(0) @map("discount_pct") @db.Decimal(5, 2)  // 할인율 %
+  freeShipping Boolean  @default(false) @map("free_shipping")
+  labelKo      String?  @map("label_ko") @db.VarChar(100) // 예: "2개 구매시 10% 할인"
+  labelEn      String?  @map("label_en") @db.VarChar(100)
+  sortOrder    Int      @default(0) @map("sort_order")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@map("product_options")
+}
+
+// ── 상품 리뷰/평점 ─────────────────────────────────────────────────────────
+model ProductReview {
+  id            BigInt   @id @default(autoincrement())
+  productId     BigInt   @map("product_id")
+  userId        String   @map("user_id")
+  orderId       String?  @map("order_id")          // 구매확인 연결
+  rating        Int                                  // 1-5 점
+  status        String   @default("PENDING") @db.VarChar(20)
+  // PENDING | APPROVED | REJECTED
+  imageUrl      String?  @map("image_url") @db.VarChar(500)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  product      Product                    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user         User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  translations ProductReviewTranslation[]
+
+  @@index([productId, status])
+  @@index([userId])
+  @@map("product_reviews")
+}
+
+model ProductReviewTranslation {
+  id       BigInt  @id @default(autoincrement())
+  reviewId BigInt  @map("review_id")
+  langCode String  @map("lang_code") @db.VarChar(5)
+  content  String  @db.Text
+
+  review   ProductReview @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  language Language      @relation(fields: [langCode], references: [code], onDelete: Restrict)
+
+  @@unique([reviewId, langCode])
+  @@map("product_review_translations")
+}
+
 // ---------------------------------------------------------------------------
-// Supplier (공급자/브랜드) System
+// Supplier (공급자/브랜드)
 // ---------------------------------------------------------------------------
 
 model Supplier {
-  id             String  @id @default(cuid())
-  userId         String  @unique @map("user_id")
-  companyName    String  @map("company_name") @db.VarChar(200)
-  brandName      String? @map("brand_name") @db.VarChar(100)
-  country        String? @db.VarChar(50)
-  phone          String? @db.VarChar(50)
-  contactEmail   String  @map("contact_email") @db.VarChar(255)
-  logoUrl        String? @map("logo_url") @db.VarChar(500)
-  description    String? @db.Text
-  commissionRate Decimal @default(30) @map("commission_rate") @db.Decimal(5, 2)
-  status         String  @default("PENDING") @db.VarChar(20)
-  // PENDING, APPROVED, REJECTED, SUSPENDED
-  adminNote      String? @map("admin_note") @db.Text
+  id              String  @id @default(cuid())
+  userId          String  @unique @map("user_id")
+  companyName     String  @map("company_name") @db.VarChar(200)
+  brandName       String? @map("brand_name") @db.VarChar(100)
+  businessNumber  String? @map("business_number") @db.VarChar(50)  // 사업자번호
+  ceoName         String? @map("ceo_name") @db.VarChar(100)        // 대표자명
+  businessAddress String? @map("business_address") @db.VarChar(255) // 사업장주소
+  country         String? @db.VarChar(50)
+  phone           String? @db.VarChar(50)
+  contactEmail    String  @map("contact_email") @db.VarChar(255)
+  logoUrl         String? @map("logo_url") @db.VarChar(500)
+  description     String? @db.Text
+  commissionRate  Decimal @default(30) @map("commission_rate") @db.Decimal(5, 2)
+  status          String  @default("PENDING") @db.VarChar(20)
+  // PENDING | APPROVED | REJECTED | SUSPENDED
+  adminNote       String? @map("admin_note") @db.Text
 
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   products Product[]
@@ -132,6 +210,68 @@ model Supplier {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("suppliers")
+}
+
+// ---------------------------------------------------------------------------
+// Coupon System
+// ---------------------------------------------------------------------------
+
+model Coupon {
+  id              String   @id @default(cuid())
+  code            String   @unique @db.VarChar(50)
+  descriptionKo   String?  @map("description_ko") @db.VarChar(200)
+  descriptionEn   String?  @map("description_en") @db.VarChar(200)
+  type            String   @db.VarChar(20)    // PERCENT | FIXED | FREE_SHIPPING
+  discountValue   Decimal  @map("discount_value") @db.Decimal(10, 2)
+  minOrderAmount  Decimal  @default(0) @map("min_order_amount") @db.Decimal(10, 2)
+  maxUses         Int?     @map("max_uses")   // null = 무제한
+  usedCount       Int      @default(0) @map("used_count")
+  startAt         DateTime @map("start_at")
+  expireAt        DateTime @map("expire_at")
+  isActive        Boolean  @default(true) @map("is_active")
+
+  userCoupons UserCoupon[]
+  orders      Order[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([code])
+  @@index([isActive])
+  @@map("coupons")
+}
+
+model UserCoupon {
+  id       String   @id @default(cuid())
+  userId   String   @map("user_id")
+  couponId String   @map("coupon_id")
+  usedAt   DateTime? @map("used_at")
+  orderId  String?  @map("order_id")
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  coupon Coupon @relation(fields: [couponId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, couponId])
+  @@map("user_coupons")
+}
+
+// ---------------------------------------------------------------------------
+// Point System
+// ---------------------------------------------------------------------------
+
+model UserPoint {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  amount      Int                         // 양수=적립, 음수=사용
+  reason      String   @db.VarChar(200)  // 예: "주문 #OID 적립", "쿠폰 사용"
+  balanceAfter Int     @map("balance_after")
+  orderId     String?  @map("order_id")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@map("user_points")
 }
 
 // ---------------------------------------------------------------------------
@@ -146,15 +286,20 @@ model User {
   image          String?
   hashedPassword String?
   role           String    @default("USER")
-  // USER, ADMIN, SUPERADMIN, SUPPLIER
+  // USER | ADMIN | SUPERADMIN | SUPPLIER
   phone          String?   @db.VarChar(50)
   address        String?   @db.VarChar(255)
   detailAddress  String?   @map("detail_address") @db.VarChar(255)
   postalCode     String?   @map("postal_code") @db.VarChar(20)
-  accounts       Account[]
-  sessions       Session[]
-  orders         Order[]
-  supplier       Supplier?
+  pointBalance   Int       @default(0) @map("point_balance")  // 현재 포인트 잔액
+
+  accounts    Account[]
+  sessions    Session[]
+  orders      Order[]
+  supplier    Supplier?
+  reviews     ProductReview[]
+  points      UserPoint[]
+  userCoupons UserCoupon[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -216,26 +361,37 @@ model SiteSetting {
 }
 
 // ---------------------------------------------------------------------------
-// Checkout and Orders Models
+// Checkout and Orders
 // ---------------------------------------------------------------------------
 
 model Order {
-  id            String      @id @default(cuid())
-  userId        String?     @map("user_id")
-  customerName  String      @map("customer_name") @db.VarChar(100)
-  customerPhone String      @map("customer_phone") @db.VarChar(50)
-  customerEmail String?     @map("customer_email") @db.VarChar(255)
-  address       String      @db.VarChar(255)
-  detailAddress String?     @map("detail_address") @db.VarChar(255)
-  totalUsd      Decimal     @map("total_usd") @db.Decimal(10, 2)
-  status        String      @default("PENDING") @db.VarChar(50)
+  id              String   @id @default(cuid())
+  userId          String?  @map("user_id")
+  customerName    String   @map("customer_name") @db.VarChar(100)
+  customerPhone   String   @map("customer_phone") @db.VarChar(50)
+  customerEmail   String?  @map("customer_email") @db.VarChar(255)
+  address         String   @db.VarChar(255)
+  detailAddress   String?  @map("detail_address") @db.VarChar(255)
+  shippingFee     Decimal  @default(0) @map("shipping_fee") @db.Decimal(10, 2)
+  subtotalUsd     Decimal  @map("subtotal_usd") @db.Decimal(10, 2)
+  discountAmount  Decimal  @default(0) @map("discount_amount") @db.Decimal(10, 2)
+  pointsUsed      Int      @default(0) @map("points_used")
+  totalUsd        Decimal  @map("total_usd") @db.Decimal(10, 2)
+  couponId        String?  @map("coupon_id")
+  notes           String?  @db.VarChar(500)  // 배송요청사항
+  status          String   @default("PENDING") @db.VarChar(50)
+  // PENDING | CONFIRMED | SHIPPING | DELIVERED | CANCELLED | REFUNDED
 
-  createdAt DateTime    @default(now()) @map("created_at")
-  updatedAt DateTime    @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-  items OrderItem[]
-  user  User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  items    OrderItem[]
+  shipment OrderShipment?
+  user     User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  coupon   Coupon?        @relation(fields: [couponId], references: [id], onDelete: SetNull)
 
+  @@index([userId])
+  @@index([status])
   @@map("orders")
 }
 
@@ -245,10 +401,31 @@ model OrderItem {
   productId BigInt  @map("product_id")
   quantity  Int
   priceUsd  Decimal @map("price_usd") @db.Decimal(10, 2)
+  optionId  BigInt? @map("option_id")  // 적용된 수량옵션
 
   order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product Product @relation(fields: [productId], references: [id], onDelete: Restrict)
 
   @@index([orderId])
   @@map("order_items")
+}
+
+// ── 배송 추적 ───────────────────────────────────────────────────────────────
+model OrderShipment {
+  id              String   @id @default(cuid())
+  orderId         String   @unique @map("order_id")
+  carrier         String   @db.VarChar(100)      // 배송사 (예: CJ대한통운)
+  trackingNumber  String   @map("tracking_number") @db.VarChar(100)
+  trackingUrl     String?  @map("tracking_url") @db.VarChar(500)
+  shippedAt       DateTime @map("shipped_at")
+  estimatedAt     DateTime? @map("estimated_at")  // 예상 도착일
+  deliveredAt     DateTime? @map("delivered_at")  // 실제 도착일
+  memo            String?  @db.VarChar(300)
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("order_shipments")
 }

@@ -4,7 +4,8 @@ import { prisma } from '@/lib/api';
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        const { customerName, customerPhone, customerEmail, address, detailAddress, items, totalUsd } = body;
+        const { customerName, customerPhone, customerEmail, address, detailAddress, items,
+            totalUsd, shippingFee = 0, notes = null } = body;
 
         // Basic validation
         if (!customerName || !customerPhone || !address || !items || items.length === 0) {
@@ -20,7 +21,10 @@ export async function POST(req: Request) {
                     customerEmail,
                     address,
                     detailAddress,
+                    subtotalUsd: totalUsd,   // no discount yet
                     totalUsd,
+                    shippingFee: shippingFee || 0,
+                    notes,
                     status: 'PENDING',
                 }
             });

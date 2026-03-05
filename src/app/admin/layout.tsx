@@ -15,6 +15,7 @@ const NAV = [
         label: '상품 관리', icon: Package,
         children: [
             { label: '전체 상품 목록', href: '/admin/products' },
+            { label: '🟡 상품 검수', href: '/admin/products/review' },
             { label: '새 상품 등록', href: '/admin/products/new' },
             { label: '카테고리 관리', href: '/admin/categories' },
         ],
