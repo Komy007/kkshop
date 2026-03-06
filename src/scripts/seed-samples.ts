@@ -117,7 +117,7 @@ async function seed() {
                 const baseKeywords = `${data.categoryTitle}, 샘플, 한국, 화장품, 뷰티`;
 
                 const sku = `SAMP-${data.categoryPrefix.toUpperCase()}-0${i}`;
-                const imageUrl = data.images[i - 1]; // Pull corresponding image
+                const imageUrl = `https://picsum.photos/seed/kkshop_${data.categoryPrefix}_${i}/500/500`; // 100% reliable image generator
 
                 console.log(`   - Translating and creating ${sku}...`);
 

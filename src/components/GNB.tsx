@@ -113,7 +113,7 @@ export default function GNB() {
                                             setLanguage(lang.code);
                                             setLangOpen(false);
                                         }}
-                                        className={`px-3 py-1.5 text-left text-sm hover:bg-gray-50 transition-colors ${currentLang?.code === lang.code ? "text-brand-primary font-bold" : "text-gray-700"
+                                        className={`px-3 py-1.5 text-left text-sm hover:bg-gray-50 transition-colors ${currentLang?.code === lang.code ? "text-brand-primary font-extrabold" : "text-gray-900 font-semibold"
                                             }`}
                                     >
                                         {lang.label}
@@ -167,7 +167,7 @@ export default function GNB() {
                                         setLanguage(lang.code);
                                         setMobileMenuOpen(false);
                                     }}
-                                    className={`px-4 py-2.5 text-left text-sm flex items-center justify-between transition-colors ${currentLang?.code === lang.code ? "bg-brand-primary/5 text-brand-primary font-bold" : "text-gray-700 hover:bg-gray-50"
+                                    className={`px-4 py-2.5 text-left text-sm flex items-center justify-between transition-colors ${currentLang?.code === lang.code ? "bg-brand-primary/5 text-brand-primary font-extrabold" : "text-gray-900 font-semibold hover:bg-gray-50"
                                         }`}
                                 >
                                     <span>{lang.flag} {lang.label}</span>
