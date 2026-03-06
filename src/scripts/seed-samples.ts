@@ -30,7 +30,7 @@ const sampleData = [
         ]
     },
     {
-        categoryTitle: '헤어/바디', categoryPrefix: 'hairbody', maxItems: 3, defaultPrice: 25,
+        categoryTitle: '헤어/바디', categoryPrefix: 'hair-body', maxItems: 3, defaultPrice: 25,
         images: [
             'https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?auto=format&fit=crop&q=80&w=500',
             'https://images.unsplash.com/photo-1608248593842-8010baac8b78?auto=format&fit=crop&q=80&w=500',
@@ -70,7 +70,7 @@ const sampleData = [
         ]
     },
     {
-        categoryTitle: '할인', categoryPrefix: 'discount', maxItems: 3, defaultPrice: 10,
+        categoryTitle: '할인', categoryPrefix: 'sale', maxItems: 3, defaultPrice: 10,
         images: [
             'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&q=80&w=500',
             'https://images.unsplash.com/photo-1595166664984-7acb2a36b306?auto=format&fit=crop&q=80&w=500',
