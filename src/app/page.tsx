@@ -127,6 +127,8 @@ export default function Home() {
 
     const [mounted, setMounted] = useState(false);
     const [products, setProducts] = useState<TranslatedProduct[]>([]);
+    const [trustBadges, setTrustBadges] = useState<string[]>([]);
+    const [topBanner, setTopBanner] = useState<any>(null);
 
     useEffect(() => {
         setMounted(true);
@@ -148,11 +150,49 @@ export default function Home() {
         if (mounted) loadProducts();
     }, [language, mounted]);
 
+    // Fetch settings
+    useEffect(() => {
+        async function loadSettings() {
+            try {
+                const res = await fetch('/api/settings?keys=landing_trust_badges,landing_top_banner');
+                if (res.ok) {
+                    const data = await res.json();
+                    let fetchedBadges: any = null;
+                    let fetchedBanner: any = null;
+
+                    for (const s of data) {
+                        if (s.key === 'landing_trust_badges' && s.value) {
+                            fetchedBadges = Object.values(s.value as any) as string[];
+                        }
+                        if (s.key === 'landing_top_banner' && s.value) {
+                            fetchedBanner = s.value;
+                        }
+                    }
+
+                    if (fetchedBadges && fetchedBadges.length > 0) setTrustBadges(fetchedBadges);
+                    if (fetchedBanner && fetchedBanner.isActive) setTopBanner(fetchedBanner);
+                }
+            } catch (err) {
+                console.error("Error fetching settings", err);
+            }
+        }
+        if (mounted) loadSettings();
+    }, [mounted]);
+
     if (!mounted) return null;
+
+    const activeBadges = trustBadges.length > 0 ? trustBadges : [t.freeShipping, t.authentic, t.fast];
 
     return (
         <>
             <main className="flex-grow pb-4">
+                {/* ── Top Promo Banner ── */}
+                {topBanner && (
+                    <Link href={topBanner.link || '#'} className="block px-4 py-2 text-center text-[13px] font-bold shadow-sm" style={{ backgroundColor: topBanner.bgColor, color: topBanner.textColor }}>
+                        {topBanner.text}
+                    </Link>
+                )}
+
                 {/* ── Search Bar ── */}
                 <div className="px-3 pt-2 pb-1">
                     <Link href="/search" className="flex items-center gap-2 w-full px-4 py-3 rounded-full bg-white border-[1.5px] border-gray-800 text-gray-800 text-sm font-bold hover:border-black shadow-sm transition-colors">
@@ -166,7 +206,7 @@ export default function Home() {
 
                 {/* ── Trust Strip (compact) ── */}
                 <div className="flex items-center gap-2 px-3 py-2 overflow-x-auto scrollbar-hide text-nowrap">
-                    {[t.freeShipping, t.authentic, t.fast].map((badge: string, i: number) => (
+                    {activeBadges.map((badge, i) => (
                         <span key={i} className="flex-shrink-0 text-[11px] sm:text-xs text-gray-800 bg-white border border-gray-300 shadow-sm rounded-full px-2.5 py-1 font-bold">
                             {badge}
                         </span>

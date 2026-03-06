@@ -1,32 +1,71 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Package, Heart, Clock, LogOut, ChevronRight, ShoppingBag } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Package, Heart, Clock, LogOut, ChevronRight, ShoppingBag, Loader2, Truck } from 'lucide-react';
 import { useTranslations } from '@/i18n/useTranslations';
 import Footer from '@/components/Footer';
 
 type TabKey = 'orders' | 'wishlist' | 'recent';
 
-// Mock order data — will be replaced with real API data
-const mockOrders = [
-    { id: 'ORD-20260227-001', date: '2026-02-27', total: 45.99, status: 'paid' as const, items: 3 },
-    { id: 'ORD-20260225-002', date: '2026-02-25', total: 89.50, status: 'shipping' as const, items: 5 },
-    { id: 'ORD-20260220-003', date: '2026-02-20', total: 32.00, status: 'delivered' as const, items: 2 },
-];
+interface OrderItem {
+    id: string;
+    quantity: number;
+    priceUsd: number;
+    product: { imageUrl: string | null; sku: string };
+}
+interface OrderShipment {
+    carrier: string;
+    trackingNumber: string;
+    trackingUrl: string | null;
+}
+interface Order {
+    id: string;
+    totalUsd: number;
+    status: string;
+    createdAt: string;
+    items: OrderItem[];
+    shipment: OrderShipment | null;
+}
 
 export default function MyPage() {
     const t = useTranslations();
     const [activeTab, setActiveTab] = useState<TabKey>('orders');
+    const [orders, setOrders] = useState<Order[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        fetch('/api/user/orders')
+            .then(res => res.json())
+            .then(data => {
+                if (Array.isArray(data)) setOrders(data);
+                setLoading(false);
+            })
+            .catch(err => {
+                console.error(err);
+                setLoading(false);
+            });
+    }, []);
 
     // Mock user — will use real session later
     const isLoggedIn = true;
     const user = { name: 'Premium Member', email: 'user@example.com' };
 
     const statusColors: Record<string, string> = {
-        paid: 'bg-cyan-50 text-cyan-600 border-cyan-200',
-        preparing: 'bg-amber-50 text-amber-600 border-amber-200',
-        shipping: 'bg-brand-primary/10 text-brand-primary border-brand-primary/20',
-        delivered: 'bg-green-50 text-green-600 border-green-200',
+        PENDING: 'bg-amber-50 text-amber-600 border-amber-200',
+        CONFIRMED: 'bg-cyan-50 text-cyan-600 border-cyan-200',
+        SHIPPING: 'bg-brand-primary/10 text-brand-primary border-brand-primary/20',
+        DELIVERED: 'bg-green-50 text-green-600 border-green-200',
+        COMPLETED: 'bg-emerald-50 text-emerald-600 border-emerald-200',
+        CANCELLED: 'bg-red-50 text-red-600 border-red-200',
+    };
+
+    const statusLabels: Record<string, string> = {
+        PENDING: '입금대기',
+        CONFIRMED: '결제완료/상품준비',
+        SHIPPING: '배송중',
+        DELIVERED: '배송완료',
+        COMPLETED: '구매확정',
+        CANCELLED: '주문취소',
     };
 
     const tabs: { key: TabKey; icon: React.ElementType; label: string }[] = [
@@ -78,8 +117,8 @@ export default function MyPage() {
 
                 {/* Order Status Summary (Quick Glance) */}
                 <div className="grid grid-cols-4 gap-3 mb-8">
-                    {(['paid', 'preparing', 'shipping', 'delivered'] as const).map((status) => {
-                        const count = mockOrders.filter((o) => o.status === status).length;
+                    {(['PENDING', 'CONFIRMED', 'SHIPPING', 'DELIVERED'] as const).map((status) => {
+                        const count = orders.filter((o) => o.status === status).length;
                         return (
                             <button
                                 key={status}
@@ -89,7 +128,7 @@ export default function MyPage() {
                                     {count}
                                 </span>
                                 <span className="text-[12px] text-gray-600 font-bold text-center leading-tight">
-                                    {t.mypage.orderStatus[status]}
+                                    {statusLabels[status] || status}
                                 </span>
                             </button>
                         );
@@ -122,34 +161,52 @@ export default function MyPage() {
                         {/* Orders Tab */}
                         {activeTab === 'orders' && (
                             <div className="space-y-4 animate-fade-in">
-                                {mockOrders.length === 0 ? (
+                                {loading ? (
+                                    <div className="py-20 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-gray-400" /></div>
+                                ) : orders.length === 0 ? (
                                     <div className="text-center py-16">
                                         <p className="text-gray-500 font-bold">{t.mypage.emptyOrders}</p>
                                     </div>
                                 ) : (
-                                    mockOrders.map((order) => (
-                                        <div
-                                            key={order.id}
-                                            className="p-5 rounded-2xl border border-gray-200 hover:border-gray-300 hover:shadow-md transition-all bg-white shadow-sm cursor-pointer group"
-                                        >
-                                            <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-100">
-                                                <div>
-                                                    <p className="text-sm font-extrabold text-black group-hover:text-brand-primary transition-colors">{order.id}</p>
-                                                    <p className="text-xs text-gray-500 font-medium mt-1">{order.date}</p>
+                                    orders.map((order) => {
+                                        const dateStr = new Date(order.createdAt).toLocaleDateString();
+                                        return (
+                                            <div
+                                                key={order.id}
+                                                className="p-5 rounded-2xl border border-gray-200 hover:border-gray-300 hover:shadow-md transition-all bg-white shadow-sm cursor-pointer group"
+                                            >
+                                                <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-100">
+                                                    <div>
+                                                        <p className="text-sm font-extrabold text-black group-hover:text-brand-primary transition-colors">{order.id}</p>
+                                                        <p className="text-xs text-gray-500 font-medium mt-1">{dateStr}</p>
+                                                    </div>
+                                                    <span className={`text-[11px] font-bold px-3 py-1.5 rounded-full border ${statusColors[order.status] || 'bg-gray-50 text-gray-600 border-gray-200'}`}>
+                                                        {statusLabels[order.status] || order.status}
+                                                    </span>
                                                 </div>
-                                                <span className={`text-[11px] font-bold px-3 py-1.5 rounded-full border ${statusColors[order.status]}`}>
-                                                    {t.mypage.orderStatus[order.status]}
-                                                </span>
-                                            </div>
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-sm text-gray-600 font-bold">{order.items} items</span>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="font-black text-[#E52528] text-lg">{formatUsd(order.total)}</span>
-                                                    <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-brand-primary transition-colors" />
+
+                                                {order.shipment && (
+                                                    <div className="mb-4 bg-gray-50 p-3 rounded-xl border border-gray-100 flex items-center justify-between">
+                                                        <div className="flex items-center gap-2">
+                                                            <Truck className="w-4 h-4 text-blue-500" />
+                                                            <span className="text-xs font-bold text-gray-700">{order.shipment.carrier}</span>
+                                                        </div>
+                                                        <span className="text-sm font-mono text-blue-600 font-medium select-all">
+                                                            {order.shipment.trackingNumber}
+                                                        </span>
+                                                    </div>
+                                                )}
+
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-sm text-gray-600 font-bold">{order.items.reduce((acc, it) => acc + it.quantity, 0)} items</span>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="font-black text-[#E52528] text-lg">{formatUsd(order.totalUsd)}</span>
+                                                        <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-brand-primary transition-colors" />
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    ))
+                                        )
+                                    })
                                 )}
                             </div>
                         )}

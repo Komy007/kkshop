@@ -1,0 +1,204 @@
+﻿Starting GCS Cleanup for bucket: kkshop-assets...
+node.exe : Fatal error
+ during cleanup: ApiEr
+ror: The specified buc
+ket does not exist.
+At C:\Program Files\no
+dejs\npx.ps1:29 char:3
++   & $NODE_EXE $NPX_C
+LI_JS $args
++   ~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~
+    + CategoryInfo    
+          : NotSpeci  
+  fied: (Fatal erro   
+ r dur...does not     
+exist.:String) []    ,
+ RemoteException
+    + FullyQualifiedE 
+   rrorId : NativeCo  
+  mmandError
+ 
+    at new ApiError (f
+ile:///D:/kkshop/node_
+modules/@google-cloud/
+storage/build/esm/src/
+nodejs-common/util.js:
+85:15)
+    at Util.parseHttpR
+espBody (file:///D:/kk
+shop/node_modules/@goo
+gle-cloud/storage/buil
+d/esm/src/nodejs-commo
+n/util.js:222:38)
+    at Util.handleResp
+ (file:///D:/kkshop/no
+de_modules/@google-clo
+ud/storage/build/esm/s
+rc/nodejs-common/util.
+js:162:30)
+    at file:///D:/kksh
+op/node_modules/@googl
+e-cloud/storage/build/
+esm/src/nodejs-common/
+util.js:552:22
+    at onResponse (D:\
+kkshop\node_modules\@g
+oogle-cloud\storage\no
+de_modules\retry-reque
+st\index.js:259:7)
+    at <anonymous> (D:
+\kkshop\node_modules\@
+google-cloud\storage\n
+ode_modules\teeny-requ
+est\src\index.ts:333:1
+1)
+    at process.process
+TicksAndRejections (no
+de:internal/process/ta
+sk_queues:105:5) {
+  code: 404,
+  errors: [
+    {
+      message: 'The sp
+ecified bucket does no
+t exist.',
+      domain: 'global'
+,
+      reason: 'notFoun
+d'
+    }
+  ],
+  response: PassThroug
+h {
+    _events: {
+      close: undefined
+,
+      error: [Array],
+      prefinish: [Func
+tion: prefinish],
+      finish: undefine
+d,
+      drain: undefined
+,
+      data: [Function 
+(anonymous)],
+      end: [Function (
+anonymous)],
+      readable: undefi
+ned,
+      unpipe: undefine
+d
+    },
+    _readableState: Re
+adableState {
+      highWaterMark: 1
+6384,
+      buffer: [],
+      bufferIndex: 0,
+      length: 0,
+      pipes: [],
+      awaitDrainWriter
+s: null,
+      [Symbol(kState)]
+: 194512764
+    },
+    _writableState: Wr
+itableState {
+      highWaterMark: 1
+6384,
+      length: 0,
+      corked: 0,
+      onwrite: [Functi
+on: bound onwrite],
+      writelen: 0,
+      bufferedIndex: 0
+,
+      pendingcb: 0,
+      [Symbol(kState)]
+: 1091466620,
+      [Symbol(kBuffere
+dValue)]: null,
+      [Symbol(kWriteCb
+Value)]: null
+    },
+    allowHalfOpen: tru
+e,
+    _maxListeners: und
+efined,
+    _eventsCount: 4,
+    statusCode: 404,
+    statusMessage: 'No
+t Found',
+    request: {
+      agent: [Agent],
+      headers: [Object
+],
+      href: 'https://s
+torage.googleapis.com/
+storage/v1/b/kkshop-as
+sets/o?'
+    },
+    body: '{\n' +
+      '  "error": {\n'
+ +
+      '    "code": 404
+,\n' +
+      '    "message": 
+"The specified bucket 
+does not exist.",\n' +
+      '    "errors": [
+\n' +
+      '      {\n' +
+      '        "messag
+e": "The specified buc
+ket does not exist.",\
+n' +
+      '        "domain
+": "global",\n' +
+      '        "reason
+": "notFound"\n' +
+      '      }\n' +
+      '    ]\n' +
+      '  }\n' +
+      '}\n',
+    headers: {
+      'alt-svc': 'h3="
+:443"; ma=2592000,h3-2
+9=":443"; ma=2592000',
+      'cache-control':
+ 'no-cache, no-store, 
+max-age=0, must-revali
+date',
+      'content-length'
+: '247',
+      'content-type': 
+'application/json; cha
+rset=UTF-8',
+      date: 'Thu, 05 M
+ar 2026 14:59:50 GMT',
+      expires: 'Mon, 0
+1 Jan 1990 00:00:00 GM
+T',
+      pragma: 'no-cach
+e',
+      server: 'UploadS
+erver',
+      vary: 'Origin, X
+-Origin',
+      'x-guploader-upl
+oadid': 'AGQBYWxw_lEik
+D7Az802eVziuVSnUurHlOy
+AJp6e6ayCWessel8upfTeR
+r14dBebrHNooFEE'
+    },
+    toJSON: [Function:
+ toJSON],
+    [Symbol(shapeMode)
+]: true,
+    [Symbol(kCapture)]
+: false,
+    [Symbol(kCallback)
+]: null
+  }
+}

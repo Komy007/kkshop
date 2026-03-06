@@ -41,7 +41,7 @@ export async function POST(req: Request) {
     const {
         sku, priceUsd, stockQty, categoryId, brandName, volume, origin, skinType, expiryMonths,
         nameKo, shortDescKo, detailDescKo, ingredientsKo, howToUseKo, benefitsKo,
-        imageUrls = [],
+        imageUrls = [], options = [],
     } = body;
 
     if (!sku || !priceUsd || !nameKo) return NextResponse.json({ error: '필수 값 누락' }, { status: 400 });
@@ -80,6 +80,22 @@ export async function POST(req: Request) {
         buildTranslation('zh', 'zh'),
     ]);
 
+    const optionsData = await Promise.all(options.map(async (opt: any, i: number) => {
+        let labelEn = opt.labelKo || null;
+        if (opt.labelKo) {
+            labelEn = await translateField(opt.labelKo, 'en');
+        }
+        return {
+            minQty: parseInt(opt.minQty) || 1,
+            maxQty: opt.maxQty ? parseInt(opt.maxQty) : null,
+            discountPct: parseFloat(opt.discountPct) || 0,
+            freeShipping: Boolean(opt.freeShipping),
+            labelKo: opt.labelKo || null,
+            labelEn,
+            sortOrder: i
+        };
+    }));
+
     const product = await prisma.product.create({
         data: {
             sku,
@@ -98,6 +114,9 @@ export async function POST(req: Request) {
             translations: { create: [trKo, trEn, trKm, trZh] },
             ...(imageUrls.length > 0 && {
                 images: { create: imageUrls.map((url: string, i: number) => ({ url, sortOrder: i })) },
+            }),
+            ...(optionsData.length > 0 && {
+                options: { create: optionsData },
             }),
         },
     });

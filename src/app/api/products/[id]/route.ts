@@ -15,8 +15,53 @@ export async function GET(
             include: {
                 translations: {
                     where: { langCode: lang }
+                },
+                options: { orderBy: { sortOrder: 'asc' } },
+                supplier: {
+                    select: {
+                        companyName: true,
+                        brandName: true,
+                    }
                 }
             }
+        });
+
+        const serializeOptions = (opts: any[], lang: string) => {
+            return opts.map(o => ({
+                id: o.id.toString(),
+                minQty: o.minQty,
+                maxQty: o.maxQty,
+                discountPct: Number(o.discountPct),
+                freeShipping: o.freeShipping,
+                label: lang === 'ko' ? o.labelKo : (o.labelEn || o.labelKo)
+            }));
+        };
+
+        const buildResponse = (p: any, t: any) => ({
+            id: p.id.toString(),
+            sku: p.sku,
+            priceUsd: Number(p.priceUsd),
+            stockQty: p.stockQty,
+            status: p.status,
+            imageUrl: p.imageUrl,
+            categoryId: p.categoryId?.toString() || null,
+            name: t.name,
+            shortDesc: t.shortDesc,
+            detailDesc: t.detailDesc,
+            seoKeywords: t.seoKeywords,
+            ingredients: t.ingredients,
+            howToUse: t.howToUse,
+            benefits: t.benefits,
+            isHotSale: p.isHotSale,
+            hotSalePrice: p.hotSalePrice ? Number(p.hotSalePrice) : null,
+            volume: p.volume,
+            skinType: p.skinType,
+            origin: p.origin,
+            expiryMonths: p.expiryMonths,
+            certifications: p.certifications,
+            brandName: p.brandName || p.supplier?.brandName || p.supplier?.companyName || null,
+            supplier: p.supplier ? { companyName: p.supplier.companyName } : null,
+            options: serializeOptions(p.options || [], lang),
         });
 
         if (!product) {
@@ -24,7 +69,9 @@ export async function GET(
             const productAny = await prisma.product.findUnique({
                 where: { id: BigInt(productId) },
                 include: {
-                    translations: { take: 1 }
+                    translations: { take: 1 },
+                    options: { orderBy: { sortOrder: 'asc' } },
+                    supplier: { select: { companyName: true, brandName: true } }
                 }
             });
 
@@ -32,48 +79,18 @@ export async function GET(
                 return NextResponse.json({ error: 'Product not found' }, { status: 404 });
             }
 
-            const fallbackTranslation = productAny.translations[0] || {
+            return NextResponse.json(buildResponse(productAny, productAny.translations[0] || {
                 name: productAny.sku,
-                shortDesc: null,
-                detailDesc: null,
-                seoKeywords: null,
-            };
-
-            return NextResponse.json({
-                id: productAny.id.toString(),
-                sku: productAny.sku,
-                priceUsd: Number(productAny.priceUsd),
-                stockQty: productAny.stockQty,
-                status: productAny.status,
-                imageUrl: productAny.imageUrl,
-                categoryId: productAny.categoryId?.toString() || null,
-                name: fallbackTranslation.name,
-                shortDesc: fallbackTranslation.shortDesc,
-                detailDesc: fallbackTranslation.detailDesc,
-                seoKeywords: fallbackTranslation.seoKeywords,
-            });
+                shortDesc: null, detailDesc: null, seoKeywords: null,
+                ingredients: null, howToUse: null, benefits: null
+            }));
         }
 
-        const translation = product.translations[0] || {
+        return NextResponse.json(buildResponse(product, product.translations[0] || {
             name: product.sku,
-            shortDesc: null,
-            detailDesc: null,
-            seoKeywords: null,
-        };
-
-        return NextResponse.json({
-            id: product.id.toString(),
-            sku: product.sku,
-            priceUsd: Number(product.priceUsd),
-            stockQty: product.stockQty,
-            status: product.status,
-            imageUrl: product.imageUrl,
-            categoryId: product.categoryId?.toString() || null,
-            name: translation.name,
-            shortDesc: translation.shortDesc,
-            detailDesc: translation.detailDesc,
-            seoKeywords: translation.seoKeywords,
-        });
+            shortDesc: null, detailDesc: null, seoKeywords: null,
+            ingredients: null, howToUse: null, benefits: null
+        }));
     } catch (error) {
         console.error('Failed to fetch product:', error);
         return NextResponse.json({ error: 'Failed to fetch product' }, { status: 500 });

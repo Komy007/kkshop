@@ -1,0 +1,11 @@
+﻿Starting GCS Cleanup for bucket: kkshop-images...
+Found 9 files in GCS.
+Found 35 unique valid image URLs in Database.
+Identified 3 orphaned files in GCS.
+
+--- Orphaned Files to Delete ---
+ - products/1772607785239_JnkokhJkl7RX7wd0O2DZ1068858_00_00JnkokhJkl7RX7wd0O2DZ.webp
+ - products/1772607785816_photo_2026-03-04_09-51-01.jpg
+ - products/1772607786195_photo_2026-03-04_09-52-14.jpg
+
+DRY RUN: No files were deleted.

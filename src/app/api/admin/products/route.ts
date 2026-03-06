@@ -132,6 +132,7 @@ export async function POST(req: Request) {
             origin = null,
             expiryMonths = null,
             certifications = null,
+            options = [], // [{ minQty, maxQty, discountPct, freeShipping, labelKo }]
         } = body;
 
         if (!sku || !priceUsd || !name || !baseLang) {
@@ -246,6 +247,40 @@ export async function POST(req: Request) {
             await tx.productTranslation.createMany({
                 data: translationsData.map(t => ({ ...t, productId: product.id }))
             });
+
+            // Create ProductOption objects
+            if (options && options.length > 0) {
+                const optionsData = [];
+                for (let i = 0; i < options.length; i++) {
+                    const opt = options[i];
+
+                    // Auto-translate labelKo to labelEn
+                    let labelEn = opt.labelKo || null;
+                    if (opt.labelKo && baseLang === 'ko') {
+                        try {
+                            const [translatedLabel] = await translate.translate(opt.labelKo, 'en');
+                            labelEn = translatedLabel;
+                        } catch (e) {
+                            console.error('Failed to translate option label', e);
+                        }
+                    }
+
+                    optionsData.push({
+                        productId: product.id,
+                        minQty: parseInt(opt.minQty) || 1,
+                        maxQty: opt.maxQty ? parseInt(opt.maxQty) : null,
+                        discountPct: parseFloat(opt.discountPct) || 0,
+                        freeShipping: Boolean(opt.freeShipping),
+                        labelKo: opt.labelKo || null,
+                        labelEn: labelEn,
+                        sortOrder: i
+                    });
+                }
+
+                await tx.productOption.createMany({
+                    data: optionsData
+                });
+            }
 
             return product;
         });

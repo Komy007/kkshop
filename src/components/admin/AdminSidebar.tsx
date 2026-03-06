@@ -23,7 +23,8 @@ const icons = {
   cs: '💬',
   setting: '⚙️',
   globe: '🌐',
-  key: '🔑'
+  key: '🔑',
+  coupon: '🎫'
 };
 
 export default async function AdminSidebar() {
@@ -89,7 +90,10 @@ export default async function AdminSidebar() {
           </h3>
           <ul className="space-y-1">
             <SidebarItem href="/admin/customers" icon={icons.user} label="회원 목록" />
+            <SidebarItem href="/admin/reviews" icon="⭐" label="리뷰 관리" />
+            <SidebarItem href="/admin/coupons" icon={icons.coupon} label="쿠폰 관리" />
             <SidebarItem href="/admin/cs" icon={icons.cs} label="1:1 다국어 문의 답변" />
+            <SidebarItem href="/admin/marketing/email" icon="📧" label="이메일 발송 (마케팅)" />
           </ul>
         </div>
 
@@ -103,6 +107,7 @@ export default async function AdminSidebar() {
               <SidebarItem href="/admin/landing-settings" icon="✨" label="랜딩 페이지 셋팅" isHighlighted={true} />
               <SidebarItem href="/admin/settings/localization" icon={icons.globe} label="언어 및 국가 설정" />
               <SidebarItem href="/admin/settings/roles" icon={icons.key} label="관리자 권한" />
+              <SidebarItem href="/admin/settings/email" icon="⚙️" label="이메일(SMTP) 연동 설정" />
             </ul>
           </div>
         )}

@@ -19,6 +19,8 @@ export default function NewProductPage() {
     const [categories, setCategories] = useState<Category[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    const [options, setOptions] = useState([{ minQty: '1', maxQty: '', discountPct: '0', freeShipping: false, labelKo: '1개 기본' }]);
+
     const [form, setForm] = useState({
         sku: '', priceUsd: '', stockQty: '100',
         categoryId: '', isNew: false,
@@ -83,6 +85,7 @@ export default function NewProductPage() {
                     isNew: form.isNew,
                     categoryId: form.categoryId || null,
                     expiryMonths: form.expiryMonths ? parseInt(form.expiryMonths) : null,
+                    options,
                 }),
             });
             const data = await res.json();
@@ -145,7 +148,59 @@ export default function NewProductPage() {
                     </div>
                 </div>
 
-                {/* ② 기본정보 + 카테고리 + 신상품 */}
+                {/* ② 수량별 파격 옵션 설정 */}
+                <div className="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-100">
+                    <Sec icon={<Star className="w-5 h-5 text-yellow-500" />} title="단위별 할인 및 파격 옵션" desc="많이 살수록, 묶음으로 살수록 혜택을 제공합니다." />
+                    <div className="p-5 space-y-4">
+                        {options.map((opt, i) => (
+                            <div key={i} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_auto_2fr_auto] gap-3 items-end bg-gray-50 p-3 rounded-lg border border-gray-200">
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-600 mb-1">최소 수량</label>
+                                    <input type="number" value={opt.minQty} onChange={e => {
+                                        setOptions(options.map((o, idx) => idx === i ? { ...o, minQty: e.target.value } : o));
+                                    }} className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" min="1" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-600 mb-1">최대 수량</label>
+                                    <input type="number" value={opt.maxQty} onChange={e => {
+                                        setOptions(options.map((o, idx) => idx === i ? { ...o, maxQty: e.target.value } : o));
+                                    }} className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="무제한" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-600 mb-1">할인율(%)</label>
+                                    <input type="number" value={opt.discountPct} onChange={e => {
+                                        setOptions(options.map((o, idx) => idx === i ? { ...o, discountPct: e.target.value } : o));
+                                    }} className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+                                </div>
+                                <div className="pb-2">
+                                    <label className="flex items-center gap-2 text-sm cursor-pointer whitespace-nowrap">
+                                        <input type="checkbox" checked={opt.freeShipping} onChange={e => {
+                                            setOptions(options.map((o, idx) => idx === i ? { ...o, freeShipping: e.target.checked } : o));
+                                        }} className="rounded text-blue-600 focus:ring-blue-500" />
+                                        무료 배송
+                                    </label>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-600 mb-1">옵션 라벨 (선택)</label>
+                                    <input value={opt.labelKo} onChange={e => {
+                                        setOptions(options.map((o, idx) => idx === i ? { ...o, labelKo: e.target.value } : o));
+                                    }} className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="예: 2개 구매시 10% 할인" />
+                                </div>
+                                {options.length > 1 && (
+                                    <button type="button" onClick={() => setOptions(options.filter((_, idx) => idx !== i))} className="mb-1 text-red-500 hover:bg-red-50 p-2 rounded-lg transition-colors">
+                                        <X className="w-5 h-5" />
+                                    </button>
+                                )}
+                            </div>
+                        ))}
+                        <button type="button" onClick={() => setOptions([...options, { minQty: '2', maxQty: '', discountPct: '10', freeShipping: false, labelKo: '' }])}
+                            className="text-sm text-blue-600 font-semibold flex items-center gap-1 hover:text-blue-700">
+                            + 수량별 옵션 추가하기
+                        </button>
+                    </div>
+                </div>
+
+                {/* ③ 기본정보 + 카테고리 + 신상품 */}
                 <div className="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-100">
                     <Sec icon={<Package className="w-5 h-5 text-gray-500" />} title="기본 정보 & 카테고리" />
                     <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -193,7 +248,7 @@ export default function NewProductPage() {
                     </div>
                 </div>
 
-                {/* ③ 상품 사양 */}
+                {/* ④ 상품 사양 */}
                 <div className="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-100">
                     <Sec icon={<Tag className="w-5 h-5 text-purple-500" />} title="상품 사양" desc="구매 결정에 핵심이 되는 정보" />
                     <div className="p-5 grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -213,7 +268,7 @@ export default function NewProductPage() {
                     </div>
                 </div>
 
-                {/* ④ 다국어 콘텐츠 */}
+                {/* ⑤ 다국어 콘텐츠 */}
                 <div className="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-100">
                     <div className="px-6 py-4 bg-blue-50 border-b border-blue-100 flex items-center justify-between">
                         <div>

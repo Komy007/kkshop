@@ -1,0 +1,28 @@
+﻿.next/dev/types/routes.d.ts(102,4): error TS1109: Expression expected.
+.next/dev/types/routes.d.ts(102,6): error TS1109: Expression expected.
+.next/dev/types/routes.d.ts(103,4): error TS1109: Expression expected.
+.next/dev/types/routes.d.ts(103,8): error TS1109: Expression expected.
+.next/dev/types/routes.d.ts(104,8): error TS1109: Expression expected.
+.next/dev/types/routes.d.ts(104,25): error TS1005: ';' expected.
+.next/dev/types/routes.d.ts(104,38): error TS1110: Type expected.
+.next/dev/types/routes.d.ts(105,6): error TS1109: Expression expected.
+.next/dev/types/routes.d.ts(106,4): error TS1109: Expression expected.
+.next/dev/types/routes.d.ts(116,9): error TS1005: ';' expected.
+.next/dev/types/routes.d.ts(117,6): error TS1109: Expression expected.
+.next/dev/types/routes.d.ts(118,4): error TS1109: Expression expected.
+.next/dev/types/routes.d.ts(118,8): error TS1109: Expression expected.
+.next/dev/types/routes.d.ts(118,26): error TS1005: ',' expected.
+.next/dev/types/routes.d.ts(118,37): error TS1161: Unterminated regular expression literal.
+.next/dev/types/routes.d.ts(119,6): error TS1109: Expression expected.
+.next/dev/types/routes.d.ts(120,4): error TS1109: Expression expected.
+.next/dev/types/routes.d.ts(132,9): error TS1005: ';' expected.
+.next/dev/types/routes.d.ts(133,6): error TS1109: Expression expected.
+.next/dev/types/routes.d.ts(134,4): error TS1109: Expression expected.
+.next/dev/types/routes.d.ts(134,8): error TS1109: Expression expected.
+.next/dev/types/routes.d.ts(135,8): error TS1109: Expression expected.
+.next/dev/types/routes.d.ts(136,6): error TS1109: Expression expected.
+.next/dev/types/routes.d.ts(137,4): error TS1109: Expression expected.
+.next/dev/types/routes.d.ts(143,1): error TS1160: Unterminated template literal.
+.next/dev/types/validator.ts(332,26): error TS1005: ';' expected.
+.next/dev/types/validator.ts(332,40): error TS1002: Unterminated string literal.
+.next/dev/types/validator.ts(337,1): error TS1128: Declaration or statement expected.

@@ -1,7 +1,8 @@
 import React from 'react';
 import { prisma } from '@/lib/api';
 import AdminSidebar from '@/components/admin/AdminSidebar';
-import { ShoppingBag, Search, CheckCircle, Clock } from 'lucide-react';
+import { ShoppingBag, Search, CheckCircle, Clock, Truck } from 'lucide-react';
+import OrderShipmentModal from '@/components/admin/OrderShipmentModal';
 import { revalidatePath } from 'next/cache';
 
 export const dynamic = 'force-dynamic';
@@ -25,7 +26,8 @@ export default async function AdminOrdersPage() {
                 include: {
                     product: true
                 }
-            }
+            },
+            shipment: true
         }
     });
 
@@ -73,6 +75,14 @@ export default async function AdminOrdersPage() {
                                             <div className="text-gray-900 font-semibold text-[11px] bg-gray-100 px-2 py-0.5 rounded inline-block">
                                                 {order.createdAt.toLocaleString('ko-KR')}
                                             </div>
+                                            {order.shipment && (
+                                                <div className="mt-3 p-2 bg-blue-50 border border-blue-100 rounded text-xs space-y-1">
+                                                    <div className="font-bold text-blue-700">{order.shipment.carrier}</div>
+                                                    <div className="font-mono text-blue-600 truncate max-w-[150px]" title={order.shipment.trackingNumber}>
+                                                        {order.shipment.trackingNumber}
+                                                    </div>
+                                                </div>
+                                            )}
                                         </td>
 
                                         {/* Customer Info */}
@@ -122,6 +132,8 @@ export default async function AdminOrdersPage() {
                                                 {order.status === 'CANCELLED' && <Clock className="w-3.5 h-3.5" />}
                                                 {order.status}
                                             </div>
+
+                                            <OrderShipmentModal orderId={order.id} shipment={order.shipment} />
 
                                             <form action={async () => {
                                                 'use server';

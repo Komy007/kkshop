@@ -9,9 +9,10 @@ interface Category { id: string; slug: string; nameKo: string; }
 export default function SellerProductNewPage() {
     const router = useRouter();
     const fileRef = useRef<HTMLInputElement>(null);
-    const [categories, setCategories] = useState<Category[]>([]);
     const [images, setImages] = useState<File[]>([]);
     const [previews, setPreviews] = useState<string[]>([]);
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [options, setOptions] = useState([{ minQty: '1', maxQty: '', discountPct: '0', freeShipping: false, labelKo: '1개 기본' }]);
     const [submitting, setSubmitting] = useState(false);
     const [translating, setTranslating] = useState(false);
     const [success, setSuccess] = useState(false);
@@ -67,8 +68,8 @@ export default function SellerProductNewPage() {
         setTranslating(false);
 
         const payload = {
-            ...form,
             imageUrls,
+            options,
             approvalStatus: 'PENDING',  // 항상 검수 대기로 등록
             status: 'INACTIVE',
         };
@@ -183,6 +184,58 @@ export default function SellerProductNewPage() {
                         <Field label="피부 타입">
                             <input value={form.skinType} onChange={e => set('skinType', e.target.value)} placeholder="예: 모든 피부" className={inp} />
                         </Field>
+                    </div>
+                </Section>
+
+                {/* 수량별 옵션 설정 */}
+                <Section title="단위별 할인 및 파격 옵션">
+                    <div className="space-y-4">
+                        {options.map((opt, i) => (
+                            <div key={i} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_auto_2fr_auto] gap-3 items-end bg-teal-50/50 p-4 rounded-xl border border-teal-100/50 relative">
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-700 mb-1">최소 수량</label>
+                                    <input type="number" value={opt.minQty} onChange={e => {
+                                        setOptions(options.map((o, idx) => idx === i ? { ...o, minQty: e.target.value } : o));
+                                    }} className={inp} min="1" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-700 mb-1">최대 수량</label>
+                                    <input type="number" value={opt.maxQty} onChange={e => {
+                                        setOptions(options.map((o, idx) => idx === i ? { ...o, maxQty: e.target.value } : o));
+                                    }} className={inp} placeholder="무제한" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-700 mb-1">할인율(%)</label>
+                                    <input type="number" value={opt.discountPct} onChange={e => {
+                                        setOptions(options.map((o, idx) => idx === i ? { ...o, discountPct: e.target.value } : o));
+                                    }} className={inp} />
+                                </div>
+                                <div className="pb-3">
+                                    <label className="flex items-center gap-2 text-sm cursor-pointer whitespace-nowrap font-medium text-gray-700">
+                                        <input type="checkbox" checked={opt.freeShipping} onChange={e => {
+                                            setOptions(options.map((o, idx) => idx === i ? { ...o, freeShipping: e.target.checked } : o));
+                                        }} className="rounded text-teal-600 focus:ring-teal-500 border-gray-300 w-4 h-4" />
+                                        무료 배송
+                                    </label>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-700 mb-1">옵션 라벨 (한국어)</label>
+                                    <input value={opt.labelKo} onChange={e => {
+                                        setOptions(options.map((o, idx) => idx === i ? { ...o, labelKo: e.target.value } : o));
+                                    }} className={inp} placeholder="예: 2개 구매시 10% 할인" />
+                                    <div className="text-[10px] text-teal-600 mt-1">※ 영어로 자동 번역됩니다.</div>
+                                </div>
+                                {options.length > 1 && (
+                                    <button type="button" onClick={() => setOptions(options.filter((_, idx) => idx !== i))} className="mb-2 text-red-400 hover:bg-red-50 p-1.5 rounded-lg transition-colors absolute top-2 right-2 md:relative md:top-0 md:right-0">
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                )}
+                            </div>
+                        ))}
+                        <button type="button" onClick={() => setOptions([...options, { minQty: '2', maxQty: '', discountPct: '10', freeShipping: false, labelKo: '' }])}
+                            className="text-sm text-teal-600 font-semibold flex items-center gap-1 hover:text-teal-700 bg-teal-50 px-3 py-2 rounded-lg transition-colors inline-block mt-2 border border-teal-100">
+                            + 수량별 옵션 추가하기
+                        </button>
                     </div>
                 </Section>
 
