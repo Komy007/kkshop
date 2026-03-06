@@ -446,3 +446,38 @@
 ::-webkit-scrollbar-thumb {
   @apply bg-gray-300 rounded-full border border-gray-50 hover:bg-gray-400 transition-colors;
 }
+
+/* 
+  KHMER OPACITY / FONT-WEIGHT OVERRIDES 
+  Ensures Cambodian language has identical color and contrast to other languages.
+*/
+html[data-lang="km"] body,
+html[data-lang="km"] * {
+  font-weight: 500;
+  -webkit-font-smoothing: antialiased;
+}
+
+html[data-lang="km"] .text-gray-400,
+html[data-lang="km"] .text-gray-500,
+html[data-lang="km"] .text-gray-600 {
+  color: #374151 !important;
+  /* Force darker gray equivalents */
+  font-weight: 600;
+}
+
+html[data-lang="km"] .text-gray-700,
+html[data-lang="km"] .text-gray-800,
+html[data-lang="km"] .text-gray-900 {
+  color: #111827 !important;
+  /* Force almost black */
+}
+
+html[data-lang="km"] .font-medium,
+html[data-lang="km"] .font-semibold,
+html[data-lang="km"] .font-bold {
+  font-weight: 700 !important;
+}
+
+html[data-lang="km"] .font-extrabold {
+  font-weight: 900 !important;
+}

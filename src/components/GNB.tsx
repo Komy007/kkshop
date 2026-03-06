@@ -32,8 +32,12 @@ export default function GNB() {
             setScrolled(window.scrollY > 50);
         };
         window.addEventListener("scroll", handleScroll, { passive: true });
+
+        // Dynamically update the HTML data-lang attribute so CSS can target specific languages
+        document.documentElement.setAttribute('data-lang', language);
+
         return () => window.removeEventListener("scroll", handleScroll);
-    }, []);
+    }, [language]);
 
     // Close lang dropdown on outside click
     useEffect(() => {
