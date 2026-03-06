@@ -211,6 +211,32 @@ export async function POST(req: Request) {
             }
         }
 
+        // 2b. Translate Options
+        const translatedOptions = [];
+        if (options && options.length > 0) {
+            for (let i = 0; i < options.length; i++) {
+                const opt = options[i];
+                let labelEn = opt.labelKo || null;
+                if (opt.labelKo && baseLang === 'ko') {
+                    try {
+                        const [translatedLabel] = await translate.translate(opt.labelKo, 'en');
+                        labelEn = translatedLabel;
+                    } catch (e) {
+                        console.error('Failed to translate option label', e);
+                    }
+                }
+                translatedOptions.push({
+                    minQty: parseInt(opt.minQty) || 1,
+                    maxQty: opt.maxQty ? parseInt(opt.maxQty) : null,
+                    discountPct: parseFloat(opt.discountPct) || 0,
+                    freeShipping: Boolean(opt.freeShipping),
+                    labelKo: opt.labelKo || null,
+                    labelEn: labelEn,
+                    sortOrder: i
+                });
+            }
+        }
+
         // 3. Save to Database using Prisma Transaction
         const newProduct = await prisma.$transaction(async (tx) => {
             // Create root Product object
@@ -249,36 +275,12 @@ export async function POST(req: Request) {
             });
 
             // Create ProductOption objects
-            if (options && options.length > 0) {
-                const optionsData = [];
-                for (let i = 0; i < options.length; i++) {
-                    const opt = options[i];
-
-                    // Auto-translate labelKo to labelEn
-                    let labelEn = opt.labelKo || null;
-                    if (opt.labelKo && baseLang === 'ko') {
-                        try {
-                            const [translatedLabel] = await translate.translate(opt.labelKo, 'en');
-                            labelEn = translatedLabel;
-                        } catch (e) {
-                            console.error('Failed to translate option label', e);
-                        }
-                    }
-
-                    optionsData.push({
-                        productId: product.id,
-                        minQty: parseInt(opt.minQty) || 1,
-                        maxQty: opt.maxQty ? parseInt(opt.maxQty) : null,
-                        discountPct: parseFloat(opt.discountPct) || 0,
-                        freeShipping: Boolean(opt.freeShipping),
-                        labelKo: opt.labelKo || null,
-                        labelEn: labelEn,
-                        sortOrder: i
-                    });
-                }
-
+            if (translatedOptions.length > 0) {
                 await tx.productOption.createMany({
-                    data: optionsData
+                    data: translatedOptions.map(opt => ({
+                        ...opt,
+                        productId: product.id
+                    }))
                 });
             }
 

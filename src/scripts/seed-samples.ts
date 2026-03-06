@@ -107,6 +107,9 @@ async function seed() {
             }
         });
 
+        // 0.5 Fetch existing categories to assign products correctly
+        const categories = await prisma.category.findMany();
+
         for (const data of sampleData) {
             console.log(`\nProcessing Category: ${data.categoryTitle}`);
 
@@ -166,13 +169,16 @@ async function seed() {
                     }
                 }
 
-                // 3. Insert into DB with transaction
+                // 3. Map category and Insert into DB with transaction
+                const categoryId = categories.find(c => c.slug === data.categoryPrefix)?.id || null;
+
                 await prisma.$transaction(async (tx) => {
                     const product = await tx.product.create({
                         data: {
                             sku,
                             priceUsd: data.defaultPrice + (i * 2),
                             stockQty: 100,
+                            categoryId,
                             status: 'ACTIVE',
                             imageUrl: imageUrl || null,
                         }
