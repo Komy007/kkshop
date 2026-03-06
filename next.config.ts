@@ -2,6 +2,13 @@ import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
     output: 'standalone',
+    typescript: {
+        // !! WARN !!
+        // Dangerously allow production builds to successfully complete even if
+        // your project has type errors. This is required because Vercel's free tier
+        // memory limit (1024MB) is causing OOM crashes during type checking.
+        ignoreBuildErrors: true,
+    },
     images: {
         // Prioritize modern formats for Cambodia's bandwidth constraints
         formats: ['image/webp', 'image/avif'],
