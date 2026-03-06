@@ -160,12 +160,14 @@ export default function Home() {
                     let fetchedBadges: any = null;
                     let fetchedBanner: any = null;
 
-                    for (const s of data) {
-                        if (s.key === 'landing_trust_badges' && s.value) {
-                            fetchedBadges = Object.values(s.value as any) as string[];
-                        }
-                        if (s.key === 'landing_top_banner' && s.value) {
-                            fetchedBanner = s.value;
+                    if (Array.isArray(data)) {
+                        for (const s of data) {
+                            if (s.key === 'landing_trust_badges' && s.value) {
+                                fetchedBadges = Object.values(s.value as any) as string[];
+                            }
+                            if (s.key === 'landing_top_banner' && s.value) {
+                                fetchedBanner = s.value;
+                            }
                         }
                     }
 
