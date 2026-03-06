@@ -15,7 +15,8 @@ async function main() {
     const noCat = products.filter(p => !p.categoryId);
     console.log(`Products without category: ${noCat.length}`);
     if (products.length > 0) {
-        console.log('Sample 1:', { sku: products[0].sku, category: products[0].category?.slug });
+        const first = products[0];
+        console.log('Sample 1:', { sku: first?.sku, category: first?.category?.slug });
     }
 
     console.log('\n--- CATEGORIES ---');

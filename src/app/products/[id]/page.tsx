@@ -116,6 +116,7 @@ interface ProductDetail {
     shortDesc: string | null;
     detailDesc: string | null;
     seoKeywords: string | null;
+    ingredients?: string | null;
     imageUrl?: string;
     rating?: number;
     reviewCount?: number;

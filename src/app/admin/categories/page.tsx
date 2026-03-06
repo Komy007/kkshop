@@ -74,15 +74,14 @@ export default function CategoriesPage() {
         <div className="max-w-4xl mx-auto py-8 px-4">
             <div className="flex items-center justify-between mb-5">
                 <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                    <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                        <Tag className="w-6 h-6 text-blue-500" /> 카테고리 관리
-                    </h1>
-                    <div className="flex gap-2">
-                        <button onClick={fetch_} className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg"><RefreshCw className="w-5 h-5" /></button>
-                        <button onClick={() => setIsAdding(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 shadow-sm">
-                            + 새 카테고리 추가
-                        </button>
-                    </div>
+                    <Tag className="w-6 h-6 text-blue-500" /> 카테고리 관리
+                </h1>
+                <div className="flex gap-2">
+                    <button onClick={fetch_} className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg"><RefreshCw className="w-5 h-5" /></button>
+                    <button onClick={() => setIsAdding(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 shadow-sm">
+                        + 새 카테고리 추가
+                    </button>
+                </div>
             </div>
             <p className="text-sm text-gray-500 mb-5">새로운 카테고리를 만들거나 기존 카테고리 이름(4개국어)과 정렬 순서를 수정할 수 있습니다. ✦ 표시는 삭제/슬러그 수정 불가능한 시스템 카테고리입니다.</p>
 

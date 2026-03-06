@@ -1,0 +1,74 @@
+﻿--- SETTINGS ---
+[
+  {
+    "id": "cmlypyzsb0000l71wbleajuyt",
+    "key": "landing_hero",
+    "value": {
+      "images": [
+        {
+          "url": "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&q=80&w=600",
+          "label": "K-Premium",
+          "title": "Luminous Serum"
+        },
+        {
+          "url": "https://images.unsplash.com/photo-1599305090598-fe179d501227?auto=format&fit=crop&q=80&w=400"
+        },
+        {
+          "url": "https://images.unsplash.com/photo-1596462502278-27bf85033e5a?auto=format&fit=crop&q=80&w=500"
+        }
+      ],
+      "badgeParams": {
+        "text": "100% φò£Ω╡¡ ∞áòφÆê φÖö∞₧ÑφÆêΩ┤Ç",
+        "fontSize": "0.875rem"
+      },
+      "titleParams": {
+        "text": "∞âêδí£∞Ü┤, ∞Öäδ▓╜φò£ φö╝δ╢Ç∞¥ÿ ∞ï£∞₧æ! δï╣∞ïá∞¥┤ ∞äáφâ¥φòÿ∞ä╕∞Üö.",
+        "fontSize": "2.75rem"
+      },
+      "topTextParams": {
+        "text": "φÆê∞ºê∞¥ä ∞₧Éδ╢Çφò⌐δïêδïñ. ∞ïáδó░δÑ╝ φîÉδºñφò⌐δïêδïñ.",
+        "fontSize": "1.225rem"
+      }
+    },
+    "createdAt": "2026-02-23T05:11:52.168Z",
+    "updatedAt": "2026-02-23T07:14:23.458Z"
+  },
+  {
+    "id": "cmlypz0cq0001l71wkppvg08l",
+    "key": "landing_bento",
+    "value": {
+      "items": [
+        {
+          "desc": "δ╢Çδô£δƒ╜Ω│á δ╣áδÑ╕ φ¥í∞êÿδáÑ",
+          "image": "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&q=80&w=800",
+          "title": "∞ÿñΩ░Çδïë ∞╜öφè╝ ∞âñ∞¢î φâÇ∞¢ö"
+        },
+        {
+          "desc": "Ω▒┤Ω╕░∞ùÉδÅä φâü∞¢öφò£ ∞âü∞╛îφò¿",
+          "image": "https://images.unsplash.com/photo-1563453392212-326f5e854473?auto=format&fit=crop&q=80&w=600",
+          "title": "∞èñδºêφè╕ Ω│╡Ω╕░∞▓¡∞áò δ»╕δïê"
+        },
+        {
+          "desc": "φÿ╕φàö δ¥╝∞Ü┤∞ºÇ∞¥ÿ φûÑΩ╕░",
+          "image": "https://images.unsplash.com/photo-1602928321679-560bb453f190?auto=format&fit=crop&q=80&w=500",
+          "title": "φöäδª¼δ»╕∞ùä δööφô¿∞áÇ"
+        },
+        {
+          "desc": "δìö∞Ü┤ δ░ñ∞ùÉδÅä ∞ï£∞¢ÉφòÿΩ▓î",
+          "image": "https://images.unsplash.com/photo-1505693314120-0d443867891c?auto=format&fit=crop&q=80&w=600",
+          "title": "∞¥╕∞▓┤Ω│╡φòÖ ∞êÖδ⌐┤ δ▓áΩ░£"
+        }
+      ]
+    },
+    "createdAt": "2026-02-23T05:11:52.970Z",
+    "updatedAt": "2026-02-23T07:14:24.633Z"
+  }
+]
+
+--- SAMPLE PRODUCTS ---
+Total sample products: 30
+Products without category: 6
+Sample 1: { sku: 'SAMP-MAKEUP-03', category: 'makeup' }
+
+--- CATEGORIES ---
+skincare, makeup, hair-body, living, health, best, new, sale, all, foryou

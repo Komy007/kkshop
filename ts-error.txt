@@ -1,0 +1,4 @@
+src/app/api/admin/products/route.ts(217,15): error TS7034: Variable 'translatedOptions' implicitly has type 'any[]' in some locations where its type cannot be determined.
+src/app/api/admin/products/route.ts(282,27): error TS7005: Variable 'translatedOptions' implicitly has an 'any[]' type.
+src/app/products/[id]/page.tsx(683,42): error TS2339: Property 'ingredients' does not exist on type 'ProductDetail'.
+src/app/products/[id]/page.tsx(684,111): error TS2339: Property 'ingredients' does not exist on type 'ProductDetail'.

@@ -214,7 +214,7 @@ export async function POST(req: Request) {
         }
 
         // 2b. Translate Options
-        const translatedOptions = [];
+        const translatedOptions: any[] = [];
         if (options && options.length > 0) {
             for (let i = 0; i < options.length; i++) {
                 const opt = options[i];
