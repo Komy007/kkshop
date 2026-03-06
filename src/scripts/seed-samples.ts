@@ -114,13 +114,36 @@ async function seed() {
             console.log(`\nProcessing Category: ${data.categoryTitle}`);
 
             for (let i = 1; i <= data.maxItems; i++) {
-                const baseName = `[샘플] 최고급 ${data.categoryTitle} 상품 ${i}호`;
-                const baseShortDesc = `한국에서 엄선된 프리미엄 ${data.categoryTitle} 컬렉션 - ${i}번째 구성`;
-                const baseDetailDesc = `이 상품은 테스트를 위해 자동 생성된 ${data.categoryTitle}의 샘플 상세 페이지입니다. 높은 품질과 디자인을 보증합니다.`;
-                const baseKeywords = `${data.categoryTitle}, 샘플, 한국, 화장품, 뷰티`;
+                const imageUrl = data.images && data.images.length > i - 1
+                    ? data.images[i - 1]
+                    : `https://picsum.photos/seed/kkshop_${data.categoryPrefix}_${i}/500/500`;
+
+                const baseName = `[KKshop 단독] 프리미엄 ${data.categoryTitle} 컬렉션 ${i}호`;
+                const baseShortDesc = `한국에서 엄선된 성분으로 완성된 프리미엄 ${data.categoryTitle} 스페셜 솔루션. 피부 활력과 보습을 동시에 부여합니다.`;
+                const baseDetailDesc = `
+<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+  <h2 style="color: #E52528; border-bottom: 2px solid #E52528; padding-bottom: 10px;">프리미엄 K-뷰티의 정수, 당신의 루틴을 완성하세요.</h2>
+  <img src="${imageUrl}" alt="상품 상세 이미지" style="width: 100%; max-width: 600px; border-radius: 12px; margin: 20px 0;" />
+  <p>최고급 한국산 원료를 특허받은 공법으로 추출하여 피부 깊숙이 유효성분을 전달합니다. <strong>KKshop</strong>이 자신 있게 선보이는 이 제품은 끈적임 없이 놀라운 흡수력을 자랑합니다.</p>
+  
+  <h3 style="margin-top: 30px;">🌟 핵심 포인트</h3>
+  <ul style="padding-left: 20px;">
+    <li>피부 저자극 테스트 완료 (Dermatologist Tested)</li>
+    <li>자연 유래 성분 98% 함유로 민감한 피부도 안심</li>
+    <li>미백 / 주름개선 이중 기능성 화장품 인증</li>
+  </ul>
+  
+  <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-top: 30px; border-left: 4px solid #E52528;">
+    <strong>※ 유의사항</strong>
+    <p style="margin: 0; font-size: 0.9em;">본 상품 상세 정보는 실 상품 데이터 입력을 위한 테스트용 데이터입니다.</p>
+  </div>
+</div>
+                `;
+                const baseIngredients = "정제수, 부틸렌글라이콜, 글리세린, 나이아신아마이드, 1,2-헥산다이올, 병풀추출물, 알란토인, 판테놀, 소듐하이알루로네이트, 마데카소사이드, 세라마이드엔피, 아데노신, 쇠비름추출물, 카보머, 알지닌, 시트릭애씨드, 소듐시트레이트, 향료";
+                const baseHowToUse = "세안 후 적당량을 덜어 피부 결을 따라 부드럽게 펴 바르고 가볍게 두드려 흡수시켜 줍니다.";
+                const baseKeywords = `${data.categoryTitle}, 한국 화장품, 뷰티, 스킨케어, 보습, 프리미엄`;
 
                 const sku = `SAMP-${data.categoryPrefix.toUpperCase()}-0${i}`;
-                const imageUrl = `https://picsum.photos/seed/kkshop_${data.categoryPrefix}_${i}/500/500`; // 100% reliable image generator
 
                 console.log(`   - Translating and creating ${sku}...`);
 
@@ -131,6 +154,8 @@ async function seed() {
                     shortDesc: string;
                     detailDesc: string;
                     seoKeywords: string;
+                    ingredients: string;
+                    howToUse: string;
                 }> = [];
                 for (const lang of TARGET_LANGS) {
                     if (lang === 'ko') {
@@ -140,6 +165,8 @@ async function seed() {
                             shortDesc: baseShortDesc,
                             detailDesc: baseDetailDesc,
                             seoKeywords: baseKeywords,
+                            ingredients: baseIngredients,
+                            howToUse: baseHowToUse,
                         });
                     } else {
                         try {
@@ -148,6 +175,8 @@ async function seed() {
                             const [translatedShortDesc] = await translate.translate(baseShortDesc, lang);
                             const [translatedDetailDesc] = await translate.translate(baseDetailDesc, lang);
                             const [translatedKeywords] = await translate.translate(baseKeywords, lang);
+                            const [translatedIngredients] = await translate.translate(baseIngredients, lang);
+                            const [translatedHowToUse] = await translate.translate(baseHowToUse, lang);
 
                             translationsData.push({
                                 langCode: lang,
@@ -155,6 +184,8 @@ async function seed() {
                                 shortDesc: translatedShortDesc,
                                 detailDesc: translatedDetailDesc,
                                 seoKeywords: translatedKeywords,
+                                ingredients: translatedIngredients,
+                                howToUse: translatedHowToUse,
                             });
                         } catch (err) {
                             console.warn(`Translation failed for ${lang}. Using fallback...`);
@@ -164,6 +195,8 @@ async function seed() {
                                 shortDesc: `[${lang.toUpperCase()}] ${baseShortDesc}`,
                                 detailDesc: `[${lang.toUpperCase()}] ${baseDetailDesc}`,
                                 seoKeywords: `[${lang.toUpperCase()}] ${baseKeywords}`,
+                                ingredients: `[${lang.toUpperCase()}] ${baseIngredients}`,
+                                howToUse: `[${lang.toUpperCase()}] ${baseHowToUse}`,
                             });
                         }
                     }
@@ -181,6 +214,9 @@ async function seed() {
                             categoryId,
                             status: 'ACTIVE',
                             imageUrl: imageUrl || null,
+                            brandName: 'KKshop Official',
+                            origin: 'South Korea',
+                            skinType: 'All Skin Types',
                         }
                     });
 

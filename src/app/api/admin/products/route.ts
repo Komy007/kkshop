@@ -3,6 +3,8 @@ import { prisma } from '@/lib/api';
 import { auth } from '@/auth';
 import { Translate } from '@google-cloud/translate/build/src/v2';
 
+export const dynamic = 'force-dynamic';
+
 const translate = new Translate();
 const TARGET_LANGS = ['ko', 'en', 'km', 'zh'];
 

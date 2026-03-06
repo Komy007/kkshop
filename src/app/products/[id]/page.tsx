@@ -19,8 +19,6 @@ const pdpTranslations: Record<string, any> = {
         back: '뒤로 가기',
         qty: '수량',
         freeShipping: '$30 이상 무료 배송',
-        sampleNotice: '테스트용 샘플 상품입니다',
-        sampleDesc: '본 상품은 쇼핑몰 결제 및 UI 테스트를 위해 등록된 가상의 샘플 상품입니다. 실제 배송되지 않습니다.',
         specs: {
             title: '상품 필수 정보',
             volume: '용량/중량',
@@ -45,8 +43,6 @@ const pdpTranslations: Record<string, any> = {
         back: 'Go Back',
         qty: 'Qty',
         freeShipping: 'Free shipping over $30',
-        sampleNotice: 'Sample product for testing',
-        sampleDesc: 'This is a virtual sample product registered for UI and payment testing. It will not be shipped.',
         specs: {
             title: 'Product Specifications',
             volume: 'Volume/Weight',
@@ -71,8 +67,6 @@ const pdpTranslations: Record<string, any> = {
         back: 'ថយក្រោយ',
         qty: 'ចំនួន',
         freeShipping: 'ដឹកដោយឥតគិតថ្លៃលើសពី $30',
-        sampleNotice: 'ផលិតផលគំរូសម្រាប់ការសាកល្បង',
-        sampleDesc: 'នេះគឺជាផលិតផលគំរូនិម្មិតសម្រាប់ការសាកល្បង UI និងការទូទាត់។ វានឹងមិនត្រូវបានដឹកជញ្ជូនទេ។',
         specs: {
             title: 'បញ្ជាក់អំពីផលិតផល',
             volume: 'ទំហំ/ទម្ងន់',
@@ -97,8 +91,6 @@ const pdpTranslations: Record<string, any> = {
         back: '返回',
         qty: '数量',
         freeShipping: '满$30免费配送',
-        sampleNotice: '用于测试的样品',
-        sampleDesc: '本商品是为测试UI和付款而注册的虚拟样品。不会进行实际发货。',
         specs: {
             title: '产品规格',
             volume: '容量/重量',
@@ -434,11 +426,6 @@ export default function ProductDetailPage() {
                         {/* Trust Badges — top of info for credibility */}
                         <TrustBadges variant="compact" />
 
-                        {/* Sample Notice Badge */}
-                        <div className="bg-red-50 text-red-600 border border-red-200 px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 shadow-sm">
-                            ⚠️ {t.sampleNotice}
-                        </div>
-
                         {/* Product Name & Brand */}
                         <div>
                             {(product as any).brandName && (
@@ -684,16 +671,6 @@ export default function ProductDetailPage() {
                     <div className="min-h-[200px] animate-fade-in text-gray-700">
                         {activeTab === 'desc' && (
                             <div className="prose max-w-none">
-                                {/* Sample Description Warning Block */}
-                                <div className="bg-gray-50 border border-gray-200 p-6 rounded-2xl mb-8">
-                                    <h3 className="text-red-600 font-extrabold flex items-center gap-2 mt-0 mb-2">
-                                        🚨 {t.sampleNotice}
-                                    </h3>
-                                    <p className="text-gray-700 font-bold m-0 leading-relaxed">
-                                        {t.sampleDesc}
-                                    </p>
-                                </div>
-
                                 {product.detailDesc ? (
                                     <div dangerouslySetInnerHTML={{ __html: product.detailDesc }} />
                                 ) : (
@@ -702,7 +679,13 @@ export default function ProductDetailPage() {
                             </div>
                         )}
                         {activeTab === 'ingredients' && (
-                            <p className="text-gray-500">Coming soon — product ingredient details will appear here.</p>
+                            <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100">
+                                {product.ingredients ? (
+                                    <p className="leading-relaxed whitespace-pre-wrap text-gray-700">{product.ingredients}</p>
+                                ) : (
+                                    <p className="text-gray-500 italic">{language === 'ko' ? '등록된 성분 정보가 없습니다.' : 'No ingredient information provided.'}</p>
+                                )}
+                            </div>
                         )}
                         {activeTab === 'reviews' && (
                             <div className="space-y-8 animate-fade-in">
