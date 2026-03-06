@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Outfit } from "next/font/google";
+import { Outfit, Suwannaphum } from "next/font/google";
 // @ts-ignore
 import "./globals.css";
 import GNB from "@/components/GNB";
@@ -10,6 +10,12 @@ import MiniCartDrawer from "@/components/MiniCartDrawer";
 const outfit = Outfit({
     variable: "--font-outfit",
     subsets: ["latin"],
+});
+
+const suwannaphum = Suwannaphum({
+    variable: "--font-suwannaphum",
+    weight: ["100", "300", "400", "700", "900"],
+    subsets: ["khmer"],
 });
 
 export const metadata: Metadata = {
@@ -63,7 +69,7 @@ export default function RootLayout({
             </head>
             <body
                 suppressHydrationWarning
-                className={`${outfit.variable} antialiased font-sans`}
+                className={`${outfit.variable} ${suwannaphum.variable} antialiased font-sans`}
             >
                 <GNB />
                 <main className="min-h-screen pt-24 pb-20 md:pb-16">

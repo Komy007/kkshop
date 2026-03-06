@@ -159,14 +159,13 @@ export default function AboutPage() {
                             </div>
                         </a>
 
-                        {/* Phone */}
                         <a href="tel:+85595779873" className="glass-card p-5 rounded-2xl flex items-center gap-4 hover:bg-white/10 transition-all active:scale-[0.98]">
                             <div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center text-green-400 flex-shrink-0">
                                 <Phone className="w-6 h-6" />
                             </div>
                             <div>
                                 <h4 className="font-bold text-lg">전화 상담 (EN/KH)</h4>
-                                <p className="text-gray-400 font-mono text-sm mt-0.5">+855 95 779 873</p>
+                                <p className="text-gray-400 font-mono text-sm mt-0.5">+85595 779 873</p>
                             </div>
                         </a>
 
