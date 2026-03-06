@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/api';
 import { auth } from '@/auth';
 
+export const dynamic = 'force-dynamic';
+
 // Fetch multiple keys by comma separating them OR fetch all if no key is provided.
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);

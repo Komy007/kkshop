@@ -3,6 +3,8 @@ import { prisma } from '@/lib/api';
 import { auth } from '@/auth';
 import bcrypt from 'bcryptjs';
 
+export const dynamic = 'force-dynamic';
+
 // ── GET: list all users ──────────────────────────────────────────────────────
 export async function GET() {
     const session = await auth();
