@@ -47,7 +47,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
     useEffect(() => {
         // Auto-expand active group
-        for (const item of NAV) {
+        for (const item of ADMIN_NAV) {
             if (item.children?.some(c => pathname.startsWith(c.href))) {
                 setOpen(item.label);
                 break;

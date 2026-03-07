@@ -12,7 +12,11 @@ export async function GET(request: Request) {
     }
 
     try {
+        const { searchParams } = new URL(request.url);
+        const status = searchParams.get('status'); // PENDING | APPROVED | REJECTED
+
         const reviews = await prisma.productReview.findMany({
+            where: status ? { status } : {}, // If no status, show ALL for admin (including PENDING)
             include: {
                 product: {
                     select: {
@@ -20,7 +24,8 @@ export async function GET(request: Request) {
                         sku: true,
                         translations: {
                             where: { langCode: 'ko' },
-                            take: 1
+                            take: 1,
+                            select: { name: true } // Changed from original to select name
                         }
                     }
                 },

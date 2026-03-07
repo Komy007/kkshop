@@ -26,6 +26,10 @@ export async function GET(req: Request) {
         const where: any = {};
         if (status) where.status = status;
         if (approvalStatus) where.approvalStatus = approvalStatus;
+        else if (!status) {
+            // By default for the list, we show APPROVED items unless specified
+            where.approvalStatus = 'APPROVED';
+        }
         const products = await prisma.product.findMany({
             where,
             include: {
@@ -40,12 +44,23 @@ export async function GET(req: Request) {
             orderBy: [{ isNew: 'desc' }, { createdAt: 'desc' }],
         });
 
-        // Serialize BigInt
+        // Serialize BigInt and Decimal (including nested)
         const safe = products.map(p => ({
             ...p,
             id: p.id.toString(),
             categoryId: p.categoryId?.toString() ?? null,
             priceUsd: p.priceUsd.toString(),
+            reviewAvg: p.reviewAvg.toString(),
+            hotSalePrice: p.hotSalePrice?.toString() ?? null,
+            category: p.category ? {
+                ...p.category,
+                id: p.category.id.toString(),
+            } : null,
+            images: p.images.map(img => ({
+                ...img,
+                id: img.id.toString(),
+                productId: img.productId.toString(),
+            }))
         }));
 
         return NextResponse.json(safe);

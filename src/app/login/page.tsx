@@ -1,5 +1,7 @@
 'use client';
 
+import React, { useState } from 'react';
+import Link from 'next/link';
 import { useTranslations } from '@/i18n/useTranslations';
 import { Mail, Lock, Loader2 } from 'lucide-react';
 import { signIn } from 'next-auth/react';

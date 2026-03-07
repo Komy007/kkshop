@@ -60,9 +60,7 @@ export default function AdminProductsPage() {
         const matchSearch = !q || name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q) || (p.brandName || '').toLowerCase().includes(q);
         const matchTab = activeSlug === 'all'
             ? true
-            : activeSlug === 'new'
-                ? (p.isNew || p.category?.slug === 'new')
-                : p.category?.slug === activeSlug;
+            : p.category?.slug === activeSlug;
         return matchSearch && matchTab;
     });
 
