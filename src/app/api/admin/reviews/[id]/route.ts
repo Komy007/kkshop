@@ -33,7 +33,7 @@ export async function PATCH(
     context: { params: Promise<{ id: string }> }
 ) {
     const session = await auth();
-    if (!session?.user || (session.user as any).role !== 'ADMIN') {
+    if (!session?.user || !['ADMIN', 'SUPERADMIN'].includes(session.user.role ?? '')) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -88,7 +88,7 @@ export async function DELETE(
     context: { params: Promise<{ id: string }> }
 ) {
     const session = await auth();
-    if (!session?.user || (session.user as any).role !== 'ADMIN') {
+    if (!session?.user || !['ADMIN', 'SUPERADMIN'].includes(session.user.role ?? '')) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

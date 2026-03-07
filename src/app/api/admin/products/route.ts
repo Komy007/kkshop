@@ -12,7 +12,10 @@ const TARGET_LANGS = ['ko', 'en', 'km', 'zh'];
 export async function GET(req: Request) {
     try {
         const session = await auth();
-        if (!session?.user || session.user.role === 'USER') {
+        console.log('DEBUG: /api/admin/products GET session:', JSON.stringify(session, null, 2));
+
+        if (!session?.user || !['ADMIN', 'SUPERADMIN'].includes(session.user.role ?? '')) {
+            console.warn('DEBUG: /api/admin/products GET - Unauthorized role:', session?.user?.role);
             return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
         }
 
@@ -107,7 +110,7 @@ export async function POST(req: Request) {
     try {
         // 1. Authenticate Admin/SuperAdmin User
         const session = await auth();
-        if (!session?.user || session.user.role === 'USER') {
+        if (!session?.user || !['ADMIN', 'SUPERADMIN'].includes(session.user.role ?? '')) {
             return NextResponse.json({ error: 'Unauthorized Access. Admin required.' }, { status: 403 });
         }
 

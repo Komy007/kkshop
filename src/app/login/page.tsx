@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
-import Link from 'next/link';
 import { useTranslations } from '@/i18n/useTranslations';
+import { Mail, Lock, Loader2 } from 'lucide-react';
+import { signIn } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 
 // Social Login SVG Icons
 function FacebookIcon({ className }: { className?: string }) {
@@ -31,18 +32,48 @@ function TikTokIcon({ className }: { className?: string }) {
 
 export default function LoginPage() {
     const t = useTranslations();
+    const router = useRouter();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
 
-    const handleSocialLogin = (provider: string) => {
-        // TODO: Replace with actual OAuth login
-        console.log(`Social login with: ${provider}`);
+    const handleSocialLogin = async (provider: string) => {
+        setLoading(true);
+        try {
+            await signIn(provider, { callbackUrl: '/' });
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const handleEmailLogin = (e: React.FormEvent) => {
+    const handleEmailLogin = async (e: React.FormEvent) => {
         e.preventDefault();
-        // TODO: Replace with actual credentials login
-        console.log('Email login:', email);
+        setLoading(false);
+        setError('');
+        setLoading(true);
+
+        try {
+            const result = await signIn('credentials', {
+                email,
+                password,
+                redirect: false,
+                callbackUrl: '/admin',
+            });
+
+            if (result?.error) {
+                setError('Invalid email or password');
+            } else {
+                router.push('/admin');
+                router.refresh();
+            }
+        } catch (err) {
+            setError('An error occurred during login');
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -98,31 +129,53 @@ export default function LoginPage() {
 
                 {/* Email Login Form */}
                 <form onSubmit={handleEmailLogin} className="space-y-4">
-                    <div>
-                        <input
-                            type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            placeholder={t.auth.emailPlaceholder}
-                            className="w-full px-4 py-3.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-colors text-sm min-h-[48px]"
-                            required
-                        />
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1.5 ml-1">Email Address</label>
+                            <div className="relative group">
+                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-blue-500 transition-colors">
+                                    <Mail className="w-4 h-4" />
+                                </div>
+                                <input
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    className="block w-full pl-11 pr-4 py-3.5 bg-white border border-gray-200 text-gray-900 rounded-2xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none placeholder:text-gray-400"
+                                    placeholder="admin@kkshop.cc"
+                                    required
+                                />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1.5 ml-1">Password</label>
+                            <div className="relative group">
+                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-blue-500 transition-colors">
+                                    <Lock className="w-4 h-4" />
+                                </div>
+                                <input
+                                    type="password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    className="block w-full pl-11 pr-4 py-3.5 bg-white border border-gray-200 text-gray-900 rounded-2xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none placeholder:text-gray-400"
+                                    placeholder="••••••••"
+                                    required
+                                />
+                            </div>
+                        </div>
                     </div>
-                    <div>
-                        <input
-                            type="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            placeholder={t.auth.passwordPlaceholder}
-                            className="w-full px-4 py-3.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-colors text-sm min-h-[48px]"
-                            required
-                        />
-                    </div>
+                    {error && (
+                        <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-semibold text-center">
+                            {error}
+                        </div>
+                    )}
+
                     <button
                         type="submit"
-                        className="w-full py-3.5 rounded-xl bg-brand-primary text-white font-bold hover:bg-brand-primary/90 hover:shadow-[0_0_20px_rgba(99,102,241,0.3)] transition-all active:scale-[0.98] min-h-[48px]"
+                        disabled={loading}
+                        className="w-full py-3.5 rounded-xl bg-brand-primary text-white font-bold hover:bg-brand-primary/90 hover:shadow-[0_0_20px_rgba(99,102,241,0.3)] transition-all active:scale-[0.98] min-h-[48px] flex items-center justify-center gap-2"
                     >
-                        {t.auth.loginButton}
+                        {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : t.auth.loginButton}
                     </button>
                 </form>
 

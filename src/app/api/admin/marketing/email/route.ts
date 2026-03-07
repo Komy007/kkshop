@@ -4,8 +4,7 @@ import { auth } from '@/auth';
 
 export async function POST(request: Request) {
     const session = await auth();
-    // Requires ADMIN or SUPERADMIN privileges
-    if (!session?.user || (session.user as any).role !== 'ADMIN' && (session.user as any).role !== 'SUPERADMIN') {
+    if (!session?.user || !['ADMIN', 'SUPERADMIN'].includes(session.user.role ?? '')) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

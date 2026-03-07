@@ -19,7 +19,7 @@ export async function GET(request: Request) {
         } else {
             // Fetch all settings (Admin use)
             const session = await auth();
-            if (!session?.user || (session.user as any).role !== 'ADMIN' && (session.user as any).role !== 'SUPERADMIN') {
+            if (!session?.user || !['ADMIN', 'SUPERADMIN'].includes(session.user.role ?? '')) {
                 return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
             }
             const settings = await prisma.siteSetting.findMany();
@@ -34,7 +34,7 @@ export async function GET(request: Request) {
 // Admin only - Upsert Setting
 export async function POST(request: Request) {
     const session = await auth();
-    if (!session?.user || (session.user as any).role !== 'ADMIN' && (session.user as any).role !== 'SUPERADMIN') {
+    if (!session?.user || !['ADMIN', 'SUPERADMIN'].includes(session.user.role ?? '')) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

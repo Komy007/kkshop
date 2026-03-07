@@ -6,7 +6,7 @@ import bcrypt from 'bcryptjs';
 // GET: List all suppliers (ADMIN/SUPERADMIN only)
 export async function GET(req: NextRequest) {
     const session = await auth();
-    if (!session?.user || !['ADMIN', 'SUPERADMIN'].includes((session.user as any).role)) {
+    if (!session?.user || !['ADMIN', 'SUPERADMIN'].includes(session.user.role ?? '')) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -76,7 +76,7 @@ export async function PATCH(req: NextRequest) {
 // POST: Create a new supplier (ADMIN/SUPERADMIN only)
 export async function POST(req: NextRequest) {
     const session = await auth();
-    if (!session?.user || !['ADMIN', 'SUPERADMIN'].includes((session.user as any).role)) {
+    if (!session?.user || !['ADMIN', 'SUPERADMIN'].includes(session.user.role ?? '')) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

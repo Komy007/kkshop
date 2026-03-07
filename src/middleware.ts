@@ -37,6 +37,11 @@ export default middleware((req: any) => {
 
         const role = req.auth?.user?.role;
 
+        // 0. If you are a SUPPLIER, you MUST be in /seller. Redirect them if they try to be in /admin
+        if (role === 'SUPPLIER') {
+            return Response.redirect(new URL('/seller', nextUrl));
+        }
+
         // General fallback: if you are just a "USER", you can't be in /admin
         if (role === 'USER') {
             return Response.redirect(new URL('/', nextUrl));
@@ -53,7 +58,8 @@ export default middleware((req: any) => {
                 '/admin/products/translations',
                 '/admin/inventory',
                 '/admin/customers',
-                '/admin/cs'
+                '/admin/cs',
+                '/admin/reviews'
             ];
 
             // If the current path is NOT in the allowed list, force them to their dashboard (/admin/products/new)
@@ -68,6 +74,12 @@ export default middleware((req: any) => {
 
         // 2. SUPERADMIN has access to ALL /admin routes natively.
         return;
+    }
+
+    // --- Global Redirection for Suppliers ---
+    if (isLoggedIn && req.auth?.user?.role === 'SUPPLIER' && !nextUrl.pathname.startsWith('/seller')) {
+        // Suppliers should ONLY be in /seller. Anywhere else (landing page / , etc) redirects to seller.
+        return Response.redirect(new URL('/seller', nextUrl));
     }
 
     return;

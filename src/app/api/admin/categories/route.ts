@@ -5,7 +5,7 @@ import { auth } from '@/auth';
 export async function GET() {
     try {
         const session = await auth();
-        if (!session?.user || session.user.role === 'USER') {
+        if (!session?.user || !['ADMIN', 'SUPERADMIN'].includes(session.user.role ?? '')) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
         }
         const categories = await getAllCategories();

@@ -9,12 +9,13 @@ import {
     Menu, X, Sparkles
 } from 'lucide-react';
 
-const NAV = [
+const ADMIN_NAV = [
     { label: '대시보드', icon: LayoutDashboard, href: '/admin' },
     {
         label: '상품 관리', icon: Package,
         children: [
             { label: '전체 상품 목록', href: '/admin/products' },
+            { label: '리뷰 관리', href: '/admin/reviews' },
             { label: '🟡 상품 검수', href: '/admin/products/review' },
             { label: '새 상품 등록', href: '/admin/products/new' },
             { label: '카테고리 관리', href: '/admin/categories' },
@@ -73,7 +74,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
             {/* Nav */}
             <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-                {NAV.map(item => {
+                {ADMIN_NAV.map(item => {
                     const Icon = item.icon;
                     if ('href' in item && item.href) {
                         const active = isActive(item.href);

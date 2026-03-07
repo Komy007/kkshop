@@ -15,7 +15,7 @@ export default {
         async jwt({ token, user }: any) {
             if (user) {
                 token.sub = user.id;
-                token.role = user.role || "USER";
+                token.role = (user as any).role || "USER";
             }
             return token;
         },

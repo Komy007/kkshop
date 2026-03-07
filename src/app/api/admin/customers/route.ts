@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 // ── GET: list all users ──────────────────────────────────────────────────────
 export async function GET() {
     const session = await auth();
-    if (!session?.user || session.user.role === 'USER') {
+    if (!session?.user || !['ADMIN', 'SUPERADMIN'].includes(session.user.role ?? '')) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
     const customers = await prisma.user.findMany({
