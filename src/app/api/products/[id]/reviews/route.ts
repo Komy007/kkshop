@@ -81,6 +81,7 @@ export async function POST(
     if (!session?.user?.id) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    const userId = session.user.id;
 
     // Validate id
     const { id: productIdStr } = await context.params;
@@ -112,7 +113,7 @@ export async function POST(
             const newReview = await tx.productReview.create({
                 data: {
                     productId,
-                    userId: session.user.id,
+                    userId: userId,
                     orderId: orderId || null,
                     rating: parseInt(rating),
                     imageUrl: imageUrl || null,
@@ -138,8 +139,13 @@ export async function POST(
             reviewId: review.id.toString()
         });
 
-    } catch (error) {
+    } catch (error: any) {
         console.error('Failed to post review:', error);
-        return NextResponse.json({ error: 'Failed to post review' }, { status: 500 });
+        // Provide more helpful error message
+        const message = error.message || 'Failed to post review';
+        return NextResponse.json({
+            error: message,
+            success: false
+        }, { status: 500 });
     }
 }

@@ -30,7 +30,7 @@ export default function Footer() {
                     <ul className="space-y-2 text-gray-600 font-medium">
                         <li>Email: help@kkshop.cc</li>
                         <li>Tel: +85595 779 873</li>
-                        <li>KakaoTalk: @kkshop_cc</li>
+                        <li>Telegram: @kkshop_cc</li>
                         <li>Mon-Fri: 9:00 AM - 6:00 PM</li>
                     </ul>
                 </div>
