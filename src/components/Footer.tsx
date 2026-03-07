@@ -7,14 +7,18 @@ export default function Footer() {
         <footer className="bg-white text-gray-700 py-16 text-sm border-t border-gray-200 relative z-10 w-full">
             <div className="max-w-7xl mx-auto px-4 lg:px-8 grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
                 <div className="col-span-1 md:col-span-1">
-                    <h2 className="text-3xl font-extrabold tracking-tighter mb-4">
-                        <span className="text-gray-900">KK</span>
-                        <span className="text-[#Ef4444]">S</span>
-                        <span className="text-[#EAB308]">h</span>
-                        <span className="text-[#22C55E]">o</span>
-                        <span className="text-[#38BDF8]">p</span>
-                        <span className="text-gray-900">.cc</span>
-                    </h2>
+                    <div className="flex items-center gap-2 mb-4">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-brand-primary to-brand-accent flex items-center justify-center">
+                            <span className="text-white font-bold text-lg leading-none">K</span>
+                        </div>
+                        <h2 className="text-3xl font-extrabold tracking-tighter">
+                            <span className="text-gray-900">KK</span>
+                            <span className="text-[#Ef4444]">S</span>
+                            <span className="text-[#EAB308]">h</span>
+                            <span className="text-[#22C55E]">o</span>
+                            <span className="text-[#38BDF8]">p</span>
+                        </h2>
+                    </div>
                     <p className="text-gray-600 leading-relaxed mb-6 text-sm font-medium">
                         Cambodia's No.1 Premium Cross-Border E-commerce.<br />
                         Bringing the authentic taste and quality of Korea directly to Phnom Penh.

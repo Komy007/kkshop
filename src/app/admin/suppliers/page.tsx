@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { CheckCircle, XCircle, Clock, Building2, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, Building2, ChevronDown, ChevronUp, Loader2, Plus } from 'lucide-react';
 
 interface Supplier {
     id: string;
@@ -35,6 +35,35 @@ export default function AdminSuppliersPage() {
     const [editNote, setEditNote] = useState<Record<string, string>>({});
     const [editRate, setEditRate] = useState<Record<string, string>>({});
 
+    const [isAdding, setIsAdding] = useState(false);
+    const [newSupplier, setNewSupplier] = useState({
+        companyName: '', contactEmail: '', brandName: '', phone: '', commissionRate: 30, description: '', password: ''
+    });
+    const [addLoading, setAddLoading] = useState(false);
+    const [addError, setAddError] = useState('');
+
+    const handleAddSupplier = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setAddError('');
+        setAddLoading(true);
+        const res = await fetch('/api/admin/suppliers', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newSupplier)
+        });
+        const data = await res.json();
+        setAddLoading(false);
+
+        if (!res.ok) {
+            setAddError(data.error || '등록 실패');
+            return;
+        }
+
+        setIsAdding(false);
+        setNewSupplier({ companyName: '', contactEmail: '', brandName: '', phone: '', commissionRate: 30, description: '', password: '' });
+        fetchSuppliers();
+    };
+
     const fetchSuppliers = async () => {
         setLoading(true);
         const url = filterStatus ? `/api/admin/suppliers?status=${filterStatus}` : '/api/admin/suppliers';
@@ -64,13 +93,64 @@ export default function AdminSuppliersPage() {
 
     return (
         <div className="max-w-5xl mx-auto py-8 px-4">
-            <div className="mb-8">
-                <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                    <Building2 className="text-blue-500 w-6 h-6" />
-                    공급자 관리
-                </h1>
-                <p className="text-sm text-gray-500 mt-1">공급자 신청 승인·거절, 수수료율 조정 (기본 30%, 25~35%)</p>
+            <div className="mb-8 flex items-center justify-between flex-wrap gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                        <Building2 className="text-blue-500 w-6 h-6" />
+                        공급자 관리
+                    </h1>
+                    <p className="text-sm text-gray-500 mt-1">공급자 신청 승인·거절, 수수료율 조정 및 직접 등록 (기본 30%)</p>
+                </div>
+                <button onClick={() => setIsAdding(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 shadow-sm transition-colors">
+                    <Plus className="w-4 h-4" /> 새 공급자 등록
+                </button>
             </div>
+
+            {isAdding && (
+                <div className="mb-8 p-6 bg-white rounded-xl border border-gray-200 shadow-sm animate-fade-in">
+                    <div className="flex justify-between items-center mb-4">
+                        <h2 className="text-lg font-bold text-gray-900">새 공급자 직접 등록</h2>
+                        <button onClick={() => setIsAdding(false)} className="text-gray-400 hover:text-gray-600"><XCircle className="w-5 h-5" /></button>
+                    </div>
+
+                    {addError && <div className="mb-4 p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100">{addError}</div>}
+
+                    <form onSubmit={handleAddSupplier} className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">회사명 (필수)</label>
+                                <input required type="text" value={newSupplier.companyName} onChange={e => setNewSupplier({ ...newSupplier, companyName: e.target.value })} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:border-blue-500 focus:outline-none" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">로그인 이메일 (필수)</label>
+                                <input required type="email" value={newSupplier.contactEmail} onChange={e => setNewSupplier({ ...newSupplier, contactEmail: e.target.value })} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:border-blue-500 focus:outline-none" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">임시 로그인 비밀번호 (필수)</label>
+                                <input required type="text" value={newSupplier.password} onChange={e => setNewSupplier({ ...newSupplier, password: e.target.value })} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:border-blue-500 focus:outline-none" placeholder="예: Supplier2026!" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">수수료율 % (기본 30)</label>
+                                <input type="number" min={0} max={100} step={0.5} value={newSupplier.commissionRate} onChange={e => setNewSupplier({ ...newSupplier, commissionRate: parseFloat(e.target.value) })} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:border-blue-500 focus:outline-none" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">연락처</label>
+                                <input type="text" value={newSupplier.phone} onChange={e => setNewSupplier({ ...newSupplier, phone: e.target.value })} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:border-blue-500 focus:outline-none" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">브랜드명</label>
+                                <input type="text" value={newSupplier.brandName} onChange={e => setNewSupplier({ ...newSupplier, brandName: e.target.value })} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:border-blue-500 focus:outline-none" />
+                            </div>
+                        </div>
+                        <div className="flex justify-end pt-2">
+                            <button disabled={addLoading} type="submit" className="flex items-center gap-2 px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-60 transition-colors">
+                                {addLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                                계정 발급 및 등록 완료
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            )}
 
             {/* Filter */}
             <div className="flex gap-2 mb-6 flex-wrap">
