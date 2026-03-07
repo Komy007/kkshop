@@ -3,7 +3,7 @@ FROM node:22-alpine AS deps
 RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm install
+RUN npm install --legacy-peer-deps
 
 # ---- Stage 2: Build the application ----
 FROM node:22-alpine AS builder
