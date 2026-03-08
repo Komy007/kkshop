@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { useAppStore } from '@/store/useAppStore';
+import { useAppStore, useSafeAppStore } from '@/store/useAppStore';
 
 const shortcutTranslations: Record<string, Record<string, string>> = {
     ko: {
@@ -71,7 +71,8 @@ const shortcuts: Shortcut[] = [
 ];
 
 export default function CategoryShortcuts() {
-    const { language } = useAppStore();
+    const store = useSafeAppStore();
+    const { language } = store || { language: 'en' };
     const t = shortcutTranslations[language] ?? shortcutTranslations.en;
 
     return (

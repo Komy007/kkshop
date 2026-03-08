@@ -1,6 +1,6 @@
 "use client";
 
-import { useAppStore } from "@/store/useAppStore";
+import { useAppStore, useSafeAppStore } from "@/store/useAppStore";
 
 const trustTranslations: Record<string, any> = {
     ko: {
@@ -74,7 +74,8 @@ interface TrustBadgesProps {
 }
 
 export default function TrustBadges({ variant = 'horizontal', className = '' }: TrustBadgesProps) {
-    const { language } = useAppStore();
+    const store = useSafeAppStore();
+    const { language } = store || { language: 'en' };
     const t = trustTranslations[language] || trustTranslations.en;
 
     const badges = [

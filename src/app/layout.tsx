@@ -6,6 +6,7 @@ import GNB from "@/components/GNB";
 import BottomTabBar from "@/components/BottomTabBar";
 
 import MiniCartDrawer from "@/components/MiniCartDrawer";
+import { SessionProvider } from "next-auth/react";
 
 const outfit = Outfit({
     variable: "--font-outfit",
@@ -71,13 +72,15 @@ export default function RootLayout({
                 suppressHydrationWarning
                 className={`${outfit.variable} ${suwannaphum.variable} antialiased font-sans`}
             >
-                <GNB />
-                <main className="min-h-screen pt-24 pb-20 md:pb-16">
-                    {children}
-                </main>
-                <MiniCartDrawer />
+                <SessionProvider>
+                    <GNB />
+                    <main className="min-h-screen pt-24 pb-20 md:pb-16">
+                        {children}
+                    </main>
+                    <MiniCartDrawer />
 
-                <BottomTabBar />
+                    <BottomTabBar />
+                </SessionProvider>
             </body>
         </html>
     );

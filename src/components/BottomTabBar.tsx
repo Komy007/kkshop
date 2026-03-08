@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Home, Grid3X3, Search, ShoppingCart, User } from 'lucide-react';
-import { useAppStore } from '@/store/useAppStore';
+import { useAppStore, useSafeAppStore } from '@/store/useAppStore';
 import { useCartStore, selectTotalItems } from '@/store/useCartStore';
 
 type TabKey = 'home' | 'category' | 'search' | 'cart' | 'mypage';
@@ -32,7 +32,8 @@ const tabs: TabItem[] = [
 
 export default function BottomTabBar() {
     const pathname = usePathname();
-    const { language } = useAppStore();
+    const store = useSafeAppStore();
+    const language = store?.language || 'en';
     const totalItems = useCartStore(selectTotalItems);
     const openDrawer = useCartStore((s) => s.openDrawer);
     const t = tabTranslations[language] ?? tabTranslations.en;

@@ -16,6 +16,7 @@ export default {
             if (user) {
                 token.sub = user.id;
                 token.role = (user as any).role || "USER";
+                token.preferredLanguage = (user as any).preferredLanguage || "en";
             }
             return token;
         },
@@ -23,6 +24,7 @@ export default {
             if (session.user && token.sub) {
                 session.user.id = token.sub;
                 session.user.role = token.role || "USER";
+                session.user.preferredLanguage = token.preferredLanguage || "en";
             }
             return session;
         },

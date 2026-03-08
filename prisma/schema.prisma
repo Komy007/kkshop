@@ -292,6 +292,7 @@ model User {
   detailAddress  String?   @map("detail_address") @db.VarChar(255)
   postalCode     String?   @map("postal_code") @db.VarChar(20)
   pointBalance   Int       @default(0) @map("point_balance")  // 현재 포인트 잔액
+  preferredLanguage String    @default("en") @map("preferred_language") @db.VarChar(5) // Default EN
 
   accounts    Account[]
   sessions    Session[]

@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { Globe, User, ShoppingCart, Menu, X } from "lucide-react";
-import { useAppStore } from "@/store/useAppStore";
+import { Globe, User, ShoppingCart, Menu, X, LogOut, Settings } from "lucide-react";
+import { useSafeMarketStore } from "@/store/useAppStore";
 import { useCartStore, selectTotalItems } from "@/store/useCartStore";
+import { useSession, signOut } from "next-auth/react";
 
 const LANGUAGES = [
     { code: "ko" as const, label: "한국어", flag: "🇰🇷" },
@@ -14,17 +15,31 @@ const LANGUAGES = [
 ];
 
 export default function GNB() {
-    const { language, setLanguage } = useAppStore();
+    const { data: session } = useSession();
+    const store = useSafeMarketStore();
+    const { language, setLanguage } = store || { language: 'en', setLanguage: (l: string) => { } };
     const totalItems = useCartStore(selectTotalItems);
     const openDrawer = useCartStore((s) => s.openDrawer);
 
     const [scrolled, setScrolled] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [langOpen, setLangOpen] = useState(false);
+    const [userMenuOpen, setUserMenuOpen] = useState(false);
     const [mounted, setMounted] = useState(false);
     const langRef = useRef<HTMLDivElement>(null);
+    const userRef = useRef<HTMLDivElement>(null);
 
     const currentLang = LANGUAGES.find((l) => l.code === language) || LANGUAGES[0];
+
+    // Sync language with session user if available
+    useEffect(() => {
+        if (session?.user && (session.user as any).preferredLanguage) {
+            const userLang = (session.user as any).preferredLanguage;
+            if (userLang !== language && ['ko', 'en', 'km', 'zh'].includes(userLang)) {
+                setLanguage(userLang as any);
+            }
+        }
+    }, [session, setLanguage]);
 
     useEffect(() => {
         setMounted(true);
@@ -39,18 +54,21 @@ export default function GNB() {
         return () => window.removeEventListener("scroll", handleScroll);
     }, [language]);
 
-    // Close lang dropdown on outside click
+    // Close menus on outside click
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
             if (langRef.current && !langRef.current.contains(e.target as Node)) {
                 setLangOpen(false);
             }
+            if (userRef.current && !userRef.current.contains(e.target as Node)) {
+                setUserMenuOpen(false);
+            }
         };
-        if (langOpen) {
+        if (langOpen || userMenuOpen) {
             document.addEventListener("mousedown", handleClickOutside);
         }
         return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, [langOpen]);
+    }, [langOpen, userMenuOpen]);
 
     if (!mounted) return null;
 
@@ -80,10 +98,10 @@ export default function GNB() {
 
                     {/* Desktop Nav */}
                     <nav className="hidden md:flex items-center gap-8">
-                        <Link href="/cosmetics" className="text-sm font-bold text-gray-700 hover:text-brand-primary transition-colors">
-                            Cosmetics
+                        <Link href="/category/skincare" className="text-sm font-bold text-gray-700 hover:text-brand-primary transition-colors">
+                            Skincare
                         </Link>
-                        <Link href="/living" className="text-sm font-bold text-gray-700 hover:text-brand-secondary transition-colors">
+                        <Link href="/category/living" className="text-sm font-bold text-gray-700 hover:text-brand-secondary transition-colors">
                             Living
                         </Link>
                         <Link href="/about" className="text-sm font-bold text-gray-700 hover:text-brand-accent transition-colors">
@@ -126,10 +144,49 @@ export default function GNB() {
                             </div>
                         </div>
 
-                        {/* User Login */}
-                        <button className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-gray-200 hover:border-gray-300 hover:text-brand-primary transition-all text-gray-700 shadow-sm">
-                            <User className="w-4 h-4" />
-                        </button>
+                        {/* User Login / Menu */}
+                        <div className="relative" ref={userRef}>
+                            <button
+                                onClick={() => setUserMenuOpen(!userMenuOpen)}
+                                className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-gray-200 hover:border-gray-300 hover:text-brand-primary transition-all text-gray-700 shadow-sm"
+                            >
+                                {session?.user?.image ? (
+                                    <img src={session.user.image} alt="" className="w-full h-full rounded-full object-cover" />
+                                ) : (
+                                    <User className="w-4 h-4" />
+                                )}
+                            </button>
+
+                            {/* User Dropdown */}
+                            <div
+                                className={`absolute right-0 mt-2 w-48 py-1 glass-panel rounded-xl border border-gray-200 flex flex-col overflow-hidden transition-all duration-200 origin-top-right ${userMenuOpen
+                                    ? "opacity-100 scale-100 pointer-events-auto"
+                                    : "opacity-0 scale-95 pointer-events-none"
+                                    }`}
+                            >
+                                {session ? (
+                                    <>
+                                        <div className="px-4 py-3 border-b border-gray-100 bg-gray-50/50">
+                                            <p className="text-xs font-bold text-gray-500 uppercase">Account</p>
+                                            <p className="text-sm font-bold text-gray-900 truncate">{session.user?.email}</p>
+                                        </div>
+                                        <Link href="/mypage" className="px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                                            <Settings className="w-4 h-4" /> My Page
+                                        </Link>
+                                        <button
+                                            onClick={() => signOut()}
+                                            className="px-4 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-50 text-left flex items-center gap-2"
+                                        >
+                                            <LogOut className="w-4 h-4" /> Logout
+                                        </button>
+                                    </>
+                                ) : (
+                                    <Link href="/login" className="px-4 py-2.5 text-sm font-bold text-gray-900 hover:bg-gray-50 flex items-center gap-2">
+                                        <User className="w-4 h-4" /> Login
+                                    </Link>
+                                )}
+                            </div>
+                        </div>
 
                         {/* Cart */}
                         <button

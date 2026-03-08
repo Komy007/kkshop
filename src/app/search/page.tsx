@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Search as SearchIcon, X, Star } from 'lucide-react';
-import { useAppStore } from '@/store/useAppStore';
+import { useAppStore, useSafeAppStore } from '@/store/useAppStore';
 import { type TranslatedProduct } from '@/lib/api';
 import Footer from '@/components/Footer';
 
@@ -93,7 +93,8 @@ const popularCategories: Record<LanguageKey, { label: string; href: string }[]> 
 };
 
 export default function SearchPage() {
-    const { language } = useAppStore();
+    const store = useSafeAppStore();
+    const { language } = store || { language: 'en' };
     const lang = (language as LanguageKey) in searchTranslations ? (language as LanguageKey) : 'en';
     const t = searchTranslations[lang];
     const categories = popularCategories[lang];

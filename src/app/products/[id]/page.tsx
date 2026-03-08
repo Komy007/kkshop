@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'next/navigation';
-import { useAppStore } from '@/store/useAppStore';
+import { useAppStore, useSafeAppStore } from '@/store/useAppStore';
 import { Star, ShoppingCart, Heart, ChevronLeft, Check, Minus, Plus, Loader2 } from 'lucide-react';
 import TrustBadges from '@/components/TrustBadges';
 import Footer from '@/components/Footer';
@@ -134,7 +134,8 @@ interface ProductDetail {
 
 export default function ProductDetailPage() {
     const params = useParams();
-    const { language } = useAppStore();
+    const store = useSafeAppStore();
+    const { language } = store || { language: 'en' };
     const t = pdpTranslations[language] || pdpTranslations.en;
 
     const [product, setProduct] = useState<ProductDetail | null>(null);

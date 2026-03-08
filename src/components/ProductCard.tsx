@@ -3,7 +3,7 @@
 import React from 'react';
 import Image from 'next/image';
 import { ShoppingCart, Star } from 'lucide-react';
-import { useAppStore } from '@/store/useAppStore';
+import { useAppStore, useSafeAppStore } from '@/store/useAppStore';
 import { useCartStore } from '@/store/useCartStore';
 import Link from 'next/link';
 
@@ -36,7 +36,8 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
-    const { language } = useAppStore();
+    const store = useSafeAppStore();
+    const { language } = store || { language: 'en' };
     const addItem = useCartStore((s) => s.addItem);
 
     const [mounted, setMounted] = React.useState(false);

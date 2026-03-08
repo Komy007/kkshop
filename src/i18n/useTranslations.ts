@@ -1,6 +1,6 @@
 'use client';
 
-import { useAppStore } from '@/store/useAppStore';
+import { useAppStore, useSafeAppStore } from '@/store/useAppStore';
 import type { Translations, Language } from '@/i18n';
 import ko from '@/i18n/ko';
 import en from '@/i18n/en';
@@ -18,6 +18,7 @@ const translations: Record<Language, Translations> = { ko, en, km, zh };
  * return <span>{t.common.loading}</span>;
  */
 export function useTranslations(): Translations {
-    const { language } = useAppStore();
+    const store = useSafeAppStore();
+    const { language } = store || { language: 'en' };
     return translations[language] ?? translations.en;
 }

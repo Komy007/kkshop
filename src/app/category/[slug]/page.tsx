@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { ArrowLeft, Star } from 'lucide-react';
-import { useAppStore } from '@/store/useAppStore';
+import { useAppStore, useSafeAppStore } from '@/store/useAppStore';
 import { type TranslatedProduct } from '@/lib/api';
 
 const categoryTitles: Record<string, Record<string, string>> = {
@@ -26,7 +26,8 @@ export default function CategoryDetailPage() {
     // Use type assertion carefully; Next.js params can be string or string[]
     const slug = (params?.slug as string) || '';
 
-    const { language } = useAppStore();
+    const store = useSafeAppStore();
+    const { language } = store || { language: 'en' };
 
     // Find matching title based on current language or fallback to uppercase slug
     const currentTitle = categoryTitles[language]?.[slug] || slug.toUpperCase();

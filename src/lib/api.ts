@@ -69,7 +69,7 @@ function serializeProduct(product: any, langCode: string): TranslatedProduct {
         categoryId: product.categoryId?.toString() ?? null,
         categorySlug: product.category?.slug ?? null,
         status: product.status,
-        imageUrl: product.imageUrl,
+        imageUrl: product.imageUrl || product.images?.[0]?.url || null,
         isNew: product.isNew ?? false,
         brandName: product.brandName ?? null,
         volume: product.volume ?? null,
@@ -114,6 +114,7 @@ export async function getProductsByLanguage(
             include: {
                 translations: { where: { langCode } },
                 category: { select: { slug: true } },
+                images: { orderBy: { sortOrder: 'asc' }, take: 1 },
             },
             orderBy: [
                 { isNew: 'desc' },

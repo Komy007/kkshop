@@ -17,6 +17,7 @@ export async function GET(
                     where: { langCode: lang }
                 },
                 options: { orderBy: { sortOrder: 'asc' } },
+                images: { orderBy: { sortOrder: 'asc' } },
                 supplier: {
                     select: {
                         companyName: true,
@@ -43,7 +44,7 @@ export async function GET(
             priceUsd: Number(p.priceUsd),
             stockQty: p.stockQty,
             status: p.status,
-            imageUrl: p.imageUrl,
+            imageUrl: p.imageUrl || p.images?.[0]?.url || null,
             categoryId: p.categoryId?.toString() || null,
             name: t.name,
             shortDesc: t.shortDesc,

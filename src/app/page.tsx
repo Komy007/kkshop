@@ -5,7 +5,7 @@ import React, { useEffect, useState } from 'react';
 import CategoryShortcuts from '@/components/CategoryShortcuts';
 import CurationSection from '@/components/CurationSection';
 import Footer from '@/components/Footer';
-import { useAppStore } from '@/store/useAppStore';
+import { useAppStore, useSafeAppStore } from '@/store/useAppStore';
 import { Search, Star } from 'lucide-react';
 import Link from 'next/link';
 import { type TranslatedProduct } from '@/lib/api';
@@ -122,7 +122,8 @@ function ProductGrid({ products, title, showViewAll = true, t }: { products: Tra
 }
 
 export default function Home() {
-    const { language } = useAppStore();
+    const store = useSafeAppStore();
+    const { language } = store || { language: 'en' };
     const t = homeTranslations[language] || homeTranslations.en;
 
     const [mounted, setMounted] = useState(false);

@@ -3,7 +3,7 @@
 import React from 'react';
 import { X, Minus, Plus, Trash2, ShoppingBag } from 'lucide-react';
 import { useCartStore, selectTotalItems, selectTotalPrice } from '@/store/useCartStore';
-import { useAppStore } from '@/store/useAppStore';
+import { useAppStore, useSafeAppStore } from '@/store/useAppStore';
 
 const drawerTranslations: Record<string, any> = {
     ko: {
@@ -53,7 +53,8 @@ const drawerTranslations: Record<string, any> = {
 };
 
 export default function MiniCartDrawer() {
-    const { language } = useAppStore();
+    const store = useSafeAppStore();
+    const { language } = store || { language: 'en' };
     const t = drawerTranslations[language] || drawerTranslations.en;
 
     const items = useCartStore((s) => s.items);

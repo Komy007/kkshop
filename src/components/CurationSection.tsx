@@ -3,7 +3,7 @@
 import React from 'react';
 import { ChevronRight, Flame, TrendingUp, Eye } from 'lucide-react';
 import ProductCard from '@/components/ProductCard';
-import { useAppStore } from '@/store/useAppStore';
+import { useAppStore, useSafeAppStore } from '@/store/useAppStore';
 import { type TranslatedProduct } from '@/lib/api';
 
 const curationTranslations: Record<string, Record<string, string>> = {
@@ -88,7 +88,8 @@ function Section({ icon: Icon, iconColor, title, subtitle, viewAllText, children
 }
 
 export default function CurationSection({ products }: CurationSectionProps) {
-    const { language } = useAppStore();
+    const store = useSafeAppStore();
+    const { language } = store || { language: 'en' };
     const t = curationTranslations[language] ?? curationTranslations.en;
 
     // Split products into 3 sections (Cold Start fallback: use all products shuffled)

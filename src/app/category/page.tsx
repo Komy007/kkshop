@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Search } from 'lucide-react';
-import { useAppStore } from '@/store/useAppStore';
+import { useAppStore, useSafeAppStore } from '@/store/useAppStore';
 import Footer from '@/components/Footer';
 
 const categoryTranslations: Record<string, any> = {
@@ -45,7 +45,9 @@ const categories = [
 ];
 
 export default function CategoryIndexPage() {
-    const { language } = useAppStore();
+    const store = useSafeAppStore();
+    const { language } = store || { language: 'en' };
+    const [mounted, setMounted] = React.useState(false);
     const t = categoryTranslations[language] || categoryTranslations.en;
 
     return (
