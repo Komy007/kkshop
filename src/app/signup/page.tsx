@@ -3,10 +3,126 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { UserPlus, Mail, Lock, User, Phone, MapPin, ArrowRight, Loader2, AlertCircle, Home } from 'lucide-react';
+import { UserPlus, Mail, Lock, User, Phone, MapPin, ArrowRight, Loader2, AlertCircle, Home, CheckCircle2 } from 'lucide-react';
+import { useSafeAppStore } from '@/store/useAppStore';
+
+const signupT: Record<string, any> = {
+    en: {
+        badge: '🇰🇷 Cambodia\'s No.1 Korean Shop',
+        title: 'Create Account',
+        subtitle: 'Join KKshop for exclusive Korean products delivered in Phnom Penh',
+        sectionBasic: 'Account Information',
+        sectionShipping: 'Delivery Address',
+        shippingNote: 'You can edit this later in My Page',
+        name: 'Full Name',
+        namePH: 'Your full name',
+        email: 'Email Address',
+        emailPH: 'yourname@email.com',
+        password: 'Password',
+        passwordPH: 'At least 6 characters',
+        phone: 'Phone Number',
+        phonePH: 'e.g. 010-1234-5678 or +855-...',
+        address: 'City / Province / Street',
+        addressPH: 'e.g. Phnom Penh, BKK1, Street 63',
+        detailAddress: 'Apt / Unit / House No.',
+        detailPH: 'e.g. House 12, Unit 3B',
+        postalCode: 'Postal Code',
+        postalPH: 'Optional',
+        submit: 'Create Account',
+        successMsg: 'Welcome to KKshop! Redirecting to login...',
+        alreadyHave: 'Already have an account?',
+        login: 'Login',
+        perks: ['Free delivery over $30', '100% Authentic Korean', 'Points reward on every order'],
+    },
+    ko: {
+        badge: '🇰🇷 캄보디아 No.1 한국 쇼핑몰',
+        title: '회원가입',
+        subtitle: 'KKshop 회원이 되어 프놈펜 최고의 한국 상품을 만나보세요',
+        sectionBasic: '기본 정보 (필수)',
+        sectionShipping: '배송 정보 (선택)',
+        shippingNote: '추후 마이페이지에서 수정 가능',
+        name: '이름 (Full Name)',
+        namePH: '성함을 입력하세요',
+        email: '이메일 주소',
+        emailPH: '이메일로 로그인합니다',
+        password: '비밀번호',
+        passwordPH: '6자리 이상 입력하세요',
+        phone: '연락처',
+        phonePH: 'Phone Number (예: 010-1234-5678)',
+        address: '기본 배송지 주소',
+        addressPH: 'City/Province/Street',
+        detailAddress: '상세 주소',
+        detailPH: 'Apt/Suite/Unit',
+        postalCode: '우편번호',
+        postalPH: '선택 사항',
+        submit: '가입 완료하기',
+        successMsg: 'KKshop 회원이 되신 것을 환영합니다! 로그인 페이지로 이동합니다.',
+        alreadyHave: '이미 계정이 있으신가요?',
+        login: '로그인',
+        perks: ['$30 이상 무료배송', '한국정품 100%', '주문마다 포인트 적립'],
+    },
+    km: {
+        badge: '🇰🇷 ហាងកូរ៉េ លេខ១ នៅកម្ពុជា',
+        title: 'បង្កើតគណនី',
+        subtitle: 'ចូលរួម KKshop ដើម្បីទទួលបានផលិតផលកូរ៉េ នៅភ្នំពេញ',
+        sectionBasic: 'ព័ត៌មានគណនី',
+        sectionShipping: 'អាសយដ្ឋានដឹកជញ្ជូន',
+        shippingNote: 'អ្នកអាចកែប្រែនៅក្នុង My Page ពេលក្រោយ',
+        name: 'ឈ្មោះពេញ',
+        namePH: 'ឈ្មោះរបស់អ្នក',
+        email: 'អ៊ីមែល',
+        emailPH: 'yourname@email.com',
+        password: 'ពាក្យសម្ងាត់',
+        passwordPH: 'យ៉ាងហោចណាស់ ៦ តួអក្សរ',
+        phone: 'លេខទូរស័ព្ទ',
+        phonePH: '+855-...',
+        address: 'ក្រុង / ខេត្ត / ផ្លូវ',
+        addressPH: 'ភ្នំពេញ, BKK1, ...',
+        detailAddress: 'ផ្ទះ / ឯកតា',
+        detailPH: 'ផ្ទះ ១២, ឯកតា ៣B',
+        postalCode: 'លេខប្រៃសណីយ',
+        postalPH: 'ស្រេចចិត្ត',
+        submit: 'បង្កើតគណនី',
+        successMsg: 'ស្វាគមន៍មកកាន់ KKshop! ...',
+        alreadyHave: 'មានគណនីរួចហើយ?',
+        login: 'ចូល',
+        perks: ['ដឹកជញ្ជូនឥតគិតថ្លៃ $30+', 'ផលិតផលកូរ៉េ 100%', 'ពិន្ទុរង្វាន់រាល់ការបញ្ជាទិញ'],
+    },
+    zh: {
+        badge: '🇰🇷 柬埔寨第一韩国购物平台',
+        title: '创建账号',
+        subtitle: '加入KKshop，享受正宗韩国商品送货上门服务',
+        sectionBasic: '账号信息',
+        sectionShipping: '收货地址',
+        shippingNote: '可在我的主页中修改',
+        name: '姓名',
+        namePH: '请输入您的姓名',
+        email: '电子邮件',
+        emailPH: 'yourname@email.com',
+        password: '密码',
+        passwordPH: '至少6位字符',
+        phone: '手机号码',
+        phonePH: '+855-... 或 010-...',
+        address: '城市 / 省份 / 街道',
+        addressPH: '金边, BKK1, ...',
+        detailAddress: '详细地址',
+        detailPH: '门牌号 / 公寓单元',
+        postalCode: '邮政编码',
+        postalPH: '选填',
+        submit: '完成注册',
+        successMsg: '欢迎加入KKshop！正在跳转到登录页...',
+        alreadyHave: '已有账号？',
+        login: '登录',
+        perks: ['$30以上免运费', '100%韩国正品', '每单赚取积分'],
+    },
+};
 
 export default function SignupPage() {
     const router = useRouter();
+    const store = useSafeAppStore();
+    const language = store?.language || 'en';
+    const t = signupT[language] || signupT.en;
+
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
@@ -30,25 +146,16 @@ export default function SignupPage() {
         setIsLoading(true);
         setError('');
         setSuccess('');
-
         try {
             const res = await fetch('/api/auth/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData)
             });
-
             const data = await res.json();
-
-            if (!res.ok) {
-                throw new Error(data.error || '회원가입에 실패했습니다.');
-            }
-
-            setSuccess('KKshop 회원이 되신 것을 환영합니다! 잠시 후 로그인 페이지로 이동합니다.');
-            setTimeout(() => {
-                router.push('/login');
-            }, 2500);
-
+            if (!res.ok) throw new Error(data.error || 'Registration failed.');
+            setSuccess(t.successMsg);
+            setTimeout(() => router.push('/login'), 2500);
         } catch (err: any) {
             setError(err.message);
         } finally {
@@ -56,133 +163,132 @@ export default function SignupPage() {
         }
     };
 
-    return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-12 relative overflow-hidden">
-            {/* Background Effects matching aesthetic */}
-            <div className="absolute top-0 left-1/4 w-[50vw] h-[50vw] bg-blue-100 rounded-full blur-[100px] pointer-events-none opacity-50" />
+    const InputField = ({
+        icon: Icon, type = 'text', name, placeholder, required = false, colSpan = 'col-span-full', readOnly = false
+    }: any) => (
+        <div className={colSpan}>
+            <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400 group-focus-within:text-blue-500 transition-colors">
+                    <Icon className="w-4 h-4" />
+                </div>
+                <input
+                    required={required}
+                    type={type}
+                    name={name}
+                    value={(formData as any)[name]}
+                    onChange={handleChange}
+                    readOnly={readOnly}
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-400 transition-all text-sm"
+                    placeholder={placeholder}
+                />
+            </div>
+        </div>
+    );
 
-            <div className="w-full max-w-lg bg-white border border-gray-100 rounded-3xl p-8 shadow-xl relative z-10 animate-fade-in-up my-8">
-                <div className="text-center mb-8">
-                    <Link href="/" className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-blue-600 text-white mb-5 shadow-lg shadow-blue-500/30 hover:scale-105 transition-transform">
-                        <UserPlus className="w-7 h-7" />
+    return (
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-50 to-gray-100 px-4 py-8">
+            {/* Decorative blobs */}
+            <div className="fixed top-0 left-1/4 w-[60vw] h-[40vw] bg-blue-100 rounded-full blur-[120px] pointer-events-none opacity-30" />
+
+            <div className="w-full max-w-md relative z-10">
+                {/* Top Brand Section */}
+                <div className="text-center mb-5">
+                    <Link href="/" className="inline-block">
+                        <div className="inline-flex items-center gap-2 bg-white border border-gray-200 rounded-full px-4 py-2 shadow-sm mb-3 hover:shadow-md transition-shadow">
+                            <span className="text-sm font-extrabold text-blue-600">KK</span>
+                            <span className="text-sm font-extrabold text-gray-900">Shop</span>
+                            <span className="text-xs text-gray-400">|</span>
+                            <span className="text-xs text-gray-500 font-medium">{t.badge}</span>
+                        </div>
                     </Link>
-                    <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">회원가입</h1>
-                    <p className="text-gray-500 mt-2 text-sm">KKshop의 다양한 혜택과 다국어 쇼핑을 경험하세요.</p>
+                    {/* Perks */}
+                    <div className="flex items-center justify-center gap-3 flex-wrap">
+                        {t.perks.map((perk: string, i: number) => (
+                            <span key={i} className="text-[11px] text-gray-500 flex items-center gap-1">
+                                <CheckCircle2 className="w-3 h-3 text-green-500" />{perk}
+                            </span>
+                        ))}
+                    </div>
                 </div>
 
-                {error && (
-                    <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 flex items-start gap-3 text-red-600 animate-scale-in">
-                        <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-                        <p className="text-sm font-medium">{error}</p>
-                    </div>
-                )}
-
-                {success && (
-                    <div className="mb-6 p-4 rounded-xl bg-green-50 border border-green-200 flex items-start gap-3 text-green-700 animate-scale-in">
-                        <div className="w-5 h-5 flex-shrink-0 mt-0.5 flex items-center justify-center bg-green-500 rounded-full text-white">✓</div>
-                        <p className="text-sm font-medium flex-1">{success}</p>
-                    </div>
-                )}
-
-                <form onSubmit={handleSubmit} className="space-y-5">
-
-                    {/* Account Setup */}
-                    <div className="space-y-4 pb-4 border-b border-gray-100">
-                        <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">기본 정보 (필수)</h3>
-
-                        <div className="relative group">
-                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-blue-500 transition-colors">
-                                <User className="w-5 h-5" />
-                            </div>
-                            <input required type="text" name="name" value={formData.name} onChange={handleChange}
-                                className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-11 pr-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all font-medium sm:text-sm"
-                                placeholder="이름 (Full Name)" />
-                        </div>
-
-                        <div className="relative group">
-                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-blue-500 transition-colors">
-                                <Mail className="w-5 h-5" />
-                            </div>
-                            <input required type="email" name="email" value={formData.email} onChange={handleChange}
-                                className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-11 pr-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all font-medium sm:text-sm"
-                                placeholder="이메일 주소 (이메일로 로그인)" />
-                        </div>
-
-                        <div className="relative group">
-                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-blue-500 transition-colors">
-                                <Lock className="w-5 h-5" />
-                            </div>
-                            <input required type="password" name="password" minLength={6} value={formData.password} onChange={handleChange}
-                                className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-11 pr-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all font-medium sm:text-sm font-mono"
-                                placeholder="비밀번호 (6자리 이상)" />
-                        </div>
+                {/* Form Card */}
+                <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-xl">
+                    <div className="mb-6">
+                        <h1 className="text-2xl font-extrabold text-gray-900">{t.title}</h1>
+                        <p className="text-sm text-gray-500 mt-1">{t.subtitle}</p>
                     </div>
 
-                    {/* Shipping Address Setup */}
-                    <div className="space-y-4 pt-2">
-                        <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider flex items-center justify-between">
-                            배송 정보 (선택)
-                            <span className="text-xs font-normal text-gray-400 normal-case">추후 마이페이지에서 수정 가능</span>
-                        </h3>
+                    {error && (
+                        <div className="mb-4 p-3.5 rounded-xl bg-red-50 border border-red-200 flex items-start gap-2.5 text-red-600">
+                            <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                            <p className="text-sm font-medium">{error}</p>
+                        </div>
+                    )}
+                    {success && (
+                        <div className="mb-4 p-3.5 rounded-xl bg-green-50 border border-green-200 flex items-start gap-2.5 text-green-700">
+                            <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                            <p className="text-sm font-medium">{success}</p>
+                        </div>
+                    )}
 
-                        <div className="relative group">
-                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-blue-500 transition-colors">
-                                <Phone className="w-5 h-5" />
+                    <form onSubmit={handleSubmit} className="space-y-5">
+                        {/* Account Info */}
+                        <div>
+                            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">{t.sectionBasic}</p>
+                            <div className="grid grid-cols-1 gap-3">
+                                <InputField icon={User} name="name" placeholder={t.namePH} required />
+                                <InputField icon={Mail} type="email" name="email" placeholder={t.emailPH} required />
+                                <InputField icon={Lock} type="password" name="password" placeholder={t.passwordPH} required />
                             </div>
-                            <input type="tel" name="phone" value={formData.phone} onChange={handleChange}
-                                className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-11 pr-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all font-medium sm:text-sm"
-                                placeholder="연락처 (Phone Number) 예: 010-1234-5678" />
                         </div>
 
-                        <div className="grid grid-cols-3 gap-3">
-                            <div className="relative group col-span-3">
-                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-blue-500 transition-colors">
-                                    <MapPin className="w-5 h-5" />
+                        {/* Shipping Address */}
+                        <div className="border-t border-gray-100 pt-4">
+                            <div className="flex items-center justify-between mb-3">
+                                <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">{t.sectionShipping}</p>
+                                <span className="text-[10px] text-gray-400">{t.shippingNote}</span>
+                            </div>
+                            <div className="grid grid-cols-1 gap-3">
+                                <InputField icon={Phone} type="tel" name="phone" placeholder={t.phonePH} />
+                                <InputField icon={MapPin} name="address" placeholder={t.addressPH} />
+                                <div className="grid grid-cols-3 gap-2">
+                                    <div className="col-span-2">
+                                        <div className="relative group">
+                                            <Home className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-blue-500" />
+                                            <input type="text" name="detailAddress" value={formData.detailAddress} onChange={handleChange}
+                                                className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-10 pr-3 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-400 transition-all"
+                                                placeholder={t.detailPH} />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <input type="text" name="postalCode" value={formData.postalCode} onChange={handleChange}
+                                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-400 transition-all"
+                                            placeholder={t.postalPH} />
+                                    </div>
                                 </div>
-                                <input type="text" name="address" value={formData.address} onChange={handleChange}
-                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-11 pr-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all font-medium sm:text-sm"
-                                    placeholder="기본 배송지 주소 (City/Province/Street)" />
-                            </div>
-
-                            <div className="relative group col-span-2">
-                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-blue-500 transition-colors">
-                                    <Home className="w-5 h-5" />
-                                </div>
-                                <input type="text" name="detailAddress" value={formData.detailAddress} onChange={handleChange}
-                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-11 pr-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all font-medium sm:text-sm"
-                                    placeholder="상세 주소 (Apt/Suite/Unit)" />
-                            </div>
-
-                            <div className="relative group col-span-1">
-                                <input type="text" name="postalCode" value={formData.postalCode} onChange={handleChange}
-                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all font-medium sm:text-sm"
-                                    placeholder="우편번호" />
                             </div>
                         </div>
-                    </div>
 
-                    <div className="pt-4">
                         <button
                             type="submit"
                             disabled={isLoading || !!success}
-                            className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl py-4 px-4 font-bold text-base shadow-lg shadow-blue-500/25 transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
+                            className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl py-3.5 px-4 font-bold text-sm shadow-lg shadow-blue-500/20 transition-all active:scale-[0.98] disabled:opacity-60"
                         >
-                            {isLoading ? (
-                                <Loader2 className="w-5 h-5 animate-spin" />
-                            ) : (
-                                <>가입 완료하기 <ArrowRight className="w-5 h-5" /></>
-                            )}
+                            {isLoading
+                                ? <Loader2 className="w-5 h-5 animate-spin" />
+                                : <><UserPlus className="w-4 h-4" />{t.submit}</>
+                            }
                         </button>
-                    </div>
-                </form>
+                    </form>
 
-                <div className="mt-8 text-center border-t border-gray-100 pt-6">
-                    <p className="text-sm text-gray-600">
-                        이미 계정이 있으신가요?{' '}
-                        <Link href="/login" className="font-bold text-blue-600 hover:text-blue-500 transition-colors">
-                            로그인하기
-                        </Link>
-                    </p>
+                    <div className="mt-5 text-center border-t border-gray-100 pt-4">
+                        <p className="text-sm text-gray-500">
+                            {t.alreadyHave}{' '}
+                            <Link href="/login" className="font-bold text-blue-600 hover:text-blue-500 transition-colors">
+                                {t.login}
+                            </Link>
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>

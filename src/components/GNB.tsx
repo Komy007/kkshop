@@ -15,7 +15,8 @@ const LANGUAGES = [
 ];
 
 export default function GNB() {
-    const { data: session } = useSession();
+    const sessionResult = useSession();
+    const session = sessionResult?.data;
     const store = useSafeMarketStore();
     const { language, setLanguage } = store || { language: 'en', setLanguage: (l: string) => { } };
     const totalItems = useCartStore(selectTotalItems);

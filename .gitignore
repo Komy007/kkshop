@@ -11,3 +11,12 @@ dist/
 push*.log
 google-key.json
 *-key.json
+
+# Build artifacts & logs
+build_log.txt
+build_output.txt
+tsconfig.tsbuildinfo
+_not-found_content.txt
+
+# Claude Code working directory
+.claude/

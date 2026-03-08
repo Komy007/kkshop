@@ -21,6 +21,10 @@ export interface TranslatedProduct {
     status: string;
     imageUrl?: string | null;
     isNew: boolean;
+    isHotSale: boolean;
+    hotSalePrice?: number | null;
+    reviewAvg: number;
+    reviewCount: number;
     brandName?: string | null;
     volume?: string | null;
     skinType?: string | null;
@@ -71,6 +75,10 @@ function serializeProduct(product: any, langCode: string): TranslatedProduct {
         status: product.status,
         imageUrl: product.imageUrl || product.images?.[0]?.url || null,
         isNew: product.isNew ?? false,
+        isHotSale: product.isHotSale ?? false,
+        hotSalePrice: product.hotSalePrice ? Number(product.hotSalePrice) : null,
+        reviewAvg: Number(product.reviewAvg ?? 0),
+        reviewCount: product.reviewCount ?? 0,
         brandName: product.brandName ?? null,
         volume: product.volume ?? null,
         skinType: product.skinType ?? null,
