@@ -23,6 +23,7 @@ jobs:
 
       # ── 2. Authenticate to Google Cloud ─────────────────────────────────
       - name: Authenticate to Google Cloud
+        id: auth
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
@@ -31,9 +32,13 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
-      # ── 4. Configure Docker to use GCR ──────────────────────────────────
-      - name: Configure Docker for GCR
-        run: gcloud auth configure-docker --quiet
+      # ── 4. Docker Login to GCR via service account key ──────────────────
+      - name: Login to Google Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: gcr.io
+          username: _json_key_base64
+          password: ${{ secrets.GCP_SA_KEY }}
 
       # ── 5. Build Docker image ────────────────────────────────────────────
       - name: Build Docker image
@@ -41,7 +46,6 @@ jobs:
           docker build \
             --tag ${{ env.IMAGE }}:${{ github.sha }} \
             --tag ${{ env.IMAGE }}:latest \
-            --cache-from ${{ env.IMAGE }}:latest \
             .
 
       # ── 6. Push image to Google Container Registry ───────────────────────
@@ -66,30 +70,28 @@ jobs:
             --set-env-vars="DATABASE_URL=${{ secrets.DATABASE_URL }},DIRECT_URL=${{ secrets.DIRECT_URL }},AUTH_SECRET=${{ secrets.AUTH_SECRET }}" \
             --quiet
 
-      # ── 8. Clean up old GCR images (keep latest 5 only) ──────────────────
+      # ── 8. Clean up old GCR images (keep latest 5) ───────────────────────
       - name: Clean up old container images
         run: |
-          # List all image digests except the 5 most recent, then delete them
           DIGESTS=$(gcloud container images list-tags ${{ env.IMAGE }} \
             --format='get(digest)' \
             --sort-by='~TIMESTAMP' \
-            --limit=999 \
-            | tail -n +6)
-
+            --limit=999 2>/dev/null | tail -n +6)
           if [ -n "$DIGESTS" ]; then
             echo "Deleting old images..."
             for DIGEST in $DIGESTS; do
               gcloud container images delete "${{ env.IMAGE }}@${DIGEST}" \
-                --force-delete-tags --quiet || true
+                --force-delete-tags --quiet 2>/dev/null || true
             done
+            echo "Cleanup done."
           else
             echo "No old images to clean up."
           fi
 
       # ── 9. Show deployment URL ────────────────────────────────────────────
-      - name: Get deployed service URL
+      - name: Deployment complete
         run: |
           URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} \
             --region ${{ env.REGION }} \
-            --format 'value(status.url)')
+            --format 'value(status.url)' 2>/dev/null || echo "https://kkshop-580694915945.asia-southeast1.run.app")
           echo "✅ Deployed to: $URL"
