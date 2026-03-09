@@ -17,8 +17,11 @@ const nextAuthEnv = NextAuth({
             async authorize(credentials) {
                 if (!credentials?.email || !credentials?.password) return null
 
+                // Normalize email to lowercase to avoid case-sensitivity issues
+                const email = (credentials.email as string).toLowerCase().trim();
+
                 const user = await prisma.user.findUnique({
-                    where: { email: credentials.email as string }
+                    where: { email }
                 })
 
                 if (!user || !user.hashedPassword) return null
