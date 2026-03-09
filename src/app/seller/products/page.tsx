@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { Package, Plus, Loader2, RefreshCw, Clock, CheckCircle, XCircle, Search, ImageIcon } from 'lucide-react';
+import { Package, Plus, Loader2, RefreshCw, Clock, CheckCircle, XCircle, Search, ImageIcon, Edit3 } from 'lucide-react';
 
 interface Product {
     id: string;
@@ -106,6 +106,7 @@ export default function SellerProductsPage() {
                                 <th className="py-3 px-4">가격/재고</th>
                                 <th className="py-3 px-4">검수 상태</th>
                                 <th className="py-3 px-4 hidden sm:table-cell">등록일</th>
+                                <th className="py-3 px-4">수정</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
@@ -139,6 +140,12 @@ export default function SellerProductsPage() {
                                         </td>
                                         <td className="py-3 px-4 hidden sm:table-cell text-xs text-gray-400">
                                             {new Date(p.createdAt).toLocaleDateString('ko-KR')}
+                                        </td>
+                                        <td className="py-3 px-4">
+                                            <Link href={`/seller/products/${p.id}/edit`}
+                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-gray-100 hover:bg-teal-50 hover:text-teal-700 text-gray-600 rounded-lg transition-colors">
+                                                <Edit3 className="w-3 h-3" />수정
+                                            </Link>
                                         </td>
                                     </tr>
                                 );

@@ -36,6 +36,47 @@ export default function NewProductPage() {
             .then(r => r.json())
             .then(data => setCategories(Array.isArray(data) ? data : []))
             .catch(() => { });
+
+        // Clone support: read sessionStorage when ?clone=1
+        if (typeof window !== 'undefined' && window.location.search.includes('clone=1')) {
+            try {
+                const stored = sessionStorage.getItem('cloneProduct');
+                if (stored) {
+                    const data = JSON.parse(stored);
+                    setForm(prev => ({
+                        ...prev,
+                        priceUsd: data.priceUsd ?? prev.priceUsd,
+                        stockQty: data.stockQty ? String(data.stockQty) : prev.stockQty,
+                        categoryId: data.categoryId ?? prev.categoryId,
+                        isNew: data.isNew ?? prev.isNew,
+                        baseLang: 'ko',
+                        brandName: data.brandName ?? prev.brandName,
+                        volume: data.volume ?? prev.volume,
+                        skinType: data.skinType ?? prev.skinType,
+                        origin: data.origin ?? prev.origin,
+                        expiryMonths: data.expiryMonths ? String(data.expiryMonths) : prev.expiryMonths,
+                        certifications: data.certifications ?? prev.certifications,
+                        name: data.name ?? prev.name,
+                        shortDesc: data.shortDesc ?? prev.shortDesc,
+                        detailDesc: data.detailDesc ?? prev.detailDesc,
+                        ingredients: data.ingredients ?? prev.ingredients,
+                        howToUse: data.howToUse ?? prev.howToUse,
+                        benefits: data.benefits ?? prev.benefits,
+                        seoKeywords: data.seoKeywords ?? prev.seoKeywords,
+                    }));
+                    if (Array.isArray(data.options) && data.options.length > 0) {
+                        setOptions(data.options.map((o: any) => ({
+                            minQty: String(o.minQty ?? 1),
+                            maxQty: o.maxQty ? String(o.maxQty) : '',
+                            discountPct: String(o.discountPct ?? 0),
+                            freeShipping: Boolean(o.freeShipping),
+                            labelKo: o.labelKo ?? '',
+                        })));
+                    }
+                    sessionStorage.removeItem('cloneProduct');
+                }
+            } catch { /* ignore parse errors */ }
+        }
     }, []);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
