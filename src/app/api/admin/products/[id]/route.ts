@@ -139,8 +139,9 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
                                 howToUse: tHowToUse || null, benefits: tBenefits || null,
                             });
                         } catch {
+                            // Use original text as fallback when translation fails
                             translationsToUpsert.push({
-                                langCode: lang, name: `[Auto-failed] ${name}`,
+                                langCode: lang, name: name,
                                 shortDesc: shortDesc || null, detailDesc: detailDesc || null,
                                 seoKeywords: seoKeywords || null, ingredients: ingredients || null,
                                 howToUse: howToUse || null, benefits: benefits || null,

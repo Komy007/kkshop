@@ -73,7 +73,7 @@ function serializeProduct(product: any, langCode: string): TranslatedProduct {
         categoryId: product.categoryId?.toString() ?? null,
         categorySlug: product.category?.slug ?? null,
         status: product.status,
-        imageUrl: product.imageUrl || product.images?.[0]?.url || null,
+        imageUrl: product.images?.[0]?.url || product.imageUrl || null,
         isNew: product.isNew ?? false,
         isHotSale: product.isHotSale ?? false,
         hotSalePrice: product.hotSalePrice ? Number(product.hotSalePrice) : null,
@@ -101,7 +101,7 @@ export async function getProductsByLanguage(
     categorySlug?: string | null
 ): Promise<TranslatedProduct[]> {
     try {
-        const where: any = { status: 'ACTIVE' };
+        const where: any = { status: 'ACTIVE', approvalStatus: 'APPROVED' };
 
         if (categorySlug) {
             if (categorySlug === 'new') {

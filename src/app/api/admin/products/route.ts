@@ -231,9 +231,10 @@ export async function POST(req: Request) {
                     });
                 } catch (translationError) {
                     console.error(`Translation failed for language: ${lang}`, translationError);
+                    // Use original text as fallback when translation fails
                     translationsData.push({
                         langCode: lang,
-                        name: `[Auto-failed] ${name}`,
+                        name: name,
                         shortDesc: shortDesc || null,
                         detailDesc: detailDesc || null,
                         seoKeywords: seoKeywords || null,
