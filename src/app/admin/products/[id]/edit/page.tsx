@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 
 interface ImageItem { id?: string; url: string; isNew?: boolean; file?: File; preview?: string; }
-interface Category { id: string; slug: string; nameKo: string; }
+interface Category { id: string; slug: string; nameKo: string; isSystem?: boolean; }
 interface Supplier { id: string; companyName: string; brandName?: string | null; }
 
 interface ProductData {
@@ -296,8 +296,16 @@ export default function EditProductPage() {
                             <select name="categoryId" value={form.categoryId} onChange={handleChange}
                                 className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white">
                                 <option value="">— 미분류 —</option>
-                                {categories.filter(c => !['new', 'best', 'sale', 'foryou'].includes(c.slug)).map(c => (
+                                {/* 일반 카테고리 먼저 */}
+                                {categories.filter(c => !c.isSystem).map(c => (
                                     <option key={c.id} value={c.id}>{c.nameKo}</option>
+                                ))}
+                                {/* 시스템 카테고리 구분선과 함께 표시 */}
+                                {categories.some(c => c.isSystem) && (
+                                    <option disabled>── 시스템 카테고리 ──</option>
+                                )}
+                                {categories.filter(c => c.isSystem).map(c => (
+                                    <option key={c.id} value={c.id}>{c.nameKo} ✦</option>
                                 ))}
                             </select>
                         </div>

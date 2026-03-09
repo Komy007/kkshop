@@ -34,11 +34,18 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
             ...product,
             id: product.id.toString(),
             categoryId: product.categoryId?.toString() ?? null,
+            supplierId: product.supplierId ?? null,
             priceUsd: product.priceUsd.toString(),
             costPrice: product.costPrice?.toString() ?? null,
             hotSalePrice: product.hotSalePrice?.toString() ?? null,
             reviewAvg: product.reviewAvg.toString(),
             category: product.category ? { ...product.category, id: product.category.id.toString() } : null,
+            // ← translations: serialize BigInt id & productId
+            translations: product.translations.map(t => ({
+                ...t,
+                id: t.id.toString(),
+                productId: t.productId.toString(),
+            })),
             images: product.images.map(img => ({
                 ...img,
                 id: img.id.toString(),
