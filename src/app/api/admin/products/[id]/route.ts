@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/api';
 import { auth } from '@/auth';
 import { Translate } from '@google-cloud/translate/build/src/v2';
+import { deleteGCSFiles } from '@/lib/gcs';
 
 export const dynamic = 'force-dynamic';
 
@@ -166,8 +167,13 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
                 });
             }
 
-            // 3. Delete removed images
+            // 3. Delete removed images (DB first, then GCS after transaction)
             if (deleteImageIds.length > 0) {
+                // Fetch URLs before deletion so we can clean up GCS afterward
+                const toDelete = await tx.productImage.findMany({
+                    where: { id: { in: deleteImageIds.map((id: string) => BigInt(id)) }, productId },
+                    select: { url: true },
+                });
                 await tx.productImage.deleteMany({
                     where: { id: { in: deleteImageIds.map((id: string) => BigInt(id)) }, productId },
                 });
@@ -180,6 +186,12 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
                     where: { id: productId },
                     data: { imageUrl: remaining?.url ?? null },
                 });
+                // Delete from GCS (outside transaction scope via returned URLs)
+                if (toDelete.length > 0) {
+                    deleteGCSFiles(toDelete.map(img => img.url)).catch(err =>
+                        console.error('[GCS] Image delete failed:', err)
+                    );
+                }
             }
 
             // 4. Add new images

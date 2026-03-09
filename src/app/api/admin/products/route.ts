@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/api';
 import { auth } from '@/auth';
 import { Translate } from '@google-cloud/translate/build/src/v2';
+import { deleteGCSFiles } from '@/lib/gcs';
 
 export const dynamic = 'force-dynamic';
 
@@ -79,7 +80,21 @@ export async function DELETE(req: Request) {
         const id = searchParams.get('id');
         if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
 
+        // Fetch image URLs before deletion so we can remove them from GCS
+        const product = await prisma.product.findUnique({
+            where: { id: BigInt(id) },
+            include: { images: { select: { url: true } } },
+        });
+
         await prisma.product.delete({ where: { id: BigInt(id) } });
+
+        // Delete all product images from GCS (non-blocking, won't fail the request)
+        if (product?.images?.length) {
+            deleteGCSFiles(product.images.map(img => img.url)).catch(err =>
+                console.error('[GCS] Product image cleanup failed:', err)
+            );
+        }
+
         return NextResponse.json({ success: true });
     } catch (error: any) {
         console.error('DELETE /api/admin/products error:', error);
