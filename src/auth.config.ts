@@ -4,6 +4,7 @@ import type { NextAuthConfig } from 'next-auth';
 // It does NOT import PrismaAdapter to avoid Edge runtime crash
 export default {
     providers: [],
+    trustHost: true,   // Required for Cloud Run / reverse proxy deployments
     pages: {
         signIn: '/admin/login',
     },

@@ -67,7 +67,7 @@ jobs:
             --cpu 1 \
             --min-instances 0 \
             --max-instances 10 \
-            --set-env-vars="DATABASE_URL=${{ secrets.DATABASE_URL }},DIRECT_URL=${{ secrets.DIRECT_URL }},AUTH_SECRET=${{ secrets.AUTH_SECRET }}" \
+            --set-env-vars="DATABASE_URL=${{ secrets.DATABASE_URL }},DIRECT_URL=${{ secrets.DIRECT_URL }},AUTH_SECRET=${{ secrets.AUTH_SECRET }},AUTH_TRUST_HOST=true" \
             --quiet
 
       # ── 8. Clean up old GCR images (keep latest 5) ───────────────────────
