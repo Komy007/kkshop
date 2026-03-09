@@ -4,10 +4,8 @@ import { auth } from '@/auth';
 
 export async function GET(request: Request) {
     const session = await auth();
-    console.log('DEBUG: /api/admin/reviews GET session:', JSON.stringify(session, null, 2));
 
     if (!session?.user || !['ADMIN', 'SUPERADMIN'].includes(session.user.role ?? '')) {
-        console.warn('DEBUG: /api/admin/reviews GET - Unauthorized role:', session?.user?.role);
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

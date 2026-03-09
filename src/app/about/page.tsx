@@ -2,159 +2,233 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Mail, Phone, MessageCircle } from 'lucide-react';
+import { ArrowLeft, Mail, Phone, MessageCircle, ShieldCheck, Sparkles, MapPin, Store, Check } from 'lucide-react';
 
 export default function AboutPage() {
     return (
-        <main className="min-h-screen bg-gray-900 text-white overflow-x-hidden selection:bg-brand-primary selection:text-white">
+        <main className="min-h-screen bg-gray-900 text-white overflow-x-hidden">
 
-            {/* Custom CSS for Zero-Gravity, Parallax, and Pop-out Effects */}
             <style dangerouslySetInnerHTML={{
                 __html: `
-                @keyframes floatLeft {
-                    0%, 100% { transform: translateY(0) translateX(0) rotate(0deg); }
-                    50% { transform: translateY(-20px) translateX(10px) rotate(5deg); }
+                @keyframes floatUp {
+                    0%, 100% { transform: translateY(0px); }
+                    50% { transform: translateY(-12px); }
                 }
-                @keyframes floatRight {
-                    0%, 100% { transform: translateY(0) translateX(0) rotate(0deg); }
-                    50% { transform: translateY(15px) translateX(-15px) rotate(-5deg); }
-                }
-                .anti-gravity-left {
-                    animation: floatLeft 6s ease-in-out infinite;
-                }
-                .anti-gravity-right {
-                    animation: floatRight 7s ease-in-out infinite;
-                }
-                
-                .pop-out-container:hover .pop-out-item {
-                    transform: translateZ(50px) scale(1.05);
-                    filter: drop-shadow(0 20px 30px rgba(56, 189, 248, 0.4));
-                }
-                .perspective-wrapper {
-                    perspective: 1000px;
-                }
+                .float-anim { animation: floatUp 5s ease-in-out infinite; }
                 .glass-card {
-                    background: rgba(255, 255, 255, 0.05);
+                    background: rgba(255,255,255,0.05);
                     backdrop-filter: blur(16px);
                     -webkit-backdrop-filter: blur(16px);
-                    border: 1px solid rgba(255, 255, 255, 0.1);
+                    border: 1px solid rgba(255,255,255,0.1);
                 }
-                
-                /* Subdued Parallax grid effect for mobile */
-                .parallax-grid {
-                    background-image: radial-gradient(rgba(255,255,255,0.1) 1px, transparent 1px);
-                    background-size: 30px 30px;
-                    background-attachment: fixed;
+                .grid-bg {
+                    background-image: radial-gradient(rgba(255,255,255,0.07) 1px, transparent 1px);
+                    background-size: 28px 28px;
                 }
             `}} />
 
-            {/* Back Navigation Bar */}
-            <div className="fixed top-0 left-0 right-0 z-50 p-4 sm:p-6 flex items-center bg-gradient-to-b from-gray-900/80 to-transparent pointer-events-none">
+            {/* Back Nav */}
+            <div className="fixed top-0 left-0 right-0 z-50 p-4 flex items-center bg-gradient-to-b from-gray-900/80 to-transparent pointer-events-none">
                 <Link href="/" className="pointer-events-auto flex items-center justify-center w-10 h-10 rounded-full glass-card hover:bg-white/10 transition-colors text-white">
                     <ArrowLeft className="w-5 h-5" />
                 </Link>
             </div>
 
-            {/* Hero Section: Brand Identity */}
-            <section className="relative min-h-[90vh] flex flex-col items-center justify-center px-6 overflow-hidden parallax-grid">
-                <div className="absolute inset-0 bg-gradient-to-b from-violet-900/20 via-gray-900 to-gray-900 z-0" />
-
-                {/* Floating "K" Graphics */}
-                <div className="absolute inset-0 flex items-center justify-center z-0 opacity-20 pointer-events-none overflow-hidden">
-                    <span className="text-[35vw] font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-purple-600 anti-gravity-left -mr-[10vw]">K</span>
-                    <span className="text-[35vw] font-black text-transparent bg-clip-text bg-gradient-to-l from-red-500 to-orange-500 anti-gravity-right -ml-[10vw]">K</span>
+            {/* ── Hero ── */}
+            <section className="relative min-h-[85vh] flex flex-col items-center justify-center px-6 overflow-hidden grid-bg">
+                <div className="absolute inset-0 bg-gradient-to-b from-blue-900/20 via-gray-900/60 to-gray-900 z-0" />
+                {/* Big KK glow */}
+                <div className="absolute inset-0 flex items-center justify-center z-0 opacity-10 pointer-events-none select-none overflow-hidden">
+                    <span className="text-[45vw] font-black text-blue-400 float-anim">KK</span>
                 </div>
 
                 <div className="relative z-10 text-center max-w-2xl mx-auto mt-20">
-                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-card mb-6 animate-fade-in-up">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-card mb-5">
                         <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
-                        <span className="text-sm font-medium tracking-widest text-blue-200 uppercase">Premium Cross-Border</span>
+                        <span className="text-xs font-semibold tracking-widest text-blue-200 uppercase">Cambodia's #1 Korean Shopping Platform</span>
                     </div>
 
-                    <h1 className="text-4xl sm:text-6xl font-black mb-6 leading-tight tracking-tight animate-fade-in-up [animation-delay:100ms]">
-                        Where <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-500">Khmer</span><br />
-                        Meets <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">Korea</span>
+                    <h1 className="text-4xl sm:text-6xl font-black mb-5 leading-tight">
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">KK</span>
+                        <span className="text-white">Shop</span>
                     </h1>
 
-                    <p className="text-lg sm:text-xl text-gray-300 leading-relaxed font-medium animate-fade-in-up [animation-delay:200ms]">
-                        캄보디아의 역동적인 라이프스타일과 한국의 깐깐한 품질 기준이 만나는 곳, KKShop에 오신 것을 환영합니다.
+                    <p className="text-lg sm:text-xl text-gray-200 font-semibold leading-relaxed mb-3">
+                        100% Authentic Korean Cosmetics &amp;<br className="hidden sm:block" /> Korean-Quality Products — Delivered to Your Door
                     </p>
+                    <p className="text-sm text-gray-400 leading-relaxed">
+                        캄보디아 NO.1 한국 쇼핑 플랫폼 · 정품 한국 화장품 · 집 앞까지 배송
+                    </p>
+
+                    <div className="flex flex-wrap items-center justify-center gap-3 mt-8">
+                        {[
+                            '🇰🇷 100% Made in Korea (Cosmetics)',
+                            '✅ Korean Quality Verified',
+                            '🏠 Home Delivery in Cambodia',
+                        ].map(t => (
+                            <span key={t} className="text-xs glass-card px-3 py-1.5 rounded-full text-gray-300 font-medium">{t}</span>
+                        ))}
+                    </div>
                 </div>
             </section>
 
-            {/* Section 1: Our Promise 1 - K-Beauty */}
-            <section className="py-24 px-6 relative bg-gray-900">
-                <div className="max-w-4xl mx-auto flex flex-col items-center text-center">
-                    <h2 className="text-3xl sm:text-5xl font-bold mb-6">100% Authentic K-Beauty</h2>
-                    <p className="text-gray-400 text-[17px] sm:text-lg leading-relaxed max-w-2xl mb-16">
-                        KKShop의 모든 뷰티 제품은 100% 한국에서 생산된 정품만을 고집합니다. 타협하지 않는 원칙으로 캄보디아 고객님들의 피부에 가장 안전하고 투명한 아름다움을 선사합니다.
-                    </p>
+            {/* ── Section 1: K-Beauty 100% Korean ── */}
+            <section className="py-20 px-6 bg-gray-900">
+                <div className="max-w-3xl mx-auto">
+                    <div className="flex flex-col items-center text-center mb-10">
+                        <div className="w-14 h-14 rounded-2xl bg-blue-500/20 flex items-center justify-center mb-4">
+                            <ShieldCheck className="w-7 h-7 text-blue-400" />
+                        </div>
+                        <h2 className="text-2xl sm:text-4xl font-bold mb-4">
+                            100% Authentic Korean Cosmetics
+                        </h2>
+                        <p className="text-gray-400 text-base sm:text-lg leading-relaxed max-w-xl">
+                            Every single beauty and skincare product on KKShop is <strong className="text-white">manufactured in South Korea</strong>.
+                            No compromises. No imitations. We guarantee origin authenticity — protecting your skin with genuine K-Beauty only.
+                        </p>
+                        <p className="text-gray-500 text-sm mt-3">
+                            모든 뷰티·스킨케어 상품은 100% 한국산 정품입니다. 원산지 보증을 철저히 지킵니다.
+                        </p>
+                    </div>
 
-                    {/* Pop-out 3D Effect Container */}
-                    <div className="perspective-wrapper w-full max-w-sm mx-auto">
-                        <div className="pop-out-container relative aspect-square rounded-3xl bg-gradient-to-br from-blue-900/50 to-cyan-900/20 p-8 flex items-center justify-center transition-transform duration-500 ease-out preserve-3d">
-                            {/* Abstract Waterdrop / Ampoule representation */}
-                            <div className="pop-out-item relative w-3/4 h-3/4 rounded-full bg-gradient-to-tr from-cyan-400/80 to-blue-300/80 backdrop-blur-md shadow-[inset_0_-10px_30px_rgba(0,0,0,0.2)] flex items-center justify-center transition-all duration-500 ease-out">
-                                <div className="absolute top-8 right-8 w-8 h-8 bg-white/60 rounded-full blur-[2px]" />
-                                <span className="text-4xl">✨</span>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        {[
+                            { icon: '🇰🇷', title: 'Made in Korea', desc: 'Cosmetics & skincare sourced directly from Korean manufacturers' },
+                            { icon: '🔬', title: 'Lab Tested', desc: 'Products meet Korean MFDS safety standards for skin health' },
+                            { icon: '💯', title: 'No Counterfeits', desc: 'Zero tolerance for replicas or products of unknown origin' },
+                        ].map(item => (
+                            <div key={item.title} className="glass-card rounded-2xl p-5 flex flex-col gap-3">
+                                <span className="text-3xl">{item.icon}</span>
+                                <div>
+                                    <h3 className="font-bold text-white text-base mb-1">{item.title}</h3>
+                                    <p className="text-gray-400 text-sm leading-relaxed">{item.desc}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* ── Section 2: Korean-Verified Quality ── */}
+            <section className="py-20 px-6 bg-gray-950">
+                <div className="max-w-3xl mx-auto">
+                    <div className="flex flex-col items-center text-center mb-10">
+                        <div className="w-14 h-14 rounded-2xl bg-amber-500/20 flex items-center justify-center mb-4">
+                            <Sparkles className="w-7 h-7 text-amber-400" />
+                        </div>
+                        <h2 className="text-2xl sm:text-4xl font-bold mb-4">
+                            Korean-Quality Verified Products
+                        </h2>
+                        <p className="text-gray-400 text-base sm:text-lg leading-relaxed max-w-xl">
+                            Beyond cosmetics, we offer daily lifestyle products that pass the <strong className="text-white">strict standards Korean consumers demand</strong>.
+                            Regardless of country of manufacture — if Koreans trust it and use it daily, we bring it to Cambodia at the best price.
+                        </p>
+                        <p className="text-gray-500 text-sm mt-3">
+                            화장품 외 생활용품은 한국인이 직접 사용하며 검증한 가성비 우수 제품만 엄선합니다.
+                        </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="glass-card rounded-2xl p-6 sm:col-span-2 flex items-center gap-5">
+                            <span className="text-4xl flex-shrink-0">🏆</span>
+                            <div>
+                                <h3 className="font-bold text-white text-lg mb-1">Koreans&apos; Pick</h3>
+                                <p className="text-gray-400 text-sm leading-relaxed">
+                                    Trending products hand-selected by Koreans who care about quality. From home goods and electronics accessories to everyday essentials — curated, tested, and loved in Korea before reaching Cambodia.
+                                </p>
+                            </div>
+                        </div>
+                        {[
+                            { emoji: '🏠', title: 'Smart Home & Living', desc: 'Functional, well-designed home products Koreans actually use' },
+                            { emoji: '💰', title: 'Best Value Price', desc: 'Korean market pricing standards applied — quality without overpaying' },
+                        ].map(item => (
+                            <div key={item.title} className="glass-card rounded-2xl p-6 flex flex-col gap-3">
+                                <span className="text-3xl">{item.emoji}</span>
+                                <div>
+                                    <h3 className="font-bold text-white text-base mb-1">{item.title}</h3>
+                                    <p className="text-gray-400 text-sm leading-relaxed">{item.desc}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* ── Section 3: Cambodia Home Delivery ── */}
+            <section className="py-20 px-6 bg-gray-900">
+                <div className="max-w-3xl mx-auto">
+                    <div className="glass-card rounded-3xl p-8 sm:p-12 text-center relative overflow-hidden">
+                        <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 to-cyan-600/5 pointer-events-none" />
+                        <div className="relative z-10">
+                            <div className="w-14 h-14 rounded-2xl bg-cyan-500/20 flex items-center justify-center mb-4 mx-auto">
+                                <MapPin className="w-7 h-7 text-cyan-400" />
+                            </div>
+                            <h2 className="text-2xl sm:text-4xl font-bold mb-4">
+                                Quality Delivered to Your Home in Cambodia
+                            </h2>
+                            <p className="text-gray-300 text-base sm:text-lg leading-relaxed max-w-xl mx-auto mb-6">
+                                <strong className="text-white">Cambodia can now receive authentic Korean products without going abroad.</strong>{' '}
+                                Shop from your smartphone. We deliver directly to your door — anywhere in Cambodia.
+                                No import hassle, no middlemen, no fakes.
+                            </p>
+                            <p className="text-gray-500 text-sm mb-8">
+                                이제 캄보디아에서도 집에서 한국 정품을 편리하게 받아볼 수 있습니다.
+                            </p>
+                            <div className="flex flex-wrap items-center justify-center gap-3">
+                                {[
+                                    'Phnom Penh Delivery',
+                                    'Nationwide Shipping',
+                                    'Fast & Safe Packaging',
+                                    'Order by Phone',
+                                ].map(tag => (
+                                    <span key={tag} className="flex items-center gap-1.5 text-xs bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 px-3 py-1.5 rounded-full font-medium">
+                                        <Check className="w-3 h-3" />{tag}
+                                    </span>
+                                ))}
                             </div>
                         </div>
                     </div>
                 </div>
             </section>
 
-            {/* Section 2: Our Promise 2 - Living & Daily */}
-            <section className="py-24 px-6 relative bg-gray-950">
-                <div className="max-w-4xl mx-auto text-center mb-16">
-                    <h2 className="text-3xl sm:text-5xl font-bold mb-6">Koreans' Pick : Quality & Value</h2>
-                    <p className="text-gray-400 text-[17px] sm:text-lg leading-relaxed max-w-2xl mx-auto">
-                        제조국이 어디든 상관없습니다. 트렌드에 민감하고 품질에 깐깐한 '한국인들이 실제로 선택하고 사용하는' 최고 수준의 생활용품만을 큐레이션하여 합리적인 가격(가성비)으로 제공합니다.
-                    </p>
-                </div>
-
-                {/* Bento Grid */}
-                <div className="max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-6">
-                    <div className="glass-card rounded-3xl p-8 sm:col-span-2 flex flex-col justify-end min-h-[300px] relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/10 rounded-full blur-[50px] group-hover:bg-orange-500/20 transition-colors" />
-                        <h3 className="text-2xl font-bold mb-2 relative z-10">Smart Living</h3>
-                        <p className="text-gray-400 relative z-10">실용성과 디자인을 겸비한 홈 인테리어 소품</p>
-                    </div>
-
-                    <div className="glass-card rounded-3xl p-8 flex flex-col justify-end min-h-[300px] relative overflow-hidden group">
-                        <div className="absolute bottom-0 left-0 w-40 h-40 bg-emerald-500/10 rounded-full blur-[40px] group-hover:bg-emerald-500/20 transition-colors" />
-                        <h3 className="text-xl font-bold mb-2 relative z-10">Daily Essentials</h3>
-                        <p className="text-gray-400 text-sm relative z-10">일상의 질을 높여주는 필수 아이템</p>
-                    </div>
-
-                    <div className="glass-card rounded-3xl p-8 sm:col-span-3 flex items-center justify-between overflow-hidden relative group">
-                        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 to-purple-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                        <div className="relative z-10">
-                            <h3 className="text-2xl font-bold mb-2">Unbeatable Price</h3>
-                            <p className="text-gray-400">현지 물가를 고려한 최고의 가성비 큐레이션</p>
+            {/* ── Section 4: Coming Soon - Korean Mart ── */}
+            <section className="py-16 px-6 bg-gray-950">
+                <div className="max-w-3xl mx-auto">
+                    <div className="glass-card rounded-3xl p-7 flex items-start gap-5 border border-emerald-500/20">
+                        <div className="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
+                            <Store className="w-6 h-6 text-emerald-400" />
                         </div>
-                        <div className="text-5xl relative z-10 opacity-50 group-hover:scale-110 transition-transform duration-500">
-                            🛒
+                        <div>
+                            <div className="inline-flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold px-2.5 py-1 rounded-full mb-2 uppercase tracking-wider">
+                                Coming Soon
+                            </div>
+                            <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">Korean Mart Category</h2>
+                            <p className="text-gray-400 text-sm sm:text-base leading-relaxed">
+                                We&apos;re expanding! Authentic Korean food, instant noodles, snacks, household goods, and grocery items from Korean supermarkets — coming to KKShop soon.
+                                Everything from ramyeon to kitchen essentials, delivered to your Cambodian home.
+                            </p>
+                            <p className="text-gray-500 text-xs mt-2">한국 식품·생필품 카테고리 추가 예정입니다.</p>
                         </div>
                     </div>
                 </div>
             </section>
 
-            {/* Contact & Support Zone */}
-            <section className="py-24 px-6 relative bg-gray-900 border-t border-white/5">
+            {/* ── Contact ── */}
+            <section className="py-20 px-6 bg-gray-900 border-t border-white/5">
                 <div className="max-w-xl mx-auto">
-                    <div className="text-center mb-10">
-                        <h2 className="text-2xl font-bold mb-4">고객지원실 (Contact Us)</h2>
-                        <p className="text-gray-400 text-[15px]">문의사항이 있으신가요? 빠르고 친절하게 답변해 드립니다.</p>
+                    <div className="text-center mb-8">
+                        <h2 className="text-2xl font-bold mb-2">Contact Us</h2>
+                        <p className="text-gray-400 text-sm">Questions? We reply fast — in English, Korean, and Khmer.</p>
+                        <p className="text-gray-500 text-xs mt-1">문의사항은 빠르게 답변드립니다.</p>
                     </div>
 
                     <div className="flex flex-col gap-4">
-                        {/* Email */}
                         <a href="mailto:help@kkshop.cc" className="glass-card p-5 rounded-2xl flex items-center gap-4 hover:bg-white/10 transition-all active:scale-[0.98]">
                             <div className="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 flex-shrink-0">
                                 <Mail className="w-6 h-6" />
                             </div>
                             <div>
-                                <h4 className="font-bold text-lg">이메일 문의</h4>
+                                <h4 className="font-bold text-base">Email Support</h4>
                                 <p className="text-gray-400 font-mono text-sm mt-0.5">help@kkshop.cc</p>
                             </div>
                         </a>
@@ -164,24 +238,29 @@ export default function AboutPage() {
                                 <Phone className="w-6 h-6" />
                             </div>
                             <div>
-                                <h4 className="font-bold text-lg">전화 상담 (EN/KH)</h4>
-                                <p className="text-gray-400 font-mono text-sm mt-0.5">+85595 779 873</p>
+                                <h4 className="font-bold text-base">Call / WhatsApp (EN · KH · KO)</h4>
+                                <p className="text-gray-400 font-mono text-sm mt-0.5">+855 95 779 873</p>
                             </div>
                         </a>
 
-                        {/* Messengers */}
-                        <div className="grid grid-cols-2 gap-4 mt-2">
+                        <div className="grid grid-cols-2 gap-4">
                             <a href="https://t.me/kkshop_cc" target="_blank" rel="noopener noreferrer" className="glass-card p-4 rounded-2xl flex flex-col items-center justify-center gap-3 hover:bg-white/10 transition-all text-center">
                                 <div className="w-10 h-10 rounded-full bg-sky-500/20 flex items-center justify-center text-sky-400">
                                     <MessageCircle className="w-5 h-5" />
                                 </div>
-                                <span className="font-bold text-[15px]">Telegram</span>
+                                <div>
+                                    <span className="font-bold text-sm block">Telegram</span>
+                                    <span className="text-gray-500 text-xs">@kkshop_cc</span>
+                                </div>
                             </a>
                             <a href="https://m.me/kkshopcc" target="_blank" rel="noopener noreferrer" className="glass-card p-4 rounded-2xl flex flex-col items-center justify-center gap-3 hover:bg-white/10 transition-all text-center">
                                 <div className="w-10 h-10 rounded-full bg-blue-600/20 flex items-center justify-center text-blue-500">
                                     <MessageCircle className="w-5 h-5" />
                                 </div>
-                                <span className="font-bold text-[15px]">Messenger</span>
+                                <div>
+                                    <span className="font-bold text-sm block">Messenger</span>
+                                    <span className="text-gray-500 text-xs">kkshopcc</span>
+                                </div>
                             </a>
                         </div>
                     </div>

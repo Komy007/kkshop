@@ -14,11 +14,13 @@ export async function PATCH(
     try {
         const { id } = await context.params;
         const body = await request.json();
+        // Only allow toggling isActive (prevent mass assignment)
+        const allowedUpdate: Record<string, unknown> = {};
+        if (typeof body.isActive === 'boolean') allowedUpdate.isActive = body.isActive;
 
-        // Update isActive status or other fields
         const coupon = await prisma.coupon.update({
             where: { id },
-            data: body
+            data: allowedUpdate,
         });
 
         return NextResponse.json(coupon);

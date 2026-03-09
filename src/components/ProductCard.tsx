@@ -1,9 +1,8 @@
 'use client';
 
 import React from 'react';
-import Image from 'next/image';
-import { ShoppingCart, Star } from 'lucide-react';
-import { useAppStore, useSafeAppStore } from '@/store/useAppStore';
+import { ShoppingCart, Star, Package } from 'lucide-react';
+import { useSafeAppStore } from '@/store/useAppStore';
 import { useCartStore } from '@/store/useCartStore';
 import Link from 'next/link';
 
@@ -41,6 +40,7 @@ export default function ProductCard({ product }: ProductCardProps) {
     const addItem = useCartStore((s) => s.addItem);
 
     const [mounted, setMounted] = React.useState(false);
+    const [imgError, setImgError] = React.useState(false);
     React.useEffect(() => setMounted(true), []);
 
     const formatUsd = (price: number) => {
@@ -66,13 +66,21 @@ export default function ProductCard({ product }: ProductCardProps) {
             </div>
 
             {/* Product Image Region */}
-            <Link href={`/products/${product.id}`} className="relative aspect-[4/5] w-full bg-gray-50 overflow-hidden cursor-pointer block">
-                <img
-                    src={product.imageUrl}
-                    alt={product.name}
-                    className="object-cover w-full h-full opacity-100 group-hover:scale-110 transition-all duration-700 ease-out"
-                    loading="lazy"
-                />
+            <Link href={`/products/${product.id}`} className="relative aspect-[4/5] w-full bg-gray-100 overflow-hidden cursor-pointer block">
+                {product.imageUrl && !imgError ? (
+                    <img
+                        src={product.imageUrl}
+                        alt={product.name}
+                        className="object-cover w-full h-full opacity-100 group-hover:scale-110 transition-all duration-700 ease-out"
+                        loading="lazy"
+                        onError={() => setImgError(true)}
+                    />
+                ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100 text-gray-300">
+                        <Package className="w-12 h-12 mb-2" />
+                        <span className="text-xs text-gray-400">No Image</span>
+                    </div>
+                )}
                 {/* Out of stock overlay */}
                 {product.stockQty <= 0 && (
                     <div className="absolute inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center">
