@@ -28,18 +28,45 @@ export async function GET(
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
+    // Explicit serialization — no ...product spread to avoid hidden BigInt/Decimal leaking
     return NextResponse.json({
-        ...product,
         id: product.id.toString(),
+        sku: product.sku,
         priceUsd: product.priceUsd.toString(),
         costPrice: product.costPrice?.toString() ?? null,
         hotSalePrice: product.hotSalePrice?.toString() ?? null,
         reviewAvg: product.reviewAvg.toString(),
+        reviewCount: product.reviewCount,
+        stockQty: product.stockQty,
         categoryId: product.categoryId?.toString() ?? null,
+        supplierId: product.supplierId ?? null,
+        brandName: product.brandName ?? null,
+        volume: product.volume ?? null,
+        skinType: product.skinType ?? null,
+        origin: product.origin ?? null,
+        expiryMonths: product.expiryMonths ?? null,
+        status: product.status,
+        approvalStatus: product.approvalStatus,
+        imageUrl: product.imageUrl ?? null,
+        isNew: product.isNew,
+        isHotSale: product.isHotSale,
+        createdAt: product.createdAt,
+        updatedAt: product.updatedAt,
+        translations: product.translations.map(t => ({
+            langCode: t.langCode,
+            name: t.name,
+            shortDesc: t.shortDesc ?? null,
+            detailDesc: t.detailDesc ?? null,
+            ingredients: t.ingredients ?? null,
+            howToUse: t.howToUse ?? null,
+            benefits: t.benefits ?? null,
+            seoKeywords: t.seoKeywords ?? null,
+        })),
         images: product.images.map(img => ({
-            ...img,
             id: img.id.toString(),
-            productId: img.productId.toString(),
+            url: img.url,
+            altText: img.altText ?? null,
+            sortOrder: img.sortOrder,
         })),
     });
 }

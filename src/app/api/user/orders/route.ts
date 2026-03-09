@@ -22,7 +22,17 @@ export async function GET(request: Request) {
             }
         });
 
-        return NextResponse.json(orders);
+        // Serialize BigInt fields in OrderItem (productId, optionId)
+        const safe = orders.map(o => ({
+            ...o,
+            items: o.items.map(i => ({
+                ...i,
+                productId: i.productId.toString(),
+                optionId: i.optionId?.toString() ?? null,
+            })),
+        }));
+
+        return NextResponse.json(safe);
     } catch (error) {
         console.error('Failed to fetch user orders:', error);
         return NextResponse.json({ error: 'Failed to fetch orders' }, { status: 500 });

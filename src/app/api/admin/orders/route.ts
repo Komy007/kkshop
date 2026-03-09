@@ -32,7 +32,7 @@ export async function GET() {
             orderBy: { createdAt: 'desc' }
         });
 
-        // Serialize BigInt and Decimal
+        // Serialize BigInt (productId, optionId, product.id, product.categoryId) and Decimal
         const safe = orders.map(o => ({
             ...o,
             totalUsd: o.totalUsd.toString(),
@@ -43,6 +43,16 @@ export async function GET() {
                 ...i,
                 priceUsd: i.priceUsd.toString(),
                 productId: i.productId.toString(),
+                optionId: i.optionId?.toString() ?? null,
+                product: i.product ? {
+                    ...i.product,
+                    id: i.product.id.toString(),
+                    categoryId: i.product.categoryId?.toString() ?? null,
+                    priceUsd: i.product.priceUsd.toString(),
+                    reviewAvg: i.product.reviewAvg.toString(),
+                    hotSalePrice: i.product.hotSalePrice?.toString() ?? null,
+                    costPrice: i.product.costPrice?.toString() ?? null,
+                } : null,
             }))
         }));
 

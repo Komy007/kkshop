@@ -24,7 +24,17 @@ export async function GET() {
     return NextResponse.json(products.map(p => ({
         ...p,
         id: p.id.toString(),
-        categoryId: p.categoryId?.toString(),
+        categoryId: p.categoryId?.toString() ?? null,
+        priceUsd: p.priceUsd.toString(),
+        reviewAvg: p.reviewAvg.toString(),
+        hotSalePrice: p.hotSalePrice?.toString() ?? null,
+        costPrice: p.costPrice?.toString() ?? null,
+        // Strip BigInt id/productId from images — only need url/sortOrder for list display
+        images: p.images.map(img => ({
+            url: img.url,
+            altText: img.altText ?? null,
+            sortOrder: img.sortOrder,
+        })),
     })));
 }
 

@@ -32,5 +32,15 @@ export async function GET() {
         take: 50,
     });
 
-    return NextResponse.json(orders);
+    // Serialize BigInt fields (productId, optionId) to string
+    const safe = orders.map(o => ({
+        ...o,
+        items: o.items.map(i => ({
+            ...i,
+            productId: i.productId.toString(),
+            optionId: i.optionId?.toString() ?? null,
+        })),
+    }));
+
+    return NextResponse.json(safe);
 }
