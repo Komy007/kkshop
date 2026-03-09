@@ -68,14 +68,19 @@ export default function EditProductPage() {
     useEffect(() => {
         async function loadProduct() {
             try {
+                // Fetch all three independently so one failure doesn't hide another
                 const [pRes, cRes, sRes] = await Promise.all([
                     fetch(`/api/admin/products/${productId}`),
                     fetch('/api/admin/categories'),
                     fetch('/api/admin/suppliers'),
                 ]);
-                const [p, cats, sups] = await Promise.all([pRes.json(), cRes.json(), sRes.json()]);
 
-                if (!pRes.ok) throw new Error(p.error || 'Not found');
+                // Parse each response independently
+                const p = await pRes.json();
+                const cats = await cRes.json().catch(() => []);
+                const sups = await sRes.json().catch(() => []);
+
+                if (!pRes.ok) throw new Error(p.error || 'Failed to load product');
 
                 const koTrans = p.translations?.find((t: any) => t.langCode === 'ko') ?? p.translations?.[0] ?? {};
 
