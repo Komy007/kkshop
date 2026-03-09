@@ -5,7 +5,7 @@ import Link from 'next/link';
 import {
     Package, Users, ShoppingCart, Store, TrendingUp,
     Plus, Eye, Settings, ArrowRight, Sparkles, BarChart3,
-    CheckCircle, Clock, AlertCircle, DollarSign
+    CheckCircle, Clock, AlertCircle, DollarSign, ClipboardList,
 } from 'lucide-react';
 
 interface Stats {
@@ -20,6 +20,8 @@ interface Stats {
     pendingSuppliers: number;
     newProductsCount: number;
     hotSaleCount: number;
+    lowStockCount: number;
+    soldOutCount: number;
 }
 
 export default function AdminDashboard() {
@@ -29,19 +31,21 @@ export default function AdminDashboard() {
     useEffect(() => {
         async function fetchStats() {
             try {
-                const [pRes, oRes, uRes, sRes] = await Promise.all([
+                const [pRes, oRes, uRes, sRes, invRes] = await Promise.all([
                     fetch('/api/admin/products'),
                     fetch('/api/admin/orders').catch(() => ({ json: () => [] })),
                     fetch('/api/admin/customers'),
                     fetch('/api/admin/suppliers'),
+                    fetch('/api/admin/inventory'),
                 ]);
-                const [products, orders, customers, suppliers] = await Promise.all([
-                    pRes.json(), (oRes as any).json(), uRes.json(), sRes.json()
+                const [products, orders, customers, suppliers, inventory] = await Promise.all([
+                    pRes.json(), (oRes as any).json(), uRes.json(), sRes.json(), invRes.json()
                 ]);
                 const p = Array.isArray(products) ? products : [];
                 const o = Array.isArray(orders) ? orders : [];
                 const u = Array.isArray(customers) ? customers : [];
                 const s = Array.isArray(suppliers) ? suppliers : [];
+                const inv = Array.isArray(inventory) ? inventory : [];
                 setStats({
                     totalProducts: p.length,
                     activeProducts: p.filter((x: any) => x.status === 'ACTIVE').length,
@@ -54,6 +58,8 @@ export default function AdminDashboard() {
                     pendingSuppliers: s.filter((x: any) => x.status === 'PENDING').length,
                     newProductsCount: p.filter((x: any) => x.isNew).length,
                     hotSaleCount: p.filter((x: any) => x.isHotSale).length,
+                    lowStockCount: inv.filter((x: any) => x.isLowStock && x.stockQty > 0).length,
+                    soldOutCount: inv.filter((x: any) => x.stockQty === 0).length,
                 });
             } catch (e) {
                 console.error('Dashboard fetch error:', e);
@@ -159,12 +165,24 @@ export default function AdminDashboard() {
 
             {/* ── Alerts ── */}
             {!loading && stats && stats.pendingSuppliers > 0 && (
-                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-6 flex items-start gap-3">
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-3 flex items-start gap-3">
                     <AlertCircle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
                     <div>
                         <p className="text-sm font-bold text-amber-800">{stats.pendingSuppliers} supplier(s) awaiting approval</p>
                         <p className="text-xs text-amber-600 mt-0.5">Review and approve supplier applications to allow them to list products.</p>
                         <Link href="/admin/suppliers" className="text-xs font-bold text-amber-700 underline mt-1 inline-block">Review now →</Link>
+                    </div>
+                </div>
+            )}
+            {!loading && stats && (stats.lowStockCount > 0 || stats.soldOutCount > 0) && (
+                <div className="bg-red-50 border border-red-200 rounded-2xl p-4 mb-6 flex items-start gap-3">
+                    <ClipboardList className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                        <p className="text-sm font-bold text-red-800">
+                            재고 경보: {stats.soldOutCount > 0 ? `품절 ${stats.soldOutCount}개` : ''}{stats.soldOutCount > 0 && stats.lowStockCount > 0 ? ' · ' : ''}{stats.lowStockCount > 0 ? `저재고 ${stats.lowStockCount}개` : ''}
+                        </p>
+                        <p className="text-xs text-red-600 mt-0.5">일부 상품의 재고가 부족합니다. 입고 처리가 필요합니다.</p>
+                        <Link href="/admin/inventory" className="text-xs font-bold text-red-700 underline mt-1 inline-block">재고 관리 →</Link>
                     </div>
                 </div>
             )}
@@ -196,6 +214,13 @@ export default function AdminDashboard() {
                         color: 'bg-green-50',
                         label: 'Manage Orders',
                         desc: 'Update order status, add shipment tracking',
+                    },
+                    {
+                        href: '/admin/inventory',
+                        icon: <ClipboardList className="w-5 h-5 text-orange-600" />,
+                        color: 'bg-orange-50',
+                        label: 'Inventory Management',
+                        desc: 'Stock levels, adjust in/out, view history',
                     },
                     {
                         href: '/admin/reviews',

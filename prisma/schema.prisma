@@ -76,6 +76,9 @@ model Product {
   expiryMonths     Int?     @map("expiry_months")
   certifications   String?  @db.VarChar(255)
   brandName        String?  @map("brand_name") @db.VarChar(100)
+  // Inventory & Cost fields
+  costPrice        Decimal? @map("cost_price") @db.Decimal(10, 2)   // 매입가(원가)
+  stockAlertQty    Int      @default(10) @map("stock_alert_qty")     // 저재고 알림 기준 수량
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -85,6 +88,7 @@ model Product {
   images       ProductImage[]
   options      ProductOption[]
   reviews      ProductReview[]
+  stockLogs    StockLog[]
   supplier     Supplier?  @relation(fields: [supplierId], references: [id], onDelete: SetNull)
   category     Category?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
@@ -409,6 +413,29 @@ model OrderItem {
 
   @@index([orderId])
   @@map("order_items")
+}
+
+// ---------------------------------------------------------------------------
+// Stock Log (재고 변동 이력)
+// ---------------------------------------------------------------------------
+
+model StockLog {
+  id           BigInt   @id @default(autoincrement())
+  productId    BigInt   @map("product_id")
+  changeQty    Int      @map("change_qty")     // 양수=입고, 음수=출고/손실
+  balanceAfter Int      @map("balance_after")  // 변동 후 재고 수량
+  reason       String   @db.VarChar(30)        // RECEIVED | SOLD | RETURN | DAMAGED | ADJUSTMENT | EXPIRED
+  memo         String?  @db.VarChar(300)
+  orderId      String?  @map("order_id")       // 주문 연결 (SOLD/RETURN 시)
+  createdBy    String?  @map("created_by") @db.VarChar(255) // 처리 관리자 이메일
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([createdAt])
+  @@map("stock_logs")
 }
 
 // ── 배송 추적 ───────────────────────────────────────────────────────────────

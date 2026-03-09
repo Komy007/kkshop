@@ -12,10 +12,7 @@ const TARGET_LANGS = ['ko', 'en', 'km', 'zh'];
 export async function GET(req: Request) {
     try {
         const session = await auth();
-        console.log('DEBUG: /api/admin/products GET session:', JSON.stringify(session, null, 2));
-
         if (!session?.user || !['ADMIN', 'SUPERADMIN'].includes(session.user.role ?? '')) {
-            console.warn('DEBUG: /api/admin/products GET - Unauthorized role:', session?.user?.role);
             return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
         }
 
@@ -98,7 +95,7 @@ export async function PATCH(req: Request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
         }
         const body = await req.json();
-        const { id, categoryId, isNew, status, approvalStatus, adminNote, stockQty, priceUsd, isHotSale, hotSalePrice } = body;
+        const { id, categoryId, isNew, status, approvalStatus, adminNote, stockQty, priceUsd, isHotSale, hotSalePrice, costPrice, stockAlertQty } = body;
         if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
 
         const data: any = {};
@@ -111,6 +108,8 @@ export async function PATCH(req: Request) {
         if (adminNote !== undefined) data.adminNote = adminNote;
         if (stockQty !== undefined) data.stockQty = parseInt(stockQty);
         if (priceUsd !== undefined) data.priceUsd = parseFloat(priceUsd);
+        if (costPrice !== undefined) data.costPrice = costPrice ? parseFloat(costPrice) : null;
+        if (stockAlertQty !== undefined) data.stockAlertQty = parseInt(stockAlertQty);
 
         await prisma.product.update({ where: { id: BigInt(id) }, data });
         return NextResponse.json({ success: true });

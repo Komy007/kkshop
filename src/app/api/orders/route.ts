@@ -76,9 +76,45 @@ export async function POST(request: Request) {
         let totalUsd = subtotalUsd + shippingFee - discountAmount - pointDiscountUsd;
         if (totalUsd < 0) totalUsd = 0;
 
-        // Transaction for Order Creation + Point Deduction + Coupon Update
+        // Transaction for Order Creation + Stock Decrement + Point Deduction + Coupon Update
         const order = await prisma.$transaction(async (tx) => {
-            // 1. Create Order
+            // 1. Validate stock & decrement
+            for (const item of items) {
+                const product = await tx.product.findUnique({
+                    where: { id: BigInt(item.productId) },
+                    select: { id: true, stockQty: true, sku: true }
+                });
+                if (!product) {
+                    throw new Error(`Product ${item.productId} not found`);
+                }
+                const qty = Number(item.quantity);
+                if (product.stockQty < qty) {
+                    throw new Error(`Insufficient stock for SKU ${product.sku} (available: ${product.stockQty})`);
+                }
+                const newStock = product.stockQty - qty;
+                await tx.product.update({
+                    where: { id: product.id },
+                    data: {
+                        stockQty: newStock,
+                        // Auto-mark SOLDOUT when stock hits 0
+                        ...(newStock === 0 ? { status: 'SOLDOUT' } : {}),
+                    }
+                });
+                // Stock log entry
+                await (tx as any).stockLog.create({
+                    data: {
+                        productId: product.id,
+                        changeQty: -qty,
+                        balanceAfter: newStock,
+                        reason: 'SOLD',
+                        memo: null,
+                        orderId: null, // will be updated after order creation if needed
+                        createdBy: session.user.email ?? null,
+                    }
+                });
+            }
+
+            // 2. Create Order
             const newOrder = await tx.order.create({
                 data: {
                     userId,

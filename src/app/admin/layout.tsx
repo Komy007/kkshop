@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import {
     LayoutDashboard, Package, Users, ShoppingCart,
     Settings, Store, Tag, ChevronDown, LogOut,
-    Menu, X, Sparkles
+    Menu, X, Sparkles, ClipboardList,
 } from 'lucide-react';
 
 const ADMIN_NAV = [
@@ -22,6 +22,7 @@ const ADMIN_NAV = [
         ],
     },
     { label: '주문 관리', icon: ShoppingCart, href: '/admin/orders' },
+    { label: '재고 관리', icon: ClipboardList, href: '/admin/inventory' },
     {
         label: '회원 관리', icon: Users,
         children: [

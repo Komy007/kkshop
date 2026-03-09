@@ -8,6 +8,42 @@ export const dynamic = 'force-dynamic';
 
 async function updateOrderStatus(orderId: string, newStatus: string) {
     'use server';
+    // When cancelling an order, restore stock for each item
+    if (newStatus === 'CANCELLED') {
+        const order = await prisma.order.findUnique({
+            where: { id: orderId },
+            include: { items: true },
+        });
+        if (order && order.status !== 'CANCELLED') {
+            for (const item of order.items) {
+                const product = await prisma.product.findUnique({
+                    where: { id: item.productId },
+                    select: { stockQty: true, status: true },
+                });
+                if (!product) continue;
+                const newStock = product.stockQty + item.quantity;
+                await prisma.product.update({
+                    where: { id: item.productId },
+                    data: {
+                        stockQty: newStock,
+                        // If previously SOLDOUT and now has stock, re-activate
+                        ...(product.status === 'SOLDOUT' && newStock > 0 ? { status: 'ACTIVE' } : {}),
+                    },
+                });
+                await (prisma as any).stockLog.create({
+                    data: {
+                        productId: item.productId,
+                        changeQty: item.quantity,
+                        balanceAfter: newStock,
+                        reason: 'RETURN',
+                        memo: `주문 취소 복구 (Order #${orderId.slice(0, 8)})`,
+                        orderId,
+                        createdBy: 'admin',
+                    },
+                });
+            }
+        }
+    }
     await prisma.order.update({
         where: { id: orderId },
         data: { status: newStatus },

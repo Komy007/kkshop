@@ -4,13 +4,13 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
     Plus, Search, Trash2, Package, RefreshCw, Loader2,
-    Image as ImageIcon, Sparkles, Edit3, CheckCircle, XCircle, FolderInput,
+    Image as ImageIcon, Sparkles, Edit3, CheckCircle, XCircle, FolderInput, Copy,
 } from 'lucide-react';
 
 interface Category { id: string; slug: string; nameKo: string; isSystem: boolean; }
 interface Product {
-    id: string; sku: string; priceUsd: string; stockQty: number;
-    status: string; imageUrl?: string; brandName?: string; isNew: boolean;
+    id: string; sku: string; priceUsd: string; costPrice?: string | null; stockQty: number;
+    stockAlertQty?: number; status: string; imageUrl?: string; brandName?: string; isNew: boolean;
     createdAt: string;
     translations: { langCode: string; name: string }[];
     _count: { images: number };
@@ -63,6 +63,19 @@ export default function AdminProductsPage() {
             : p.category?.slug === activeSlug;
         return matchSearch && matchTab;
     });
+
+    const handleClone = async (id: string) => {
+        const p = await fetch(`/api/admin/products/${id}`).then(r => r.json());
+        if (!p) return;
+        const koTrans = p.translations?.find((t: any) => t.langCode === 'ko') ?? {};
+        // Store clone data in sessionStorage and navigate to new product page
+        sessionStorage.setItem('cloneProduct', JSON.stringify({
+            ...p, sku: '', name: koTrans.name, shortDesc: koTrans.shortDesc,
+            detailDesc: koTrans.detailDesc, ingredients: koTrans.ingredients,
+            howToUse: koTrans.howToUse, benefits: koTrans.benefits, seoKeywords: koTrans.seoKeywords,
+        }));
+        router.push('/admin/products/new?clone=1');
+    };
 
     const handleDelete = async (id: string, name: string) => {
         if (!confirm(`"${name}" 상품을 삭제하시겠습니까?`)) return;
@@ -156,6 +169,7 @@ export default function AdminProductsPage() {
                                 <th className="py-3 px-4">상품명</th>
                                 <th className="py-3 px-4 hidden md:table-cell">카테고리</th>
                                 <th className="py-3 px-4">가격/재고</th>
+                                <th className="py-3 px-4 hidden lg:table-cell">마진</th>
                                 <th className="py-3 px-4">상태</th>
                                 <th className="py-3 px-4">신상품</th>
                                 <th className="py-3 px-4 text-right">관리</th>
@@ -189,7 +203,16 @@ export default function AdminProductsPage() {
                                             </td>
                                             <td className="py-3 px-4">
                                                 <div className="font-bold text-gray-900 text-sm">${Number(p.priceUsd).toFixed(2)}</div>
-                                                <div className={`text-xs ${p.stockQty === 0 ? 'text-red-500 font-bold' : 'text-gray-500'}`}>재고 {p.stockQty}</div>
+                                                <div className={`text-xs ${p.stockQty === 0 ? 'text-red-500 font-bold' : p.stockAlertQty !== undefined && p.stockQty <= p.stockAlertQty ? 'text-amber-500 font-semibold' : 'text-gray-500'}`}>
+                                                    재고 {p.stockQty}{p.stockQty === 0 ? ' ⚠품절' : p.stockAlertQty !== undefined && p.stockQty <= p.stockAlertQty ? ' ⚠저재고' : ''}
+                                                </div>
+                                            </td>
+                                            <td className="py-3 px-4 hidden lg:table-cell">
+                                                {p.costPrice ? (
+                                                    <span className={`text-xs font-bold ${Math.round((1 - Number(p.costPrice) / Number(p.priceUsd)) * 100) >= 30 ? 'text-green-600' : Math.round((1 - Number(p.costPrice) / Number(p.priceUsd)) * 100) >= 15 ? 'text-yellow-600' : 'text-red-600'}`}>
+                                                        {Math.round((1 - Number(p.costPrice) / Number(p.priceUsd)) * 100)}%
+                                                    </span>
+                                                ) : <span className="text-xs text-gray-300">—</span>}
                                             </td>
                                             <td className="py-3 px-4">
                                                 <button onClick={() => toggleStatus(p)}
@@ -206,10 +229,20 @@ export default function AdminProductsPage() {
                                                 </button>
                                             </td>
                                             <td className="py-3 px-4 text-right">
-                                                <button onClick={() => handleDelete(p.id, koName)} disabled={deleting === p.id}
-                                                    className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50">
-                                                    {deleting === p.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                                                </button>
+                                                <div className="flex items-center justify-end gap-1">
+                                                    <button onClick={() => router.push(`/admin/products/${p.id}/edit`)}
+                                                        className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="편집">
+                                                        <Edit3 className="w-4 h-4" />
+                                                    </button>
+                                                    <button onClick={() => handleClone(p.id)}
+                                                        className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors" title="복사">
+                                                        <Copy className="w-4 h-4" />
+                                                    </button>
+                                                    <button onClick={() => handleDelete(p.id, koName)} disabled={deleting === p.id}
+                                                        className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50" title="삭제">
+                                                        {deleting === p.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                         {/* Category move row */}
