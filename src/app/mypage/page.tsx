@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import { Package, Heart, Clock, LogOut, ChevronRight, ShoppingBag, Loader2, Truck, MapPin, Gift, UserPlus, Share2, Plus, Pencil, Trash2, Check, X } from 'lucide-react';
 import { useTranslations } from '@/i18n/useTranslations';
 import Footer from '@/components/Footer';
@@ -598,9 +599,10 @@ export default function MyPage() {
                                     orders.map((order) => {
                                         const dateStr = new Date(order.createdAt).toLocaleDateString();
                                         return (
-                                            <div
+                                            <Link
                                                 key={order.id}
-                                                className="p-5 rounded-2xl border border-gray-200 hover:border-gray-300 hover:shadow-md transition-all bg-white shadow-sm cursor-pointer group"
+                                                href={`/orders/${order.id}`}
+                                                className="block p-5 rounded-2xl border border-gray-200 hover:border-gray-300 hover:shadow-md transition-all bg-white shadow-sm cursor-pointer group"
                                             >
                                                 <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-100">
                                                     <div>
@@ -631,7 +633,7 @@ export default function MyPage() {
                                                         <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-brand-primary transition-colors" />
                                                     </div>
                                                 </div>
-                                            </div>
+                                            </Link>
                                         );
                                     })
                                 )}

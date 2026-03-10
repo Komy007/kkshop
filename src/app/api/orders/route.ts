@@ -16,7 +16,7 @@ export async function POST(request: Request) {
         const {
             items, // { productId, optionId, variantId?, quantity, priceUsd }[]
             customerName, customerPhone, customerEmail,
-            address, detailAddress, notes,
+            province, address, detailAddress, notes,
             couponCode, pointsUsed
         } = body;
 
@@ -40,7 +40,16 @@ export async function POST(request: Request) {
         // Verify & Calculate Coupon
         let discountAmount = 0;
         let appliedCouponId = null;
-        let shippingFee = 0; // Default shipping fee could be 0 or 5 etc.
+
+        // Look up shipping fee from DB by province (server-side, tamper-proof)
+        let shippingFee = 0;
+        if (province) {
+            const provinceRecord = await prisma.shippingProvince.findFirst({
+                where: { nameEn: province },
+                select: { shippingFee: true },
+            });
+            if (provinceRecord) shippingFee = Number(provinceRecord.shippingFee);
+        }
 
         if (couponCode) {
             const coupon = await prisma.coupon.findUnique({ where: { code: couponCode } });
@@ -169,6 +178,7 @@ export async function POST(request: Request) {
                     customerName,
                     customerPhone,
                     customerEmail,
+                    province: province ?? null,
                     address,
                     detailAddress,
                     notes,

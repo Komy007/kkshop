@@ -315,7 +315,8 @@ model User {
   wishlistItems    Wishlist[]
   savedAddresses   UserAddress[]
   questionsAsked   ProductQA[]
-  referralRewards  ReferralReward[]
+  referralRewards      ReferralReward[]
+  passwordResetTokens  PasswordResetToken[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -353,6 +354,20 @@ model Session {
   @@map("sessions")
 }
 
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("password_reset_tokens")
+}
+
 model VerificationToken {
   identifier String
   token      String
@@ -386,6 +401,7 @@ model Order {
   customerName    String   @map("customer_name") @db.VarChar(100)
   customerPhone   String   @map("customer_phone") @db.VarChar(50)
   customerEmail   String?  @map("customer_email") @db.VarChar(255)
+  province        String?  @db.VarChar(100)
   address         String   @db.VarChar(255)
   detailAddress   String?  @map("detail_address") @db.VarChar(255)
   shippingFee     Decimal  @default(0) @map("shipping_fee") @db.Decimal(10, 2)
@@ -394,7 +410,7 @@ model Order {
   pointsUsed      Int      @default(0) @map("points_used")
   totalUsd        Decimal  @map("total_usd") @db.Decimal(10, 2)
   couponId        String?  @map("coupon_id")
-  notes           String?  @db.VarChar(500)  // 배송요청사항
+  notes           String?  @db.VarChar(500)
   status          String   @default("PENDING") @db.VarChar(50)
   // PENDING | CONFIRMED | SHIPPING | DELIVERED | CANCELLED | REFUNDED
 

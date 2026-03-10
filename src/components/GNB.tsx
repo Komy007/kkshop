@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { Globe, User, ShoppingCart, Menu, X, LogOut, Settings } from "lucide-react";
+import { Globe, User, ShoppingCart, Menu, X, LogOut, Settings, Heart } from "lucide-react";
 import { useSafeMarketStore, rehydrateLanguageStore } from "@/store/useAppStore";
 import { useCartStore, selectTotalItems } from "@/store/useCartStore";
 import { useSession, signOut } from "next-auth/react";
@@ -27,10 +27,23 @@ export default function GNB() {
     const [langOpen, setLangOpen] = useState(false);
     const [userMenuOpen, setUserMenuOpen] = useState(false);
     const [mounted, setMounted] = useState(false);
+    const [wishlistCount, setWishlistCount] = useState(0);
     const langRef = useRef<HTMLDivElement>(null);
     const userRef = useRef<HTMLDivElement>(null);
 
     const currentLang = LANGUAGES.find((l) => l.code === language) || LANGUAGES[0];
+
+    // Fetch wishlist count when logged in
+    useEffect(() => {
+        if (session?.user) {
+            fetch('/api/user/wishlist')
+                .then(res => res.ok ? res.json() : [])
+                .then(data => { if (Array.isArray(data)) setWishlistCount(data.length); })
+                .catch(() => {});
+        } else {
+            setWishlistCount(0);
+        }
+    }, [session]);
 
     // Sync language with session user if available
     useEffect(() => {
@@ -194,6 +207,21 @@ export default function GNB() {
                                 )}
                             </div>
                         </div>
+
+                        {/* Wishlist */}
+                        {session && (
+                            <Link
+                                href="/mypage?tab=wishlist"
+                                className="relative flex items-center justify-center w-10 h-10 rounded-full bg-white border border-gray-200 text-gray-600 hover:border-red-300 hover:text-red-500 transition-all"
+                            >
+                                <Heart className="w-4 h-4" />
+                                {wishlistCount > 0 && (
+                                    <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
+                                        {wishlistCount > 99 ? '99+' : wishlistCount}
+                                    </span>
+                                )}
+                            </Link>
+                        )}
 
                         {/* Cart */}
                         <button

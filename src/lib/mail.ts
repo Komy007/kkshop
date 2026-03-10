@@ -172,3 +172,50 @@ export async function sendLowStockAlert(
         html,
     });
 }
+
+export async function sendPasswordResetEmail(to: string, resetUrl: string) {
+    const { transporter, fromAddress } = await getTransporterAndFrom();
+
+    const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f9fafb;font-family:Arial,sans-serif;">
+    <div style="max-width:520px;margin:32px auto;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.08);">
+        <div style="background:linear-gradient(135deg,#6366f1 0%,#8b5cf6 100%);padding:28px 32px;">
+            <h1 style="margin:0;font-size:22px;color:#ffffff;font-weight:700;">Reset Your Password</h1>
+            <p style="margin:6px 0 0;font-size:13px;color:rgba(255,255,255,0.8);">KKShop Account Security</p>
+        </div>
+        <div style="padding:28px 32px;">
+            <p style="margin:0 0 16px;font-size:15px;color:#374151;">
+                We received a request to reset your KKShop account password. Click the button below to set a new password.
+            </p>
+            <p style="margin:0 0 24px;font-size:13px;color:#6b7280;">
+                This link expires in <strong>1 hour</strong>. If you did not request a password reset, you can safely ignore this email.
+            </p>
+            <div style="text-align:center;margin-bottom:28px;">
+                <a href="${resetUrl}"
+                   style="display:inline-block;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#ffffff;padding:14px 36px;border-radius:8px;text-decoration:none;font-weight:700;font-size:15px;">
+                    Reset Password &rarr;
+                </a>
+            </div>
+            <p style="margin:0;font-size:12px;color:#9ca3af;word-break:break-all;">
+                Or copy this link: ${resetUrl}
+            </p>
+        </div>
+        <div style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:16px 32px;text-align:center;">
+            <p style="margin:0;font-size:11px;color:#9ca3af;">
+                &copy; ${new Date().getFullYear()} KKShop &middot; Cambodia K-Beauty
+            </p>
+        </div>
+    </div>
+</body>
+</html>`;
+
+    await transporter.sendMail({
+        from: fromAddress,
+        to,
+        subject: '[KKShop] Password Reset Request',
+        html,
+    });
+}
