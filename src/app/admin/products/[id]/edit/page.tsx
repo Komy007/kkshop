@@ -41,7 +41,7 @@ export default function EditProductPage() {
     const [isFetching, setIsFetching] = useState(true);
     const [errorMsg, setErrorMsg] = useState('');
     const [successMsg, setSuccessMsg] = useState('');
-    const [retranslate, setRetranslate] = useState(true); // default ON: always re-translate on save
+    const [retranslate, setRetranslate] = useState(false); // default OFF: translate only when checkbox is checked
     const [categories, setCategories] = useState<Category[]>([]);
     const [suppliers, setSuppliers] = useState<Supplier[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
