@@ -7,8 +7,9 @@ export const dynamic = 'force-dynamic';
 // ── GET: single product (owned by this seller) ────────────────────────────
 export async function GET(
     _req: Request,
-    { params }: { params: { id: string } }
+    context: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await context.params;
     const session = await auth();
     if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
@@ -16,7 +17,7 @@ export async function GET(
     if (!supplier) return NextResponse.json({ error: 'Supplier not found' }, { status: 404 });
 
     const product = await prisma.product.findUnique({
-        where: { id: BigInt(params.id) },
+        where: { id: BigInt(id) },
         include: {
             translations: { orderBy: { langCode: 'asc' } },
             images: { orderBy: { sortOrder: 'asc' } },
@@ -75,8 +76,9 @@ export async function GET(
 // Sellers can update content fields. On update, approvalStatus resets to PENDING.
 export async function PATCH(
     req: Request,
-    { params }: { params: { id: string } }
+    context: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await context.params;
     const session = await auth();
     if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
@@ -84,7 +86,7 @@ export async function PATCH(
     if (!supplier) return NextResponse.json({ error: 'Supplier not found' }, { status: 404 });
 
     const product = await prisma.product.findUnique({
-        where: { id: BigInt(params.id) },
+        where: { id: BigInt(id) },
         select: { id: true, supplierId: true, approvalStatus: true },
     });
 

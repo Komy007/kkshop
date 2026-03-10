@@ -10,15 +10,16 @@ const translate = new Translate();
 const TARGET_LANGS = ['ko', 'en', 'km', 'zh'];
 
 // ── GET: single product detail (with all translations, images, options) ─────
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, context: { params: Promise<{ id: string }> }) {
     try {
         const session = await auth();
         if (!session?.user || !['ADMIN', 'SUPERADMIN'].includes(session.user.role ?? '')) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
         }
 
+        const { id } = await context.params;
         const product = await prisma.product.findUnique({
-            where: { id: BigInt(params.id) },
+            where: { id: BigInt(id) },
             include: {
                 translations: { orderBy: { langCode: 'asc' } },
                 images: { orderBy: { sortOrder: 'asc' } },
@@ -107,13 +108,14 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 }
 
 // ── PUT: full product update ─────────────────────────────────────────────────
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+export async function PUT(req: Request, context: { params: Promise<{ id: string }> }) {
     try {
         const session = await auth();
         if (!session?.user || !['ADMIN', 'SUPERADMIN'].includes(session.user.role ?? '')) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
         }
 
+        const { id } = await context.params;
         const body = await req.json();
         const {
             sku, priceUsd, costPrice, stockAlertQty, stockQty, categoryId, supplierId,
@@ -126,7 +128,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
             options = [], // full options replacement
         } = body;
 
-        const productId = BigInt(params.id);
+        const productId = BigInt(id);
 
         // Build product update data
         const productData: any = {};

@@ -6,11 +6,12 @@ const BASE_URL = 'https://kkshop.cc';
 
 // ── SEO: dynamic metadata per product ──────────────────────────────────────
 export async function generateMetadata(
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ): Promise<Metadata> {
     try {
+        const { id } = await params;
         const product = await prisma.product.findUnique({
-            where: { id: BigInt(params.id) },
+            where: { id: BigInt(id) },
             include: {
                 translations: {
                     where: { langCode: 'en' },
@@ -32,7 +33,7 @@ export async function generateMetadata(
             ?? `Shop ${name} at KKShop — Cambodia's K-Beauty & K-Living store. Delivered to your door.`;
         const keywords = t?.seoKeywords ?? undefined;
         const imageUrl = product.imageUrl ?? undefined;
-        const productUrl = `${BASE_URL}/products/${params.id}`;
+        const productUrl = `${BASE_URL}/products/${id}`;
 
         return {
             title: `${name} | KKShop`,
