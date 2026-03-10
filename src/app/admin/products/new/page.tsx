@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Save, Loader2, Globe, Upload, X, ImagePlus, Package, Tag, Leaf, Droplets, Star, Sparkles } from 'lucide-react';
+import { Save, Loader2, Globe, Upload, X, ImagePlus, Package, Tag, Leaf, Droplets, Star, Sparkles, RefreshCw } from 'lucide-react';
 
 interface ImageItem { file: File; preview: string; url?: string; }
 interface Category { id: string; slug: string; nameKo: string; }
@@ -19,6 +19,7 @@ export default function NewProductPage() {
     const [categories, setCategories] = useState<Category[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    const [doTranslate, setDoTranslate] = useState(false); // default OFF: translate only when checked
     const [options, setOptions] = useState([{ minQty: '1', maxQty: '', discountPct: '0', freeShipping: false, labelKo: '1개 기본' }]);
 
     const [form, setForm] = useState({
@@ -145,11 +146,12 @@ export default function NewProductPage() {
                     categoryId: form.categoryId || null,
                     expiryMonths: form.expiryMonths ? parseInt(form.expiryMonths) : null,
                     options,
+                    doTranslate,
                 }),
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || '저장 실패');
-            setSuccessMsg('✅ 상품이 등록되고 4개국어로 자동 번역되었습니다!');
+            setSuccessMsg(doTranslate ? '✅ 상품이 등록되고 4개국어로 자동 번역되었습니다!' : '✅ 상품이 등록되었습니다. 필요 시 편집에서 번역하세요.');
             setTimeout(() => router.push('/admin/products'), 1800);
         } catch (err: any) {
             setErrorMsg(err.message);
@@ -331,8 +333,8 @@ export default function NewProductPage() {
                 <div className="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-100">
                     <div className="px-6 py-4 bg-blue-50 border-b border-blue-100 flex items-center justify-between">
                         <div>
-                            <h3 className="text-base font-semibold text-gray-900 flex items-center gap-2"><Globe className="w-5 h-5 text-blue-500" />콘텐츠 (4개국어 자동 번역)</h3>
-                            <p className="text-xs text-blue-600 mt-0.5">아래 내용이 한·영·크메르·중문으로 번역됩니다</p>
+                            <h3 className="text-base font-semibold text-gray-900 flex items-center gap-2"><Globe className="w-5 h-5 text-blue-500" />콘텐츠</h3>
+                            <p className="text-xs text-blue-600 mt-0.5">하단 번역 체크 시 한·영·크메르·중문 자동 번역됩니다</p>
                         </div>
                         <select name="baseLang" value={form.baseLang} onChange={handleChange} className="border border-blue-200 rounded-lg py-1.5 px-2 text-sm text-blue-700 font-bold bg-white focus:outline-none">
                             <option value="ko">🇰🇷 한국어</option>
@@ -368,6 +370,18 @@ export default function NewProductPage() {
                             <label className="block text-xs font-medium text-gray-600 mb-1">SEO 키워드</label>
                             <input name="seoKeywords" value={form.seoKeywords} onChange={handleChange} className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="예: 각질제거, AHA, COSRX, 스킨케어" />
                         </div>
+                        {/* Translate option */}
+                        <label className={`flex items-start gap-3 cursor-pointer p-4 rounded-xl border-2 transition-all ${doTranslate ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300'}`}>
+                            <input type="checkbox" checked={doTranslate} onChange={e => setDoTranslate(e.target.checked)}
+                                className="mt-0.5 rounded text-blue-600 focus:ring-blue-500" />
+                            <div>
+                                <div className="font-semibold text-sm text-gray-800 flex items-center gap-1.5">
+                                    <RefreshCw className={`w-4 h-4 ${doTranslate ? 'text-blue-600' : 'text-gray-400'}`} />
+                                    저장 시 4개국어 자동 번역
+                                </div>
+                                <div className="text-xs text-gray-500 mt-0.5">체크 시 구글 번역 API로 한·영·크메르·중문이 생성됩니다. 미체크 시 입력 언어로만 저장됩니다.</div>
+                            </div>
+                        </label>
                     </div>
                 </div>
 
@@ -376,7 +390,7 @@ export default function NewProductPage() {
                     <button type="button" onClick={() => router.back()} className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50">취소</button>
                     <button type="submit" disabled={isLoading} className="px-8 py-2.5 flex items-center gap-2 text-sm font-bold text-white bg-blue-600 rounded-xl shadow hover:bg-blue-700 disabled:opacity-70">
                         {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                        {isLoading ? '저장 & 번역 중...' : '저장 & 4개국어 자동 번역'}
+                        {isLoading ? (doTranslate ? '저장 & 번역 중...' : '저장 중...') : (doTranslate ? '저장 & 4개국어 자동 번역' : '저장')}
                     </button>
                 </div>
             </form>

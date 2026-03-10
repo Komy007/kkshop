@@ -167,81 +167,74 @@ export async function POST(req: Request) {
             expiryMonths = null,
             certifications = null,
             options = [], // [{ minQty, maxQty, discountPct, freeShipping, labelKo }]
+            doTranslate = false, // translate to all 4 languages only when explicitly requested
         } = body;
 
         if (!sku || !priceUsd || !name || !baseLang) {
             return NextResponse.json({ error: 'Missing required configuration fields.' }, { status: 400 });
         }
 
-        // 2. Perform Translations
-        const translationsData: Array<{
-            langCode: string;
-            name: string;
-            shortDesc: string | null;
-            detailDesc: string | null;
-            seoKeywords: string | null;
-            ingredients: string | null;
-            howToUse: string | null;
-            benefits: string | null;
-        }> = [];
+        // 2. Build base translation row (always used)
+        const baseRow = {
+            langCode: baseLang,
+            name: name,
+            shortDesc: shortDesc || null,
+            detailDesc: detailDesc || null,
+            seoKeywords: seoKeywords || null,
+            ingredients: ingredients || null,
+            howToUse: howToUse || null,
+            benefits: benefits || null,
+        };
 
-        for (const lang of TARGET_LANGS) {
-            if (lang === baseLang) {
-                translationsData.push({
-                    langCode: lang,
-                    name: name,
-                    shortDesc: shortDesc || null,
-                    detailDesc: detailDesc || null,
-                    seoKeywords: seoKeywords || null,
-                    ingredients: ingredients || null,
-                    howToUse: howToUse || null,
-                    benefits: benefits || null,
-                });
-            } else {
-                try {
-                    const [translatedName] = await translate.translate(name, lang);
+        const translationsData: typeof baseRow[] = [];
 
-                    let translatedShortDesc = shortDesc;
-                    if (shortDesc) { [translatedShortDesc] = await translate.translate(shortDesc, lang); }
+        if (!doTranslate) {
+            // No translation requested — save input text for all languages (no API calls)
+            for (const lang of TARGET_LANGS) {
+                translationsData.push({ ...baseRow, langCode: lang });
+            }
+        } else {
+            // Translate to all 4 languages via Google Translate API
+            for (const lang of TARGET_LANGS) {
+                if (lang === baseLang) {
+                    translationsData.push(baseRow);
+                } else {
+                    try {
+                        const [translatedName] = await translate.translate(name, lang);
 
-                    let translatedDetailDesc = detailDesc;
-                    if (detailDesc) { [translatedDetailDesc] = await translate.translate(detailDesc, lang); }
+                        let translatedShortDesc = shortDesc;
+                        if (shortDesc) { [translatedShortDesc] = await translate.translate(shortDesc, lang); }
 
-                    let translatedSeoKeywords = seoKeywords;
-                    if (seoKeywords) { [translatedSeoKeywords] = await translate.translate(seoKeywords, lang); }
+                        let translatedDetailDesc = detailDesc;
+                        if (detailDesc) { [translatedDetailDesc] = await translate.translate(detailDesc, lang); }
 
-                    let translatedIngredients = ingredients;
-                    if (ingredients) { [translatedIngredients] = await translate.translate(ingredients, lang); }
+                        let translatedSeoKeywords = seoKeywords;
+                        if (seoKeywords) { [translatedSeoKeywords] = await translate.translate(seoKeywords, lang); }
 
-                    let translatedHowToUse = howToUse;
-                    if (howToUse) { [translatedHowToUse] = await translate.translate(howToUse, lang); }
+                        let translatedIngredients = ingredients;
+                        if (ingredients) { [translatedIngredients] = await translate.translate(ingredients, lang); }
 
-                    let translatedBenefits = benefits;
-                    if (benefits) { [translatedBenefits] = await translate.translate(benefits, lang); }
+                        let translatedHowToUse = howToUse;
+                        if (howToUse) { [translatedHowToUse] = await translate.translate(howToUse, lang); }
 
-                    translationsData.push({
-                        langCode: lang,
-                        name: translatedName,
-                        shortDesc: translatedShortDesc || null,
-                        detailDesc: translatedDetailDesc || null,
-                        seoKeywords: translatedSeoKeywords || null,
-                        ingredients: translatedIngredients || null,
-                        howToUse: translatedHowToUse || null,
-                        benefits: translatedBenefits || null,
-                    });
-                } catch (translationError) {
-                    console.error(`Translation failed for language: ${lang}`, translationError);
-                    // Use original text as fallback when translation fails
-                    translationsData.push({
-                        langCode: lang,
-                        name: name,
-                        shortDesc: shortDesc || null,
-                        detailDesc: detailDesc || null,
-                        seoKeywords: seoKeywords || null,
-                        ingredients: ingredients || null,
-                        howToUse: howToUse || null,
-                        benefits: benefits || null,
-                    });
+                        let translatedBenefits = benefits;
+                        if (benefits) { [translatedBenefits] = await translate.translate(benefits, lang); }
+
+                        translationsData.push({
+                            langCode: lang,
+                            name: translatedName,
+                            shortDesc: translatedShortDesc || null,
+                            detailDesc: translatedDetailDesc || null,
+                            seoKeywords: translatedSeoKeywords || null,
+                            ingredients: translatedIngredients || null,
+                            howToUse: translatedHowToUse || null,
+                            benefits: translatedBenefits || null,
+                        });
+                    } catch (translationError) {
+                        console.error(`Translation failed for language: ${lang}`, translationError);
+                        // Fallback to original text on API error
+                        translationsData.push({ ...baseRow, langCode: lang });
+                    }
                 }
             }
         }
