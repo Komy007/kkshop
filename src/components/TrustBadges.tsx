@@ -4,28 +4,20 @@ import { useAppStore, useSafeAppStore } from "@/store/useAppStore";
 
 const trustTranslations: Record<string, any> = {
     ko: {
-        authentic: "100% 한국화장품",
-        mohCertified: "캄보디아 보건부 인증",
-        freeShipping: "프놈펜 무료 배송",
-        securePayment: "안전한 결제",
+        authentic: "100% 한국 정품 화장품",
+        koreanCertified: "한국 인증",
     },
     en: {
         authentic: "100% Authentic Korean Cosmetics",
-        mohCertified: "MoH Certified",
-        freeShipping: "Free Phnom Penh Delivery",
-        securePayment: "Secure Payment",
+        koreanCertified: "Korean Certified",
     },
     km: {
-        authentic: "គ្រឿងសំអាងកូរ៉េ 100%",
-        mohCertified: "មានវិញ្ញាបនបត្រ MoH",
-        freeShipping: "ដឹកដោយឥតគិតថ្លៃ",
-        securePayment: "ការទូទាត់សុវត្ថិភាព",
+        authentic: "គ្រឿងសំអាងកូរ៉េ 100% ពិតប្រាកដ",
+        koreanCertified: "បញ្ជាក់ដោយកូរ៉េ",
     },
     zh: {
         authentic: "100% 韩国正品化妆品",
-        mohCertified: "柬埔寨卫生部认证",
-        freeShipping: "金边免费配送",
-        securePayment: "安全支付",
+        koreanCertified: "韩国认证",
     },
 };
 
@@ -80,9 +72,7 @@ export default function TrustBadges({ variant = 'horizontal', className = '' }: 
 
     const badges = [
         { icon: AuthenticIcon, label: t.authentic, color: "from-vivid-pink to-brand-secondary" },
-        { icon: MohIcon, label: t.mohCertified, color: "from-vivid-cyan to-brand-accent" },
-        { icon: ShippingIcon, label: t.freeShipping, color: "from-brand-primary to-vivid-violet" },
-        { icon: SecureIcon, label: t.securePayment, color: "from-vivid-green to-vivid-cyan" },
+        { icon: MohIcon, label: t.koreanCertified, color: "from-vivid-cyan to-brand-accent" },
     ];
 
     if (variant === 'compact') {
