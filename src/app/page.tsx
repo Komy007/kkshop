@@ -5,9 +5,22 @@ import CategoryShortcuts from '@/components/CategoryShortcuts';
 import CurationSection from '@/components/CurationSection';
 import Footer from '@/components/Footer';
 import { useSafeAppStore } from '@/store/useAppStore';
-import { Search, Star, Flame, Sparkles, Crown, ChevronRight, ArrowRight } from 'lucide-react';
+import { Search, Star, Flame, Sparkles, Crown, ChevronRight, ArrowRight, Zap, Clock } from 'lucide-react';
 import Link from 'next/link';
 import { type TranslatedProduct } from '@/lib/api';
+
+interface FlashSaleItem {
+    id: string;
+    productId: string;
+    productName: string;
+    productImage?: string;
+    originalPriceUsd: number;
+    salePriceUsd: number;
+    endAt: string;
+    labelKo?: string;
+    labelEn?: string;
+    stockQty?: number;
+}
 
 const homeT: Record<string, any> = {
     ko: {
@@ -15,6 +28,7 @@ const homeT: Record<string, any> = {
         forYou: 'FOR YOU',
         curationTitle: '님을 위한 추천',
         flashTitle: '타임세일',
+        flashEnds: '종료까지',
         newArrival: '신상품',
         popular: '인기 상품',
         hotSale: '핫딜',
@@ -33,7 +47,8 @@ const homeT: Record<string, any> = {
         searchPlaceholder: 'Search products or brands',
         forYou: 'FOR YOU',
         curationTitle: "'s Picks",
-        flashTitle: 'Time Sale',
+        flashTitle: 'Flash Sale',
+        flashEnds: 'Ends in',
         newArrival: 'New Arrivals',
         popular: 'Popular',
         hotSale: 'Hot Deals',
@@ -52,7 +67,8 @@ const homeT: Record<string, any> = {
         searchPlaceholder: 'ស្វែងរកផលិតផល',
         forYou: 'FOR YOU',
         curationTitle: ' សម្រាប់អ្នក',
-        flashTitle: 'ការលក់ពិសេស',
+        flashTitle: 'ការលក់ Flash',
+        flashEnds: 'បញ្ចប់ក្នុង',
         newArrival: 'ផលិតផលថ្មី',
         popular: 'ពេញនិយម',
         hotSale: 'ដំណើរការលក់ក្ដៅ',
@@ -71,7 +87,8 @@ const homeT: Record<string, any> = {
         searchPlaceholder: '搜索商品或品牌',
         forYou: 'FOR YOU',
         curationTitle: '为你推荐',
-        flashTitle: '限时特卖',
+        flashTitle: '限时闪购',
+        flashEnds: '剩余',
         newArrival: '新品上市',
         popular: '热门商品',
         hotSale: '爆款热卖',
@@ -87,6 +104,91 @@ const homeT: Record<string, any> = {
         soldCount: '已售',
     }
 };
+
+// ── Countdown Hook ────────────────────────────────────────────────────────────
+function useCountdown(endAt: string) {
+    const calc = () => {
+        const diff = new Date(endAt).getTime() - Date.now();
+        if (diff <= 0) return { h: 0, m: 0, s: 0 };
+        const h = Math.floor(diff / 3600000);
+        const m = Math.floor((diff % 3600000) / 60000);
+        const s = Math.floor((diff % 60000) / 1000);
+        return { h, m, s };
+    };
+    const [time, setTime] = useState(calc);
+    useEffect(() => {
+        const id = setInterval(() => setTime(calc()), 1000);
+        return () => clearInterval(id);
+    }, [endAt]);
+    return time;
+}
+
+// ── Flash Sale Section ────────────────────────────────────────────────────────
+function FlashSaleCard({ item, t }: { item: FlashSaleItem; t: any }) {
+    const time = useCountdown(item.endAt);
+    const discountPct = Math.round((1 - item.salePriceUsd / item.originalPriceUsd) * 100);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return (
+        <Link href={`/products/${item.productId}`} className="flex-shrink-0 w-36 sm:w-40 group block">
+            <div className="relative rounded-xl overflow-hidden bg-gray-100 aspect-square mb-1.5 border border-gray-100">
+                <img
+                    src={item.productImage || 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&q=80&w=400'}
+                    alt={item.productName}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    loading="lazy"
+                />
+                {discountPct > 0 && (
+                    <div className="absolute top-1.5 right-1.5 bg-red-500 text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded shadow">
+                        -{discountPct}%
+                    </div>
+                )}
+            </div>
+            <p className="text-[11px] text-gray-700 font-bold line-clamp-2 mb-1 leading-snug">{item.productName}</p>
+            <div className="flex items-baseline gap-1">
+                <span className="text-[14px] font-black text-red-500">${item.salePriceUsd.toFixed(2)}</span>
+                <span className="text-[10px] text-gray-400 line-through">${item.originalPriceUsd.toFixed(2)}</span>
+            </div>
+            <div className="flex items-center gap-1 mt-1">
+                <Clock className="w-2.5 h-2.5 text-orange-400 flex-shrink-0" />
+                <span className="text-[10px] font-bold text-orange-500 font-mono">
+                    {pad(time.h)}:{pad(time.m)}:{pad(time.s)}
+                </span>
+            </div>
+        </Link>
+    );
+}
+
+function FlashSaleSection({ t }: { t: any }) {
+    const [items, setItems] = useState<FlashSaleItem[]>([]);
+    const [loaded, setLoaded] = useState(false);
+
+    useEffect(() => {
+        fetch('/api/products/flash-sale')
+            .then(res => res.ok ? res.json() : [])
+            .then(data => { setItems(Array.isArray(data) ? data : []); setLoaded(true); })
+            .catch(() => setLoaded(true));
+    }, []);
+
+    if (!loaded || items.length === 0) return null;
+
+    return (
+        <section className="mb-5">
+            <div className="flex items-center justify-between mb-3 px-3">
+                <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 bg-yellow-400 rounded-md flex items-center justify-center">
+                        <Zap className="w-3 h-3 text-white fill-white" />
+                    </div>
+                    <h3 className="text-[15px] font-extrabold text-black">⚡ {t.flashTitle}</h3>
+                </div>
+            </div>
+            <div className="px-3 flex gap-3 overflow-x-auto scrollbar-hide pb-1">
+                {items.map(item => (
+                    <FlashSaleCard key={item.id} item={item} t={t} />
+                ))}
+            </div>
+        </section>
+    );
+}
 
 // ── Product Card ─────────────────────────────────────────────────────────────
 function ProductCard({ product, t }: { product: TranslatedProduct; t: any }) {
@@ -320,6 +422,9 @@ export default function Home() {
 
                 {/* ── Hero Banner ── */}
                 <HeroBanner t={t} />
+
+                {/* ── Flash Sale ── */}
+                <FlashSaleSection t={t} />
 
                 {/* ── AI Curation Section ── */}
                 <div className="mb-2">

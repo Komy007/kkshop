@@ -66,7 +66,7 @@ model Product {
   supplierId       String?  @map("supplier_id")
   isNew            Boolean  @default(false) @map("is_new")
   isHotSale        Boolean  @default(false) @map("is_hot_sale")
-  hotSalePrice     Decimal? @map("hot_sale_price") @db.Decimal(10, 2)  // 핫세일 협의가격
+  hotSalePrice     Decimal? @map("hot_sale_price") @db.Decimal(10, 2)
   reviewAvg        Decimal  @default(0) @map("review_avg") @db.Decimal(3, 2)
   reviewCount      Int      @default(0) @map("review_count")
   // Non-translatable spec fields
@@ -77,20 +77,25 @@ model Product {
   certifications   String?  @db.VarChar(255)
   brandName        String?  @map("brand_name") @db.VarChar(100)
   // Inventory & Cost fields
-  costPrice        Decimal? @map("cost_price") @db.Decimal(10, 2)   // 매입가(원가)
-  stockAlertQty    Int      @default(10) @map("stock_alert_qty")     // 저재고 알림 기준 수량
+  costPrice        Decimal? @map("cost_price") @db.Decimal(10, 2)
+  stockAlertQty    Int      @default(10) @map("stock_alert_qty")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  translations ProductTranslation[]
-  orderItems   OrderItem[]
-  images       ProductImage[]
-  options      ProductOption[]
-  reviews      ProductReview[]
-  stockLogs    StockLog[]
-  supplier     Supplier?  @relation(fields: [supplierId], references: [id], onDelete: SetNull)
-  category     Category?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  translations  ProductTranslation[]
+  orderItems    OrderItem[]
+  images        ProductImage[]
+  options       ProductOption[]
+  variants      ProductVariant[]
+  reviews       ProductReview[]
+  stockLogs     StockLog[]
+  wishlistItems Wishlist[]
+  qa            ProductQA[]
+  bundleItems   BundleItem[]
+  flashSales    FlashSale[]
+  supplier      Supplier?  @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  category      Category?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
   @@index([categoryId])
   @@index([isNew])
@@ -283,28 +288,34 @@ model UserPoint {
 // ---------------------------------------------------------------------------
 
 model User {
-  id             String    @id @default(cuid())
-  name           String?
-  email          String?   @unique
-  emailVerified  DateTime? @map("email_verified")
-  image          String?
-  hashedPassword String?
-  role           String    @default("USER")
+  id                String    @id @default(cuid())
+  name              String?
+  email             String?   @unique
+  emailVerified     DateTime? @map("email_verified")
+  image             String?
+  hashedPassword    String?
+  role              String    @default("USER")
   // USER | ADMIN | SUPERADMIN | SUPPLIER
-  phone          String?   @db.VarChar(50)
-  address        String?   @db.VarChar(255)
-  detailAddress  String?   @map("detail_address") @db.VarChar(255)
-  postalCode     String?   @map("postal_code") @db.VarChar(20)
-  pointBalance   Int       @default(0) @map("point_balance")  // 현재 포인트 잔액
-  preferredLanguage String    @default("en") @map("preferred_language") @db.VarChar(5) // Default EN
+  phone             String?   @db.VarChar(50)
+  address           String?   @db.VarChar(255)
+  detailAddress     String?   @map("detail_address") @db.VarChar(255)
+  postalCode        String?   @map("postal_code") @db.VarChar(20)
+  pointBalance      Int       @default(0) @map("point_balance")
+  preferredLanguage String    @default("en") @map("preferred_language") @db.VarChar(5)
+  referralCode      String?   @unique @map("referral_code") @db.VarChar(20)  // 내 추천 코드
+  referredByCode    String?   @map("referred_by_code") @db.VarChar(20)       // 가입 시 사용한 추천 코드
 
-  accounts    Account[]
-  sessions    Session[]
-  orders      Order[]
-  supplier    Supplier?
-  reviews     ProductReview[]
-  points      UserPoint[]
-  userCoupons UserCoupon[]
+  accounts         Account[]
+  sessions         Session[]
+  orders           Order[]
+  supplier         Supplier?
+  reviews          ProductReview[]
+  points           UserPoint[]
+  userCoupons      UserCoupon[]
+  wishlistItems    Wishlist[]
+  savedAddresses   UserAddress[]
+  questionsAsked   ProductQA[]
+  referralRewards  ReferralReward[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -406,10 +417,12 @@ model OrderItem {
   productId BigInt  @map("product_id")
   quantity  Int
   priceUsd  Decimal @map("price_usd") @db.Decimal(10, 2)
-  optionId  BigInt? @map("option_id")  // 적용된 수량옵션
+  optionId  BigInt? @map("option_id")   // 적용된 수량옵션
+  variantId BigInt? @map("variant_id")  // 선택된 상품 옵션(색상/사이즈)
 
-  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+  order   Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product        @relation(fields: [productId], references: [id], onDelete: Restrict)
+  variant ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
 
   @@index([orderId])
   @@map("order_items")
@@ -456,4 +469,189 @@ model OrderShipment {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("order_shipments")
+}
+
+// ---------------------------------------------------------------------------
+// Product Variants (Color / Size)
+// ---------------------------------------------------------------------------
+
+model ProductVariant {
+  id           BigInt   @id @default(autoincrement())
+  productId    BigInt   @map("product_id")
+  variantType  String   @map("variant_type") @db.VarChar(20)   // COLOR | SIZE | OTHER
+  variantValue String   @map("variant_value") @db.VarChar(100) // "빨강/Red", "L", etc.
+  sku          String?  @unique @db.VarChar(100)               // variant-specific SKU
+  stockQty     Int      @default(0) @map("stock_qty")
+  priceUsd     Decimal? @map("price_usd") @db.Decimal(10, 2)  // null = use product base price
+  imageUrl     String?  @map("image_url") @db.VarChar(500)
+  sortOrder    Int      @default(0) @map("sort_order")
+
+  product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  orderItems OrderItem[]
+
+  @@index([productId])
+  @@map("product_variants")
+}
+
+// ---------------------------------------------------------------------------
+// Shipping Provinces (Cambodia)
+// ---------------------------------------------------------------------------
+
+model ShippingProvince {
+  id          Int      @id @default(autoincrement())
+  nameKo      String   @map("name_ko") @db.VarChar(100)
+  nameEn      String   @map("name_en") @db.VarChar(100)
+  nameKm      String   @map("name_km") @db.VarChar(100)
+  nameZh      String   @map("name_zh") @db.VarChar(100)
+  shippingFee Decimal  @default(3) @map("shipping_fee") @db.Decimal(10, 2)  // USD
+  sortOrder   Int      @default(0) @map("sort_order")
+
+  @@map("shipping_provinces")
+}
+
+// ---------------------------------------------------------------------------
+// Wishlist (찜 목록)
+// ---------------------------------------------------------------------------
+
+model Wishlist {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  productId BigInt   @map("product_id")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([userId, productId])
+  @@index([userId])
+  @@map("wishlists")
+}
+
+// ---------------------------------------------------------------------------
+// Product Q&A
+// ---------------------------------------------------------------------------
+
+model ProductQA {
+  id          BigInt   @id @default(autoincrement())
+  productId   BigInt   @map("product_id")
+  userId      String   @map("user_id")
+  question    String   @db.Text
+  answer      String?  @db.Text
+  status      String   @default("PENDING") @db.VarChar(20)
+  // PENDING | ANSWERED | REJECTED
+  answeredBy  String?  @map("answered_by") @db.VarChar(255)  // admin email
+  answeredAt  DateTime? @map("answered_at")
+  isPrivate   Boolean  @default(false) @map("is_private")    // 비밀 문의
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([productId, status])
+  @@index([userId])
+  @@map("product_qa")
+}
+
+// ---------------------------------------------------------------------------
+// User Saved Addresses (주소록)
+// ---------------------------------------------------------------------------
+
+model UserAddress {
+  id            String  @id @default(cuid())
+  userId        String  @map("user_id")
+  label         String  @db.VarChar(50)           // 예: "집", "회사"
+  recipientName String  @map("recipient_name") @db.VarChar(100)
+  phone         String  @db.VarChar(50)
+  province      String  @db.VarChar(100)           // 캄보디아 주(Province)
+  address       String  @db.VarChar(255)
+  detailAddress String? @map("detail_address") @db.VarChar(255)
+  isDefault     Boolean @default(false) @map("is_default")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@map("user_addresses")
+}
+
+// ---------------------------------------------------------------------------
+// Flash Sale (타임세일)
+// ---------------------------------------------------------------------------
+
+model FlashSale {
+  id            BigInt   @id @default(autoincrement())
+  productId     BigInt   @map("product_id")
+  salePriceUsd  Decimal  @map("sale_price_usd") @db.Decimal(10, 2)  // 타임세일 가격
+  startAt       DateTime @map("start_at")
+  endAt         DateTime @map("end_at")
+  isActive      Boolean  @default(true) @map("is_active")
+  labelKo       String?  @map("label_ko") @db.VarChar(100)
+  labelEn       String?  @map("label_en") @db.VarChar(100)
+  maxQtyPerUser Int?     @map("max_qty_per_user")                     // 1인 최대 구매 수량
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([isActive, startAt, endAt])
+  @@map("flash_sales")
+}
+
+// ---------------------------------------------------------------------------
+// Product Bundle / Gift Set (묶음/기획상품)
+// ---------------------------------------------------------------------------
+
+model ProductBundle {
+  id           BigInt   @id @default(autoincrement())
+  nameKo       String   @map("name_ko") @db.VarChar(200)
+  nameEn       String   @map("name_en") @db.VarChar(200)
+  nameKm       String   @default("") @map("name_km") @db.VarChar(200)
+  nameZh       String   @default("") @map("name_zh") @db.VarChar(200)
+  descKo       String?  @map("desc_ko") @db.Text
+  descEn       String?  @map("desc_en") @db.Text
+  coverImageUrl String? @map("cover_image_url") @db.VarChar(500)
+  priceUsd     Decimal  @map("price_usd") @db.Decimal(10, 2)  // 묶음 판매가
+  isActive     Boolean  @default(true) @map("is_active")
+
+  items BundleItem[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("product_bundles")
+}
+
+model BundleItem {
+  id       BigInt @id @default(autoincrement())
+  bundleId BigInt @map("bundle_id")
+  productId BigInt @map("product_id")
+  quantity Int    @default(1)
+
+  bundle  ProductBundle @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+  product Product       @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@unique([bundleId, productId])
+  @@map("bundle_items")
+}
+
+// ---------------------------------------------------------------------------
+// Referral System (추천인 시스템)
+// ---------------------------------------------------------------------------
+
+model ReferralReward {
+  id              String   @id @default(cuid())
+  referrerId      String   @map("referrer_id")      // 추천한 사람
+  referredUserId  String   @map("referred_user_id") // 추천받아 가입한 사람
+  pointsAwarded   Int      @map("points_awarded")   // 지급된 포인트
+
+  referrer User @relation(fields: [referrerId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([referrerId])
+  @@map("referral_rewards")
 }

@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCartStore, selectTotalPrice } from '@/store/useCartStore';
 import { useSafeAppStore } from '@/store/useAppStore';
-import { ShoppingBag, ChevronRight, Loader2, MapPin, Ticket, Coins, CheckCircle2, QrCode, AlertCircle, Clock } from 'lucide-react';
+import { ShoppingBag, ChevronDown, Loader2, MapPin, Ticket, Coins, CheckCircle2, QrCode, AlertCircle, Clock, BookmarkCheck } from 'lucide-react';
 import Footer from '@/components/Footer';
 
 const checkoutTranslations: Record<string, any> = {
@@ -14,6 +14,7 @@ const checkoutTranslations: Record<string, any> = {
         recipient: 'Recipient Name',
         phone: 'Phone Number',
         email: 'Email',
+        province: 'Province / State',
         address: 'Address',
         detailAddress: 'Apt / Unit / Floor',
         notes: 'Delivery Notes',
@@ -43,6 +44,10 @@ const checkoutTranslations: Record<string, any> = {
         total: 'Total',
         placeOrder: 'Place Order',
         processing: 'Processing...',
+        savedAddress: 'Saved Addresses',
+        newAddress: 'Enter New Address',
+        selectProvince: 'Select Province / State',
+        selectSavedAddress: 'Select a saved address...',
     },
     ko: {
         title: '주문 / 결제',
@@ -50,6 +55,7 @@ const checkoutTranslations: Record<string, any> = {
         recipient: '수령인',
         phone: '연락처',
         email: '이메일',
+        province: '주/지역',
         address: '기본 주소',
         detailAddress: '상세 주소',
         notes: '배송 메모',
@@ -79,6 +85,10 @@ const checkoutTranslations: Record<string, any> = {
         total: '최종 결제 금액',
         placeOrder: '결제하기',
         processing: '처리 중...',
+        savedAddress: '저장된 주소',
+        newAddress: '새 주소 입력',
+        selectProvince: '주/지역 선택',
+        selectSavedAddress: '저장된 주소를 선택하세요...',
     },
     km: {
         title: 'ការទូទាត់',
@@ -86,6 +96,7 @@ const checkoutTranslations: Record<string, any> = {
         recipient: 'ឈ្មោះអ្នកទទួល',
         phone: 'លេខទូរស័ព្ទ',
         email: 'អ៊ីមែល',
+        province: 'ខេត្ត/ក្រុង',
         address: 'អាសយដ្ឋាន',
         detailAddress: 'ព័ត៌មានលំអិត',
         notes: 'កំណត់ចំណាំ',
@@ -115,6 +126,10 @@ const checkoutTranslations: Record<string, any> = {
         total: 'សរុបទាំងអស់',
         placeOrder: 'ដាក់ការបញ្ជាទិញ',
         processing: 'កំពុងដំណើរការ...',
+        savedAddress: 'អាសយដ្ឋានដែលបានរក្សា',
+        newAddress: 'បញ្ចូលអាសយដ្ឋានថ្មី',
+        selectProvince: 'ជ្រើសរើសខេត្ត/ក្រុង',
+        selectSavedAddress: 'ជ្រើសរើសអាសយដ្ឋានដែលបានរក្សា...',
     },
     zh: {
         title: '结账',
@@ -122,6 +137,7 @@ const checkoutTranslations: Record<string, any> = {
         recipient: '收货人',
         phone: '手机号码',
         email: '电子邮件',
+        province: '省份/城市',
         address: '收货地址',
         detailAddress: '详细地址',
         notes: '配送备注',
@@ -151,8 +167,28 @@ const checkoutTranslations: Record<string, any> = {
         total: '实付金额',
         placeOrder: '提交订单',
         processing: '处理中...',
+        savedAddress: '已保存地址',
+        newAddress: '输入新地址',
+        selectProvince: '选择省份/城市',
+        selectSavedAddress: '选择已保存地址...',
     },
 };
+
+interface Province {
+    id: string;
+    name: string;
+    shippingFee: number;
+}
+
+interface SavedAddress {
+    id: string;
+    recipientName: string;
+    phone: string;
+    province: string;
+    address: string;
+    detailAddress?: string;
+    isDefault?: boolean;
+}
 
 export default function CheckoutPage() {
     const store = useSafeAppStore();
@@ -168,10 +204,15 @@ export default function CheckoutPage() {
     const [submitting, setSubmitting] = useState(false);
     const [user, setUser] = useState<any>(null);
 
+    const [provinces, setProvinces] = useState<Province[]>([]);
+    const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
+    const [shippingFee, setShippingFee] = useState(0);
+
     const [form, setForm] = useState({
         customerName: '',
         customerPhone: '',
         customerEmail: '',
+        province: '',
         address: '',
         detailAddress: '',
         notes: '',
@@ -181,6 +222,17 @@ export default function CheckoutPage() {
 
     const [couponStatus, setCouponStatus] = useState<{ id?: string, discount?: number, msg?: string, type?: string, ok?: boolean }>({});
 
+    // Fetch provinces on mount
+    useEffect(() => {
+        fetch('/api/settings/provinces')
+            .then(res => res.json())
+            .then(data => {
+                if (Array.isArray(data)) setProvinces(data);
+            })
+            .catch(() => {});
+    }, []);
+
+    // Fetch user profile + saved addresses
     useEffect(() => {
         fetch('/api/user/profile')
             .then(res => res.json())
@@ -195,6 +247,7 @@ export default function CheckoutPage() {
                     customerName: data.name || '',
                     customerEmail: data.email || '',
                     customerPhone: data.phone || '',
+                    province: data.province || '',
                     address: data.address || '',
                     detailAddress: data.detailAddress || ''
                 }));
@@ -203,13 +256,63 @@ export default function CheckoutPage() {
             .catch(() => {
                 router.push('/login?callbackUrl=/checkout');
             });
+
+        fetch('/api/user/addresses')
+            .then(res => res.json())
+            .then(data => {
+                if (Array.isArray(data)) setSavedAddresses(data);
+            })
+            .catch(() => {});
     }, [router]);
+
+    // Update shipping fee when province changes or provinces loaded
+    useEffect(() => {
+        if (form.province && provinces.length > 0) {
+            const found = provinces.find(p => p.name === form.province);
+            setShippingFee(found ? found.shippingFee : 0);
+        }
+    }, [form.province, provinces]);
 
     useEffect(() => {
         if (!loading && cartItems.length === 0) {
             router.push('/cart');
         }
     }, [loading, cartItems.length, router]);
+
+    const handleProvinceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const selectedName = e.target.value;
+        const found = provinces.find(p => p.name === selectedName);
+        setForm(f => ({ ...f, province: selectedName }));
+        setShippingFee(found ? found.shippingFee : 0);
+    };
+
+    const handleSavedAddressSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const val = e.target.value;
+        if (!val || val === '__new__') {
+            setForm(f => ({
+                ...f,
+                customerName: '',
+                customerPhone: '',
+                province: '',
+                address: '',
+                detailAddress: '',
+            }));
+            setShippingFee(0);
+            return;
+        }
+        const addr = savedAddresses.find(a => a.id === val);
+        if (!addr) return;
+        const foundProvince = provinces.find(p => p.name === addr.province);
+        setShippingFee(foundProvince ? foundProvince.shippingFee : 0);
+        setForm(f => ({
+            ...f,
+            customerName: addr.recipientName || f.customerName,
+            customerPhone: addr.phone || f.customerPhone,
+            province: addr.province || '',
+            address: addr.address || '',
+            detailAddress: addr.detailAddress || '',
+        }));
+    };
 
     const handleApplyCoupon = async () => {
         if (!form.couponCode) return;
@@ -240,7 +343,7 @@ export default function CheckoutPage() {
                 ? subtotal * (couponStatus.discount! / 100)
                 : couponStatus.discount!)
             : 0;
-        const maxUsable = subtotal - discountAmt;
+        const maxUsable = subtotal + shippingFee - discountAmt;
         if (val > maxUsable) val = Math.floor(maxUsable);
         setForm({ ...form, pointsUsed: val.toString() });
     };
@@ -255,8 +358,10 @@ export default function CheckoutPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     ...form,
+                    shippingFee,
                     items: cartItems.map(i => ({
                         productId: i.productId,
+                        variantId: i.variantId || null,
                         quantity: i.qty,
                         priceUsd: i.priceUsd
                     }))
@@ -290,7 +395,7 @@ export default function CheckoutPage() {
             ? subtotal * (couponStatus.discount! / 100)
             : couponStatus.discount!)
         : 0;
-    const finalTotal = Math.max(0, subtotal - discountAmt - (parseInt(form.pointsUsed) || 0));
+    const finalTotal = Math.max(0, subtotal + shippingFee - discountAmt - (parseInt(form.pointsUsed) || 0));
     const formatUsd = (price: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(price);
 
     return (
@@ -311,6 +416,34 @@ export default function CheckoutPage() {
                                 <MapPin className="w-4 h-4 text-brand-primary" />
                                 {t.shipping}
                             </h2>
+
+                            {/* Saved Address Picker */}
+                            {savedAddresses.length > 0 && (
+                                <div className="mb-4">
+                                    <label className="block text-xs font-bold text-gray-600 mb-1 flex items-center gap-1">
+                                        <BookmarkCheck className="w-3.5 h-3.5 text-brand-primary" />
+                                        {t.savedAddress}
+                                    </label>
+                                    <div className="relative">
+                                        <select
+                                            onChange={handleSavedAddressSelect}
+                                            defaultValue=""
+                                            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary outline-none appearance-none bg-white pr-8"
+                                        >
+                                            <option value="">{t.selectSavedAddress}</option>
+                                            {savedAddresses.map(addr => (
+                                                <option key={addr.id} value={addr.id}>
+                                                    {addr.recipientName} — {addr.province}, {addr.address}
+                                                    {addr.isDefault ? ' ★' : ''}
+                                                </option>
+                                            ))}
+                                            <option value="__new__">{t.newAddress}</option>
+                                        </select>
+                                        <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="space-y-3">
                                 <div className="grid grid-cols-2 gap-3">
                                     <div>
@@ -332,6 +465,50 @@ export default function CheckoutPage() {
                                         onChange={e => setForm({ ...form, customerEmail: e.target.value })}
                                         className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-gray-50 text-gray-500 cursor-not-allowed" readOnly />
                                 </div>
+
+                                {/* Province Selector */}
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-600 mb-1">
+                                        {t.province}
+                                    </label>
+                                    {provinces.length > 0 ? (
+                                        <div className="relative">
+                                            <select
+                                                value={form.province}
+                                                onChange={handleProvinceChange}
+                                                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary outline-none appearance-none bg-white pr-8"
+                                            >
+                                                <option value="">{t.selectProvince}</option>
+                                                {provinces.map(p => (
+                                                    <option key={p.id} value={p.name}>
+                                                        {p.name}
+                                                        {p.shippingFee > 0 ? ` (+${formatUsd(p.shippingFee)})` : ' (Free)'}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                                        </div>
+                                    ) : (
+                                        <input
+                                            type="text"
+                                            value={form.province}
+                                            onChange={e => setForm({ ...form, province: e.target.value })}
+                                            placeholder={t.selectProvince}
+                                            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary outline-none"
+                                        />
+                                    )}
+                                    {shippingFee > 0 && (
+                                        <p className="text-[11px] text-amber-600 font-medium mt-1">
+                                            Shipping fee: {formatUsd(shippingFee)}
+                                        </p>
+                                    )}
+                                    {shippingFee === 0 && form.province && (
+                                        <p className="text-[11px] text-green-600 font-medium mt-1">
+                                            Free shipping for this area
+                                        </p>
+                                    )}
+                                </div>
+
                                 <div>
                                     <label className="block text-xs font-bold text-gray-600 mb-1">{t.address}</label>
                                     <input required type="text" value={form.address}
@@ -340,7 +517,7 @@ export default function CheckoutPage() {
                                 </div>
                                 <div>
                                     <label className="block text-xs font-bold text-gray-600 mb-1">{t.detailAddress}</label>
-                                    <input required type="text" value={form.detailAddress}
+                                    <input type="text" value={form.detailAddress}
                                         onChange={e => setForm({ ...form, detailAddress: e.target.value })}
                                         className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary outline-none" />
                                 </div>
@@ -450,12 +627,17 @@ export default function CheckoutPage() {
                             {/* Cart Items */}
                             <div className="space-y-3 mb-5 max-h-[280px] overflow-y-auto pr-1">
                                 {cartItems.map((item, idx) => (
-                                    <div key={idx} className="flex gap-3 items-center">
+                                    <div key={item.variantId ? `${item.productId}-${item.variantId}` : `${item.productId}-${idx}`} className="flex gap-3 items-center">
                                         <div className="w-14 h-14 bg-gray-100 rounded-lg flex-shrink-0 overflow-hidden border border-gray-200">
                                             <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <p className="text-xs font-bold text-gray-900 line-clamp-2 leading-tight">{item.name}</p>
+                                            {item.variantLabel && (
+                                                <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded font-medium inline-block mt-0.5">
+                                                    {item.variantLabel}
+                                                </span>
+                                            )}
                                             <p className="text-[11px] text-gray-400 mt-0.5">× {item.qty}</p>
                                         </div>
                                         <div className="font-black text-sm text-gray-900 flex-shrink-0">
@@ -473,7 +655,11 @@ export default function CheckoutPage() {
                                 </div>
                                 <div className="flex justify-between text-sm text-gray-600">
                                     <span>{t.shipping_fee}</span>
-                                    <span className="font-bold text-green-600">{t.shippingFree}</span>
+                                    {shippingFee > 0 ? (
+                                        <span className="font-bold text-gray-900">{formatUsd(shippingFee)}</span>
+                                    ) : (
+                                        <span className="font-bold text-green-600">{t.shippingFree}</span>
+                                    )}
                                 </div>
                                 {discountAmt > 0 && (
                                     <div className="flex justify-between text-sm text-brand-primary font-bold">

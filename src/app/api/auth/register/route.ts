@@ -6,10 +6,33 @@ import bcrypt from 'bcryptjs';
 const rateLimitCache = new Map<string, { count: number; timestamp: number }>();
 const MAX_REQUESTS_PER_MINUTE = 5;
 
+/**
+ * Generates a unique 8-character referral code for a new user.
+ * Format: "KK" + 6 random uppercase alphanumeric characters.
+ * Retries up to 5 times to guarantee uniqueness.
+ */
+async function generateUniqueReferralCode(): Promise<string> {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    for (let attempt = 0; attempt < 5; attempt++) {
+        let suffix = '';
+        for (let i = 0; i < 6; i++) {
+            suffix += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        const code = 'KK' + suffix;
+        // Check uniqueness in the DB
+        const existing = await prisma.user.findUnique({
+            where: { referralCode: code },
+            select: { id: true }
+        });
+        if (!existing) return code;
+    }
+    // Extremely unlikely to reach here, but fallback with timestamp for safety
+    return 'KK' + Date.now().toString(36).toUpperCase().slice(-6);
+}
+
 export async function POST(req: Request) {
     try {
         // --- 1. Rate Limiting Protection ---
-        // We use the forwarded IP if available, fallback to a general bucket.
         const ip = req.headers.get('x-forwarded-for') || 'unknown-ip';
         const now = Date.now();
         const windowMs = 60 * 1000; // 1 minute
@@ -30,7 +53,7 @@ export async function POST(req: Request) {
 
         // --- 2. Input Validation ---
         const body = await req.json();
-        const { name, email, password, phone, address, detailAddress, postalCode } = body;
+        const { name, email, password, phone, address, detailAddress, postalCode, referralCode } = body;
 
         if (!email || !password || !name) {
             return NextResponse.json({ error: '이름, 이메일, 비밀번호는 필수 항목입니다.' }, { status: 400 });
@@ -46,11 +69,26 @@ export async function POST(req: Request) {
         });
 
         if (existingUser) {
-            // To prevent email enumeration, we return generic user error, but for signup UX, specific error is fine.
             return NextResponse.json({ error: '이미 가입된 이메일 주소입니다.' }, { status: 409 });
         }
 
-        // --- 4. Password Encryption & User Creation ---
+        // --- 4. Validate referral code (if provided) ---
+        let referrer: { id: string; pointBalance: number } | null = null;
+        const normalizedReferralCode = referralCode ? String(referralCode).trim().toUpperCase() : null;
+
+        if (normalizedReferralCode) {
+            referrer = await prisma.user.findUnique({
+                where: { referralCode: normalizedReferralCode },
+                select: { id: true, pointBalance: true }
+            });
+            // If referral code provided but not found, we silently ignore it
+            // (do not fail registration because of an invalid referral code)
+        }
+
+        // --- 5. Generate unique referral code for the new user ---
+        const newUserReferralCode = await generateUniqueReferralCode();
+
+        // --- 6. Password Encryption & User Creation ---
         const hashedPassword = await bcrypt.hash(password, 12);
 
         const newUser = await prisma.user.create({
@@ -63,8 +101,47 @@ export async function POST(req: Request) {
                 address: address || null,
                 detailAddress: detailAddress || null,
                 postalCode: postalCode || null,
+                referralCode: newUserReferralCode,
+                referredByCode: referrer ? normalizedReferralCode : null,
             },
         });
+
+        // --- 7. Reward referrer (if valid referral code was used) ---
+        if (referrer) {
+            const REFERRAL_REWARD_POINTS = 50;
+            try {
+                await prisma.$transaction(async (tx) => {
+                    // Award points to the referrer
+                    const updatedReferrer = await tx.user.update({
+                        where: { id: referrer!.id },
+                        data: { pointBalance: { increment: REFERRAL_REWARD_POINTS } }
+                    });
+
+                    // Record the point transaction
+                    await tx.userPoint.create({
+                        data: {
+                            userId: referrer!.id,
+                            amount: REFERRAL_REWARD_POINTS,
+                            reason: `추천인 가입 보상 (Referral signup: ${newUser.email})`,
+                            balanceAfter: updatedReferrer.pointBalance,
+                            orderId: null,
+                        }
+                    });
+
+                    // Create a ReferralReward record
+                    await tx.referralReward.create({
+                        data: {
+                            referrerId: referrer!.id,
+                            referredUserId: newUser.id,
+                            pointsAwarded: REFERRAL_REWARD_POINTS,
+                        }
+                    });
+                });
+            } catch (referralErr) {
+                // Referral reward failure is non-critical — user was already created
+                console.error('Referral reward failed (non-critical):', referralErr);
+            }
+        }
 
         return NextResponse.json({
             success: true,
@@ -72,6 +149,7 @@ export async function POST(req: Request) {
                 id: newUser.id,
                 name: newUser.name,
                 email: newUser.email,
+                referralCode: newUser.referralCode,
             },
             message: '성공적으로 회원가입 되었습니다.'
         }, { status: 201 });

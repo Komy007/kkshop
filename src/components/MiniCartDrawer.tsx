@@ -126,7 +126,7 @@ export default function MiniCartDrawer() {
                         <ul className="space-y-4">
                             {items.map((item) => (
                                 <li
-                                    key={item.productId}
+                                    key={item.variantId ? `${item.productId}-${item.variantId}` : item.productId}
                                     className="flex gap-4 p-4 rounded-2xl border border-gray-200 hover:border-brand-primary/30 transition-colors bg-white shadow-sm"
                                 >
                                     {/* Image */}
@@ -143,6 +143,11 @@ export default function MiniCartDrawer() {
                                     <div className="flex-1 min-w-0 flex flex-col justify-between py-1">
                                         <div>
                                             <h3 className="text-[15px] font-extrabold text-black leading-snug line-clamp-2">{item.name}</h3>
+                                            {item.variantLabel && (
+                                                <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded font-medium inline-block mt-0.5">
+                                                    {item.variantLabel}
+                                                </span>
+                                            )}
                                             <p className="font-extrabold text-[#E52528] text-lg mt-1 tracking-tight">
                                                 {formatUsd(item.priceUsd)}
                                             </p>
@@ -152,7 +157,7 @@ export default function MiniCartDrawer() {
                                             {/* Quantity controls */}
                                             <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden bg-white shadow-sm">
                                                 <button
-                                                    onClick={() => updateQty(item.productId, item.qty - 1)}
+                                                    onClick={() => updateQty(item.productId, item.qty - 1, item.variantId)}
                                                     className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors"
                                                     aria-label="Decrease quantity"
                                                 >
@@ -162,7 +167,7 @@ export default function MiniCartDrawer() {
                                                     {item.qty}
                                                 </span>
                                                 <button
-                                                    onClick={() => updateQty(item.productId, item.qty + 1)}
+                                                    onClick={() => updateQty(item.productId, item.qty + 1, item.variantId)}
                                                     className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors"
                                                     aria-label="Increase quantity"
                                                 >
@@ -174,7 +179,7 @@ export default function MiniCartDrawer() {
                                             <button
                                                 onClick={() => {
                                                     if (window.confirm(t.confirmRemove)) {
-                                                        removeItem(item.productId);
+                                                        removeItem(item.productId, item.variantId);
                                                     }
                                                 }}
                                                 className="p-2 text-gray-400 hover:text-red-500 transition-colors rounded-lg hover:bg-red-50"

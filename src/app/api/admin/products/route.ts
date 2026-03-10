@@ -167,6 +167,7 @@ export async function POST(req: Request) {
             expiryMonths = null,
             certifications = null,
             options = [], // [{ minQty, maxQty, discountPct, freeShipping, labelKo }]
+            variants = [], // [{ variantType, variantValue, sku?, stockQty, priceUsd?, imageUrl?, sortOrder }]
             doTranslate = false, // translate to all 4 languages only when explicitly requested
         } = body;
 
@@ -310,6 +311,25 @@ export async function POST(req: Request) {
                         productId: product.id
                     }))
                 });
+            }
+
+            // Create ProductVariant records if provided
+            if (variants && variants.length > 0) {
+                const validVariants = variants.filter((v: any) => v.variantValue && v.variantValue.trim());
+                if (validVariants.length > 0) {
+                    await tx.productVariant.createMany({
+                        data: validVariants.map((v: any, idx: number) => ({
+                            productId: product.id,
+                            variantType: v.variantType || 'OTHER',
+                            variantValue: v.variantValue.trim(),
+                            sku: v.sku ? v.sku.trim() : null,
+                            stockQty: parseInt(v.stockQty) || 0,
+                            priceUsd: v.priceUsd ? parseFloat(v.priceUsd) : null,
+                            imageUrl: v.imageUrl || null,
+                            sortOrder: v.sortOrder !== undefined ? parseInt(v.sortOrder) : idx,
+                        })),
+                    });
+                }
             }
 
             return product;

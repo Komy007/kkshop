@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Package, Heart, Clock, LogOut, ChevronRight, ShoppingBag, Loader2, Truck } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Package, Heart, Clock, LogOut, ChevronRight, ShoppingBag, Loader2, Truck, MapPin, Gift, UserPlus, Share2, Plus, Pencil, Trash2, Check, X } from 'lucide-react';
 import { useTranslations } from '@/i18n/useTranslations';
 import Footer from '@/components/Footer';
 
-type TabKey = 'orders' | 'wishlist' | 'recent';
+type TabKey = 'orders' | 'wishlist' | 'recent' | 'addresses' | 'referral';
 
 interface OrderItem {
     id: string;
@@ -27,28 +27,436 @@ interface Order {
     shipment: OrderShipment | null;
 }
 
+interface WishlistItem {
+    id: string;
+    productId: string;
+    product: {
+        id: string;
+        imageUrl: string | null;
+        priceUsd: number;
+        stockQty: number;
+        translations?: { name: string }[];
+        sku: string;
+    };
+}
+
+interface RecentProduct {
+    id: string;
+    imageUrl: string | null;
+    priceUsd: number;
+    stockQty: number;
+    name: string;
+    sku: string;
+}
+
+interface Address {
+    id: string;
+    label: string | null;
+    recipientName: string;
+    phone: string;
+    province: string;
+    address: string;
+    isDefault: boolean;
+}
+
+interface UserProfile {
+    id: string;
+    name: string | null;
+    email: string;
+    referralCode: string | null;
+    referralCount?: number;
+}
+
+function getRecentlyViewed(): string[] {
+    try {
+        const raw = localStorage.getItem('recentlyViewed');
+        if (!raw) return [];
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch {
+        return [];
+    }
+}
+
+// ── Product Mini Card ─────────────────────────────────────────────────────────
+function ProductMiniCard({
+    id,
+    imageUrl,
+    name,
+    priceUsd,
+    stockQty,
+    onRemove,
+    removeLabel,
+    addCartLabel,
+}: {
+    id: string;
+    imageUrl: string | null;
+    name: string;
+    priceUsd: number;
+    stockQty: number;
+    onRemove?: (id: string) => void;
+    removeLabel: string;
+    addCartLabel: string;
+}) {
+    const formatUsd = (p: number) =>
+        new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(p);
+
+    return (
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col">
+            <a href={`/products/${id}`} className="block relative aspect-square bg-gray-100 overflow-hidden">
+                {imageUrl ? (
+                    <img
+                        src={imageUrl}
+                        alt={name}
+                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                        loading="lazy"
+                    />
+                ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                        <Package className="w-8 h-8 text-gray-300" />
+                    </div>
+                )}
+                {stockQty <= 0 && (
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                        <span className="text-white text-xs font-bold bg-black/60 px-2 py-1 rounded">품절</span>
+                    </div>
+                )}
+            </a>
+            <div className="p-3 flex flex-col flex-1">
+                <a href={`/products/${id}`} className="text-[12px] font-bold text-gray-900 line-clamp-2 mb-2 hover:text-brand-primary transition-colors leading-tight flex-1">
+                    {name}
+                </a>
+                <p className="font-black text-[#E52528] text-sm mb-2">{formatUsd(priceUsd)}</p>
+                <div className="flex gap-1.5">
+                    <button
+                        className="flex-1 text-[11px] font-bold py-1.5 rounded-lg bg-brand-primary/10 text-brand-primary hover:bg-brand-primary hover:text-white transition-colors disabled:opacity-50"
+                        disabled={stockQty <= 0}
+                    >
+                        {addCartLabel}
+                    </button>
+                    {onRemove && (
+                        <button
+                            onClick={() => onRemove(id)}
+                            className="px-2 py-1.5 rounded-lg bg-gray-100 text-gray-500 hover:bg-red-50 hover:text-red-500 transition-colors"
+                            title={removeLabel}
+                        >
+                            <Heart className="w-3.5 h-3.5 fill-current" />
+                        </button>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ── Address Form ──────────────────────────────────────────────────────────────
+interface AddressFormData {
+    label: string;
+    recipientName: string;
+    phone: string;
+    province: string;
+    address: string;
+    isDefault: boolean;
+}
+
+function AddressForm({
+    initial,
+    onSave,
+    onCancel,
+}: {
+    initial?: Partial<AddressFormData>;
+    onSave: (data: AddressFormData) => void;
+    onCancel: () => void;
+}) {
+    const [form, setForm] = useState<AddressFormData>({
+        label: initial?.label || '',
+        recipientName: initial?.recipientName || '',
+        phone: initial?.phone || '',
+        province: initial?.province || '',
+        address: initial?.address || '',
+        isDefault: initial?.isDefault || false,
+    });
+
+    const handle = (field: keyof AddressFormData, value: string | boolean) =>
+        setForm(prev => ({ ...prev, [field]: value }));
+
+    const cambodianProvinces = [
+        'Phnom Penh', 'Siem Reap', 'Battambang', 'Kampong Cham', 'Kandal',
+        'Kampong Speu', 'Kampong Chhnang', 'Kampong Thom', 'Kampot', 'Takeo',
+        'Prey Veng', 'Svay Rieng', 'Pursat', 'Kratie', 'Stung Treng',
+        'Mondulkiri', 'Ratanakiri', 'Preah Vihear', 'Koh Kong', 'Sihanoukville',
+        'Kep', 'Pailin', 'Tboung Khmum', 'Oddar Meanchey',
+    ];
+
+    return (
+        <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3 shadow-sm">
+            <div className="grid grid-cols-2 gap-3">
+                <div>
+                    <label className="text-xs font-bold text-gray-600 block mb-1">라벨 (예: 집, 회사)</label>
+                    <input
+                        type="text"
+                        placeholder="집"
+                        value={form.label}
+                        onChange={e => handle('label', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-brand-primary"
+                    />
+                </div>
+                <div>
+                    <label className="text-xs font-bold text-gray-600 block mb-1">수령인 이름</label>
+                    <input
+                        type="text"
+                        placeholder="이름"
+                        value={form.recipientName}
+                        onChange={e => handle('recipientName', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-brand-primary"
+                    />
+                </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+                <div>
+                    <label className="text-xs font-bold text-gray-600 block mb-1">전화번호</label>
+                    <input
+                        type="tel"
+                        placeholder="+855 XX XXX XXXX"
+                        value={form.phone}
+                        onChange={e => handle('phone', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-brand-primary"
+                    />
+                </div>
+                <div>
+                    <label className="text-xs font-bold text-gray-600 block mb-1">주/도시</label>
+                    <select
+                        value={form.province}
+                        onChange={e => handle('province', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-brand-primary bg-white"
+                    >
+                        <option value="">선택하세요</option>
+                        {cambodianProvinces.map(p => (
+                            <option key={p} value={p}>{p}</option>
+                        ))}
+                    </select>
+                </div>
+            </div>
+            <div>
+                <label className="text-xs font-bold text-gray-600 block mb-1">상세 주소</label>
+                <input
+                    type="text"
+                    placeholder="Street, Village, Sangkat..."
+                    value={form.address}
+                    onChange={e => handle('address', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-brand-primary"
+                />
+            </div>
+            <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                    type="checkbox"
+                    checked={form.isDefault}
+                    onChange={e => handle('isDefault', e.target.checked)}
+                    className="w-4 h-4 accent-brand-primary"
+                />
+                <span className="text-sm font-medium text-gray-700">기본 주소로 설정</span>
+            </label>
+            <div className="flex gap-2 pt-1">
+                <button
+                    onClick={() => onSave(form)}
+                    className="flex-1 py-2.5 rounded-xl bg-brand-primary text-white font-bold text-sm hover:bg-brand-primary/90 transition-colors flex items-center justify-center gap-1.5"
+                >
+                    <Check className="w-4 h-4" /> 저장
+                </button>
+                <button
+                    onClick={onCancel}
+                    className="flex-1 py-2.5 rounded-xl bg-gray-100 text-gray-600 font-bold text-sm hover:bg-gray-200 transition-colors flex items-center justify-center gap-1.5"
+                >
+                    <X className="w-4 h-4" /> 취소
+                </button>
+            </div>
+        </div>
+    );
+}
+
 export default function MyPage() {
     const t = useTranslations();
     const [activeTab, setActiveTab] = useState<TabKey>('orders');
-    const [orders, setOrders] = useState<Order[]>([]);
-    const [loading, setLoading] = useState(true);
 
+    // User profile
+    const [user, setUser] = useState<UserProfile | null>(null);
+    const [profileLoading, setProfileLoading] = useState(true);
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+    // Orders
+    const [orders, setOrders] = useState<Order[]>([]);
+    const [ordersLoading, setOrdersLoading] = useState(false);
+
+    // Wishlist
+    const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
+    const [wishlistLoading, setWishlistLoading] = useState(false);
+
+    // Recent
+    const [recentProducts, setRecentProducts] = useState<RecentProduct[]>([]);
+    const [recentLoading, setRecentLoading] = useState(false);
+
+    // Addresses
+    const [addresses, setAddresses] = useState<Address[]>([]);
+    const [addressesLoading, setAddressesLoading] = useState(false);
+    const [showAddressForm, setShowAddressForm] = useState(false);
+    const [editingAddress, setEditingAddress] = useState<Address | null>(null);
+    const [addressSaving, setAddressSaving] = useState(false);
+
+    // Referral
+    const [referralCopied, setReferralCopied] = useState(false);
+    const [linkCopied, setLinkCopied] = useState(false);
+
+    // Fetch profile on mount
     useEffect(() => {
-        fetch('/api/user/orders')
-            .then(res => res.json())
-            .then(data => {
-                if (Array.isArray(data)) setOrders(data);
-                setLoading(false);
+        fetch('/api/user/profile')
+            .then(res => {
+                if (res.status === 401) { setIsLoggedIn(false); setProfileLoading(false); return null; }
+                if (!res.ok) throw new Error('Failed');
+                return res.json();
             })
-            .catch(err => {
-                console.error(err);
-                setLoading(false);
+            .then(data => {
+                if (data) {
+                    setUser(data);
+                    setIsLoggedIn(true);
+                }
+                setProfileLoading(false);
+            })
+            .catch(() => {
+                setIsLoggedIn(false);
+                setProfileLoading(false);
             });
     }, []);
 
-    // Mock user — will use real session later
-    const isLoggedIn = true;
-    const user = { name: 'Premium Member', email: 'user@example.com' };
+    // Fetch orders when tab active
+    useEffect(() => {
+        if (!isLoggedIn || activeTab !== 'orders') return;
+        setOrdersLoading(true);
+        fetch('/api/user/orders')
+            .then(res => res.json())
+            .then(data => { if (Array.isArray(data)) setOrders(data); })
+            .catch(console.error)
+            .finally(() => setOrdersLoading(false));
+    }, [isLoggedIn, activeTab]);
+
+    // Fetch wishlist when tab active
+    const fetchWishlist = useCallback(() => {
+        if (!isLoggedIn) return;
+        setWishlistLoading(true);
+        fetch('/api/user/wishlist')
+            .then(res => res.json())
+            .then(data => { if (Array.isArray(data)) setWishlist(data); })
+            .catch(console.error)
+            .finally(() => setWishlistLoading(false));
+    }, [isLoggedIn]);
+
+    useEffect(() => {
+        if (activeTab === 'wishlist') fetchWishlist();
+    }, [activeTab, fetchWishlist]);
+
+    // Fetch recently viewed when tab active
+    useEffect(() => {
+        if (activeTab !== 'recent') return;
+        const ids = getRecentlyViewed();
+        if (ids.length === 0) { setRecentProducts([]); return; }
+        setRecentLoading(true);
+        fetch(`/api/user/recently-viewed?ids=${ids.join(',')}`)
+            .then(res => res.json())
+            .then(data => { if (Array.isArray(data)) setRecentProducts(data); })
+            .catch(console.error)
+            .finally(() => setRecentLoading(false));
+    }, [activeTab]);
+
+    // Fetch addresses when tab active
+    const fetchAddresses = useCallback(() => {
+        if (!isLoggedIn) return;
+        setAddressesLoading(true);
+        fetch('/api/user/addresses')
+            .then(res => res.json())
+            .then(data => { if (Array.isArray(data)) setAddresses(data); })
+            .catch(console.error)
+            .finally(() => setAddressesLoading(false));
+    }, [isLoggedIn]);
+
+    useEffect(() => {
+        if (activeTab === 'addresses') fetchAddresses();
+    }, [activeTab, fetchAddresses]);
+
+    // Remove from wishlist
+    const removeFromWishlist = async (productId: string) => {
+        try {
+            await fetch('/api/user/wishlist', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ productId }),
+            });
+            setWishlist(prev => prev.filter(w => w.productId !== productId));
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
+    // Save address (create or update)
+    const handleSaveAddress = async (data: { label: string; recipientName: string; phone: string; province: string; address: string; isDefault: boolean }) => {
+        setAddressSaving(true);
+        try {
+            const method = editingAddress ? 'PUT' : 'POST';
+            const body = editingAddress ? { id: editingAddress.id, ...data } : data;
+            const res = await fetch('/api/user/addresses', {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+            });
+            if (res.ok) {
+                setShowAddressForm(false);
+                setEditingAddress(null);
+                fetchAddresses();
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setAddressSaving(false);
+        }
+    };
+
+    // Delete address
+    const handleDeleteAddress = async (id: string) => {
+        if (!confirm('이 주소를 삭제하시겠습니까?')) return;
+        try {
+            await fetch('/api/user/addresses', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id }),
+            });
+            setAddresses(prev => prev.filter(a => a.id !== id));
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
+    // Copy referral code
+    const copyReferralCode = () => {
+        if (!user?.referralCode) return;
+        navigator.clipboard.writeText(user.referralCode).then(() => {
+            setReferralCopied(true);
+            setTimeout(() => setReferralCopied(false), 2000);
+        });
+    };
+
+    // Copy referral link
+    const copyReferralLink = () => {
+        if (!user?.referralCode) return;
+        const link = `${window.location.origin}/signup?ref=${user.referralCode}`;
+        navigator.clipboard.writeText(link).then(() => {
+            setLinkCopied(true);
+            setTimeout(() => setLinkCopied(false), 2000);
+        });
+    };
+
+    // Logout
+    const handleLogout = async () => {
+        await fetch('/api/auth/signout', { method: 'POST' });
+        window.location.href = '/login';
+    };
 
     const statusColors: Record<string, string> = {
         PENDING: 'bg-amber-50 text-amber-600 border-amber-200',
@@ -72,7 +480,20 @@ export default function MyPage() {
         { key: 'orders', icon: Package, label: t.mypage.orders },
         { key: 'wishlist', icon: Heart, label: t.mypage.wishlist },
         { key: 'recent', icon: Clock, label: t.mypage.recentlyViewed },
+        { key: 'addresses', icon: MapPin, label: (t.mypage as any).addresses || 'Addresses' },
+        { key: 'referral', icon: Gift, label: (t.mypage as any).referral || 'Referral' },
     ];
+
+    const formatUsd = (price: number) =>
+        new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(price);
+
+    if (profileLoading) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-brand-primary" />
+            </div>
+        );
+    }
 
     if (!isLoggedIn) {
         return (
@@ -92,9 +513,6 @@ export default function MyPage() {
         );
     }
 
-    const formatUsd = (price: number) =>
-        new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(price);
-
     return (
         <main className="min-h-screen bg-gray-50 text-gray-900 pb-20">
             <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -102,14 +520,21 @@ export default function MyPage() {
                 <div className="flex items-center justify-between mb-8 p-6 bg-white rounded-2xl border border-gray-200 shadow-sm">
                     <div className="flex items-center gap-5">
                         <div className="w-16 h-16 rounded-full bg-gradient-to-br from-brand-primary to-brand-accent flex items-center justify-center shadow-inner">
-                            <span className="text-white font-black text-2xl">{user.name[0]}</span>
+                            <span className="text-white font-black text-2xl">
+                                {(user?.name || user?.email || 'U')[0].toUpperCase()}
+                            </span>
                         </div>
                         <div>
-                            <h1 className="text-2xl font-extrabold text-black tracking-tight">{user.name}</h1>
-                            <p className="text-gray-500 font-medium text-sm mt-0.5">{user.email}</p>
+                            <h1 className="text-2xl font-extrabold text-black tracking-tight">
+                                {user?.name || 'Member'}
+                            </h1>
+                            <p className="text-gray-500 font-medium text-sm mt-0.5">{user?.email}</p>
                         </div>
                     </div>
-                    <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 text-gray-600 hover:text-black hover:bg-gray-50 hover:border-gray-300 transition-colors text-sm font-bold bg-white shadow-sm">
+                    <button
+                        onClick={handleLogout}
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 text-gray-600 hover:text-black hover:bg-gray-50 hover:border-gray-300 transition-colors text-sm font-bold bg-white shadow-sm"
+                    >
                         <LogOut className="w-4 h-4" />
                         <span className="hidden sm:inline">{t.mypage.logout}</span>
                     </button>
@@ -122,6 +547,7 @@ export default function MyPage() {
                         return (
                             <button
                                 key={status}
+                                onClick={() => setActiveTab('orders')}
                                 className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-white border border-gray-200 hover:border-brand-primary/50 hover:shadow-md transition-all shadow-sm"
                             >
                                 <span className={`text-2xl font-black ${count > 0 ? (statusColors[status]?.split(' ')[1] ?? 'text-black') : 'text-gray-300'}`}>
@@ -137,20 +563,20 @@ export default function MyPage() {
 
                 {/* Tabs */}
                 <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden mb-6">
-                    <nav className="flex border-b border-gray-100 mb-0">
+                    <nav className="flex border-b border-gray-100 overflow-x-auto scrollbar-hide">
                         {tabs.map((tab) => {
                             const Icon = tab.icon;
                             return (
                                 <button
                                     key={tab.key}
                                     onClick={() => setActiveTab(tab.key)}
-                                    className={`flex-1 flex items-center justify-center gap-2 py-4 text-sm font-bold transition-all border-b-2 ${activeTab === tab.key
+                                    className={`flex-shrink-0 flex items-center justify-center gap-2 px-4 py-4 text-sm font-bold transition-all border-b-2 ${activeTab === tab.key
                                         ? 'border-brand-primary text-black bg-gray-50/50'
                                         : 'border-transparent text-gray-500 hover:text-black hover:bg-gray-50'
                                         }`}
                                 >
                                     <Icon className={`w-4 h-4 ${activeTab === tab.key ? 'text-brand-primary' : ''}`} />
-                                    {tab.label}
+                                    <span className="hidden sm:inline">{tab.label}</span>
                                 </button>
                             );
                         })}
@@ -158,10 +584,11 @@ export default function MyPage() {
 
                     {/* Tab Content */}
                     <div className="min-h-[300px] p-4 sm:p-6 bg-gray-50/30">
-                        {/* Orders Tab */}
+
+                        {/* ── Orders Tab ── */}
                         {activeTab === 'orders' && (
                             <div className="space-y-4 animate-fade-in">
-                                {loading ? (
+                                {ordersLoading ? (
                                     <div className="py-20 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-gray-400" /></div>
                                 ) : orders.length === 0 ? (
                                     <div className="text-center py-16">
@@ -205,25 +632,235 @@ export default function MyPage() {
                                                     </div>
                                                 </div>
                                             </div>
-                                        )
+                                        );
                                     })
                                 )}
                             </div>
                         )}
 
-                        {/* Wishlist Tab */}
+                        {/* ── Wishlist Tab ── */}
                         {activeTab === 'wishlist' && (
-                            <div className="text-center py-20 animate-fade-in bg-white rounded-2xl border border-gray-100">
-                                <Heart className="w-12 h-12 mx-auto text-gray-300 mb-4" />
-                                <p className="text-gray-500 font-bold">{t.mypage.emptyWishlist}</p>
+                            <div className="animate-fade-in">
+                                {wishlistLoading ? (
+                                    <div className="py-20 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-gray-400" /></div>
+                                ) : wishlist.length === 0 ? (
+                                    <div className="text-center py-16 bg-white rounded-2xl border border-gray-100">
+                                        <Heart className="w-12 h-12 mx-auto text-gray-300 mb-4" />
+                                        <p className="text-gray-500 font-bold">{t.mypage.emptyWishlist}</p>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                                        {wishlist.map(item => {
+                                            const product = item.product;
+                                            const name = product.translations?.[0]?.name || product.sku;
+                                            return (
+                                                <ProductMiniCard
+                                                    key={item.id}
+                                                    id={product.id}
+                                                    imageUrl={product.imageUrl}
+                                                    name={name}
+                                                    priceUsd={product.priceUsd}
+                                                    stockQty={product.stockQty}
+                                                    onRemove={() => removeFromWishlist(product.id)}
+                                                    removeLabel="찜 해제"
+                                                    addCartLabel="장바구니 담기"
+                                                />
+                                            );
+                                        })}
+                                    </div>
+                                )}
                             </div>
                         )}
 
-                        {/* Recently Viewed Tab */}
+                        {/* ── Recently Viewed Tab ── */}
                         {activeTab === 'recent' && (
-                            <div className="text-center py-20 animate-fade-in bg-white rounded-2xl border border-gray-100">
-                                <Clock className="w-12 h-12 mx-auto text-gray-300 mb-4" />
-                                <p className="text-gray-500 font-bold">{t.common.noResults}</p>
+                            <div className="animate-fade-in">
+                                {recentLoading ? (
+                                    <div className="py-20 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-gray-400" /></div>
+                                ) : recentProducts.length === 0 ? (
+                                    <div className="text-center py-16 bg-white rounded-2xl border border-gray-100">
+                                        <Clock className="w-12 h-12 mx-auto text-gray-300 mb-4" />
+                                        <p className="text-gray-500 font-bold">{t.common.noResults}</p>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                                        {recentProducts.map(product => (
+                                            <ProductMiniCard
+                                                key={product.id}
+                                                id={product.id}
+                                                imageUrl={product.imageUrl}
+                                                name={product.name}
+                                                priceUsd={product.priceUsd}
+                                                stockQty={product.stockQty}
+                                                removeLabel=""
+                                                addCartLabel="장바구니 담기"
+                                            />
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* ── Addresses Tab ── */}
+                        {activeTab === 'addresses' && (
+                            <div className="animate-fade-in space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="font-extrabold text-black text-base">주소록</h3>
+                                    {!showAddressForm && (
+                                        <button
+                                            onClick={() => { setShowAddressForm(true); setEditingAddress(null); }}
+                                            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand-primary text-white text-sm font-bold hover:bg-brand-primary/90 transition-colors shadow-sm"
+                                        >
+                                            <Plus className="w-4 h-4" />
+                                            새 주소 추가
+                                        </button>
+                                    )}
+                                </div>
+
+                                {showAddressForm && !editingAddress && (
+                                    <AddressForm
+                                        onSave={handleSaveAddress}
+                                        onCancel={() => setShowAddressForm(false)}
+                                    />
+                                )}
+
+                                {addressesLoading ? (
+                                    <div className="py-12 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>
+                                ) : addresses.length === 0 && !showAddressForm ? (
+                                    <div className="text-center py-16 bg-white rounded-2xl border border-gray-100">
+                                        <MapPin className="w-12 h-12 mx-auto text-gray-300 mb-4" />
+                                        <p className="text-gray-500 font-bold">저장된 주소가 없습니다</p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-3">
+                                        {addresses.map(addr => (
+                                            <div key={addr.id}>
+                                                {editingAddress?.id === addr.id ? (
+                                                    <AddressForm
+                                                        initial={addr}
+                                                        onSave={handleSaveAddress}
+                                                        onCancel={() => setEditingAddress(null)}
+                                                    />
+                                                ) : (
+                                                    <div className={`bg-white rounded-xl border p-4 shadow-sm ${addr.isDefault ? 'border-brand-primary/40' : 'border-gray-200'}`}>
+                                                        <div className="flex items-start justify-between">
+                                                            <div className="flex-1">
+                                                                <div className="flex items-center gap-2 mb-1">
+                                                                    {addr.label && (
+                                                                        <span className="text-xs font-extrabold text-gray-800 bg-gray-100 px-2 py-0.5 rounded-full">
+                                                                            {addr.label}
+                                                                        </span>
+                                                                    )}
+                                                                    {addr.isDefault && (
+                                                                        <span className="text-xs font-extrabold text-brand-primary bg-brand-primary/10 px-2 py-0.5 rounded-full border border-brand-primary/20">
+                                                                            기본 주소
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                                <p className="font-bold text-sm text-gray-900">{addr.recipientName}</p>
+                                                                <p className="text-sm text-gray-600 font-medium">{addr.phone}</p>
+                                                                <p className="text-sm text-gray-600 font-medium">{addr.province}</p>
+                                                                <p className="text-sm text-gray-500">{addr.address}</p>
+                                                            </div>
+                                                            <div className="flex gap-1.5 ml-3">
+                                                                <button
+                                                                    onClick={() => { setEditingAddress(addr); setShowAddressForm(false); }}
+                                                                    className="p-2 rounded-lg text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                                                                    title="수정"
+                                                                >
+                                                                    <Pencil className="w-4 h-4" />
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleDeleteAddress(addr.id)}
+                                                                    className="p-2 rounded-lg text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+                                                                    title="삭제"
+                                                                >
+                                                                    <Trash2 className="w-4 h-4" />
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* ── Referral Tab ── */}
+                        {activeTab === 'referral' && (
+                            <div className="animate-fade-in space-y-5">
+                                <div className="text-center">
+                                    <div className="w-16 h-16 rounded-full bg-brand-primary/10 flex items-center justify-center mx-auto mb-3">
+                                        <UserPlus className="w-8 h-8 text-brand-primary" />
+                                    </div>
+                                    <h3 className="font-extrabold text-xl text-black mb-1">친구 초대</h3>
+                                    <p className="text-gray-500 text-sm font-medium">
+                                        친구에게 이 코드를 공유하면 가입시 보상 포인트를 받습니다
+                                    </p>
+                                </div>
+
+                                {/* Referral Code Box */}
+                                <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
+                                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">내 추천 코드</p>
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-mono font-black text-xl text-brand-primary tracking-widest text-center select-all">
+                                            {user?.referralCode || 'KK------'}
+                                        </div>
+                                        <button
+                                            onClick={copyReferralCode}
+                                            className="px-4 py-3 rounded-xl bg-brand-primary text-white font-bold text-sm hover:bg-brand-primary/90 transition-colors shadow-sm flex items-center gap-1.5 whitespace-nowrap"
+                                        >
+                                            {referralCopied ? (
+                                                <><Check className="w-4 h-4" /> 복사됨!</>
+                                            ) : (
+                                                <><Share2 className="w-4 h-4" /> 코드 복사</>
+                                            )}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Share Link */}
+                                <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
+                                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">초대 링크</p>
+                                    <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 mb-3">
+                                        <span className="flex-1 text-xs text-gray-600 font-medium truncate">
+                                            {typeof window !== 'undefined' ? `${window.location.origin}/signup?ref=${user?.referralCode || ''}` : '/signup?ref=...'}
+                                        </span>
+                                    </div>
+                                    <button
+                                        onClick={copyReferralLink}
+                                        className="w-full py-3 rounded-xl border-2 border-brand-primary text-brand-primary font-bold text-sm hover:bg-brand-primary hover:text-white transition-colors flex items-center justify-center gap-2"
+                                    >
+                                        {linkCopied ? (
+                                            <><Check className="w-4 h-4" /> 링크 복사됨!</>
+                                        ) : (
+                                            <><Share2 className="w-4 h-4" /> 링크 복사</>
+                                        )}
+                                    </button>
+                                </div>
+
+                                {/* Stats */}
+                                <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
+                                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">초대 현황</p>
+                                    <div className="flex items-center justify-center gap-3">
+                                        <div className="text-center">
+                                            <p className="text-3xl font-black text-brand-primary">{user?.referralCount ?? 0}</p>
+                                            <p className="text-xs text-gray-500 font-medium mt-1">초대한 친구</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Instructions */}
+                                <div className="bg-gray-50 rounded-2xl border border-gray-200 p-4">
+                                    <p className="text-xs font-extrabold text-gray-700 mb-2">이용 방법</p>
+                                    <ol className="space-y-1.5 text-xs text-gray-600 font-medium list-decimal list-inside">
+                                        <li>위의 추천 코드 또는 링크를 친구에게 공유하세요</li>
+                                        <li>친구가 코드로 가입하면 보너스 포인트를 받습니다</li>
+                                        <li>친구의 첫 구매 시 추가 포인트 적립</li>
+                                    </ol>
+                                </div>
                             </div>
                         )}
                     </div>

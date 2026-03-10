@@ -24,6 +24,7 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
                 translations: { orderBy: { langCode: 'asc' } },
                 images: { orderBy: { sortOrder: 'asc' } },
                 options: { orderBy: { sortOrder: 'asc' } },
+                productVariants: { orderBy: { sortOrder: 'asc' } },
                 category: true,
                 supplier: { select: { id: true, companyName: true, brandName: true } },
             },
@@ -98,6 +99,16 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
                 labelEn: opt.labelEn ?? null,
                 sortOrder: opt.sortOrder,
             })),
+            variants: (product as any).productVariants.map((v: any) => ({
+                id: v.id.toString(),
+                variantType: v.variantType,
+                variantValue: v.variantValue,
+                sku: v.sku ?? null,
+                stockQty: v.stockQty,
+                priceUsd: v.priceUsd != null ? v.priceUsd.toString() : null,
+                imageUrl: v.imageUrl ?? null,
+                sortOrder: v.sortOrder,
+            })),
         };
 
         return NextResponse.json(safe);
@@ -126,6 +137,7 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
             imageUrls = [], // new image URLs to add
             deleteImageIds = [], // image IDs to delete
             options = [], // full options replacement
+            variants, // full variants replacement (undefined = no change, [] = delete all, [...] = replace)
         } = body;
 
         const productId = BigInt(id);

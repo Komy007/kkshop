@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/api';
 import { auth } from '@/auth';
-import { sendEmail } from '@/lib/mail';
+import { sendEmail, sendLowStockAlert } from '@/lib/mail';
 
 export async function POST(request: Request) {
     const session = await auth();
@@ -14,7 +14,7 @@ export async function POST(request: Request) {
     try {
         const body = await request.json();
         const {
-            items, // { productId, optionId, quantity, priceUsd }[]
+            items, // { productId, optionId, variantId?, quantity, priceUsd }[]
             customerName, customerPhone, customerEmail,
             address, detailAddress, notes,
             couponCode, pointsUsed
@@ -69,9 +69,7 @@ export async function POST(request: Request) {
         }
 
         // Calculate Total
-        // Total = Subtotal + Shipping - Discount - Points (Assuming 1 point = 1 cent or $1. Let's assume 1 point = $1 for simplicity, or 100 points = $1. Let's assume 1 point = $0.01)
-        // Adjust point logic according to requirements. Assuming 1 point = $1 USD.
-        // Actually, usually points are tracked as integer representing cents or integer representing $1. Let's assume 1 point = $1 USD discount.
+        // Total = Subtotal + Shipping - Discount - Points (1 point = $1 USD discount)
         const pointDiscountUsd = pts;
 
         let totalUsd = subtotalUsd + shippingFee - discountAmount - pointDiscountUsd;
@@ -81,38 +79,87 @@ export async function POST(request: Request) {
         const order = await prisma.$transaction(async (tx) => {
             // 1. Validate stock & decrement
             for (const item of items) {
-                const product = await tx.product.findUnique({
-                    where: { id: BigInt(item.productId) },
-                    select: { id: true, stockQty: true, sku: true }
-                });
-                if (!product) {
-                    throw new Error(`Product ${item.productId} not found`);
-                }
                 const qty = Number(item.quantity);
-                if (product.stockQty < qty) {
-                    throw new Error(`Insufficient stock for SKU ${product.sku} (available: ${product.stockQty})`);
+
+                if (item.variantId) {
+                    // --- Variant stock path ---
+                    const variant = await tx.productVariant.findUnique({
+                        where: { id: BigInt(item.variantId) },
+                        select: { id: true, stockQty: true, sku: true, productId: true }
+                    });
+                    if (!variant) {
+                        throw new Error(`Variant ${item.variantId} not found`);
+                    }
+                    if (variant.stockQty < qty) {
+                        throw new Error(`Insufficient stock for variant SKU ${variant.sku ?? item.variantId} (available: ${variant.stockQty})`);
+                    }
+                    // Deduct variant stock
+                    await tx.productVariant.update({
+                        where: { id: variant.id },
+                        data: { stockQty: { decrement: qty } }
+                    });
+                    // Also deduct parent product stock
+                    const product = await tx.product.findUnique({
+                        where: { id: variant.productId },
+                        select: { id: true, stockQty: true, sku: true }
+                    });
+                    if (!product) {
+                        throw new Error(`Product for variant ${item.variantId} not found`);
+                    }
+                    if (product.stockQty < qty) {
+                        throw new Error(`Insufficient product stock for SKU ${product.sku} (available: ${product.stockQty})`);
+                    }
+                    const newProductStock = product.stockQty - qty;
+                    await tx.product.update({
+                        where: { id: product.id },
+                        data: {
+                            stockQty: newProductStock,
+                            ...(newProductStock === 0 ? { status: 'SOLDOUT' } : {}),
+                        }
+                    });
+                    await (tx as any).stockLog.create({
+                        data: {
+                            productId: product.id,
+                            changeQty: -qty,
+                            balanceAfter: newProductStock,
+                            reason: 'SOLD',
+                            memo: `Variant ID: ${variant.id}`,
+                            orderId: null,
+                            createdBy: session.user.email ?? null,
+                        }
+                    });
+                } else {
+                    // --- Product-level stock path (no variant) ---
+                    const product = await tx.product.findUnique({
+                        where: { id: BigInt(item.productId) },
+                        select: { id: true, stockQty: true, sku: true }
+                    });
+                    if (!product) {
+                        throw new Error(`Product ${item.productId} not found`);
+                    }
+                    if (product.stockQty < qty) {
+                        throw new Error(`Insufficient stock for SKU ${product.sku} (available: ${product.stockQty})`);
+                    }
+                    const newStock = product.stockQty - qty;
+                    await tx.product.update({
+                        where: { id: product.id },
+                        data: {
+                            stockQty: newStock,
+                            ...(newStock === 0 ? { status: 'SOLDOUT' } : {}),
+                        }
+                    });
+                    await (tx as any).stockLog.create({
+                        data: {
+                            productId: product.id,
+                            changeQty: -qty,
+                            balanceAfter: newStock,
+                            reason: 'SOLD',
+                            memo: null,
+                            orderId: null,
+                            createdBy: session.user.email ?? null,
+                        }
+                    });
                 }
-                const newStock = product.stockQty - qty;
-                await tx.product.update({
-                    where: { id: product.id },
-                    data: {
-                        stockQty: newStock,
-                        // Auto-mark SOLDOUT when stock hits 0
-                        ...(newStock === 0 ? { status: 'SOLDOUT' } : {}),
-                    }
-                });
-                // Stock log entry
-                await (tx as any).stockLog.create({
-                    data: {
-                        productId: product.id,
-                        changeQty: -qty,
-                        balanceAfter: newStock,
-                        reason: 'SOLD',
-                        memo: null,
-                        orderId: null, // will be updated after order creation if needed
-                        createdBy: session.user.email ?? null,
-                    }
-                });
             }
 
             // 2. Create Order
@@ -136,6 +183,7 @@ export async function POST(request: Request) {
                         create: items.map((i: any) => ({
                             productId: BigInt(i.productId),
                             optionId: i.optionId ? BigInt(i.optionId) : null,
+                            variantId: i.variantId ? BigInt(i.variantId) : null,
                             quantity: Number(i.quantity),
                             priceUsd: Number(i.priceUsd)
                         }))
@@ -143,7 +191,7 @@ export async function POST(request: Request) {
                 }
             });
 
-            // 2. Deduct Points if used
+            // 3. Deduct Points if used
             if (pts > 0) {
                 await tx.user.update({
                     where: { id: userId },
@@ -160,7 +208,7 @@ export async function POST(request: Request) {
                 });
             }
 
-            // 3. Mark Coupon as used
+            // 4. Mark Coupon as used
             if (appliedCouponId) {
                 await tx.coupon.update({
                     where: { id: appliedCouponId },
@@ -176,8 +224,7 @@ export async function POST(request: Request) {
                 });
             }
 
-            // 4. Reward new points (e.g. 1% of final payment amount)
-            // Example: totalUsd $100 -> reward 1 point.
+            // 5. Reward new points (1% of final payment amount)
             const rewardPoints = Math.floor(totalUsd * 0.01);
             if (rewardPoints > 0) {
                 const updatedUser = await tx.user.update({
@@ -197,6 +244,43 @@ export async function POST(request: Request) {
 
             return newOrder;
         });
+
+        // ── Post-transaction: check for low stock and send alert ──
+        try {
+            const orderedProductIds = items.map((i: any) => BigInt(i.productId));
+            const productsToCheck = await prisma.product.findMany({
+                where: { id: { in: orderedProductIds } },
+                select: {
+                    id: true,
+                    sku: true,
+                    stockQty: true,
+                    stockAlertQty: true,
+                    translations: {
+                        where: { langCode: 'en' },
+                        select: { name: true }
+                    }
+                }
+            });
+
+            const lowStockProducts = productsToCheck
+                .filter(p => p.stockQty <= p.stockAlertQty)
+                .map(p => ({
+                    sku: p.sku,
+                    name: p.translations[0]?.name ?? p.sku,
+                    stockQty: p.stockQty,
+                    alertQty: p.stockAlertQty,
+                }));
+
+            if (lowStockProducts.length > 0) {
+                // Non-blocking — do not await
+                sendLowStockAlert(lowStockProducts).catch(err =>
+                    console.error('Low stock alert email failed (non-critical):', err)
+                );
+            }
+        } catch (stockCheckErr) {
+            // Stock check failure is non-critical — order is already created
+            console.error('Post-order low stock check failed (non-critical):', stockCheckErr);
+        }
 
         // ── Send confirmation emails (non-blocking: failure won't break order) ──
         try {
@@ -294,7 +378,7 @@ export async function POST(request: Request) {
                         subject: `[KKShop Admin] New Order #${shortId} — $${Number(orderDetail.totalUsd).toFixed(2)}`,
                         html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
                             <div style="background:#1a1a2e;padding:20px;text-align:center;">
-                                <h1 style="color:white;margin:0;font-size:20px;">🛒 New Order Received</h1>
+                                <h1 style="color:white;margin:0;font-size:20px;">New Order Received</h1>
                             </div>
                             <div style="padding:24px;background:#fff;">
                                 <div style="background:#f0f9ff;padding:16px;border-radius:8px;border-left:4px solid #0ea5e9;margin-bottom:20px;">

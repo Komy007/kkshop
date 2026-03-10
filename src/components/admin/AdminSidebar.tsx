@@ -1,10 +1,11 @@
 import React from 'react';
 import Link from 'next/link';
 import { auth } from '@/auth';
-import { LayoutDashboard, Package, ShoppingCart, Users, Store, Settings } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, Users, Store, Settings, TrendingUp, BarChart2 } from 'lucide-react';
 
 const NAV = [
   { label: '대시보드', icon: LayoutDashboard, href: '/admin' },
+  { label: '분석', icon: BarChart2, href: '/admin/analytics' },
   {
     label: '상품 관리', icon: Package,
     children: [
@@ -13,6 +14,8 @@ const NAV = [
       { label: '🟡 상품 검수', href: '/admin/products/review' },
       { label: '새 상품 등록', href: '/admin/products/new' },
       { label: '카테고리 관리', href: '/admin/categories' },
+      { label: '묶음상품 관리', href: '/admin/products/bundles' },
+      { label: 'Q&A 관리', href: '/admin/products/qa' },
     ],
   },
   { label: '주문 관리', icon: ShoppingCart, href: '/admin/orders' },
@@ -25,9 +28,17 @@ const NAV = [
   },
   { label: '공급업체 관리', icon: Store, href: '/admin/suppliers' },
   {
+    label: '마케팅', icon: TrendingUp,
+    children: [
+      { label: '플래시 세일', href: '/admin/marketing/flash-sale' },
+      { label: '이메일 마케팅', href: '/admin/marketing/email' },
+    ],
+  },
+  {
     label: '설정', icon: Settings,
     children: [
       { label: '랜딩 페이지 설정', href: '/admin/landing-settings' },
+      { label: '배송비 설정', href: '/admin/settings/shipping' },
       { label: '비밀번호 변경', href: '/admin/change-password' },
     ],
   },

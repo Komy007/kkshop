@@ -2,15 +2,15 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'next/navigation';
-import { useAppStore, useSafeAppStore } from '@/store/useAppStore';
-import { Star, ShoppingCart, Heart, ChevronLeft, Check, Minus, Plus, Loader2 } from 'lucide-react';
+import { useSafeAppStore } from '@/store/useAppStore';
+import { Star, Heart, ChevronLeft, Check, Minus, Plus, Loader2, MessageCircle, Lock } from 'lucide-react';
 import TrustBadges from '@/components/TrustBadges';
 import Footer from '@/components/Footer';
 import { useCartStore } from '@/store/useCartStore';
 
 const pdpTranslations: Record<string, any> = {
     ko: {
-        tabs: { desc: '상세 설명', ingredients: '성분 정보', reviews: '고객 리뷰' },
+        tabs: { desc: '상세 설명', ingredients: '성분 정보', reviews: '고객 리뷰', qa: 'Q&A' },
         addToCart: '장바구니 담기',
         added: '담기 완료!',
         buyNow: '바로 구매',
@@ -31,10 +31,26 @@ const pdpTranslations: Record<string, any> = {
             title: '판매자 정보',
             brand: '브랜드',
             company: '상호명',
-        }
+        },
+        qa: {
+            title: '상품 Q&A',
+            askTitle: '질문하기',
+            placeholder: '상품에 대한 질문을 남겨주세요...',
+            submitBtn: '질문 등록',
+            submitting: '등록 중...',
+            privateLabel: '비공개 질문',
+            loginRequired: '로그인 후 질문 가능합니다.',
+            success: '질문이 등록되었습니다. 답변 후 공개됩니다.',
+            error: '오류가 발생했습니다.',
+            noQA: '등록된 Q&A가 없습니다.',
+            answerLabel: 'A.',
+            questionLabel: 'Q.',
+        },
+        wishlistAdd: '찜하기',
+        wishlistAdded: '찜 완료',
     },
     en: {
-        tabs: { desc: 'Description', ingredients: 'Ingredients', reviews: 'Reviews' },
+        tabs: { desc: 'Description', ingredients: 'Ingredients', reviews: 'Reviews', qa: 'Q&A' },
         addToCart: 'Add to Cart',
         added: 'Added!',
         buyNow: 'Buy Now',
@@ -55,10 +71,26 @@ const pdpTranslations: Record<string, any> = {
             title: 'Seller Information',
             brand: 'Brand',
             company: 'Company',
-        }
+        },
+        qa: {
+            title: 'Product Q&A',
+            askTitle: 'Ask a Question',
+            placeholder: 'Leave a question about this product...',
+            submitBtn: 'Submit',
+            submitting: 'Submitting...',
+            privateLabel: 'Private question',
+            loginRequired: 'Please log in to ask a question.',
+            success: 'Question submitted. It will appear after answered.',
+            error: 'An error occurred.',
+            noQA: 'No Q&A yet.',
+            answerLabel: 'A.',
+            questionLabel: 'Q.',
+        },
+        wishlistAdd: 'Wishlist',
+        wishlistAdded: 'Wishlisted',
     },
     km: {
-        tabs: { desc: 'ការពិពណ៌នា', ingredients: 'សមាសធាតុ', reviews: 'មតិអតិថិជន' },
+        tabs: { desc: 'ការពិពណ៌នា', ingredients: 'សមាសធាតុ', reviews: 'មតិអតិថិជន', qa: 'Q&A' },
         addToCart: 'បន្ថែមទៅរទេះ',
         added: 'បានបន្ថែម!',
         buyNow: 'ទិញឥឡូវ',
@@ -79,10 +111,26 @@ const pdpTranslations: Record<string, any> = {
             title: 'ព័ត៌មានអ្នកលក់',
             brand: 'ម៉ាក',
             company: 'ក្រុមហ៊ុន',
-        }
+        },
+        qa: {
+            title: 'Q&A ផលិតផល',
+            askTitle: 'សួរសំណួរ',
+            placeholder: 'ទុកសំណួរអំពីផលិតផលនេះ...',
+            submitBtn: 'បញ្ជូន',
+            submitting: 'កំពុងបញ្ជូន...',
+            privateLabel: 'សំណួរឯកជន',
+            loginRequired: 'សូមចូលប្រព័ន្ធដើម្បីសួរសំណួរ។',
+            success: 'បានបញ្ជូនសំណួរ។',
+            error: 'បានកើតកំហុស។',
+            noQA: 'មិនមាន Q&A ទេ។',
+            answerLabel: 'ចម្លើយ:',
+            questionLabel: 'Q.',
+        },
+        wishlistAdd: 'ចូលចិត្ត',
+        wishlistAdded: 'បានចូលចិត្ត',
     },
     zh: {
-        tabs: { desc: '详细描述', ingredients: '成分信息', reviews: '用户评价' },
+        tabs: { desc: '详细描述', ingredients: '成分信息', reviews: '用户评价', qa: 'Q&A' },
         addToCart: '加入购物车',
         added: '已添加!',
         buyNow: '立即购买',
@@ -103,7 +151,23 @@ const pdpTranslations: Record<string, any> = {
             title: '卖家信息',
             brand: '品牌',
             company: '公司名称',
-        }
+        },
+        qa: {
+            title: '商品问答',
+            askTitle: '提问',
+            placeholder: '请留下关于此商品的问题...',
+            submitBtn: '提交',
+            submitting: '提交中...',
+            privateLabel: '私密提问',
+            loginRequired: '请登录后提问。',
+            success: '问题已提交，回答后将公开显示。',
+            error: '发生错误。',
+            noQA: '暂无问答。',
+            answerLabel: '答:',
+            questionLabel: 'Q.',
+        },
+        wishlistAdd: '收藏',
+        wishlistAdded: '已收藏',
     },
 };
 
@@ -140,7 +204,7 @@ export default function ProductDetailClient() {
 
     const [product, setProduct] = useState<ProductDetail | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<'desc' | 'ingredients' | 'reviews'>('desc');
+    const [activeTab, setActiveTab] = useState<'desc' | 'ingredients' | 'reviews' | 'qa'>('desc');
     const [qty, setQty] = useState(1);
     const [selectedOptionId, setSelectedOptionId] = useState<string>('');
     const [cartAdded, setCartAdded] = useState(false);
@@ -154,6 +218,18 @@ export default function ProductDetailClient() {
     const [isSubmittingReview, setIsSubmittingReview] = useState(false);
     const [reviewMessage, setReviewMessage] = useState({ type: '', text: '' });
     const [uploadingImage, setUploadingImage] = useState(false);
+
+    // Wishlist state
+    const [isWishlisted, setIsWishlisted] = useState(false);
+    const [wishlistLoading, setWishlistLoading] = useState(false);
+
+    // Q&A state
+    const [qaItems, setQaItems] = useState<any[]>([]);
+    const [qaLoading, setQaLoading] = useState(false);
+    const [qaForm, setQaForm] = useState({ question: '', isPrivate: false });
+    const [qaSubmitting, setQaSubmitting] = useState(false);
+    const [qaMessage, setQaMessage] = useState({ type: '', text: '' });
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
 
     // Update selectedOption automatically based on qty if options exist
     useEffect(() => {
@@ -192,6 +268,94 @@ export default function ProductDetailClient() {
         }
         if (mounted) loadProduct();
     }, [params.id, language, mounted]);
+
+    // Track recently viewed + check wishlist status + login
+    useEffect(() => {
+        if (!product || !mounted) return;
+
+        // Recently viewed tracking (localStorage)
+        try {
+            const key = 'recentlyViewed';
+            const existing: string[] = JSON.parse(localStorage.getItem(key) || '[]');
+            const updated = [product.id, ...existing.filter(id => id !== product.id)].slice(0, 20);
+            localStorage.setItem(key, JSON.stringify(updated));
+        } catch {}
+
+        // Check login & wishlist
+        fetch('/api/user/profile')
+            .then(res => res.ok ? res.json() : null)
+            .then(data => {
+                if (data && !data.error) {
+                    setIsLoggedIn(true);
+                    // Check wishlist
+                    fetch('/api/user/wishlist')
+                        .then(res => res.ok ? res.json() : [])
+                        .then((items: any[]) => {
+                            if (Array.isArray(items)) {
+                                setIsWishlisted(items.some((w: any) => w.productId === product.id));
+                            }
+                        })
+                        .catch(() => {});
+                }
+            })
+            .catch(() => {});
+    }, [product, mounted]);
+
+    // Fetch Q&A when tab is active
+    useEffect(() => {
+        if (activeTab === 'qa' && product && mounted) {
+            setQaLoading(true);
+            fetch(`/api/products/${product.id}/qa`)
+                .then(res => res.ok ? res.json() : [])
+                .then(data => setQaItems(Array.isArray(data) ? data : []))
+                .catch(() => {})
+                .finally(() => setQaLoading(false));
+        }
+    }, [activeTab, product?.id, mounted]);
+
+    const handleToggleWishlist = async () => {
+        if (!product || wishlistLoading) return;
+        setWishlistLoading(true);
+        try {
+            const res = await fetch('/api/user/wishlist', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ productId: product.id }),
+            });
+            if (res.ok) {
+                setIsWishlisted(prev => !prev);
+            } else if (res.status === 401) {
+                window.location.href = `/login?callbackUrl=/products/${product.id}`;
+            }
+        } catch {}
+        setWishlistLoading(false);
+    };
+
+    const submitQA = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!product || !qaForm.question.trim()) return;
+        setQaSubmitting(true);
+        setQaMessage({ type: '', text: '' });
+        try {
+            const res = await fetch(`/api/products/${product.id}/qa`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ question: qaForm.question.trim(), isPrivate: qaForm.isPrivate }),
+            });
+            if (res.ok) {
+                setQaMessage({ type: 'success', text: t.qa.success });
+                setQaForm({ question: '', isPrivate: false });
+            } else if (res.status === 401) {
+                setQaMessage({ type: 'error', text: t.qa.loginRequired });
+            } else {
+                setQaMessage({ type: 'error', text: t.qa.error });
+            }
+        } catch {
+            setQaMessage({ type: 'error', text: t.qa.error });
+        } finally {
+            setQaSubmitting(false);
+        }
+    };
 
     // Fetch reviews when tab is active
     useEffect(() => {
@@ -433,9 +597,25 @@ export default function ProductDetailClient() {
                             {(product as any).brandName && (
                                 <p className="text-sm font-bold text-gray-500 mb-1">{(product as any).brandName}</p>
                             )}
-                            <h1 className="text-3xl md:text-4xl font-black text-gray-900 leading-tight tracking-tight">
-                                {product.name}
-                            </h1>
+                            <div className="flex items-start gap-3">
+                                <h1 className="flex-1 text-3xl md:text-4xl font-black text-gray-900 leading-tight tracking-tight">
+                                    {product.name}
+                                </h1>
+                                {/* Wishlist Button */}
+                                <button
+                                    onClick={handleToggleWishlist}
+                                    disabled={wishlistLoading}
+                                    className={`flex-shrink-0 mt-1 flex items-center gap-1.5 px-3 py-2 rounded-xl border text-sm font-bold transition-all active:scale-95 ${
+                                        isWishlisted
+                                            ? 'bg-red-50 border-red-300 text-red-500'
+                                            : 'bg-white border-gray-200 text-gray-500 hover:border-red-300 hover:text-red-500'
+                                    }`}
+                                    aria-label={isWishlisted ? t.wishlistAdded : t.wishlistAdd}
+                                >
+                                    <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-red-500 text-red-500' : ''}`} />
+                                    <span className="hidden sm:inline">{isWishlisted ? t.wishlistAdded : t.wishlistAdd}</span>
+                                </button>
+                            </div>
                             {product.isHotSale && (
                                 <span className="inline-block mt-3 px-3 py-1 bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs font-bold rounded-full shadow-sm animate-pulse">
                                     🔥 HOT SALE
@@ -654,12 +834,12 @@ export default function ProductDetailClient() {
                     </div>
 
                     {/* Tab Header */}
-                    <nav className="flex border-b border-gray-200 mb-8">
-                        {(['desc', 'ingredients', 'reviews'] as const).map((tab) => (
+                    <nav className="flex border-b border-gray-200 mb-8 overflow-x-auto scrollbar-hide">
+                        {(['desc', 'ingredients', 'reviews', 'qa'] as const).map((tab) => (
                             <button
                                 key={tab}
                                 onClick={() => setActiveTab(tab)}
-                                className={`py-4 px-6 text-sm font-bold transition-all border-b-2 ${activeTab === tab
+                                className={`flex-shrink-0 py-4 px-5 text-sm font-bold transition-all border-b-2 ${activeTab === tab
                                     ? 'border-brand-primary text-gray-900'
                                     : 'border-transparent text-gray-500 hover:text-gray-800'
                                     }`}
@@ -798,6 +978,98 @@ export default function ProductDetailClient() {
                                                     {r.imageUrl && (
                                                         <img src={r.imageUrl} alt="Review attachment" className="rounded-lg object-cover max-h-32 border border-gray-100" />
                                                     )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                        {activeTab === 'qa' && (
+                            <div className="space-y-6 animate-fade-in">
+                                <h4 className="font-bold text-gray-900">{t.qa.title}</h4>
+
+                                {/* Ask Form */}
+                                {isLoggedIn ? (
+                                    <div className="bg-gray-50 rounded-2xl p-5 border border-gray-100">
+                                        <h5 className="font-bold text-sm text-gray-700 mb-3 flex items-center gap-1.5">
+                                            <MessageCircle className="w-4 h-4 text-brand-primary" />
+                                            {t.qa.askTitle}
+                                        </h5>
+                                        <form onSubmit={submitQA} className="space-y-3">
+                                            <textarea
+                                                required
+                                                value={qaForm.question}
+                                                onChange={e => setQaForm(prev => ({ ...prev, question: e.target.value }))}
+                                                placeholder={t.qa.placeholder}
+                                                rows={3}
+                                                className="w-full border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-brand-primary/50 focus:border-brand-primary outline-none resize-y"
+                                            />
+                                            <div className="flex items-center justify-between">
+                                                <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={qaForm.isPrivate}
+                                                        onChange={e => setQaForm(prev => ({ ...prev, isPrivate: e.target.checked }))}
+                                                        className="w-4 h-4 rounded text-brand-primary"
+                                                    />
+                                                    <Lock className="w-3 h-3 text-gray-400" />
+                                                    {t.qa.privateLabel}
+                                                </label>
+                                                <button
+                                                    type="submit"
+                                                    disabled={qaSubmitting || !qaForm.question.trim()}
+                                                    className="flex items-center gap-1.5 bg-brand-primary text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-brand-primary/90 transition-all disabled:opacity-50"
+                                                >
+                                                    {qaSubmitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                                                    {qaSubmitting ? t.qa.submitting : t.qa.submitBtn}
+                                                </button>
+                                            </div>
+                                            {qaMessage.text && (
+                                                <p className={`text-sm ${qaMessage.type === 'error' ? 'text-red-500' : 'text-brand-primary font-medium'}`}>
+                                                    {qaMessage.text}
+                                                </p>
+                                            )}
+                                        </form>
+                                    </div>
+                                ) : (
+                                    <div className="bg-gray-50 rounded-2xl p-5 border border-gray-100 text-center">
+                                        <Lock className="w-6 h-6 text-gray-300 mx-auto mb-2" />
+                                        <p className="text-sm text-gray-500">{t.qa.loginRequired}</p>
+                                        <a href={`/login?callbackUrl=/products/${product.id}`} className="inline-block mt-2 text-sm font-bold text-brand-primary hover:underline">
+                                            {language === 'ko' ? '로그인하기' : 'Log In'}
+                                        </a>
+                                    </div>
+                                )}
+
+                                {/* Q&A List */}
+                                <div>
+                                    <h5 className="font-bold text-gray-700 text-sm border-b border-gray-100 pb-3 mb-4">
+                                        {t.qa.title} ({qaItems.length})
+                                    </h5>
+                                    {qaLoading ? (
+                                        <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-brand-primary" /></div>
+                                    ) : qaItems.length === 0 ? (
+                                        <div className="text-center py-10 bg-gray-50 rounded-2xl border border-gray-100/50">
+                                            <p className="text-gray-400 text-sm">{t.qa.noQA}</p>
+                                        </div>
+                                    ) : (
+                                        <div className="divide-y divide-gray-100">
+                                            {qaItems.map((qa: any) => (
+                                                <div key={qa.id} className="py-5 first:pt-2">
+                                                    <p className="text-sm font-bold text-gray-800 mb-2">
+                                                        <span className="text-brand-primary mr-1">{t.qa.questionLabel}</span>
+                                                        {qa.question}
+                                                    </p>
+                                                    <div className="ml-3 pl-3 border-l-2 border-brand-primary/30">
+                                                        <p className="text-sm text-gray-700">
+                                                            <span className="font-bold text-brand-primary mr-1">{t.qa.answerLabel}</span>
+                                                            {qa.answer}
+                                                        </p>
+                                                        {qa.answeredAt && (
+                                                            <p className="text-[11px] text-gray-400 mt-1">{new Date(qa.answeredAt).toLocaleDateString()}</p>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             ))}
                                         </div>
