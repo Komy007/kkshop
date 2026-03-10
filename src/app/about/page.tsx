@@ -93,9 +93,9 @@ export default function AboutPage() {
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         {[
-                            { icon: '🇰🇷', title: 'Made in Korea', desc: 'Cosmetics & skincare sourced directly from Korean manufacturers' },
-                            { icon: '🔬', title: 'Lab Tested', desc: 'Products meet Korean MFDS safety standards for skin health' },
-                            { icon: '💯', title: 'No Counterfeits', desc: 'Zero tolerance for replicas or products of unknown origin' },
+                            { icon: '🇰🇷', title: 'Made in Korea', desc: 'All cosmetics & skincare are genuine Korean-brand products manufactured in South Korea' },
+                            { icon: '🔬', title: 'Korean-Certified', desc: 'Products meet Korean MFDS safety standards — trusted by Korean consumers daily' },
+                            { icon: '💯', title: 'No Counterfeits', desc: 'Zero tolerance for replicas or imitations — 100% authentic K-Beauty only' },
                         ].map(item => (
                             <div key={item.title} className="glass-card rounded-2xl p-5 flex flex-col gap-3">
                                 <span className="text-3xl">{item.icon}</span>
@@ -120,11 +120,11 @@ export default function AboutPage() {
                             Korean-Quality Verified Products
                         </h2>
                         <p className="text-gray-400 text-base sm:text-lg leading-relaxed max-w-xl">
-                            Beyond cosmetics, we offer daily lifestyle products that pass the <strong className="text-white">strict standards Korean consumers demand</strong>.
-                            Regardless of country of manufacture — if Koreans trust it and use it daily, we bring it to Cambodia at the best price.
+                            Beyond cosmetics, we curate lifestyle products by <strong className="text-white">Korean consumer standards</strong> — meaning Koreans actually use, trust, and recommend them for quality and value.
+                            Not necessarily shipped from Korea, but verified through real Korean insight: great quality, great price, no compromise.
                         </p>
                         <p className="text-gray-500 text-sm mt-3">
-                            화장품 외 생활용품은 한국인이 직접 사용하며 검증한 가성비 우수 제품만 엄선합니다.
+                            화장품 외 생활용품은 한국인이 직접 사용·검증한 가성비 우수 제품만 엄선합니다. 한국에서 직송이 아닌, 한국인의 기준으로 검증된 상품입니다.
                         </p>
                     </div>
 
@@ -132,9 +132,9 @@ export default function AboutPage() {
                         <div className="glass-card rounded-2xl p-6 sm:col-span-2 flex items-center gap-5">
                             <span className="text-4xl flex-shrink-0">🏆</span>
                             <div>
-                                <h3 className="font-bold text-white text-lg mb-1">Koreans&apos; Pick</h3>
+                                <h3 className="font-bold text-white text-lg mb-1">Korean Insight, Best Value</h3>
                                 <p className="text-gray-400 text-sm leading-relaxed">
-                                    Trending products hand-selected by Koreans who care about quality. From home goods and electronics accessories to everyday essentials — curated, tested, and loved in Korea before reaching Cambodia.
+                                    Lifestyle products curated through real Korean consumer insight — trusted, tested, and loved by Koreans for their quality and value. Whatever Koreans choose for their daily lives, we bring to Cambodia at the best price.
                                 </p>
                             </div>
                         </div>

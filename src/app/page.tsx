@@ -24,7 +24,7 @@ const homeT: Record<string, any> = {
         fast: '⚡ 프놈펜 빠른 배송',
         heroBadge: '🇰🇷 캄보디아 No.1 한국 쇼핑몰',
         heroTitle: '진짜 한국 상품을\n문 앞까지',
-        heroSub: '화장품부터 생활용품까지, 한국인이 직접 큐레이션한 최고의 상품',
+        heroSub: '화장품 100% 한국산 정품 · 한국인이 검증한 가성비 베스트 상품',
         shopNow: '지금 쇼핑하기',
         outOfStock: '품절',
         soldCount: '판매',
@@ -43,7 +43,7 @@ const homeT: Record<string, any> = {
         fast: '⚡ Fast Phnom Penh Delivery',
         heroBadge: '🇰🇷 Cambodia\'s No.1 Korean Shop',
         heroTitle: 'Premium Korean Products\nDelivered to Your Door',
-        heroSub: 'Cosmetics, lifestyle & more — handpicked by Koreans for Cambodia',
+        heroSub: 'Cosmetics, lifestyle & more — Curated by Korean Insight for Cambodia',
         shopNow: 'Shop Now',
         outOfStock: 'Sold Out',
         soldCount: 'sold',
@@ -62,7 +62,7 @@ const homeT: Record<string, any> = {
         fast: '⚡ ដឹកជញ្ជូនរហ័ស',
         heroBadge: '🇰🇷 ហាងកូរ៉េលេខ ១ នៅកម្ពុជា',
         heroTitle: 'ផលិតផលកូរ៉េ Premium\nដល់ទ្វារផ្ទះអ្នក',
-        heroSub: 'គ្រឿងសំអាង ផ្ទះ & ច្រើនទៀត — ជ្រើសរើសដោយជនជាតិកូរ៉េ',
+        heroSub: 'គ្រឿងសំអាង 100% កូរ៉េ · ផ្ទះ & ច្រើនទៀត — ផ្ទៀងផ្ទាត់ & ជ្រើសរើសដោយជំនាញកូរ៉េ',
         shopNow: 'ទិញឥឡូវ',
         outOfStock: 'អស់ស្តុក',
         soldCount: 'បានលក់',
@@ -81,7 +81,7 @@ const homeT: Record<string, any> = {
         fast: '⚡ 金边快速配送',
         heroBadge: '🇰🇷 柬埔寨第一韩国购物平台',
         heroTitle: '韩国精品\n直达您家门口',
-        heroSub: '美妆、生活用品等 — 由韩国人为柬埔寨精心挑选',
+        heroSub: '100%韩国化妆品 · 生活精选 — 经韩国专业甄选与品质认证',
         shopNow: '立即购物',
         outOfStock: '已售罄',
         soldCount: '已售',
@@ -212,7 +212,6 @@ function HeroBanner({ t }: { t: any }) {
             />
             {/* Emoji decorations */}
             <div className="absolute right-4 top-4 text-5xl sm:text-6xl opacity-80 select-none">🇰🇷</div>
-            <div className="absolute right-16 bottom-4 text-3xl opacity-40 select-none">✨</div>
 
             <div className="relative z-10 px-5 py-5 max-w-[70%]">
                 <span className="inline-block text-[10px] sm:text-xs font-extrabold text-white/70 bg-white/10 border border-white/20 px-2 py-0.5 rounded-full mb-2 uppercase tracking-wider">
