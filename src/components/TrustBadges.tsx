@@ -91,9 +91,9 @@ export default function TrustBadges({ variant = 'horizontal', className = '' }: 
                 {badges.map((badge, idx) => (
                     <div
                         key={idx}
-                        className="inline-flex items-center gap-1.5 bg-white/5 backdrop-blur-sm border border-white/10 rounded-full px-3 py-1.5 text-xs font-semibold text-white/90 hover:bg-white/10 transition-colors"
+                        className="inline-flex items-center gap-1.5 bg-gray-100 border border-gray-200 rounded-full px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-200 transition-colors"
                     >
-                        <div className={`w-4 h-4 rounded-full bg-gradient-to-r ${badge.color} flex items-center justify-center`}>
+                        <div className={`w-5 h-5 rounded-full bg-gradient-to-r ${badge.color} flex items-center justify-center text-white flex-shrink-0`}>
                             <badge.icon />
                         </div>
                         <span>{badge.label}</span>
