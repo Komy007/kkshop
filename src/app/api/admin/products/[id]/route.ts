@@ -24,7 +24,7 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
                 translations: { orderBy: { langCode: 'asc' } },
                 images: { orderBy: { sortOrder: 'asc' } },
                 options: { orderBy: { sortOrder: 'asc' } },
-                productVariants: { orderBy: { sortOrder: 'asc' } },
+                variants: { orderBy: { sortOrder: 'asc' } },
                 category: true,
                 supplier: { select: { id: true, companyName: true, brandName: true } },
             },
@@ -99,7 +99,7 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
                 labelEn: opt.labelEn ?? null,
                 sortOrder: opt.sortOrder,
             })),
-            variants: (product as any).productVariants.map((v: any) => ({
+            variants: product.variants.map((v: any) => ({
                 id: v.id.toString(),
                 variantType: v.variantType,
                 variantValue: v.variantValue,
