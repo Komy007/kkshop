@@ -40,7 +40,16 @@ jobs:
           username: _json_key_base64
           password: ${{ secrets.GCP_SA_KEY }}
 
-      # ── 5. Build Docker image ────────────────────────────────────────────
+      # ── 5. Sync database schema ─────────────────────────────────────────
+      - name: Sync database schema
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+        run: |
+          npm install --legacy-peer-deps
+          npx prisma db push --skip-generate
+
+      # ── 6. Build Docker image ────────────────────────────────────────────
       - name: Build Docker image
         run: |
           docker build \
@@ -48,7 +57,7 @@ jobs:
             --tag ${{ env.IMAGE }}:latest \
             .
 
-      # ── 6. Push image to Google Container Registry ───────────────────────
+      # ── 7. Push image to Google Container Registry ───────────────────────
       - name: Push Docker image
         run: |
           docker push ${{ env.IMAGE }}:${{ github.sha }}

@@ -114,7 +114,7 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
         return NextResponse.json(safe);
     } catch (error: any) {
         console.error('GET /api/admin/products/[id] error:', error);
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+        return NextResponse.json({ error: error?.message ?? 'Internal Server Error' }, { status: 500 });
     }
 }
 
@@ -313,6 +313,6 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
         if (error?.code === 'P2002') {
             return NextResponse.json({ error: 'A product with this SKU already exists.' }, { status: 409 });
         }
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+        return NextResponse.json({ error: error?.message ?? 'Internal Server Error' }, { status: 500 });
     }
 }
