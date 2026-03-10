@@ -110,7 +110,7 @@ export async function PATCH(req: Request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
         }
         const body = await req.json();
-        const { id, categoryId, isNew, status, approvalStatus, adminNote, stockQty, priceUsd, isHotSale, hotSalePrice, costPrice, stockAlertQty } = body;
+        const { id, categoryId, isNew, status, approvalStatus, stockQty, priceUsd, isHotSale, hotSalePrice, costPrice, stockAlertQty } = body;
         if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
 
         const data: any = {};
@@ -126,7 +126,6 @@ export async function PATCH(req: Request) {
         }
         if (status !== undefined) data.status = status;
         if (approvalStatus !== undefined) data.approvalStatus = approvalStatus;
-        if (adminNote !== undefined) data.adminNote = adminNote;
         if (stockQty !== undefined) data.stockQty = parseInt(stockQty);
         if (priceUsd !== undefined) data.priceUsd = parseFloat(priceUsd);
         if (costPrice !== undefined) data.costPrice = costPrice ? parseFloat(costPrice) : null;
