@@ -105,11 +105,11 @@ export default function CurationSection({ products }: CurationSectionProps) {
                     sku: product.sku,
                     priceUsd: product.priceUsd,
                     stockQty: product.stockQty,
-                    imageUrl: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&q=80&w=400',
+                    imageUrl: product.imageUrl ?? null,
                     name: product.name,
                     shortDesc: product.shortDesc || '',
-                    rating: 4.5,
-                    reviewCount: 128,
+                    rating: product.reviewAvg,
+                    reviewCount: product.reviewCount,
                 }}
             />
         </div>
