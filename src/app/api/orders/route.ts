@@ -3,6 +3,12 @@ import { prisma } from '@/lib/api';
 import { auth } from '@/auth';
 import { sendEmail, sendLowStockAlert } from '@/lib/mail';
 
+/** HTML-escape user input to prevent XSS in email templates */
+function escHtml(s: string | null | undefined): string {
+    if (!s) return '';
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;');
+}
+
 export async function POST(request: Request) {
     const session = await auth();
     // Allow guest checkout or require login based on business rule.
@@ -48,7 +54,12 @@ export async function POST(request: Request) {
                 where: { nameEn: province },
                 select: { shippingFee: true },
             });
-            if (provinceRecord) shippingFee = Number(provinceRecord.shippingFee);
+            if (provinceRecord) {
+                shippingFee = Number(provinceRecord.shippingFee);
+            } else {
+                // Province name not found in DB — reject to prevent $0 shipping
+                return NextResponse.json({ error: 'Invalid province selected. Please refresh and select again.' }, { status: 400 });
+            }
         }
 
         if (couponCode) {
@@ -66,23 +77,36 @@ export async function POST(request: Request) {
                 return NextResponse.json({ error: 'Coupon usage limit reached' }, { status: 400 });
             }
 
+            // CRITICAL: per-user coupon reuse prevention
+            const alreadyUsed = await prisma.userCoupon.findFirst({
+                where: { userId, couponId: coupon.id },
+            });
+            if (alreadyUsed) {
+                return NextResponse.json({ error: 'You have already used this coupon' }, { status: 400 });
+            }
+
             appliedCouponId = coupon.id;
 
             if (coupon.type === 'PERCENT') {
-                discountAmount = subtotalUsd * (Number(coupon.discountValue) / 100);
+                // Cap percent discount to subtotal (safety)
+                discountAmount = Math.min(
+                    subtotalUsd * (Number(coupon.discountValue) / 100),
+                    subtotalUsd
+                );
             } else if (coupon.type === 'FIXED') {
-                discountAmount = Number(coupon.discountValue);
+                // CRITICAL: cap fixed discount to subtotal — prevents negative totals
+                discountAmount = Math.min(Number(coupon.discountValue), subtotalUsd);
             } else if (coupon.type === 'FREE_SHIPPING') {
                 shippingFee = 0;
             }
         }
 
         // Calculate Total
-        // Total = Subtotal + Shipping - Discount - Points (1 point = $1 USD discount)
-        const pointDiscountUsd = pts;
+        // CRITICAL: cap points to max useful amount — cannot redeem more than the remaining total
+        const maxUsablePoints = Math.max(0, Math.round(subtotalUsd + shippingFee - discountAmount));
+        const effectivePts = Math.min(pts, maxUsablePoints);
 
-        let totalUsd = subtotalUsd + shippingFee - discountAmount - pointDiscountUsd;
-        if (totalUsd < 0) totalUsd = 0;
+        const totalUsd = Math.max(0, subtotalUsd + shippingFee - discountAmount - effectivePts);
 
         // Transaction for Order Creation + Stock Decrement + Point Deduction + Coupon Update
         const order = await prisma.$transaction(async (tx) => {
@@ -185,7 +209,7 @@ export async function POST(request: Request) {
                     subtotalUsd,
                     shippingFee,
                     discountAmount,
-                    pointsUsed: pts,
+                    pointsUsed: effectivePts,
                     totalUsd,
                     couponId: appliedCouponId,
                     status: 'PENDING',
@@ -201,18 +225,18 @@ export async function POST(request: Request) {
                 }
             });
 
-            // 3. Deduct Points if used
-            if (pts > 0) {
+            // 3. Deduct Points if used (use effectivePts — already capped to max useful)
+            if (effectivePts > 0) {
                 await tx.user.update({
                     where: { id: userId },
-                    data: { pointBalance: { decrement: pts } }
+                    data: { pointBalance: { decrement: effectivePts } }
                 });
                 await tx.userPoint.create({
                     data: {
                         userId,
-                        amount: -pts,
+                        amount: -effectivePts,
                         reason: `주문 결제 사용 (Order #${newOrder.id})`,
-                        balanceAfter: user.pointBalance - pts,
+                        balanceAfter: user.pointBalance - effectivePts,
                         orderId: newOrder.id
                     }
                 });
@@ -345,6 +369,14 @@ export async function POST(request: Request) {
 
                 const shortId = order.id.slice(0, 8).toUpperCase();
 
+                // Escape all user-supplied strings before embedding in HTML (XSS prevention)
+                const safeName = escHtml(customerName);
+                const safeEmail = escHtml(customerEmail);
+                const safePhone = escHtml(customerPhone);
+                const safeAddress = escHtml(address);
+                const safeDetail = escHtml(detailAddress);
+                const safeNotes = escHtml(notes);
+
                 // 1. Customer confirmation email
                 if (customerEmail) {
                     await sendEmail({
@@ -356,7 +388,7 @@ export async function POST(request: Request) {
                                 <p style="color:rgba(255,255,255,0.85);margin:6px 0 0;font-size:14px;">Your Order is Confirmed!</p>
                             </div>
                             <div style="padding:24px;background:#fff;">
-                                <h2 style="color:#333;margin-top:0;">Hello, ${customerName}!</h2>
+                                <h2 style="color:#333;margin-top:0;">Hello, ${safeName}!</h2>
                                 <p style="color:#555;">Thank you for shopping at KKShop. We have received your order and will process it shortly.</p>
                                 <div style="background:#fff0f8;padding:16px;border-radius:8px;margin:16px 0;border:1px solid #f9a8d4;">
                                     <p style="margin:0;font-size:13px;color:#888;">Order ID</p>
@@ -365,12 +397,12 @@ export async function POST(request: Request) {
                                 ${orderSummaryHtml}
                                 <div style="background:#f9f9f9;padding:16px;border-radius:8px;margin:16px 0;">
                                     <p style="margin:0 0 6px;font-weight:bold;color:#333;">Delivery Address</p>
-                                    <p style="margin:0;color:#555;">${address}${detailAddress ? ', ' + detailAddress : ''}</p>
+                                    <p style="margin:0;color:#555;">${safeAddress}${safeDetail ? ', ' + safeDetail : ''}</p>
                                 </div>
                                 <p style="color:#999;font-size:13px;margin-top:24px;">Questions? Contact us at <a href="https://kkshop.cc" style="color:#e91e8c;">kkshop.cc</a></p>
                             </div>
                             <div style="background:#f5f5f5;padding:12px;text-align:center;">
-                                <p style="color:#bbb;font-size:11px;margin:0;">© 2025 KKShop · Cambodia K-Beauty</p>
+                                <p style="color:#bbb;font-size:11px;margin:0;">© ${new Date().getFullYear()} KKShop · Cambodia K-Beauty</p>
                             </div>
                         </div>`,
                     });
@@ -392,12 +424,12 @@ export async function POST(request: Request) {
                             </div>
                             <div style="padding:24px;background:#fff;">
                                 <div style="background:#f0f9ff;padding:16px;border-radius:8px;border-left:4px solid #0ea5e9;margin-bottom:20px;">
-                                    <p style="margin:0 0 6px;"><strong>Order:</strong> #${order.id}</p>
-                                    <p style="margin:0 0 6px;"><strong>Customer:</strong> ${customerName}</p>
-                                    <p style="margin:0 0 6px;"><strong>Email:</strong> ${customerEmail}</p>
-                                    <p style="margin:0 0 6px;"><strong>Phone:</strong> ${customerPhone}</p>
-                                    <p style="margin:0 0 6px;"><strong>Address:</strong> ${address}${detailAddress ? ', ' + detailAddress : ''}</p>
-                                    ${notes ? `<p style="margin:0 0 6px;"><strong>Notes:</strong> ${notes}</p>` : ''}
+                                    <p style="margin:0 0 6px;"><strong>Order:</strong> #${shortId}</p>
+                                    <p style="margin:0 0 6px;"><strong>Customer:</strong> ${safeName}</p>
+                                    <p style="margin:0 0 6px;"><strong>Email:</strong> ${safeEmail}</p>
+                                    <p style="margin:0 0 6px;"><strong>Phone:</strong> ${safePhone}</p>
+                                    <p style="margin:0 0 6px;"><strong>Address:</strong> ${safeAddress}${safeDetail ? ', ' + safeDetail : ''}</p>
+                                    ${safeNotes ? `<p style="margin:0 0 6px;"><strong>Notes:</strong> ${safeNotes}</p>` : ''}
                                     <p style="margin:0;font-size:18px;font-weight:bold;color:#0ea5e9;"><strong>Total: $${Number(orderDetail.totalUsd).toFixed(2)}</strong></p>
                                 </div>
                                 ${orderSummaryHtml}

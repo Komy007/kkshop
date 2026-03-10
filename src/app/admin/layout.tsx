@@ -160,7 +160,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     <Link href="/" className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg text-xs">쇼핑몰</Link>
                 </header>
 
-                <main className="flex-1 overflow-y-auto">
+                <main className="flex-1 overflow-y-auto overflow-x-auto min-w-0">
                     {children}
                 </main>
             </div>

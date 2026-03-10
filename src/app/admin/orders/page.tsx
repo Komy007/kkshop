@@ -6,8 +6,23 @@ import { revalidatePath } from 'next/cache';
 
 export const dynamic = 'force-dynamic';
 
+// Valid state machine transitions: only these paths are allowed
+const ALLOWED_TRANSITIONS: Record<string, string[]> = {
+    PENDING:    ['CONFIRMED', 'CANCELLED'],
+    CONFIRMED:  ['SHIPPING', 'CANCELLED'],
+    SHIPPING:   ['DELIVERED'],
+    DELIVERED:  [],
+    CANCELLED:  [],
+};
+
 async function updateOrderStatus(orderId: string, newStatus: string) {
     'use server';
+    // Validate state machine transition
+    const current = await prisma.order.findUnique({ where: { id: orderId }, select: { status: true } });
+    if (!current) return;
+    const allowed = ALLOWED_TRANSITIONS[current.status] ?? [];
+    if (!allowed.includes(newStatus)) return; // silently reject invalid transitions
+
     // When cancelling an order, restore stock for each item
     if (newStatus === 'CANCELLED') {
         const order = await prisma.order.findUnique({

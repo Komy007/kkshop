@@ -246,6 +246,7 @@ export default function InventoryPage() {
                         <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>
                     ) : (
                         <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                            <div className="overflow-x-auto">
                             <table className="w-full text-left">
                                 <thead>
                                     <tr className="bg-gray-50 border-b border-gray-100 text-xs text-gray-500 font-medium">
@@ -325,6 +326,7 @@ export default function InventoryPage() {
                                     ))}
                                 </tbody>
                             </table>
+                            </div>
                         </div>
                     )}
                 </>
@@ -332,6 +334,7 @@ export default function InventoryPage() {
 
             {tab === 'history' && (
                 <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                    <div className="overflow-x-auto">
                     <table className="w-full text-left">
                         <thead>
                             <tr className="bg-gray-50 border-b border-gray-100 text-xs text-gray-500 font-medium">
@@ -401,6 +404,7 @@ export default function InventoryPage() {
                             })}
                         </tbody>
                     </table>
+                    </div>
                 </div>
             )}
 

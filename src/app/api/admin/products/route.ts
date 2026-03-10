@@ -117,7 +117,13 @@ export async function PATCH(req: Request) {
         if (categoryId !== undefined) data.categoryId = categoryId ? BigInt(categoryId) : null;
         if (isNew !== undefined) data.isNew = Boolean(isNew);
         if (isHotSale !== undefined) data.isHotSale = Boolean(isHotSale);
-        if (hotSalePrice !== undefined) data.hotSalePrice = hotSalePrice ? parseFloat(hotSalePrice) : null;
+        if (hotSalePrice !== undefined) {
+            const parsedHot = hotSalePrice ? parseFloat(hotSalePrice) : null;
+            if (parsedHot !== null && priceUsd !== undefined && parsedHot >= parseFloat(priceUsd)) {
+                return NextResponse.json({ error: 'Hot sale price must be lower than the regular price.' }, { status: 400 });
+            }
+            data.hotSalePrice = parsedHot;
+        }
         if (status !== undefined) data.status = status;
         if (approvalStatus !== undefined) data.approvalStatus = approvalStatus;
         if (adminNote !== undefined) data.adminNote = adminNote;

@@ -194,7 +194,10 @@ export default function GNB() {
                                             <Settings className="w-4 h-4" /> My Page
                                         </Link>
                                         <button
-                                            onClick={() => signOut()}
+                                            onClick={() => {
+                                                useCartStore.getState().clearCart();
+                                                signOut();
+                                            }}
                                             className="px-4 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-50 text-left flex items-center gap-2"
                                         >
                                             <LogOut className="w-4 h-4" /> Logout

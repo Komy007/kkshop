@@ -206,6 +206,7 @@ export default function AdminCouponsPage() {
                 </div>
             ) : (
                 <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                    <div className="overflow-x-auto">
                     <table className="w-full text-left">
                         <thead>
                             <tr className="bg-gray-50 border-b border-gray-200 text-xs text-gray-600 font-semibold tracking-wider">
@@ -266,6 +267,7 @@ export default function AdminCouponsPage() {
                             })}
                         </tbody>
                     </table>
+                    </div>
                 </div>
             )}
         </div>

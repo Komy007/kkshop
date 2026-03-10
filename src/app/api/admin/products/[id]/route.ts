@@ -155,7 +155,15 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
         if (approvalStatus !== undefined) productData.approvalStatus = approvalStatus;
         if (isNew !== undefined) productData.isNew = Boolean(isNew);
         if (isHotSale !== undefined) productData.isHotSale = Boolean(isHotSale);
-        if (hotSalePrice !== undefined) productData.hotSalePrice = hotSalePrice ? parseFloat(hotSalePrice) : null;
+        if (hotSalePrice !== undefined) {
+            const parsedHot = hotSalePrice ? parseFloat(hotSalePrice) : null;
+            const parsedRegular = priceUsd !== undefined ? parseFloat(priceUsd) : null;
+            // Hot sale price must be strictly less than regular price
+            if (parsedHot !== null && parsedRegular !== null && parsedHot >= parsedRegular) {
+                return NextResponse.json({ error: 'Hot sale price must be lower than the regular price.' }, { status: 400 });
+            }
+            productData.hotSalePrice = parsedHot;
+        }
         if (brandName !== undefined) productData.brandName = brandName || null;
         if (volume !== undefined) productData.volume = volume || null;
         if (skinType !== undefined) productData.skinType = skinType || null;
