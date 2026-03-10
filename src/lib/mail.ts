@@ -219,3 +219,138 @@ export async function sendPasswordResetEmail(to: string, resetUrl: string) {
         html,
     });
 }
+
+export async function sendWelcomeEmail(to: string, name: string, referralCode: string) {
+    const { transporter, fromAddress } = await getTransporterAndFrom();
+    const baseUrl = process.env.NEXTAUTH_URL || 'https://kkshop.cc';
+    const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f9fafb;font-family:Arial,sans-serif;">
+  <div style="max-width:520px;margin:32px auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.08);">
+    <div style="background:linear-gradient(135deg,#6366f1 0%,#ec4899 100%);padding:28px 32px;text-align:center;">
+      <h1 style="margin:0;font-size:28px;color:#fff;font-weight:900;letter-spacing:-0.5px;">KKShop</h1>
+      <p style="margin:6px 0 0;color:rgba(255,255,255,0.85);font-size:14px;">Cambodia K-Beauty &amp; K-Living</p>
+    </div>
+    <div style="padding:28px 32px;">
+      <h2 style="margin:0 0 12px;font-size:20px;color:#111;font-weight:700;">Welcome, ${name}! 🎉</h2>
+      <p style="margin:0 0 20px;font-size:14px;color:#555;line-height:1.6;">
+        Thank you for joining KKShop. You can now browse and order K-Beauty products delivered right to your door in Cambodia.
+      </p>
+      <div style="background:#f5f3ff;border-radius:10px;padding:16px 20px;margin-bottom:20px;border:1px solid #e0d9ff;">
+        <p style="margin:0 0 4px;font-size:12px;color:#7c3aed;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Your Referral Code</p>
+        <p style="margin:0;font-size:24px;font-weight:900;color:#6366f1;letter-spacing:2px;">${referralCode}</p>
+        <p style="margin:6px 0 0;font-size:12px;color:#888;">Share this code — earn 50 points for every friend who signs up!</p>
+      </div>
+      <div style="text-align:center;margin-bottom:24px;">
+        <a href="${baseUrl}" style="display:inline-block;background:linear-gradient(135deg,#6366f1,#ec4899);color:#fff;padding:13px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:15px;">
+          Start Shopping →
+        </a>
+      </div>
+      <p style="margin:0;font-size:12px;color:#aaa;text-align:center;">
+        Questions? Reach us at <a href="${baseUrl}" style="color:#6366f1;">kkshop.cc</a>
+      </p>
+    </div>
+    <div style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:14px 32px;text-align:center;">
+      <p style="margin:0;font-size:11px;color:#9ca3af;">&copy; ${new Date().getFullYear()} KKShop &middot; Cambodia K-Beauty</p>
+    </div>
+  </div>
+</body>
+</html>`;
+    await transporter.sendMail({ from: fromAddress, to, subject: '[KKShop] Welcome! Your account is ready 🎉', html });
+}
+
+export async function sendSupplierReceivedEmail(to: string, companyName: string) {
+    const { transporter, fromAddress, adminEmail } = await getTransporterAndFrom();
+    const supplierHtml = `
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f9fafb;font-family:Arial,sans-serif;">
+  <div style="max-width:520px;margin:32px auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.08);">
+    <div style="background:linear-gradient(135deg,#0ea5e9 0%,#6366f1 100%);padding:28px 32px;">
+      <h1 style="margin:0;font-size:22px;color:#fff;font-weight:700;">Supplier Application Received</h1>
+      <p style="margin:6px 0 0;color:rgba(255,255,255,0.8);font-size:13px;">KKShop Seller Program</p>
+    </div>
+    <div style="padding:28px 32px;">
+      <p style="margin:0 0 16px;font-size:15px;color:#374151;">Hello <strong>${companyName}</strong>,</p>
+      <p style="margin:0 0 16px;font-size:14px;color:#555;line-height:1.6;">
+        We have received your supplier application on KKShop. Our team will review your application and get back to you within <strong>1-3 business days</strong>.
+      </p>
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:14px 18px;margin-bottom:20px;">
+        <p style="margin:0;font-size:13px;color:#166534;">✅ Application status: <strong>Under Review</strong></p>
+      </div>
+      <p style="margin:0;font-size:13px;color:#888;">You will receive another email when your application has been reviewed. Please check your inbox (and spam folder).</p>
+    </div>
+    <div style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:14px 32px;text-align:center;">
+      <p style="margin:0;font-size:11px;color:#9ca3af;">&copy; ${new Date().getFullYear()} KKShop &middot; Cambodia K-Beauty</p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+    const adminHtml = `<div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;">
+      <div style="background:#1e293b;padding:20px 28px;">
+        <h2 style="margin:0;color:#fff;font-size:18px;">New Supplier Application</h2>
+      </div>
+      <div style="padding:24px 28px;background:#fff;border:1px solid #e5e7eb;">
+        <p style="margin:0 0 8px;"><strong>Company:</strong> ${companyName}</p>
+        <p style="margin:0 0 8px;"><strong>Contact Email:</strong> ${to}</p>
+        <p style="margin:0 0 20px;"><strong>Applied at:</strong> ${new Date().toLocaleString('en-US', { timeZone: 'Asia/Phnom_Penh' })} (Phnom Penh)</p>
+        <a href="https://kkshop.cc/admin/suppliers" style="display:inline-block;background:#6366f1;color:#fff;padding:11px 24px;border-radius:6px;text-decoration:none;font-weight:700;font-size:14px;">
+          Review Application →
+        </a>
+      </div>
+    </div>`;
+
+    await transporter.sendMail({ from: fromAddress, to, subject: '[KKShop] Supplier Application Received — Under Review', html: supplierHtml });
+    await transporter.sendMail({ from: fromAddress, to: adminEmail, subject: `[KKShop Admin] New Supplier Application: ${companyName}`, html: adminHtml });
+}
+
+export async function sendSupplierStatusEmail(to: string, companyName: string, newStatus: 'APPROVED' | 'REJECTED' | 'SUSPENDED', adminNote?: string | null) {
+    const { transporter, fromAddress } = await getTransporterAndFrom();
+    const baseUrl = process.env.NEXTAUTH_URL || 'https://kkshop.cc';
+
+    const isApproved = newStatus === 'APPROVED';
+    const headerBg = isApproved ? 'linear-gradient(135deg,#16a34a,#15803d)' : 'linear-gradient(135deg,#dc2626,#b91c1c)';
+    const statusLabel = isApproved ? '✅ Approved' : newStatus === 'SUSPENDED' ? '⏸ Suspended' : '❌ Rejected';
+    const bodyText = isApproved
+        ? `Your supplier account has been <strong>approved</strong>! You can now log in to your seller dashboard and start listing products.`
+        : newStatus === 'SUSPENDED'
+        ? `Your supplier account has been <strong>suspended</strong>. Please contact us for more information.`
+        : `Unfortunately, your supplier application has been <strong>rejected</strong>. Please see the reason below and feel free to re-apply after addressing the feedback.`;
+
+    const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f9fafb;font-family:Arial,sans-serif;">
+  <div style="max-width:520px;margin:32px auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.08);">
+    <div style="background:${headerBg};padding:28px 32px;">
+      <h1 style="margin:0;font-size:22px;color:#fff;font-weight:700;">Supplier Application Update</h1>
+      <p style="margin:6px 0 0;color:rgba(255,255,255,0.8);font-size:14px;">${statusLabel}</p>
+    </div>
+    <div style="padding:28px 32px;">
+      <p style="margin:0 0 16px;font-size:15px;color:#374151;">Hello <strong>${companyName}</strong>,</p>
+      <p style="margin:0 0 16px;font-size:14px;color:#555;line-height:1.6;">${bodyText}</p>
+      ${adminNote ? `<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:14px 18px;margin-bottom:20px;">
+        <p style="margin:0 0 4px;font-size:11px;color:#92400e;font-weight:700;text-transform:uppercase;">Admin Note</p>
+        <p style="margin:0;font-size:13px;color:#78350f;">${adminNote}</p>
+      </div>` : ''}
+      ${isApproved ? `<div style="text-align:center;margin-top:24px;">
+        <a href="${baseUrl}/seller" style="display:inline-block;background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;padding:13px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:15px;">
+          Go to Seller Dashboard →
+        </a>
+      </div>` : ''}
+    </div>
+    <div style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:14px 32px;text-align:center;">
+      <p style="margin:0;font-size:11px;color:#9ca3af;">&copy; ${new Date().getFullYear()} KKShop &middot; Cambodia K-Beauty</p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+    const subjectMap = { APPROVED: 'Congratulations — Your supplier account is approved! 🎉', REJECTED: 'Supplier Application Update', SUSPENDED: 'Supplier Account Suspended' };
+    await transporter.sendMail({ from: fromAddress, to, subject: `[KKShop] ${subjectMap[newStatus]}`, html });
+}

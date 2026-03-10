@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/api';
 import { auth } from '@/auth';
+import { sendSupplierReceivedEmail } from '@/lib/mail';
 
 // POST: Supplier registers their info (public, user must be logged in)
 export async function POST(req: NextRequest) {
@@ -37,6 +38,11 @@ export async function POST(req: NextRequest) {
             status: 'PENDING',
         },
     });
+
+    // 공급자 신청 확인 이메일 (non-blocking)
+    sendSupplierReceivedEmail(contactEmail, companyName).catch(err =>
+        console.error('Supplier confirmation email failed (non-critical):', err)
+    );
 
     return NextResponse.json({ success: true, supplier }, { status: 201 });
 }

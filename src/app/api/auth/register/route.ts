@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/api';
 import bcrypt from 'bcryptjs';
+import { sendWelcomeEmail } from '@/lib/mail';
 
 // Simple in-memory rate limiting to prevent spam
 const rateLimitCache = new Map<string, { count: number; timestamp: number }>();
@@ -142,6 +143,11 @@ export async function POST(req: Request) {
                 console.error('Referral reward failed (non-critical):', referralErr);
             }
         }
+
+        // Send welcome email (non-blocking — email failure must not break registration)
+        sendWelcomeEmail(newUser.email, newUser.name ?? '', newUser.referralCode ?? '').catch(err =>
+            console.error('Welcome email failed (non-critical):', err)
+        );
 
         return NextResponse.json({
             success: true,

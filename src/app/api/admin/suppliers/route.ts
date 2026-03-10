@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/api';
 import { auth } from '@/auth';
 import bcrypt from 'bcryptjs';
+import { sendSupplierStatusEmail } from '@/lib/mail';
 
 // GET: List all suppliers (ADMIN/SUPERADMIN only)
 export async function GET(req: NextRequest) {
@@ -68,6 +69,18 @@ export async function PATCH(req: NextRequest) {
             where: { id: supplier.userId },
             data: { role: 'USER' },
         });
+    }
+
+    // 공급자 상태 변경 이메일 (APPROVED / REJECTED / SUSPENDED 시 발송, non-blocking)
+    if (['APPROVED', 'REJECTED', 'SUSPENDED'].includes(status)) {
+        sendSupplierStatusEmail(
+            supplier.contactEmail,
+            supplier.companyName,
+            status as 'APPROVED' | 'REJECTED' | 'SUSPENDED',
+            adminNote ?? null
+        ).catch(err =>
+            console.error('Supplier status email failed (non-critical):', err)
+        );
     }
 
     return NextResponse.json(supplier);
