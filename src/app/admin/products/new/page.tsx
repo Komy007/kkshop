@@ -91,6 +91,24 @@ export default function NewProductPage() {
         setImages(prev => [...prev, ...toAdd.map(file => ({ file, preview: URL.createObjectURL(file) }))]);
     }, [images.length]);
 
+    // Global paste handler — Ctrl+V anywhere on the page adds image
+    useEffect(() => {
+        const handlePaste = (e: ClipboardEvent) => {
+            const items = e.clipboardData?.items;
+            if (!items) return;
+            const imageFiles: File[] = [];
+            for (const item of Array.from(items)) {
+                if (item.type.startsWith('image/')) {
+                    const file = item.getAsFile();
+                    if (file) imageFiles.push(file);
+                }
+            }
+            if (imageFiles.length > 0) addFiles(imageFiles);
+        };
+        window.addEventListener('paste', handlePaste);
+        return () => window.removeEventListener('paste', handlePaste);
+    }, [addFiles]);
+
     const removeImage = (idx: number) => {
         setImages(prev => {
             const item = prev[idx];
@@ -170,7 +188,7 @@ export default function NewProductPage() {
                                 onDragOver={e => e.preventDefault()} onDrop={e => { e.preventDefault(); setDragActive(false); addFiles(e.dataTransfer.files); }}
                                 onClick={() => fileInputRef.current?.click()}>
                                 <Upload className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                                <p className="text-sm font-medium text-gray-600">클릭 또는 드래그</p>
+                                <p className="text-sm font-medium text-gray-600">클릭 · 드래그 · Ctrl+V 붙여넣기</p>
                                 <p className="text-xs text-gray-400 mt-1">PNG / JPG / WebP · 최대 10MB</p>
                                 <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={e => e.target.files && addFiles(e.target.files)} />
                             </div>

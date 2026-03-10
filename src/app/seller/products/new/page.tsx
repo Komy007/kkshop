@@ -29,6 +29,31 @@ export default function SellerProductNewPage() {
         fetch('/api/admin/categories').then(r => r.json()).then(d => setCategories(Array.isArray(d) ? d.filter((c: any) => !c.isSystem) : []));
     }, []);
 
+    // Global paste handler — Ctrl+V anywhere on the page adds image
+    useEffect(() => {
+        const handlePaste = (e: ClipboardEvent) => {
+            const items = e.clipboardData?.items;
+            if (!items) return;
+            const imageFiles: File[] = [];
+            for (const item of Array.from(items)) {
+                if (item.type.startsWith('image/')) {
+                    const file = item.getAsFile();
+                    if (file) imageFiles.push(file);
+                }
+            }
+            if (imageFiles.length === 0) return;
+            const added = imageFiles.slice(0, 3 - images.length);
+            setImages(p => [...p, ...added].slice(0, 3));
+            added.forEach(f => {
+                const reader = new FileReader();
+                reader.onload = ev => setPreviews(p => [...p, ev.target?.result as string].slice(0, 3));
+                reader.readAsDataURL(f);
+            });
+        };
+        window.addEventListener('paste', handlePaste);
+        return () => window.removeEventListener('paste', handlePaste);
+    }, [images.length]);
+
     const set = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }));
 
     const addImages = (files: FileList | null) => {
@@ -148,6 +173,7 @@ export default function SellerProductNewPage() {
                                 className="w-24 h-24 border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center text-gray-400 hover:border-teal-400 hover:text-teal-600 transition-colors">
                                 <Upload className="w-5 h-5 mb-1" />
                                 <span className="text-xs">추가</span>
+                                <span className="text-[9px] mt-0.5 opacity-60">Ctrl+V</span>
                             </button>
                         )}
                     </div>

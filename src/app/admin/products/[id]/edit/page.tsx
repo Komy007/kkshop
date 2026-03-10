@@ -50,6 +50,7 @@ export default function EditProductPage() {
     const [existingImages, setExistingImages] = useState<{ id: string; url: string }[]>([]);
     const [deleteImageIds, setDeleteImageIds] = useState<string[]>([]);
     const [newImages, setNewImages] = useState<{ file: File; preview: string }[]>([]);
+    const [dragActive, setDragActive] = useState(false);
 
     const [options, setOptions] = useState<any[]>([]);
 
@@ -141,6 +142,24 @@ export default function EditProductPage() {
         const toAdd = arr.slice(0, Math.max(0, 10 - totalImages));
         setNewImages(prev => [...prev, ...toAdd.map(file => ({ file, preview: URL.createObjectURL(file) }))]);
     }, [existingImages.length, deleteImageIds.length, newImages.length]);
+
+    // Global paste handler — Ctrl+V anywhere on the page adds image
+    useEffect(() => {
+        const handlePaste = (e: ClipboardEvent) => {
+            const items = e.clipboardData?.items;
+            if (!items) return;
+            const imageFiles: File[] = [];
+            for (const item of Array.from(items)) {
+                if (item.type.startsWith('image/')) {
+                    const file = item.getAsFile();
+                    if (file) imageFiles.push(file);
+                }
+            }
+            if (imageFiles.length > 0) addNewFiles(imageFiles);
+        };
+        window.addEventListener('paste', handlePaste);
+        return () => window.removeEventListener('paste', handlePaste);
+    }, [addNewFiles]);
 
     const removeExistingImage = (imgId: string) => {
         setDeleteImageIds(prev => [...prev, imgId]);
@@ -277,10 +296,14 @@ export default function EditProductPage() {
                             </div>
                         )}
                         {/* Upload area */}
-                        <div className="border-2 border-dashed border-gray-200 hover:border-blue-400 rounded-xl p-5 text-center cursor-pointer transition-all"
+                        <div className={`border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-all ${dragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-400'}`}
+                            onDragEnter={() => setDragActive(true)}
+                            onDragLeave={() => setDragActive(false)}
+                            onDragOver={e => e.preventDefault()}
+                            onDrop={e => { e.preventDefault(); setDragActive(false); addNewFiles(e.dataTransfer.files); }}
                             onClick={() => fileInputRef.current?.click()}>
                             <Upload className="w-6 h-6 text-gray-300 mx-auto mb-1" />
-                            <p className="text-sm text-gray-500">클릭하여 이미지 추가</p>
+                            <p className="text-sm text-gray-500">클릭 · 드래그 · Ctrl+V 붙여넣기</p>
                             <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden"
                                 onChange={e => e.target.files && addNewFiles(e.target.files)} />
                         </div>
