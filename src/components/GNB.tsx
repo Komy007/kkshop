@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { Globe, User, ShoppingCart, Menu, X, LogOut, Settings } from "lucide-react";
-import { useSafeMarketStore } from "@/store/useAppStore";
+import { useSafeMarketStore, rehydrateLanguageStore } from "@/store/useAppStore";
 import { useCartStore, selectTotalItems } from "@/store/useCartStore";
 import { useSession, signOut } from "next-auth/react";
 
@@ -44,15 +44,21 @@ export default function GNB() {
 
     useEffect(() => {
         setMounted(true);
+        // Load persisted language from localStorage on first mount
+        rehydrateLanguageStore();
+
         const handleScroll = () => {
             setScrolled(window.scrollY > 50);
         };
         window.addEventListener("scroll", handleScroll, { passive: true });
 
-        // Dynamically update the HTML data-lang attribute so CSS can target specific languages
-        document.documentElement.setAttribute('data-lang', language);
-
         return () => window.removeEventListener("scroll", handleScroll);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // Update the HTML data-lang attribute whenever language changes
+    useEffect(() => {
+        document.documentElement.setAttribute('data-lang', language);
     }, [language]);
 
     // Close menus on outside click

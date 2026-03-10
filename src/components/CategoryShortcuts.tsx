@@ -11,6 +11,7 @@ const shortcutTranslations: Record<string, Record<string, string>> = {
         hairBody: '헤어/바디',
         living: '생활용품',
         health: '건강식품',
+        fnb: '한국식품',
         best: '베스트',
         newArrivals: '신상품',
         sale: '할인',
@@ -22,6 +23,7 @@ const shortcutTranslations: Record<string, Record<string, string>> = {
         hairBody: 'Hair/Body',
         living: 'Living',
         health: 'Health',
+        fnb: 'Korean F&B',
         best: 'Bestseller',
         newArrivals: 'New',
         sale: 'Sale',
@@ -33,6 +35,7 @@ const shortcutTranslations: Record<string, Record<string, string>> = {
         hairBody: 'សក់/រាងកាយ',
         living: 'គ្រឿងប្រើប្រាស់',
         health: 'សុខភាព',
+        fnb: 'ម្ហូបកូរ៉េ',
         best: 'ពេញនិយម',
         newArrivals: 'ថ្មី',
         sale: 'បញ្ចុះតម្លៃ',
@@ -44,6 +47,7 @@ const shortcutTranslations: Record<string, Record<string, string>> = {
         hairBody: '洗护',
         living: '生活用品',
         health: '保健品',
+        fnb: '韩国食品',
         best: '热销',
         newArrivals: '新品',
         sale: '折扣',
@@ -59,15 +63,16 @@ interface Shortcut {
 }
 
 const shortcuts: Shortcut[] = [
-    { key: 'skincare', emoji: '🧴', href: '/category/skincare', gradient: 'from-pink-500/20 to-purple-500/20' },
-    { key: 'makeup', emoji: '💄', href: '/category/makeup', gradient: 'from-rose-500/20 to-pink-500/20' },
-    { key: 'hairBody', emoji: '🧖', href: '/category/hair-body', gradient: 'from-cyan-500/20 to-blue-500/20' },
-    { key: 'living', emoji: '🏠', href: '/category/living', gradient: 'from-green-500/20 to-emerald-500/20' },
-    { key: 'health', emoji: '💊', href: '/category/health', gradient: 'from-amber-500/20 to-orange-500/20' },
-    { key: 'best', emoji: '👑', href: '/category/best', gradient: 'from-yellow-500/20 to-amber-500/20' },
-    { key: 'newArrivals', emoji: '✨', href: '/category/new', gradient: 'from-violet-500/20 to-indigo-500/20' },
-    { key: 'sale', emoji: '🔥', href: '/category/sale', gradient: 'from-red-500/20 to-orange-500/20' },
-    { key: 'all', emoji: '📦', href: '/category', gradient: 'from-gray-500/20 to-slate-500/20' },
+    { key: 'skincare',   emoji: '🧴', href: '/category/skincare',  gradient: 'from-pink-500/20 to-purple-500/20' },
+    { key: 'makeup',     emoji: '💄', href: '/category/makeup',    gradient: 'from-rose-500/20 to-pink-500/20' },
+    { key: 'hairBody',   emoji: '🧖', href: '/category/hair-body', gradient: 'from-cyan-500/20 to-blue-500/20' },
+    { key: 'living',     emoji: '🏠', href: '/category/living',    gradient: 'from-green-500/20 to-emerald-500/20' },
+    { key: 'health',     emoji: '💊', href: '/category/health',    gradient: 'from-amber-500/20 to-orange-500/20' },
+    { key: 'fnb',        emoji: '🍜', href: '/category/fnb',       gradient: 'from-orange-400/20 to-red-400/20' },
+    { key: 'best',       emoji: '👑', href: '/category/best',      gradient: 'from-yellow-500/20 to-amber-500/20' },
+    { key: 'newArrivals',emoji: '✨', href: '/category/new',       gradient: 'from-violet-500/20 to-indigo-500/20' },
+    { key: 'sale',       emoji: '🔥', href: '/category/sale',      gradient: 'from-red-500/20 to-orange-500/20' },
+    { key: 'all',        emoji: '📦', href: '/category',           gradient: 'from-gray-500/20 to-slate-500/20' },
 ];
 
 export default function CategoryShortcuts() {
@@ -77,7 +82,7 @@ export default function CategoryShortcuts() {
 
     return (
         <section className="py-3 px-3" aria-label="Category shortcuts">
-            <div className="grid grid-cols-5 sm:grid-cols-9 gap-y-3 gap-x-2">
+            <div className="grid grid-cols-5 sm:grid-cols-10 gap-y-3 gap-x-2">
                 {shortcuts.map((item) => (
                     <Link
                         key={item.key}

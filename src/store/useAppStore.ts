@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
 
 type Language = 'ko' | 'en' | 'km' | 'zh';
 
@@ -7,44 +8,63 @@ interface AppState {
     setLanguage: (lang: Language) => void;
 }
 
-const useInternalStore = create<AppState>((set) => ({
-    language: 'en',
-    setLanguage: (lang) => set({ language: lang }),
-}));
+const useInternalStore = create<AppState>()(
+    persist(
+        (set) => ({
+            language: 'en',
+            setLanguage: (lang) => set({ language: lang }),
+        }),
+        {
+            name: 'kkshop-lang',
+            storage: createJSONStorage(() => {
+                // SSR-safe: return a no-op storage when window is unavailable
+                if (typeof window === 'undefined') {
+                    return {
+                        getItem: () => null,
+                        setItem: () => {},
+                        removeItem: () => {},
+                    } as unknown as Storage;
+                }
+                return localStorage;
+            }),
+            // Skip auto-hydration to prevent SSR/client mismatch flash.
+            // Components call rehydrateLanguageStore() after mount.
+            skipHydration: true,
+        }
+    )
+);
+
+/**
+ * Call this once on client mount (e.g. in GNB's useEffect).
+ * Reads language from localStorage and updates the store.
+ */
+export function rehydrateLanguageStore() {
+    if (typeof window !== 'undefined') {
+        useInternalStore.persist.rehydrate();
+    }
+}
 
 /**
  * Universal Store Safety Layer.
- * Guarantees a valid state object is returned even during SSR/Pre-rendering.
- * This prevents "Cannot destructure property 'language' of 'useAppStore(...)' as it is undefined" errors.
+ * Returns valid state even during SSR/Pre-rendering.
  */
 export function useSafeMarketStore(): AppState {
     const fallback: AppState = {
         language: 'en',
-        setLanguage: (l: Language) => { },
+        setLanguage: () => {},
     };
 
-    // 1. SSR / Pre-rendering detection
     if (typeof window === 'undefined') {
         try {
-            // Direct state access is safer during build time than calling the hook
-            const state = useInternalStore.getState();
-            if (!state) {
-                console.error('[BUILD-DEBUG] useInternalStore.getState() returned null/undefined during SSR');
-                return fallback;
-            }
-            return state;
-        } catch (e) {
-            console.error('[BUILD-DEBUG] useInternalStore.getState() threw error during SSR:', e);
+            return useInternalStore.getState() || fallback;
+        } catch {
             return fallback;
         }
     }
 
-    // 2. Client-side execution
     try {
-        const store = useInternalStore();
-        return store || fallback;
+        return useInternalStore() || fallback;
     } catch {
-        // Hydration or hook failure fallback
         try {
             return useInternalStore.getState() || fallback;
         } catch {
@@ -53,6 +73,6 @@ export function useSafeMarketStore(): AppState {
     }
 }
 
-// Support both naming conventions used in the project
+// Support both naming conventions used throughout the project
 export const useAppStore = useSafeMarketStore;
 export const useSafeAppStore = useSafeMarketStore;
