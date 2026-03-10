@@ -14,7 +14,6 @@ const NAV = [
       { label: '🟡 상품 검수', href: '/admin/products/review' },
       { label: '새 상품 등록', href: '/admin/products/new' },
       { label: '카테고리 관리', href: '/admin/categories' },
-      { label: '묶음상품 관리', href: '/admin/products/bundles' },
       { label: 'Q&A 관리', href: '/admin/products/qa' },
     ],
   },
