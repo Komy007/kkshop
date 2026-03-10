@@ -22,13 +22,41 @@ export async function GET(request: Request) {
             }
         });
 
-        // Serialize BigInt fields in OrderItem (productId, optionId)
+        // ✅ Explicit serialization for all BigInt and Decimal fields
         const safe = orders.map(o => ({
-            ...o,
+            id: o.id,
+            userId: o.userId,
+            customerName: o.customerName,
+            customerPhone: o.customerPhone,
+            customerEmail: o.customerEmail ?? null,
+            province: o.province ?? null,
+            address: o.address,
+            detailAddress: o.detailAddress ?? null,
+            notes: o.notes ?? null,
+            status: o.status,
+            couponId: o.couponId ?? null,
+            pointsUsed: o.pointsUsed,
+            // Decimal → string
+            subtotalUsd: o.subtotalUsd.toString(),
+            shippingFee: o.shippingFee.toString(),
+            discountAmount: o.discountAmount.toString(),
+            totalUsd: o.totalUsd.toString(),
+            createdAt: o.createdAt,
+            updatedAt: o.updatedAt,
+            shipment: o.shipment ?? null,
             items: o.items.map(i => ({
-                ...i,
+                id: i.id,
+                orderId: i.orderId,
+                quantity: i.quantity,
+                // BigInt → string
                 productId: i.productId.toString(),
                 optionId: i.optionId?.toString() ?? null,
+                variantId: i.variantId?.toString() ?? null,
+                // Decimal → string
+                priceUsd: i.priceUsd.toString(),
+                // Product info
+                imageUrl: i.product.imageUrl ?? null,
+                sku: i.product.sku,
             })),
         }));
 

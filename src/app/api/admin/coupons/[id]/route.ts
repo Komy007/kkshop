@@ -23,7 +23,12 @@ export async function PATCH(
             data: allowedUpdate,
         });
 
-        return NextResponse.json(coupon);
+        // ✅ Serialize Decimal fields
+        return NextResponse.json({
+            ...coupon,
+            discountValue: coupon.discountValue.toString(),
+            minOrderAmount: coupon.minOrderAmount.toString(),
+        });
     } catch (error) {
         console.error('Failed to update coupon:', error);
         return NextResponse.json({ error: 'Failed to update' }, { status: 500 });
