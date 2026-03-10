@@ -56,15 +56,11 @@ export interface CategoryInfo {
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 function serializeProduct(product: any, langCode: string): TranslatedProduct {
-    const translation = product.translations?.[0] || {
-        name: product.sku,
-        shortDesc: null,
-        detailDesc: null,
-        seoKeywords: null,
-        ingredients: null,
-        howToUse: null,
-        benefits: null,
-    };
+    const translations: any[] = product.translations ?? [];
+    // name → always English; descriptions → user's language (fallback to English)
+    const enTrans = translations.find(t => t.langCode === 'en') || translations[0] || {};
+    const localTrans = translations.find(t => t.langCode === langCode) || enTrans;
+
     return {
         id: product.id.toString(),
         sku: product.sku,
@@ -85,13 +81,15 @@ function serializeProduct(product: any, langCode: string): TranslatedProduct {
         origin: product.origin ?? null,
         certifications: product.certifications ?? null,
         expiryMonths: product.expiryMonths ?? null,
-        name: translation.name,
-        shortDesc: translation.shortDesc,
-        detailDesc: translation.detailDesc,
-        seoKeywords: translation.seoKeywords,
-        ingredients: translation.ingredients ?? null,
-        howToUse: translation.howToUse ?? null,
-        benefits: translation.benefits ?? null,
+        // name: always English
+        name: enTrans.name || localTrans.name || product.sku,
+        // descriptions: user's language, fallback to English
+        shortDesc: localTrans.shortDesc ?? enTrans.shortDesc ?? null,
+        detailDesc: localTrans.detailDesc ?? enTrans.detailDesc ?? null,
+        seoKeywords: localTrans.seoKeywords ?? enTrans.seoKeywords ?? null,
+        ingredients: localTrans.ingredients ?? enTrans.ingredients ?? null,
+        howToUse: localTrans.howToUse ?? enTrans.howToUse ?? null,
+        benefits: localTrans.benefits ?? enTrans.benefits ?? null,
     };
 }
 
@@ -120,7 +118,8 @@ export async function getProductsByLanguage(
         const products = await prisma.product.findMany({
             where,
             include: {
-                translations: { where: { langCode } },
+                // Fetch both EN (for name) and requested lang (for descriptions)
+                translations: { where: { langCode: { in: ['en', langCode] } } },
                 category: { select: { slug: true } },
                 images: { orderBy: { sortOrder: 'asc' }, take: 1 },
             },

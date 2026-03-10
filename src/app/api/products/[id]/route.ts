@@ -13,8 +13,9 @@ export async function GET(
         const product = await prisma.product.findUnique({
             where: { id: BigInt(productId) },
             include: {
+                // Fetch both EN (for name) and requested lang (for descriptions)
                 translations: {
-                    where: { langCode: lang }
+                    where: { langCode: { in: ['en', lang] } }
                 },
                 options: { orderBy: { sortOrder: 'asc' } },
                 images: { orderBy: { sortOrder: 'asc' } },
@@ -27,7 +28,11 @@ export async function GET(
             }
         });
 
-        const serializeOptions = (opts: any[], lang: string) => {
+        if (!product) {
+            return NextResponse.json({ error: 'Product not found' }, { status: 404 });
+        }
+
+        const serializeOptions = (opts: any[]) => {
             return opts.map(o => ({
                 id: o.id.toString(),
                 minQty: o.minQty,
@@ -38,60 +43,39 @@ export async function GET(
             }));
         };
 
-        const buildResponse = (p: any, t: any) => ({
-            id: p.id.toString(),
-            sku: p.sku,
-            priceUsd: Number(p.priceUsd),
-            stockQty: p.stockQty,
-            status: p.status,
-            imageUrl: p.imageUrl || p.images?.[0]?.url || null,
-            categoryId: p.categoryId?.toString() || null,
-            name: t.name,
-            shortDesc: t.shortDesc,
-            detailDesc: t.detailDesc,
-            seoKeywords: t.seoKeywords,
-            ingredients: t.ingredients,
-            howToUse: t.howToUse,
-            benefits: t.benefits,
-            isHotSale: p.isHotSale,
-            hotSalePrice: p.hotSalePrice ? Number(p.hotSalePrice) : null,
-            volume: p.volume,
-            skinType: p.skinType,
-            origin: p.origin,
-            expiryMonths: p.expiryMonths,
-            certifications: p.certifications,
-            brandName: p.brandName || p.supplier?.brandName || p.supplier?.companyName || null,
-            supplier: p.supplier ? { companyName: p.supplier.companyName } : null,
-            options: serializeOptions(p.options || [], lang),
+        const translations = product.translations ?? [];
+        // name → always English; descriptions → user's language, fallback to English
+        const enTrans = translations.find(t => t.langCode === 'en') || translations[0] || {};
+        const localTrans = translations.find(t => t.langCode === lang) || enTrans;
+
+        return NextResponse.json({
+            id: product.id.toString(),
+            sku: product.sku,
+            priceUsd: Number(product.priceUsd),
+            stockQty: product.stockQty,
+            status: product.status,
+            imageUrl: product.imageUrl || product.images?.[0]?.url || null,
+            categoryId: product.categoryId?.toString() || null,
+            // name: always English
+            name: enTrans.name || localTrans.name || product.sku,
+            // descriptions: user's language, fallback to English
+            shortDesc: localTrans.shortDesc ?? enTrans.shortDesc ?? null,
+            detailDesc: localTrans.detailDesc ?? enTrans.detailDesc ?? null,
+            seoKeywords: localTrans.seoKeywords ?? enTrans.seoKeywords ?? null,
+            ingredients: localTrans.ingredients ?? enTrans.ingredients ?? null,
+            howToUse: localTrans.howToUse ?? enTrans.howToUse ?? null,
+            benefits: localTrans.benefits ?? enTrans.benefits ?? null,
+            isHotSale: product.isHotSale,
+            hotSalePrice: product.hotSalePrice ? Number(product.hotSalePrice) : null,
+            volume: product.volume,
+            skinType: product.skinType,
+            origin: product.origin,
+            expiryMonths: product.expiryMonths,
+            certifications: product.certifications,
+            brandName: product.brandName || product.supplier?.brandName || product.supplier?.companyName || null,
+            supplier: product.supplier ? { companyName: product.supplier.companyName } : null,
+            options: serializeOptions(product.options || []),
         });
-
-        if (!product) {
-            // Try fetching with any available translation as fallback
-            const productAny = await prisma.product.findUnique({
-                where: { id: BigInt(productId) },
-                include: {
-                    translations: { take: 1 },
-                    options: { orderBy: { sortOrder: 'asc' } },
-                    supplier: { select: { companyName: true, brandName: true } }
-                }
-            });
-
-            if (!productAny) {
-                return NextResponse.json({ error: 'Product not found' }, { status: 404 });
-            }
-
-            return NextResponse.json(buildResponse(productAny, productAny.translations[0] || {
-                name: productAny.sku,
-                shortDesc: null, detailDesc: null, seoKeywords: null,
-                ingredients: null, howToUse: null, benefits: null
-            }));
-        }
-
-        return NextResponse.json(buildResponse(product, product.translations[0] || {
-            name: product.sku,
-            shortDesc: null, detailDesc: null, seoKeywords: null,
-            ingredients: null, howToUse: null, benefits: null
-        }));
     } catch (error) {
         console.error('Failed to fetch product:', error);
         return NextResponse.json({ error: 'Failed to fetch product' }, { status: 500 });
