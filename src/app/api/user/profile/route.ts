@@ -44,3 +44,31 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: 'Failed' }, { status: 500 });
     }
 }
+
+export async function PATCH(request: Request) {
+    const session = await auth();
+    if (!session?.user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    try {
+        const body = await request.json();
+        const { phone, address, detailAddress, name } = body;
+
+        const updated = await prisma.user.update({
+            where: { id: session.user.id },
+            data: {
+                ...(phone !== undefined && { phone }),
+                ...(address !== undefined && { address }),
+                ...(detailAddress !== undefined && { detailAddress }),
+                ...(name !== undefined && { name }),
+            },
+            select: { id: true, phone: true, address: true, detailAddress: true, name: true },
+        });
+
+        return NextResponse.json(updated);
+    } catch (error) {
+        console.error('Failed to update user profile:', error);
+        return NextResponse.json({ error: 'Failed' }, { status: 500 });
+    }
+}

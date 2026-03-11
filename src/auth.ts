@@ -103,16 +103,27 @@ const nextAuthEnv = NextAuth({
                 try {
                     const dbUser = await prisma.user.findUnique({
                         where: { email: (token.email as string).toLowerCase() },
-                        select: { id: true, role: true, preferredLanguage: true }
+                        select: { id: true, role: true, preferredLanguage: true, phone: true }
                     });
                     if (dbUser) {
                         token.sub = dbUser.id;
                         token.role = dbUser.role;
                         token.preferredLanguage = dbUser.preferredLanguage || 'en';
+                        token.needsOnboarding = !dbUser.phone;
                     }
                 } catch (err) {
                     console.error('JWT callback DB lookup error:', err);
                 }
+            }
+            // On session update (after onboarding save), re-check phone
+            if ((token as any).trigger === 'update' && token.sub) {
+                try {
+                    const dbUser = await prisma.user.findUnique({
+                        where: { id: token.sub as string },
+                        select: { phone: true }
+                    });
+                    if (dbUser?.phone) token.needsOnboarding = false;
+                } catch {}
             }
             return token;
         },
@@ -121,6 +132,7 @@ const nextAuthEnv = NextAuth({
                 session.user.id = token.sub;
                 session.user.role = token.role || "USER";
                 session.user.preferredLanguage = token.preferredLanguage || "en";
+                session.user.needsOnboarding = token.needsOnboarding || false;
             }
             return session;
         },

@@ -27,6 +27,7 @@ export default {
                 session.user.id = token.sub;
                 session.user.role = token.role || "USER";
                 session.user.preferredLanguage = token.preferredLanguage || "en";
+                session.user.needsOnboarding = token.needsOnboarding || false;
             }
             return session;
         },

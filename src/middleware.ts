@@ -78,8 +78,13 @@ export default middleware((req: any) => {
 
     // --- Global Redirection for Suppliers ---
     if (isLoggedIn && req.auth?.user?.role === 'SUPPLIER' && !nextUrl.pathname.startsWith('/seller')) {
-        // Suppliers should ONLY be in /seller. Anywhere else (landing page / , etc) redirects to seller.
         return Response.redirect(new URL('/seller', nextUrl));
+    }
+
+    // --- Onboarding: Google 로그인 후 전화번호/주소 미입력 시 ---
+    const isOnboardingRoute = nextUrl.pathname === '/onboarding';
+    if (isLoggedIn && (req.auth?.user as any)?.needsOnboarding && !isOnboardingRoute) {
+        return Response.redirect(new URL('/onboarding', nextUrl));
     }
 
     return;
