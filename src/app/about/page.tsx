@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Mail, Phone, MessageCircle, ShieldCheck, Sparkles, MapPin, Store, Check } from 'lucide-react';
+import TaegukgiIcon from '@/components/TaegukgiIcon';
 
 export default function AboutPage() {
     return (
@@ -62,11 +63,11 @@ export default function AboutPage() {
 
                     <div className="flex flex-wrap items-center justify-center gap-3 mt-8">
                         {[
-                            '🇰🇷 100% Made in Korea (Cosmetics)',
-                            '✅ Korean Quality Verified',
-                            '🏠 Home Delivery in Cambodia',
-                        ].map(t => (
-                            <span key={t} className="text-xs glass-card px-3 py-1.5 rounded-full text-gray-300 font-medium">{t}</span>
+                            { node: <><TaegukgiIcon className="inline-block w-5 h-[13px] align-middle mr-1" />100% Made in Korea (Cosmetics)</> },
+                            { node: <>✅ Korean Quality Verified</> },
+                            { node: <>🏠 Home Delivery in Cambodia</> },
+                        ].map((item, i) => (
+                            <span key={i} className="text-xs glass-card px-3 py-1.5 rounded-full text-gray-300 font-medium">{item.node}</span>
                         ))}
                     </div>
                 </div>
@@ -93,12 +94,12 @@ export default function AboutPage() {
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         {[
-                            { icon: '🇰🇷', title: 'Made in Korea', desc: 'All cosmetics & skincare are genuine Korean-brand products manufactured in South Korea' },
-                            { icon: '🔬', title: 'Korean-Certified', desc: 'Products meet Korean MFDS safety standards — trusted by Korean consumers daily' },
-                            { icon: '💯', title: 'No Counterfeits', desc: 'Zero tolerance for replicas or imitations — 100% authentic K-Beauty only' },
+                            { icon: <TaegukgiIcon className="w-10 h-[27px]" />, title: 'Made in Korea', desc: 'All cosmetics & skincare are genuine Korean-brand products manufactured in South Korea' },
+                            { icon: <span className="text-3xl">🔬</span>, title: 'Korean-Certified', desc: 'Products meet Korean MFDS safety standards — trusted by Korean consumers daily' },
+                            { icon: <span className="text-3xl">💯</span>, title: 'No Counterfeits', desc: 'Zero tolerance for replicas or imitations — 100% authentic K-Beauty only' },
                         ].map(item => (
                             <div key={item.title} className="glass-card rounded-2xl p-5 flex flex-col gap-3">
-                                <span className="text-3xl">{item.icon}</span>
+                                <span>{item.icon}</span>
                                 <div>
                                     <h3 className="font-bold text-white text-base mb-1">{item.title}</h3>
                                     <p className="text-gray-400 text-sm leading-relaxed">{item.desc}</p>

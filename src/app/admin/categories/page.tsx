@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { Tag, Loader2, RefreshCw, Edit3, Save, X } from 'lucide-react';
+import TaegukgiIcon from '@/components/TaegukgiIcon';
 
 interface Category {
     id: string; slug: string; nameKo: string; nameEn: string;
@@ -95,7 +96,7 @@ export default function CategoriesPage() {
                         <thead>
                             <tr className="bg-gray-50 border-b border-gray-100 text-xs text-gray-500 font-medium">
                                 <th className="py-3 px-4">Slug</th>
-                                <th className="py-3 px-4">🇰🇷 한국어</th>
+                                <th className="py-3 px-4"><TaegukgiIcon className="inline-block w-4 h-[11px] align-middle mr-1" />한국어</th>
                                 <th className="py-3 px-4 hidden md:table-cell">🇺🇸 English</th>
                                 <th className="py-3 px-4 hidden lg:table-cell">🇨🇳 中文</th>
                                 <th className="py-3 px-4">정렬</th>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import TaegukgiIcon from "@/components/TaegukgiIcon";
 import Link from "next/link";
 import { Globe, User, ShoppingCart, Menu, X, LogOut, Settings, Heart } from "lucide-react";
 import { useSafeMarketStore, rehydrateLanguageStore } from "@/store/useAppStore";
@@ -8,7 +9,7 @@ import { useCartStore, selectTotalItems } from "@/store/useCartStore";
 import { useSession, signOut } from "next-auth/react";
 
 const LANGUAGES = [
-    { code: "ko" as const, label: "한국어", flag: "🇰🇷" },
+    { code: "ko" as const, label: "한국어", flag: "" },
     { code: "en" as const, label: "English", flag: "🇺🇸" },
     { code: "km" as const, label: "ភាសាខ្មែរ", flag: "🇰🇭" },
     { code: "zh" as const, label: "中文", flag: "🇨🇳" },
@@ -281,7 +282,13 @@ export default function GNB() {
                                     className={`px-4 py-2.5 text-left text-sm flex items-center justify-between transition-colors ${currentLang?.code === lang.code ? "bg-brand-primary/5 text-brand-primary font-extrabold" : "text-gray-900 font-semibold hover:bg-gray-50"
                                         }`}
                                 >
-                                    <span>{lang.flag} {lang.label}</span>
+                                    <span className="flex items-center gap-1.5">
+                                        {lang.code === 'ko'
+                                            ? <TaegukgiIcon className="w-5 h-[14px] inline-block flex-shrink-0" />
+                                            : <span>{lang.flag}</span>
+                                        }
+                                        {lang.label}
+                                    </span>
                                     {currentLang?.code === lang.code && <div className="w-1.5 h-1.5 rounded-full bg-brand-primary" />}
                                 </button>
                             ))}

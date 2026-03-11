@@ -8,6 +8,7 @@ import { useSafeAppStore } from '@/store/useAppStore';
 import { Search, Star, Flame, Sparkles, Crown, ChevronRight, ArrowRight, Zap, Clock } from 'lucide-react';
 import Link from 'next/link';
 import { type TranslatedProduct } from '@/lib/api';
+import TaegukgiIcon from '@/components/TaegukgiIcon';
 
 interface FlashSaleItem {
     id: string;
@@ -36,7 +37,7 @@ const homeT: Record<string, any> = {
         freeShipping: '🚚 $30 이상 무료배송',
         authentic: '✅ 한국정품 100%',
         fast: '⚡ 프놈펜 빠른 배송',
-        heroBadge: '🇰🇷 캄보디아 No.1 한국 쇼핑몰',
+        heroBadge: '캄보디아 No.1 한국 쇼핑몰',
         heroTitle: '진짜 한국 상품을\n문 앞까지',
         heroSub: '화장품 100% 한국산 정품 · 한국인이 검증한 가성비 베스트 상품',
         shopNow: '지금 쇼핑하기',
@@ -56,7 +57,7 @@ const homeT: Record<string, any> = {
         freeShipping: '🚚 Free shipping $30+',
         authentic: '✅ 100% Authentic Korean',
         fast: '⚡ Fast Phnom Penh Delivery',
-        heroBadge: '🇰🇷 Cambodia\'s No.1 Korean Shop',
+        heroBadge: 'Cambodia\'s No.1 Korean Shop',
         heroTitle: 'Premium Korean Products\nDelivered to Your Door',
         heroSub: 'Cosmetics, lifestyle & more — Curated by Korean Insight for Cambodia',
         shopNow: 'Shop Now',
@@ -76,7 +77,7 @@ const homeT: Record<string, any> = {
         freeShipping: '🚚 ដឹកជញ្ជូនឥតគិតថ្លៃ $30+',
         authentic: '✅ គ្រឿងសំអាងកូរ៉េ 100%',
         fast: '⚡ ដឹកជញ្ជូនរហ័ស',
-        heroBadge: '🇰🇷 ហាងកូរ៉េលេខ ១ នៅកម្ពុជា',
+        heroBadge: 'ហាងកូរ៉េលេខ ១ នៅកម្ពុជា',
         heroTitle: 'ផលិតផលកូរ៉េ Premium\nដល់ទ្វារផ្ទះអ្នក',
         heroSub: 'គ្រឿងសំអាង 100% កូរ៉េ · ផ្ទះ & ច្រើនទៀត — ផ្ទៀងផ្ទាត់ & ជ្រើសរើសដោយជំនាញកូរ៉េ',
         shopNow: 'ទិញឥឡូវ',
@@ -96,7 +97,7 @@ const homeT: Record<string, any> = {
         freeShipping: '🚚 $30以上免运费',
         authentic: '✅ 100%韩国正品',
         fast: '⚡ 金边快速配送',
-        heroBadge: '🇰🇷 柬埔寨第一韩国购物平台',
+        heroBadge: '柬埔寨第一韩国购物平台',
         heroTitle: '韩国精品\n直达您家门口',
         heroSub: '100%韩国化妆品 · 生活精选 — 经韩国专业甄选与品质认证',
         shopNow: '立即购物',
@@ -312,11 +313,14 @@ function HeroBanner({ t }: { t: any }) {
             <div className="absolute inset-0 opacity-20"
                 style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, #e94560 0%, transparent 60%), radial-gradient(circle at 80% 20%, #6366f1 0%, transparent 50%)' }}
             />
-            {/* Emoji decorations */}
-            <div className="absolute right-4 top-4 text-5xl sm:text-6xl opacity-80 select-none">🇰🇷</div>
+            {/* Flag decoration */}
+            <div className="absolute right-4 top-4 w-16 sm:w-20 opacity-90 select-none drop-shadow-lg">
+                <TaegukgiIcon />
+            </div>
 
             <div className="relative z-10 px-5 py-5 max-w-[70%]">
-                <span className="inline-block text-[10px] sm:text-xs font-extrabold text-white/70 bg-white/10 border border-white/20 px-2 py-0.5 rounded-full mb-2 uppercase tracking-wider">
+                <span className="inline-flex items-center gap-1.5 text-[10px] sm:text-xs font-extrabold text-white/70 bg-white/10 border border-white/20 px-2 py-0.5 rounded-full mb-2 uppercase tracking-wider">
+                    <TaegukgiIcon className="w-4 h-[11px] flex-shrink-0" />
                     {t.heroBadge}
                 </span>
                 <h2 className="text-lg sm:text-2xl font-black text-white leading-tight mb-2 whitespace-pre-line">

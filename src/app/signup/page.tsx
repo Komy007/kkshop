@@ -5,10 +5,11 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { UserPlus, Mail, Lock, User, Phone, MapPin, ArrowRight, Loader2, AlertCircle, Home, CheckCircle2, MailCheck } from 'lucide-react';
 import { useSafeAppStore } from '@/store/useAppStore';
+import TaegukgiIcon from '@/components/TaegukgiIcon';
 
 const signupT: Record<string, any> = {
     en: {
-        badge: '🇰🇷 Cambodia\'s No.1 Korean Shop',
+        badge: 'Cambodia\'s No.1 Korean Shop',
         title: 'Create Account',
         subtitle: 'Join KKShop — Korean beauty delivered to your door in Cambodia',
         sectionBasic: 'Account Information',
@@ -37,7 +38,7 @@ const signupT: Record<string, any> = {
         required: 'Required',
     },
     ko: {
-        badge: '🇰🇷 캄보디아 No.1 한국 쇼핑몰',
+        badge: '캄보디아 No.1 한국 쇼핑몰',
         title: '회원가입',
         subtitle: 'KKShop 회원이 되어 프놈펜 최고의 한국 상품을 만나보세요',
         sectionBasic: '기본 정보 (필수)',
@@ -66,7 +67,7 @@ const signupT: Record<string, any> = {
         required: '필수',
     },
     km: {
-        badge: '🇰🇷 ហាងកូរ៉េ លេខ១ នៅកម្ពុជា',
+        badge: 'ហាងកូរ៉េ លេខ១ នៅកម្ពុជា',
         title: 'បង្កើតគណនី',
         subtitle: 'ចូលរួម KKShop ដើម្បីទទួលបានផលិតផលកូរ៉េ នៅភ្នំពេញ',
         sectionBasic: 'ព័ត៌មានគណនី (ចាំបាច់)',
@@ -95,7 +96,7 @@ const signupT: Record<string, any> = {
         required: 'ចាំបាច់',
     },
     zh: {
-        badge: '🇰🇷 柬埔寨第一韩国购物平台',
+        badge: '柬埔寨第一韩国购物平台',
         title: '创建账号',
         subtitle: '加入KKShop，享受正宗韩国商品送货上门服务',
         sectionBasic: '账号信息（必填）',
@@ -204,7 +205,10 @@ export default function SignupPage() {
                             <span className="text-sm font-extrabold text-blue-600">KK</span>
                             <span className="text-sm font-extrabold text-gray-900">Shop</span>
                             <span className="text-xs text-gray-400">|</span>
-                            <span className="text-xs text-gray-500 font-medium">{t.badge}</span>
+                            <span className="inline-flex items-center gap-1 text-xs text-gray-500 font-medium">
+                                <TaegukgiIcon className="w-4 h-[11px] flex-shrink-0" />
+                                {t.badge}
+                            </span>
                         </div>
                     </Link>
                     <div className="flex items-center justify-center gap-3 flex-wrap">

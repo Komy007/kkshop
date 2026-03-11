@@ -337,7 +337,7 @@ export default function NewProductPage() {
                             <p className="text-xs text-blue-600 mt-0.5">하단 번역 체크 시 한·영·크메르·중문 자동 번역됩니다</p>
                         </div>
                         <select name="baseLang" value={form.baseLang} onChange={handleChange} className="border border-blue-200 rounded-lg py-1.5 px-2 text-sm text-blue-700 font-bold bg-white focus:outline-none">
-                            <option value="ko">🇰🇷 한국어</option>
+                            <option value="ko">한국어 (KR)</option>
                             <option value="en">🇺🇸 English</option>
                         </select>
                     </div>
