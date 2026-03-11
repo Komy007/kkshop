@@ -123,7 +123,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     <Sparkles className="w-4 h-4" />쇼핑몰 보기
                 </Link>
                 <button
-                    onClick={() => signOut({ callbackUrl: '/admin/login' })}
+                    onClick={() => signOut({ callbackUrl: window.location.origin + '/' })}
                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-400 hover:text-white hover:bg-white/10 rounded-xl transition-all">
                     <LogOut className="w-4 h-4" />로그아웃
                 </button>

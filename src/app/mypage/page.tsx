@@ -474,7 +474,7 @@ export default function MyPage() {
 
     // Logout
     const handleLogout = () => {
-        signOut({ callbackUrl: '/login' });
+        signOut({ callbackUrl: window.location.origin + '/' });
     };
 
     const statusColors: Record<string, string> = {
