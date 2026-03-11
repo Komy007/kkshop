@@ -64,6 +64,7 @@ interface UserProfile {
     id: string;
     name: string | null;
     email: string;
+    emailVerified: string | null;
     referralCode: string | null;
     referralCount?: number;
 }
@@ -307,6 +308,23 @@ export default function MyPage() {
     const [referralCopied, setReferralCopied] = useState(false);
     const [linkCopied, setLinkCopied] = useState(false);
 
+    // Email verification banner
+    const [resendLoading, setResendLoading] = useState(false);
+    const [resendDone, setResendDone] = useState(false);
+
+    const handleResendVerification = async () => {
+        if (!user?.email || resendLoading || resendDone) return;
+        setResendLoading(true);
+        await fetch('/api/auth/verify-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: user.email }),
+        });
+        setResendLoading(false);
+        setResendDone(true);
+        setTimeout(() => setResendDone(false), 30000);
+    };
+
     // Fetch profile on mount
     useEffect(() => {
         fetch('/api/user/profile')
@@ -525,6 +543,41 @@ export default function MyPage() {
     return (
         <main className="min-h-screen bg-gray-50 text-gray-900 pb-20">
             <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+                {/* ── Email Verification Banner ───────────────────────────── */}
+                {user && !user.emailVerified && (
+                    <div className="mb-6 flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                        <Mail className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                        <div className="flex-1 min-w-0">
+                            <p className="text-sm font-bold text-amber-800">
+                                {t.auth.loginButton === '로그인'
+                                    ? '이메일 인증이 필요합니다'
+                                    : t.auth.loginButton === 'ចូល'
+                                    ? 'សូមផ្ទៀងផ្ទាត់អ៊ីមែលរបស់អ្នក'
+                                    : t.auth.loginButton === '登录'
+                                    ? '请验证您的邮箱'
+                                    : 'Please verify your email address'}
+                            </p>
+                            <p className="text-xs text-amber-700 mt-0.5">
+                                {t.auth.loginButton === '로그인'
+                                    ? `인증 이메일이 ${user.email}로 발송되었습니다. 이메일을 확인해 주세요.`
+                                    : t.auth.loginButton === 'ចូល'
+                                    ? `អ៊ីមែលផ្ទៀងផ្ទាត់ត្រូវបានផ្ញើទៅ ${user.email}`
+                                    : t.auth.loginButton === '登录'
+                                    ? `验证邮件已发送至 ${user.email}`
+                                    : `A verification email was sent to ${user.email}`}
+                            </p>
+                        </div>
+                        <button
+                            onClick={handleResendVerification}
+                            disabled={resendLoading || resendDone}
+                            className="flex-shrink-0 text-xs font-bold text-amber-700 bg-amber-100 hover:bg-amber-200 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50 whitespace-nowrap"
+                        >
+                            {resendLoading ? '...' : resendDone ? '✓ Sent' : 'Resend'}
+                        </button>
+                    </div>
+                )}
+
                 {/* Profile Header */}
                 <div className="flex items-center justify-between mb-8 p-6 bg-white rounded-2xl border border-gray-200 shadow-sm">
                     <div className="flex items-center gap-5">

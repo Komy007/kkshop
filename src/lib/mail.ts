@@ -261,6 +261,46 @@ export async function sendWelcomeEmail(to: string, name: string, referralCode: s
     await transporter.sendMail({ from: fromAddress, to, subject: '[KKShop] Welcome! Your account is ready 🎉', html });
 }
 
+export async function sendVerificationEmail(to: string, name: string, verifyUrl: string) {
+    const { transporter, fromAddress } = await getTransporterAndFrom();
+    const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f9fafb;font-family:Arial,sans-serif;">
+  <div style="max-width:520px;margin:32px auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.08);">
+    <div style="background:linear-gradient(135deg,#6366f1 0%,#ec4899 100%);padding:28px 32px;text-align:center;">
+      <h1 style="margin:0;font-size:28px;color:#fff;font-weight:900;letter-spacing:-0.5px;">KKShop</h1>
+      <p style="margin:6px 0 0;color:rgba(255,255,255,0.85);font-size:14px;">Cambodia K-Beauty &amp; K-Living</p>
+    </div>
+    <div style="padding:32px;">
+      <h2 style="margin:0 0 10px;font-size:20px;color:#111;font-weight:700;">Hi ${name}, please verify your email ✉️</h2>
+      <p style="margin:0 0 24px;font-size:14px;color:#555;line-height:1.7;">
+        Thank you for joining KKShop! Click the button below to verify your email address and activate your account.
+        This link expires in <strong>24 hours</strong>.
+      </p>
+      <div style="text-align:center;margin-bottom:28px;">
+        <a href="${verifyUrl}"
+           style="display:inline-block;background:linear-gradient(135deg,#6366f1,#ec4899);color:#fff;padding:15px 40px;border-radius:10px;text-decoration:none;font-weight:700;font-size:16px;letter-spacing:0.3px;">
+          ✅ Verify My Email
+        </a>
+      </div>
+      <p style="margin:0 0 8px;font-size:12px;color:#aaa;text-align:center;">Or copy this link:</p>
+      <p style="margin:0;font-size:11px;color:#9ca3af;word-break:break-all;text-align:center;">${verifyUrl}</p>
+      <hr style="margin:24px 0;border:none;border-top:1px solid #f3f4f6;">
+      <p style="margin:0;font-size:12px;color:#aaa;text-align:center;">
+        If you didn't create a KKShop account, you can safely ignore this email.
+      </p>
+    </div>
+    <div style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:14px 32px;text-align:center;">
+      <p style="margin:0;font-size:11px;color:#9ca3af;">&copy; ${new Date().getFullYear()} KKShop &middot; Cambodia K-Beauty</p>
+    </div>
+  </div>
+</body>
+</html>`;
+    await transporter.sendMail({ from: fromAddress, to, subject: '[KKShop] Verify your email address ✉️', html });
+}
+
 export async function sendSupplierReceivedEmail(to: string, companyName: string) {
     const { transporter, fromAddress, adminEmail } = await getTransporterAndFrom();
     const supplierHtml = `

@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/api';
 import bcrypt from 'bcryptjs';
-import { sendWelcomeEmail } from '@/lib/mail';
+import crypto from 'crypto';
+import { sendVerificationEmail } from '@/lib/mail';
 
 // Simple in-memory rate limiting to prevent spam
 const rateLimitCache = new Map<string, { count: number; timestamp: number }>();
@@ -144,9 +145,22 @@ export async function POST(req: Request) {
             }
         }
 
-        // Send welcome email (non-blocking — email failure must not break registration)
-        sendWelcomeEmail(newUser.email, newUser.name ?? '', newUser.referralCode ?? '').catch(err =>
-            console.error('Welcome email failed (non-critical):', err)
+        // --- 8. Create email verification token and send verification email ---
+        const verifyToken = crypto.randomBytes(32).toString('hex');
+        await prisma.emailVerificationToken.create({
+            data: {
+                userId: newUser.id,
+                token: verifyToken,
+                expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+            },
+        });
+
+        const baseUrl = process.env.NEXTAUTH_URL || 'https://kkshop.cc';
+        const verifyUrl = `${baseUrl}/verify-email?token=${verifyToken}`;
+
+        // Non-blocking — email failure must not break registration
+        sendVerificationEmail(newUser.email!, newUser.name ?? 'there', verifyUrl).catch(err =>
+            console.error('Verification email failed (non-critical):', err)
         );
 
         return NextResponse.json({
