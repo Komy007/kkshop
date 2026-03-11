@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { Package, Heart, Clock, LogOut, ChevronRight, ShoppingBag, Loader2, Truck, MapPin, Gift, UserPlus, Share2, Plus, Pencil, Trash2, Check, X } from 'lucide-react';
+import { Package, Heart, Clock, LogOut, ChevronRight, ShoppingBag, Loader2, Truck, MapPin, Gift, UserPlus, Share2, Plus, Pencil, Trash2, Check, X, Mail } from 'lucide-react';
 import { useTranslations } from '@/i18n/useTranslations';
 import Footer from '@/components/Footer';
 
