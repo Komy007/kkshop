@@ -168,18 +168,21 @@ export default function GNB() {
                         <div className="relative" ref={userRef}>
                             <button
                                 onClick={() => setUserMenuOpen(!userMenuOpen)}
-                                className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-gray-200 hover:border-gray-300 hover:text-brand-primary transition-all text-gray-700 shadow-sm"
+                                className="flex items-center gap-2 px-3 py-2 rounded-full bg-white border border-gray-200 hover:border-brand-primary/40 hover:text-brand-primary transition-all text-gray-700 shadow-sm"
                             >
                                 {session?.user?.image ? (
-                                    <img src={session.user.image} alt="" className="w-full h-full rounded-full object-cover" />
+                                    <img src={session.user.image} alt="" className="w-6 h-6 rounded-full object-cover" />
                                 ) : (
                                     <User className="w-4 h-4" />
                                 )}
+                                <span className="text-sm font-bold">
+                                    {session ? (session.user?.name?.split(' ')[0] || 'My') : 'My'}
+                                </span>
                             </button>
 
                             {/* User Dropdown */}
                             <div
-                                className={`absolute right-0 mt-2 w-48 py-1 glass-panel rounded-xl border border-gray-200 flex flex-col overflow-hidden transition-all duration-200 origin-top-right ${userMenuOpen
+                                className={`absolute right-0 mt-2 w-52 py-1 glass-panel rounded-xl border border-gray-200 flex flex-col overflow-hidden transition-all duration-200 origin-top-right ${userMenuOpen
                                     ? "opacity-100 scale-100 pointer-events-auto"
                                     : "opacity-0 scale-95 pointer-events-none"
                                     }`}
@@ -190,23 +193,32 @@ export default function GNB() {
                                             <p className="text-xs font-bold text-gray-500 uppercase">Account</p>
                                             <p className="text-sm font-bold text-gray-900 truncate">{session.user?.email}</p>
                                         </div>
-                                        <Link href="/mypage" className="px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 flex items-center gap-2">
-                                            <Settings className="w-4 h-4" /> My Page
+                                        <Link href="/mypage" onClick={() => setUserMenuOpen(false)}
+                                            className="px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                                            <User className="w-4 h-4" /> My Page
                                         </Link>
                                         <button
                                             onClick={() => {
+                                                setUserMenuOpen(false);
                                                 useCartStore.getState().clearCart();
-                                                signOut();
+                                                signOut({ callbackUrl: window.location.origin + '/' });
                                             }}
-                                            className="px-4 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-50 text-left flex items-center gap-2"
+                                            className="px-4 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-50 text-left flex items-center gap-2 w-full"
                                         >
                                             <LogOut className="w-4 h-4" /> Logout
                                         </button>
                                     </>
                                 ) : (
-                                    <Link href="/login" className="px-4 py-2.5 text-sm font-bold text-gray-900 hover:bg-gray-50 flex items-center gap-2">
-                                        <User className="w-4 h-4" /> Login
-                                    </Link>
+                                    <>
+                                        <Link href="/login" onClick={() => setUserMenuOpen(false)}
+                                            className="px-4 py-2.5 text-sm font-bold text-gray-900 hover:bg-gray-50 flex items-center gap-2">
+                                            <User className="w-4 h-4" /> Login
+                                        </Link>
+                                        <Link href="/signup" onClick={() => setUserMenuOpen(false)}
+                                            className="mx-3 mb-2 mt-1 px-4 py-2.5 text-sm font-bold text-white bg-brand-primary hover:bg-brand-primary/90 rounded-xl flex items-center gap-2 justify-center transition-colors">
+                                            Sign Up
+                                        </Link>
+                                    </>
                                 )}
                             </div>
                         </div>
