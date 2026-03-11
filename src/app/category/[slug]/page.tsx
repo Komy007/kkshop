@@ -115,22 +115,36 @@ export default function CategoryDetailPage() {
                                     <div className="mt-auto">
                                         {/* Price */}
                                         <div className="flex flex-col">
-                                            <span className="text-xs text-gray-400 line-through mb-0.5">
-                                                $ {(product.priceUsd * 1.5).toFixed(2)}
-                                            </span>
-                                            <span className="text-lg font-extrabold text-[#E52528] leading-none">
-                                                $ {product.priceUsd.toLocaleString()}
-                                            </span>
+                                            {product.isHotSale && product.hotSalePrice && product.hotSalePrice < product.priceUsd ? (
+                                                <>
+                                                    <div className="flex items-center gap-1.5 mb-0.5">
+                                                        <span className="text-xs text-gray-400 line-through">
+                                                            $ {product.priceUsd.toFixed(2)}
+                                                        </span>
+                                                        <span className="text-[10px] font-bold text-rose-500 bg-rose-50 px-1 rounded">
+                                                            -{Math.round((1 - product.hotSalePrice / product.priceUsd) * 100)}%
+                                                        </span>
+                                                    </div>
+                                                    <span className="text-lg font-extrabold text-[#E52528] leading-none">
+                                                        $ {(product.hotSalePrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                    </span>
+                                                </>
+                                            ) : (
+                                                <span className="text-lg font-extrabold text-[#E52528] leading-none">
+                                                    $ {product.priceUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                </span>
+                                            )}
                                         </div>
                                         {/* Rating */}
                                         {product.reviewCount > 0 && (
-                                            <div className="flex items-center gap-1 mt-2">
-                                                <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400 drop-shadow-sm" />
+                                            <div className="flex items-center gap-1 mt-3">
+                                                <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
                                                 <span className="text-xs font-bold text-gray-700">{product.reviewAvg.toFixed(1)}</span>
                                                 <span className="text-xs text-gray-400">({product.reviewCount})</span>
                                             </div>
                                         )}
                                     </div>
+
                                 </div>
                             </Link>
                         ))}

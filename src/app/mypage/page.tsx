@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Package, Heart, Clock, LogOut, ChevronRight, ShoppingBag, Loader2, Truck, MapPin, Gift, UserPlus, Share2, Plus, Pencil, Trash2, Check, X, Mail } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import { useTranslations } from '@/i18n/useTranslations';
+import { useCartStore } from '@/store/useCartStore';
 import Footer from '@/components/Footer';
 
 type TabKey = 'orders' | 'wishlist' | 'recent' | 'addresses' | 'referral';
@@ -103,6 +104,17 @@ function ProductMiniCard({
 }) {
     const formatUsd = (p: number) =>
         new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(p);
+    const addItem = useCartStore((s) => s.addItem);
+    const [added, setAdded] = useState(false);
+
+    const handleAddToCart = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (stockQty <= 0) return;
+        addItem({ productId: id, name, priceUsd, imageUrl: imageUrl || '' }, 1);
+        setAdded(true);
+        setTimeout(() => setAdded(false), 2000);
+    };
 
     return (
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col">
@@ -132,10 +144,13 @@ function ProductMiniCard({
                 <p className="font-black text-[#E52528] text-sm mb-2">{formatUsd(priceUsd)}</p>
                 <div className="flex gap-1.5">
                     <button
-                        className="flex-1 text-[11px] font-bold py-1.5 rounded-lg bg-brand-primary/10 text-brand-primary hover:bg-brand-primary hover:text-white transition-colors disabled:opacity-50"
+                        onClick={handleAddToCart}
+                        className={`flex-1 text-[11px] font-bold py-1.5 rounded-lg transition-colors disabled:opacity-50 ${
+                            added ? 'bg-green-500 text-white' : 'bg-brand-primary/10 text-brand-primary hover:bg-brand-primary hover:text-white'
+                        }`}
                         disabled={stockQty <= 0}
                     >
-                        {addCartLabel}
+                        {added ? '✓' : addCartLabel}
                     </button>
                     {onRemove && (
                         <button
@@ -151,6 +166,7 @@ function ProductMiniCard({
         </div>
     );
 }
+
 
 // ── Address Form ──────────────────────────────────────────────────────────────
 interface AddressFormData {
@@ -499,8 +515,8 @@ export default function MyPage() {
         { key: 'orders', icon: Package, label: t.mypage.orders },
         { key: 'wishlist', icon: Heart, label: t.mypage.wishlist },
         { key: 'recent', icon: Clock, label: t.mypage.recentlyViewed },
-        { key: 'addresses', icon: MapPin, label: (t.mypage as any).addresses || 'Addresses' },
-        { key: 'referral', icon: Gift, label: (t.mypage as any).referral || 'Referral' },
+        { key: 'addresses', icon: MapPin, label: t.mypage.addresses || 'Addresses' },
+        { key: 'referral', icon: Gift, label: t.mypage.referral || 'Referral' },
     ];
 
     const formatUsd = (price: number) =>
@@ -550,22 +566,10 @@ export default function MyPage() {
                         <Mail className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
                         <div className="flex-1 min-w-0">
                             <p className="text-sm font-bold text-amber-800">
-                                {t.auth.loginButton === '로그인'
-                                    ? '이메일 인증이 필요합니다'
-                                    : t.auth.loginButton === 'ចូល'
-                                    ? 'សូមផ្ទៀងផ្ទាត់អ៊ីមែលរបស់អ្នក'
-                                    : t.auth.loginButton === '登录'
-                                    ? '请验证您的邮箱'
-                                    : 'Please verify your email address'}
+                                {t.mypage.emailVerifyTitle || 'Please verify your email address'}
                             </p>
                             <p className="text-xs text-amber-700 mt-0.5">
-                                {t.auth.loginButton === '로그인'
-                                    ? `인증 이메일이 ${user.email}로 발송되었습니다. 이메일을 확인해 주세요.`
-                                    : t.auth.loginButton === 'ចូល'
-                                    ? `អ៊ីមែលផ្ទៀងផ្ទាត់ត្រូវបានផ្ញើទៅ ${user.email}`
-                                    : t.auth.loginButton === '登录'
-                                    ? `验证邮件已发送至 ${user.email}`
-                                    : `A verification email was sent to ${user.email}`}
+                                {(t.mypage.emailVerifyDesc || 'A verification email was sent to {email}. Please check your inbox.').replace('{email}', user.email)}
                             </p>
                         </div>
                         <button
@@ -573,17 +577,18 @@ export default function MyPage() {
                             disabled={resendLoading || resendDone}
                             className="flex-shrink-0 text-xs font-bold text-amber-700 bg-amber-100 hover:bg-amber-200 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50 whitespace-nowrap"
                         >
-                            {resendLoading ? '...' : resendDone ? '✓ Sent' : 'Resend'}
+                            {resendLoading ? '...' : resendDone ? '✓' : (t.mypage.emailVerifyResend || 'Resend')}
                         </button>
                     </div>
                 )}
+
 
                 {/* Profile Header */}
                 <div className="flex items-center justify-between mb-8 p-6 bg-white rounded-2xl border border-gray-200 shadow-sm">
                     <div className="flex items-center gap-5">
                         <div className="w-16 h-16 rounded-full bg-gradient-to-br from-brand-primary to-brand-accent flex items-center justify-center shadow-inner">
                             <span className="text-white font-black text-2xl">
-                                {(user?.name || user?.email || 'U')[0].toUpperCase()}
+                                {((user?.name || user?.email || 'U') as string)[0].toUpperCase()}
                             </span>
                         </div>
                         <div>
@@ -800,7 +805,7 @@ export default function MyPage() {
                                             <div key={addr.id}>
                                                 {editingAddress?.id === addr.id ? (
                                                     <AddressForm
-                                                        initial={addr}
+                                                        initial={addr as any}
                                                         onSave={handleSaveAddress}
                                                         onCancel={() => setEditingAddress(null)}
                                                     />

@@ -117,6 +117,12 @@ const zh: Translations = {
         },
         emptyOrders: '暂无订单',
         emptyWishlist: '收藏夹是空的',
+        addresses: '地址管理',
+        referral: '推荐',
+        addToCart: '加入购物车',
+        emailVerifyTitle: '请验证您的邮箱',
+        emailVerifyDesc: '验证邮件已发送，请检查您的收件箱。',
+        emailVerifyResend: '重新发送',
     },
     auth: {
         loginTitle: '登录',

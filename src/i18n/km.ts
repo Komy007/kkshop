@@ -117,6 +117,12 @@ const km: Translations = {
         },
         emptyOrders: 'មិនមានការបញ្ជាទិញ',
         emptyWishlist: 'បញ្ជីពេញចិត្តទទេ',
+        addresses: 'អាសយដ្ឋាន',
+        referral: 'ការណែនាំ',
+        addToCart: 'បន្ថែមទៅរទេះ',
+        emailVerifyTitle: 'សូមផ្ទៀងផ្ទាត់អ៊ីមែលរបស់អ្នក',
+        emailVerifyDesc: 'អ៊ីមែលផ្ទៀងផ្ទាត់ត្រូវបានផ្ញើ។ សូមពិនិត្យប្រអប់ទទួល។',
+        emailVerifyResend: 'ផ្ញើម្ដងទៀត',
     },
     auth: {
         loginTitle: 'ចូល',

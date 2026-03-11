@@ -117,6 +117,12 @@ const en: Translations = {
         },
         emptyOrders: 'No orders yet',
         emptyWishlist: 'Your wishlist is empty',
+        addresses: 'Addresses',
+        referral: 'Referral',
+        addToCart: 'Add to Cart',
+        emailVerifyTitle: 'Please verify your email',
+        emailVerifyDesc: 'A verification email was sent to your address. Please check your inbox.',
+        emailVerifyResend: 'Resend',
     },
     auth: {
         loginTitle: 'Sign In',

@@ -19,6 +19,8 @@ const pdpTranslations: Record<string, any> = {
         back: '뒤로 가기',
         qty: '수량',
         freeShipping: '$30 이상 무료 배송',
+        discountBadge: '수량별 할인 혜택',
+        variants: { color: '색상', size: '사이즈', other: '옵션', selectVariant: '옵션을 선택해주세요' },
         specs: {
             title: '상품 필수 정보',
             volume: '용량/중량',
@@ -59,6 +61,8 @@ const pdpTranslations: Record<string, any> = {
         back: 'Go Back',
         qty: 'Qty',
         freeShipping: 'Free shipping over $30',
+        discountBadge: 'Quantity Discount',
+        variants: { color: 'Color', size: 'Size', other: 'Option', selectVariant: 'Please select an option' },
         specs: {
             title: 'Product Specifications',
             volume: 'Volume/Weight',
@@ -99,6 +103,8 @@ const pdpTranslations: Record<string, any> = {
         back: 'ថយក្រោយ',
         qty: 'ចំនួន',
         freeShipping: 'ដឹកដោយឥតគិតថ្លៃលើសពី $30',
+        discountBadge: 'បញ្ចុះតម្លៃតាមបរិមាណ',
+        variants: { color: 'ពណ៌', size: 'ទំហំ', other: 'ជម្រើស', selectVariant: 'សូមជ្រើសរើសជម្រើស' },
         specs: {
             title: 'បញ្ជាក់អំពីផលិតផល',
             volume: 'ទំហំ/ទម្ងន់',
@@ -139,6 +145,8 @@ const pdpTranslations: Record<string, any> = {
         back: '返回',
         qty: '数量',
         freeShipping: '满$30免费配送',
+        discountBadge: '批量折扣',
+        variants: { color: '颜色', size: '尺码', other: '选项', selectVariant: '请选择选项' },
         specs: {
             title: '产品规格',
             volume: '容量/重量',
@@ -171,6 +179,24 @@ const pdpTranslations: Record<string, any> = {
     },
 };
 
+interface ProductImage {
+    id: string;
+    url: string;
+    altText: string | null;
+    sortOrder: number;
+}
+
+interface ProductVariant {
+    id: string;
+    variantType: 'COLOR' | 'SIZE' | 'OTHER';
+    variantValue: string;
+    sku: string | null;
+    stockQty: number;
+    priceUsd: number | null;
+    imageUrl: string | null;
+    sortOrder: number;
+}
+
 interface ProductDetail {
     id: string;
     sku: string;
@@ -182,6 +208,8 @@ interface ProductDetail {
     seoKeywords: string | null;
     ingredients?: string | null;
     imageUrl?: string;
+    images?: ProductImage[];
+    variants?: ProductVariant[];
     rating?: number;
     reviewCount?: number;
     options?: any[];
@@ -207,6 +235,8 @@ export default function ProductDetailClient() {
     const [activeTab, setActiveTab] = useState<'desc' | 'ingredients' | 'reviews' | 'qa'>('desc');
     const [qty, setQty] = useState(1);
     const [selectedOptionId, setSelectedOptionId] = useState<string>('');
+    const [selectedVariantId, setSelectedVariantId] = useState<string>('');
+    const [selectedImageUrl, setSelectedImageUrl] = useState<string>('');
     const [cartAdded, setCartAdded] = useState(false);
     const [mounted, setMounted] = useState(false);
     const contentRef = useRef<HTMLDivElement>(null);
@@ -254,11 +284,17 @@ export default function ProductDetailClient() {
         async function loadProduct() {
             setIsLoading(true);
             try {
-                // Use the dedicated single-product endpoint for reliability
                 const res = await fetch(`/api/products/${params.id}?lang=${language}`);
                 if (res.ok) {
                     const data = await res.json();
-                    if (!data.error) setProduct(data);
+                    if (!data.error) {
+                        setProduct(data);
+                        // Set initial gallery image
+                        const firstImg = data.images?.[0]?.url || data.imageUrl || '';
+                        setSelectedImageUrl(firstImg);
+                        // Reset variant selection on product load
+                        setSelectedVariantId('');
+                    }
                 }
             } catch (err) {
                 console.error('Error loading product:', err);
@@ -468,11 +504,14 @@ export default function ProductDetailClient() {
 
     const handleAddToCart = () => {
         if (!product) return;
-        const productImage = product.imageUrl || 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&q=80&w=800';
+        const productImage = selectedImageUrl || product.imageUrl || 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&q=80&w=800';
 
-        // Calculate applied price based on selected option
+        // Calculate price: variant price > hot sale price > option discount > regular
         let appliedPrice = product.priceUsd;
-        if (product.options && product.options.length > 0) {
+        const selectedVariant = product.variants?.find(v => v.id === selectedVariantId);
+        if (selectedVariant?.priceUsd) {
+            appliedPrice = selectedVariant.priceUsd;
+        } else if (product.options && product.options.length > 0) {
             const opt = product.options.find((o: any) => o.id === selectedOptionId);
             if (opt && opt.discountPct > 0) {
                 appliedPrice = product.priceUsd * (1 - opt.discountPct / 100);
@@ -486,6 +525,8 @@ export default function ProductDetailClient() {
             name: product.name,
             priceUsd: appliedPrice,
             imageUrl: productImage,
+            variantId: selectedVariantId || undefined,
+            variantLabel: selectedVariant?.variantValue || undefined,
         }, qty);
         setCartAdded(true);
         setTimeout(() => setCartAdded(false), 2000);
@@ -513,7 +554,14 @@ export default function ProductDetailClient() {
         );
     }
 
-    const productImage = product.imageUrl || "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&q=80&w=800";
+    const productImage = selectedImageUrl || product.imageUrl || "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&q=80&w=800";
+    const galleryImages: ProductImage[] = product.images && product.images.length > 0
+        ? product.images
+        : product.imageUrl ? [{ id: 'main', url: product.imageUrl, altText: null, sortOrder: 0 }] : [];
+    const selectedVariant = product.variants?.find(v => v.id === selectedVariantId);
+    const displayPrice = selectedVariant?.priceUsd ?? (product.isHotSale && product.hotSalePrice ? product.hotSalePrice : product.priceUsd);
+    const isHotSaleDisplay = !selectedVariant?.priceUsd && product.isHotSale && !!product.hotSalePrice;
+    const effectiveStock = selectedVariant ? selectedVariant.stockQty : product.stockQty;
 
     return (
         <>
@@ -566,24 +614,57 @@ export default function ProductDetailClient() {
                 {/* F-Pattern Layout: Image Left, Info Right */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16">
 
-                    {/* LEFT: Product Image */}
-                    <div>
+                    {/* LEFT: Product Image Gallery */}
+                    <div className="flex flex-col gap-3">
+                        {/* Main Image */}
                         <div className="relative rounded-3xl overflow-hidden aspect-[3/4] bg-gray-50 group border border-gray-100 shadow-sm">
                             <img
                                 src={productImage}
                                 alt={product.name}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                                className="w-full h-full object-cover transition-all duration-500"
                                 loading="eager"
                                 onError={(e) => {
                                     (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&q=80&w=800';
                                 }}
                             />
-                            {product.stockQty <= 0 && (
+                            {effectiveStock <= 0 && (
                                 <div className="absolute inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center">
                                     <span className="bg-gray-900 text-white font-bold py-2 px-6 rounded-full text-lg">{t.outOfStock}</span>
                                 </div>
                             )}
+                            {galleryImages.length > 1 && (() => {
+                                const currentIdx = galleryImages.findIndex(img => img.url === productImage);
+                                return (
+                                    <div className="absolute bottom-3 right-3 bg-black/50 text-white text-xs font-bold px-2 py-1 rounded-full">
+                                        {currentIdx >= 0 ? currentIdx + 1 : 1} / {galleryImages.length}
+                                    </div>
+                                );
+                            })()}
                         </div>
+                        {/* Thumbnail Scroll Row */}
+                        {galleryImages.length > 1 && (
+                            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                                {galleryImages.map((img, idx) => (
+                                    <button
+                                        key={img.id}
+                                        type="button"
+                                        onClick={() => setSelectedImageUrl(img.url)}
+                                        className={`flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-all ${
+                                            (selectedImageUrl || galleryImages[0]?.url) === img.url
+                                                ? 'border-brand-primary shadow-md scale-105'
+                                                : 'border-gray-200 hover:border-gray-400 opacity-70 hover:opacity-100'
+                                        }`}
+                                    >
+                                        <img
+                                            src={img.url}
+                                            alt={img.altText || `${product.name} ${idx + 1}`}
+                                            className="w-full h-full object-cover"
+                                            loading="lazy"
+                                        />
+                                    </button>
+                                ))}
+                            </div>
+                        )}
                     </div>
 
                     {/* RIGHT: Product Info (F-pattern: top-heavy reading) */}
@@ -646,22 +727,117 @@ export default function ProductDetailClient() {
 
                         {/* Price */}
                         <div className="flex items-end gap-3">
-                            {product.isHotSale && product.hotSalePrice ? (
+                            {isHotSaleDisplay && product.hotSalePrice ? (
                                 <>
-                                    <span className="text-4xl font-black text-red-500">{formatUsd(product.hotSalePrice)}</span>
+                                    <span className="text-4xl font-black text-red-500">{formatUsd(displayPrice)}</span>
+                                    <span className="text-xl font-bold text-gray-400 line-through pb-1">{formatUsd(product.priceUsd)}</span>
+                                </>
+                            ) : selectedVariant?.priceUsd && selectedVariant.priceUsd !== product.priceUsd ? (
+                                <>
+                                    <span className="text-4xl font-black text-brand-secondary">{formatUsd(selectedVariant.priceUsd)}</span>
                                     <span className="text-xl font-bold text-gray-400 line-through pb-1">{formatUsd(product.priceUsd)}</span>
                                 </>
                             ) : (
-                                <span className="text-4xl font-black text-brand-secondary">{formatUsd(product.priceUsd)}</span>
+                                <span className="text-4xl font-black text-brand-secondary">{formatUsd(displayPrice)}</span>
                             )}
                             <span className="text-gray-400 text-sm pb-1">USD</span>
                         </div>
 
+                        {/* Variant Selector */}
+                        {product.variants && product.variants.length > 0 && (() => {
+                            const colorVariants = product.variants.filter(v => v.variantType === 'COLOR');
+                            const sizeVariants = product.variants.filter(v => v.variantType === 'SIZE');
+                            const otherVariants = product.variants.filter(v => v.variantType === 'OTHER');
+                            return (
+                                <div className="space-y-3">
+                                    {colorVariants.length > 0 && (
+                                        <div>
+                                            <p className="text-sm font-bold text-gray-700 mb-2">{t.variants?.color || 'Color'}</p>
+                                            <div className="flex flex-wrap gap-2">
+                                                {colorVariants.map(v => {
+                                                    const isSelected = selectedVariantId === v.id;
+                                                    const isSoldOut = v.stockQty <= 0;
+                                                    // Try to render as a color swatch if it looks like a hex/color
+                                                    const isColorCode = /^#[0-9a-fA-F]{3,6}$/.test(v.variantValue);
+                                                    return (
+                                                        <button
+                                                            key={v.id}
+                                                            type="button"
+                                                            onClick={() => { setSelectedVariantId(isSelected ? '' : v.id); if (v.imageUrl) setSelectedImageUrl(v.imageUrl); }}
+                                                            disabled={isSoldOut}
+                                                            title={v.variantValue}
+                                                            className={`relative flex items-center justify-center rounded-full border-2 transition-all ${
+                                                                isSelected ? 'border-brand-primary shadow-md scale-110' : 'border-gray-200 hover:border-gray-400'
+                                                            } ${isSoldOut ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'} ${
+                                                                isColorCode ? 'w-9 h-9' : 'px-3 py-1.5 rounded-xl text-sm font-bold'
+                                                            }`}
+                                                            style={isColorCode ? { backgroundColor: v.variantValue } : {}}
+                                                        >
+                                                            {!isColorCode && v.variantValue}
+                                                            {isSoldOut && <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-gray-500 bg-white/70 rounded-full">✕</span>}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    )}
+                                    {sizeVariants.length > 0 && (
+                                        <div>
+                                            <p className="text-sm font-bold text-gray-700 mb-2">{t.variants?.size || 'Size'}</p>
+                                            <div className="flex flex-wrap gap-2">
+                                                {sizeVariants.map(v => {
+                                                    const isSelected = selectedVariantId === v.id;
+                                                    const isSoldOut = v.stockQty <= 0;
+                                                    return (
+                                                        <button
+                                                            key={v.id}
+                                                            type="button"
+                                                            onClick={() => setSelectedVariantId(isSelected ? '' : v.id)}
+                                                            disabled={isSoldOut}
+                                                            className={`px-4 py-2 rounded-xl border-2 text-sm font-bold transition-all ${
+                                                                isSelected ? 'border-brand-primary bg-brand-primary/10 text-brand-primary' : 'border-gray-200 text-gray-700 hover:border-gray-400'
+                                                            } ${isSoldOut ? 'opacity-40 cursor-not-allowed line-through' : 'cursor-pointer'}`}
+                                                        >
+                                                            {v.variantValue}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    )}
+                                    {otherVariants.length > 0 && (
+                                        <div>
+                                            <p className="text-sm font-bold text-gray-700 mb-2">{t.variants?.other || 'Option'}</p>
+                                            <div className="flex flex-wrap gap-2">
+                                                {otherVariants.map(v => {
+                                                    const isSelected = selectedVariantId === v.id;
+                                                    const isSoldOut = v.stockQty <= 0;
+                                                    return (
+                                                        <button
+                                                            key={v.id}
+                                                            type="button"
+                                                            onClick={() => setSelectedVariantId(isSelected ? '' : v.id)}
+                                                            disabled={isSoldOut}
+                                                            className={`px-4 py-2 rounded-xl border-2 text-sm font-bold transition-all ${
+                                                                isSelected ? 'border-brand-primary bg-brand-primary/10 text-brand-primary' : 'border-gray-200 text-gray-700 hover:border-gray-400'
+                                                            } ${isSoldOut ? 'opacity-40 cursor-not-allowed line-through' : 'cursor-pointer'}`}
+                                                        >
+                                                            {v.variantValue}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })()}
+
                         {/* Stock Status */}
                         <div className="flex items-center gap-2">
-                            <div className={`w-2 h-2 rounded-full ${product.stockQty > 0 ? 'bg-vivid-green' : 'bg-vivid-coral'}`} />
-                            <span className={`text-sm font-semibold ${product.stockQty > 0 ? 'text-vivid-green' : 'text-vivid-coral'}`}>
-                                {product.stockQty > 0 ? t.inStock : t.outOfStock}
+                            <div className={`w-2 h-2 rounded-full ${effectiveStock > 0 ? 'bg-vivid-green' : 'bg-vivid-coral'}`} />
+                            <span className={`text-sm font-semibold ${effectiveStock > 0 ? 'text-vivid-green' : 'text-vivid-coral'}`}>
+                                {effectiveStock > 0 ? t.inStock : t.outOfStock}
                             </span>
                         </div>
 

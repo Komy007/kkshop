@@ -1,5 +1,6 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { Storage } from '@google-cloud/storage';
+import { auth } from '@/auth';
 
 const GCS_BUCKET = process.env.GCS_BUCKET_NAME || 'kkshop-images';
 
@@ -12,6 +13,13 @@ const MAX_SIZE_MB = 10;
 
 export async function POST(request: NextRequest) {
     try {
+        // ── Auth Guard: only ADMIN / SUPERADMIN can upload ──────────────────
+        const session = await auth();
+        const role = session?.user?.role;
+        if (!session?.user || (role !== 'ADMIN' && role !== 'SUPERADMIN')) {
+            return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+        }
+
         const data = await request.formData();
         const file: File | null = data.get('file') as unknown as File;
 

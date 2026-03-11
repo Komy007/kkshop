@@ -15,12 +15,12 @@ export async function GET(
         const product = await prisma.product.findUnique({
             where: { id: BigInt(productId) },
             include: {
-                // Fetch both EN (for name) and requested lang (for descriptions)
                 translations: {
                     where: { langCode: { in: ['en', lang] } }
                 },
                 options: { orderBy: { sortOrder: 'asc' } },
                 images: { orderBy: { sortOrder: 'asc' } },
+                variants: { orderBy: { sortOrder: 'asc' } },
                 supplier: {
                     select: {
                         companyName: true,
@@ -46,9 +46,29 @@ export async function GET(
         };
 
         const translations = product.translations ?? [];
-        // name → always English; descriptions → user's language, fallback to English
-        const enTrans = translations.find(t => t.langCode === 'en') || translations[0] || {};
-        const localTrans = translations.find(t => t.langCode === lang) || enTrans;
+        const enTrans: any = translations.find(t => t.langCode === 'en') || translations[0] || {};
+        const localTrans: any = translations.find(t => t.langCode === lang) || enTrans;
+
+
+        // All gallery images
+        const allImages = (product.images ?? []).map(img => ({
+            id: img.id.toString(),
+            url: img.url,
+            altText: img.altText ?? null,
+            sortOrder: img.sortOrder,
+        }));
+
+        // Variants (color / size)
+        const serializedVariants = (product.variants ?? []).map((v: any) => ({
+            id: v.id.toString(),
+            variantType: v.variantType,
+            variantValue: v.variantValue,
+            sku: v.sku ?? null,
+            stockQty: v.stockQty,
+            priceUsd: v.priceUsd ? Number(v.priceUsd) : null,
+            imageUrl: v.imageUrl ?? null,
+            sortOrder: v.sortOrder,
+        }));
 
         return NextResponse.json({
             id: product.id.toString(),
@@ -56,17 +76,18 @@ export async function GET(
             priceUsd: Number(product.priceUsd),
             stockQty: product.stockQty,
             status: product.status,
-            imageUrl: product.imageUrl || product.images?.[0]?.url || null,
+            imageUrl: product.imageUrl || allImages[0]?.url || null,
+            images: allImages,
+            variants: serializedVariants,
             categoryId: product.categoryId?.toString() || null,
-            // name: user's language first, fallback to English
             name: localTrans.name || enTrans.name || product.sku,
-            // descriptions: user's language, fallback to English
             shortDesc: localTrans.shortDesc ?? enTrans.shortDesc ?? null,
             detailDesc: localTrans.detailDesc ?? enTrans.detailDesc ?? null,
             seoKeywords: localTrans.seoKeywords ?? enTrans.seoKeywords ?? null,
             ingredients: localTrans.ingredients ?? enTrans.ingredients ?? null,
             howToUse: localTrans.howToUse ?? enTrans.howToUse ?? null,
             benefits: localTrans.benefits ?? enTrans.benefits ?? null,
+
             isHotSale: product.isHotSale,
             hotSalePrice: product.hotSalePrice ? Number(product.hotSalePrice) : null,
             volume: product.volume,

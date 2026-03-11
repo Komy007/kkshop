@@ -117,6 +117,12 @@ const ko: Translations = {
         },
         emptyOrders: '주문 내역이 없습니다',
         emptyWishlist: '찜한 상품이 없습니다',
+        addresses: '주소록',
+        referral: '추천인',
+        addToCart: '장바구니 담기',
+        emailVerifyTitle: '이메일 인증이 필요합니다',
+        emailVerifyDesc: '인증 이메일이 발송되었습니다. 이메일을 확인해 주세요.',
+        emailVerifyResend: '재발송',
     },
     auth: {
         loginTitle: '로그인',

@@ -138,15 +138,21 @@ export interface Translations {
         loginRequired: string;
         loginDesc: string;
         orderStatus: {
-            pending: string;    // PENDING  — 입금대기
-            confirmed: string;  // CONFIRMED — 결제완료/상품준비
-            shipping: string;   // SHIPPING
-            delivered: string;  // DELIVERED
-            completed: string;  // COMPLETED — 구매확정
-            cancelled: string;  // CANCELLED
+            pending: string;
+            confirmed: string;
+            shipping: string;
+            delivered: string;
+            completed: string;
+            cancelled: string;
         };
         emptyOrders: string;
         emptyWishlist: string;
+        addresses?: string;
+        referral?: string;
+        addToCart?: string;
+        emailVerifyTitle?: string;
+        emailVerifyDesc?: string;
+        emailVerifyResend?: string;
     };
 
     // Auth / Login
