@@ -57,8 +57,12 @@ export async function POST(req: Request) {
         const body = await req.json();
         const { name, email, password, phone, address, detailAddress, postalCode, referralCode } = body;
 
-        if (!email || !password || !name) {
-            return NextResponse.json({ error: '이름, 이메일, 비밀번호는 필수 항목입니다.' }, { status: 400 });
+        if (!email || !password || !name || !phone) {
+            return NextResponse.json({ error: '이름, 이메일, 비밀번호, 전화번호는 필수 항목입니다.' }, { status: 400 });
+        }
+
+        if (!address) {
+            return NextResponse.json({ error: '주소를 입력해 주세요.' }, { status: 400 });
         }
 
         if (password.length < 6) {
