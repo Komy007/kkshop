@@ -42,6 +42,8 @@ export default function EditProductPage() {
     const [errorMsg, setErrorMsg] = useState('');
     const [successMsg, setSuccessMsg] = useState('');
     const [retranslate, setRetranslate] = useState(false); // default OFF: translate only when checkbox is checked
+    const [allTranslations, setAllTranslations] = useState<ProductData['translations']>([]);
+    const [transPreviewLang, setTransPreviewLang] = useState<string>('en');
     const [categories, setCategories] = useState<Category[]>([]);
     const [suppliers, setSuppliers] = useState<Supplier[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -113,6 +115,7 @@ export default function EditProductPage() {
                     benefits: koTrans.benefits ?? '',
                     seoKeywords: koTrans.seoKeywords ?? '',
                 });
+                setAllTranslations(p.translations ?? []);
                 setExistingImages(p.images ?? []);
                 setOptions(p.options?.map((o: any) => ({
                     id: o.id, minQty: String(o.minQty), maxQty: o.maxQty ? String(o.maxQty) : '',
@@ -213,9 +216,10 @@ export default function EditProductPage() {
             setSuccessMsg(retranslate ? '✅ 저장 완료! 4개국어 번역이 재생성되었습니다.' : '✅ 상품이 저장되었습니다.');
             setDeleteImageIds([]);
             setNewImages([]);
-            // Refresh images
+            // Refresh images + translations
             const fresh = await fetch(`/api/admin/products/${productId}`).then(r => r.json());
             setExistingImages(fresh.images ?? []);
+            setAllTranslations(fresh.translations ?? []);
             setTimeout(() => setSuccessMsg(''), 3000);
         } catch (err: any) {
             setErrorMsg(err.message);
@@ -578,6 +582,82 @@ export default function EditProductPage() {
                     </button>
                 </div>
             </form>
+
+            {/* ⑥ 번역 현황 패널 (저장 후 확인용) */}
+            {allTranslations.length > 0 && (
+                <div className="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-100 mb-8">
+                    <div className="px-6 py-4 bg-indigo-50 border-b border-indigo-100">
+                        <h3 className="text-base font-semibold text-gray-900 flex items-center gap-2">
+                            <Globe className="w-5 h-5 text-indigo-500" />번역 현황 확인
+                        </h3>
+                        <p className="text-xs text-indigo-600 mt-0.5">현재 저장된 4개국어 번역 내용을 확인하세요</p>
+                    </div>
+                    <div className="p-5">
+                        {/* Language tabs */}
+                        <div className="flex gap-2 mb-4 flex-wrap">
+                            {[
+                                { code: 'ko', label: '🇰🇷 한국어', color: 'red' },
+                                { code: 'en', label: '🇺🇸 English', color: 'blue' },
+                                { code: 'km', label: '🇰🇭 ខ្មែរ', color: 'green' },
+                                { code: 'zh', label: '🇨🇳 中文', color: 'yellow' },
+                            ].map(({ code, label, color }) => {
+                                const hasTrans = allTranslations.some(t => t.langCode === code && t.name);
+                                return (
+                                    <button key={code} onClick={() => setTransPreviewLang(code)}
+                                        className={`px-4 py-1.5 rounded-full text-sm font-bold border-2 transition-all flex items-center gap-1.5 ${transPreviewLang === code ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'}`}>
+                                        {label}
+                                        <span className={`w-2 h-2 rounded-full ${hasTrans ? 'bg-green-400' : 'bg-red-300'}`} />
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        {/* Translation content */}
+                        {(() => {
+                            const t = allTranslations.find(tr => tr.langCode === transPreviewLang);
+                            if (!t) return <p className="text-sm text-gray-400 py-4 text-center">이 언어 번역이 없습니다.</p>;
+                            return (
+                                <div className="space-y-3 text-sm">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        <div className="bg-gray-50 rounded-lg p-3">
+                                            <p className="text-xs font-bold text-gray-500 mb-1">상품명</p>
+                                            <p className="text-gray-800 font-medium">{t.name || <span className="text-red-400 italic">없음</span>}</p>
+                                        </div>
+                                        <div className="bg-gray-50 rounded-lg p-3">
+                                            <p className="text-xs font-bold text-gray-500 mb-1">한 줄 요약</p>
+                                            <p className="text-gray-700">{t.shortDesc || <span className="text-gray-400 italic">없음</span>}</p>
+                                        </div>
+                                    </div>
+                                    {t.detailDesc && (
+                                        <div className="bg-gray-50 rounded-lg p-3">
+                                            <p className="text-xs font-bold text-gray-500 mb-1">상세 설명</p>
+                                            <p className="text-gray-700 whitespace-pre-wrap line-clamp-4">{t.detailDesc}</p>
+                                        </div>
+                                    )}
+                                    {t.ingredients && (
+                                        <div className="bg-gray-50 rounded-lg p-3">
+                                            <p className="text-xs font-bold text-gray-500 mb-1">성분</p>
+                                            <p className="text-gray-700 whitespace-pre-wrap line-clamp-3">{t.ingredients}</p>
+                                        </div>
+                                    )}
+                                    {t.howToUse && (
+                                        <div className="bg-gray-50 rounded-lg p-3">
+                                            <p className="text-xs font-bold text-gray-500 mb-1">사용 방법</p>
+                                            <p className="text-gray-700 whitespace-pre-wrap line-clamp-3">{t.howToUse}</p>
+                                        </div>
+                                    )}
+                                    {t.benefits && (
+                                        <div className="bg-gray-50 rounded-lg p-3">
+                                            <p className="text-xs font-bold text-gray-500 mb-1">효능/특징</p>
+                                            <p className="text-gray-700 whitespace-pre-wrap line-clamp-3">{t.benefits}</p>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })()}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

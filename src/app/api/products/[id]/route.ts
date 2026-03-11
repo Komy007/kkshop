@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/api';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(
     request: Request,
     context: { params: Promise<{ id: string }> }
@@ -56,8 +58,8 @@ export async function GET(
             status: product.status,
             imageUrl: product.imageUrl || product.images?.[0]?.url || null,
             categoryId: product.categoryId?.toString() || null,
-            // name: always English
-            name: enTrans.name || localTrans.name || product.sku,
+            // name: user's language first, fallback to English
+            name: localTrans.name || enTrans.name || product.sku,
             // descriptions: user's language, fallback to English
             shortDesc: localTrans.shortDesc ?? enTrans.shortDesc ?? null,
             detailDesc: localTrans.detailDesc ?? enTrans.detailDesc ?? null,

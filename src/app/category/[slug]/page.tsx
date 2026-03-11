@@ -38,6 +38,7 @@ export default function CategoryDetailPage() {
 
     useEffect(() => {
         if (!slug) return;
+        setIsLoading(true);
         async function fetchCategoryProducts() {
             try {
                 const res = await fetch(`/api/products?lang=${language}&category=${slug}`);
@@ -122,11 +123,13 @@ export default function CategoryDetailPage() {
                                             </span>
                                         </div>
                                         {/* Rating */}
-                                        <div className="flex items-center gap-1 mt-2">
-                                            <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400 drop-shadow-sm" />
-                                            <span className="text-xs font-bold text-gray-700">4.9</span>
-                                            <span className="text-xs text-gray-400">(128)</span>
-                                        </div>
+                                        {product.reviewCount > 0 && (
+                                            <div className="flex items-center gap-1 mt-2">
+                                                <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400 drop-shadow-sm" />
+                                                <span className="text-xs font-bold text-gray-700">{product.reviewAvg.toFixed(1)}</span>
+                                                <span className="text-xs text-gray-400">({product.reviewCount})</span>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </Link>
