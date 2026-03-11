@@ -6,7 +6,8 @@ export default {
     providers: [],
     trustHost: true,   // Required for Cloud Run / reverse proxy deployments
     pages: {
-        signIn: '/admin/login',
+        signIn: '/login',         // Regular user login page
+        error: '/login',          // OAuth errors → redirect to /login?error=...
     },
     session: {
         strategy: 'jwt',

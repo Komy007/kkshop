@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useTranslations } from '@/i18n/useTranslations';
 import { Mail, Lock, Loader2 } from 'lucide-react';
 import { signIn } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 // Google SVG Icon — white "G" on brand blue background
 function GoogleIcon({ className }: { className?: string }) {
@@ -47,14 +47,33 @@ function TikTokIcon({ className }: { className?: string }) {
     );
 }
 
+// Map NextAuth error codes → user-friendly messages
+const oauthErrorMessages: Record<string, string> = {
+    Configuration: 'Server configuration error. Please contact support.',
+    AccessDenied: 'Access denied. You may not have permission to sign in.',
+    Verification: 'The sign-in link has expired. Please try again.',
+    OAuthSignin: 'Could not start Google sign-in. Please try again.',
+    OAuthCallback: 'Google sign-in failed. Please check your Google account and try again.',
+    OAuthCreateAccount: 'Could not create account from Google. Please try again.',
+    EmailCreateAccount: 'Could not create account. Please try again.',
+    Callback: 'An error occurred during sign-in. Please try again.',
+    OAuthAccountNotLinked: 'This email is already registered. Please sign in with your email and password.',
+    Default: 'Sign-in failed. Please try again.',
+};
+
 export default function LoginPage() {
     const t = useTranslations();
     const router = useRouter();
+    const searchParams = useSearchParams();
+    // Read OAuth error from URL (e.g. /login?error=Configuration)
+    const urlErrorCode = searchParams.get('error');
+    const urlError = urlErrorCode ? (oauthErrorMessages[urlErrorCode] ?? oauthErrorMessages.Default) : '';
+
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [googleLoading, setGoogleLoading] = useState(false);
-    const [error, setError] = useState('');
+    const [error, setError] = useState(urlError);
 
     const handleGoogleLogin = async () => {
         setGoogleLoading(true);

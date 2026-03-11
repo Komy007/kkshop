@@ -9,17 +9,22 @@ const nextAuthEnv = NextAuth({
     ...authConfig,
     session: { strategy: 'jwt' },
     providers: [
-        GoogleProvider({
-            clientId: process.env.GOOGLE_CLIENT_ID!,
-            clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-            authorization: {
-                params: {
-                    prompt: "consent",
-                    access_type: "offline",
-                    response_type: "code"
+        // Only enable Google OAuth if both credentials are present
+        // (prevents NextAuth "Configuration" error if secrets are missing)
+        ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+            ? [GoogleProvider({
+                clientId: process.env.GOOGLE_CLIENT_ID,
+                clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+                authorization: {
+                    params: {
+                        prompt: "consent",
+                        access_type: "offline",
+                        response_type: "code"
+                    }
                 }
-            }
-        }),
+            })]
+            : []
+        ),
         CredentialsProvider({
             name: "Credentials",
             credentials: {
