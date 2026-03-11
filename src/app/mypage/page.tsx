@@ -469,12 +469,12 @@ export default function MyPage() {
     };
 
     const statusLabels: Record<string, string> = {
-        PENDING: '입금대기',
-        CONFIRMED: '결제완료/상품준비',
-        SHIPPING: '배송중',
-        DELIVERED: '배송완료',
-        COMPLETED: '구매확정',
-        CANCELLED: '주문취소',
+        PENDING: t.mypage.orderStatus.pending,
+        CONFIRMED: t.mypage.orderStatus.confirmed,
+        SHIPPING: t.mypage.orderStatus.shipping,
+        DELIVERED: t.mypage.orderStatus.delivered,
+        COMPLETED: t.mypage.orderStatus.completed,
+        CANCELLED: t.mypage.orderStatus.cancelled,
     };
 
     const tabs: { key: TabKey; icon: React.ElementType; label: string }[] = [
@@ -498,18 +498,26 @@ export default function MyPage() {
 
     if (!isLoggedIn) {
         return (
-            <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center gap-6 px-4">
+            <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center gap-5 px-4">
                 <div className="w-20 h-20 rounded-full bg-white flex items-center justify-center shadow-sm border border-gray-200">
                     <ShoppingBag className="w-10 h-10 text-gray-300" />
                 </div>
                 <h1 className="text-xl font-extrabold text-black">{t.mypage.loginRequired}</h1>
-                <p className="text-gray-500 text-sm text-center font-medium">{t.mypage.loginDesc}</p>
-                <a
-                    href="/login"
-                    className="px-10 py-3.5 rounded-xl bg-brand-primary text-white font-bold text-lg hover:bg-brand-primary/90 transition-colors shadow-sm"
-                >
-                    {t.auth.loginButton}
-                </a>
+                <p className="text-gray-500 text-sm text-center font-medium max-w-xs">{t.mypage.loginDesc}</p>
+                <div className="flex flex-col gap-3 w-full max-w-xs">
+                    <a
+                        href="/login"
+                        className="w-full text-center px-6 py-3.5 rounded-xl bg-brand-primary text-white font-bold text-base hover:bg-brand-primary/90 transition-colors shadow-sm"
+                    >
+                        {t.auth.loginButton}
+                    </a>
+                    <a
+                        href="/signup"
+                        className="w-full text-center px-6 py-3.5 rounded-xl bg-white border-2 border-brand-primary text-brand-primary font-bold text-base hover:bg-brand-primary/5 transition-colors"
+                    >
+                        {t.auth.signUp}
+                    </a>
+                </div>
             </div>
         );
     }

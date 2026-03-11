@@ -138,10 +138,12 @@ export interface Translations {
         loginRequired: string;
         loginDesc: string;
         orderStatus: {
-            paid: string;
-            preparing: string;
-            shipping: string;
-            delivered: string;
+            pending: string;    // PENDING  — 입금대기
+            confirmed: string;  // CONFIRMED — 결제완료/상품준비
+            shipping: string;   // SHIPPING
+            delivered: string;  // DELIVERED
+            completed: string;  // COMPLETED — 구매확정
+            cancelled: string;  // CANCELLED
         };
         emptyOrders: string;
         emptyWishlist: string;
@@ -156,6 +158,7 @@ export interface Translations {
         emailPlaceholder: string;
         passwordPlaceholder: string;
         loginButton: string;
+        signUp: string;
         signupLink: string;
         facebook: string;
         telegram: string;
