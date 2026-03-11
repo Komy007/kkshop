@@ -194,14 +194,3 @@ export interface Translations {
         search: string;
     };
 }
-
-// Export a helper to get translations
-export function getTranslations(lang: Language): Translations {
-    switch (lang) {
-        case 'ko': return require('./ko').default;
-        case 'km': return require('./km').default;
-        case 'zh': return require('./zh').default;
-        case 'en':
-        default: return require('./en').default;
-    }
-}
