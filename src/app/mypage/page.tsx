@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Package, Heart, Clock, LogOut, ChevronRight, ShoppingBag, Loader2, Truck, MapPin, Gift, UserPlus, Share2, Plus, Pencil, Trash2, Check, X, Mail } from 'lucide-react';
+import { signOut } from 'next-auth/react';
 import { useTranslations } from '@/i18n/useTranslations';
 import Footer from '@/components/Footer';
 
@@ -472,9 +473,8 @@ export default function MyPage() {
     };
 
     // Logout
-    const handleLogout = async () => {
-        await fetch('/api/auth/signout', { method: 'POST' });
-        window.location.href = '/login';
+    const handleLogout = () => {
+        signOut({ callbackUrl: '/login' });
     };
 
     const statusColors: Record<string, string> = {

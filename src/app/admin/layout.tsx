@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { signOut } from 'next-auth/react';
 import {
     LayoutDashboard, Package, Users, ShoppingCart,
     Settings, Store, Tag, ChevronDown, LogOut,
@@ -121,10 +122,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-400 hover:text-white hover:bg-white/10 rounded-xl transition-all mb-1">
                     <Sparkles className="w-4 h-4" />쇼핑몰 보기
                 </Link>
-                <Link href="/api/auth/signout" onClick={e => { e.preventDefault(); fetch('/api/auth/signout', { method: 'POST' }).then(() => window.location.href = '/admin/login'); }}
+                <button
+                    onClick={() => signOut({ callbackUrl: '/admin/login' })}
                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-400 hover:text-white hover:bg-white/10 rounded-xl transition-all">
                     <LogOut className="w-4 h-4" />로그아웃
-                </Link>
+                </button>
             </div>
         </div>
     );

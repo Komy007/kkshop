@@ -230,10 +230,15 @@ export default function LoginPage() {
                     </button>
                 </form>
 
-                {/* Signup Link */}
-                <p className="text-center text-sm text-white/40 mt-6">
-                    {t.auth.signupLink}
-                </p>
+                {/* Signup Button */}
+                <div className="mt-4">
+                    <Link
+                        href="/signup"
+                        className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl border-2 border-white/25 text-white font-bold text-sm hover:border-white/50 hover:bg-white/5 transition-all active:scale-[0.98]"
+                    >
+                        {t.auth.signUp}
+                    </Link>
+                </div>
             </div>
         </div>
     );
