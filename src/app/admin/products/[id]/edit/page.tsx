@@ -5,7 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import {
     Save, Loader2, Globe, Upload, X, ImagePlus, Package, Tag, Leaf,
     Droplets, Star, Sparkles, RefreshCw, DollarSign, AlertTriangle, ArrowLeft,
-    Flame, CheckCircle, Globe,
+    Flame, CheckCircle,
 } from 'lucide-react';
 import { useTranslations } from '@/i18n/useTranslations';
 
