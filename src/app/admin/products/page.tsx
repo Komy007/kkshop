@@ -306,14 +306,14 @@ export default function AdminProductsPage() {
                                                     </td>
                                                     <td className="py-3 px-4 text-right">
                                                         <div className="flex items-center justify-end gap-1">
-                                                            <button onClick={() => handleEdit(p.id)} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title={t.admin.actions.edit}>
+                                                            <button onClick={() => handleEdit(p.id)} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title={t.admin.products.actions.edit}>
                                                                 <Edit3 className="w-4 h-4" />
                                                             </button>
-                                                            <button onClick={() => handleClone(p.id)} className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors" title={t.admin.actions.clone}>
+                                                            <button onClick={() => handleClone(p.id)} className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors" title={t.admin.products.actions.clone}>
                                                                 <Copy className="w-4 h-4" />
                                                             </button>
                                                             <button onClick={() => handleDelete(p.id, koName)} disabled={deleting === p.id}
-                                                                className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50" title={t.admin.actions.delete}>
+                                                                className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50" title={t.admin.products.actions.delete}>
                                                                 {deleting === p.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                                                             </button>
                                                         </div>
@@ -325,7 +325,7 @@ export default function AdminProductsPage() {
                                                         <td colSpan={8} className="px-4 py-3">
                                                             <div className="flex items-center gap-3">
                                                                 <span className="text-sm font-medium text-blue-700 flex items-center gap-1">
-                                                                    <FolderInput className="w-4 h-4" /> {t.admin.actions.moveCategory}:
+                                                                    <FolderInput className="w-4 h-4" /> {t.admin.products.actions.moveCategory}:
                                                                 </span>
                                                                 <select value={moveCategoryId} onChange={e => setMoveCategoryId(e.target.value)}
                                                                     className="flex-1 border border-blue-200 rounded-lg py-1.5 px-3 text-sm focus:outline-none bg-white">
@@ -334,8 +334,8 @@ export default function AdminProductsPage() {
                                                                         <option key={c.id} value={c.id}>{c.nameKo}{c.isSystem ? ' ✦' : ''}</option>
                                                                     ))}
                                                                 </select>
-                                                                <button onClick={() => moveCategory(p.id)} className="px-3 py-1.5 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700">{t.admin.actions.confirmMove}</button>
-                                                                <button onClick={() => setMovingId(null)} className="px-3 py-1.5 bg-gray-200 text-gray-700 text-sm rounded-lg hover:bg-gray-300">{t.admin.actions.cancel}</button>
+                                                                <button onClick={() => moveCategory(p.id)} className="px-3 py-1.5 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700">{t.admin.products.actions.confirmMove}</button>
+                                                                <button onClick={() => setMovingId(null)} className="px-3 py-1.5 bg-gray-200 text-gray-700 text-sm rounded-lg hover:bg-gray-300">{t.admin.products.actions.cancel}</button>
                                                             </div>
                                                         </td>
                                                     </tr>

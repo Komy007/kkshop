@@ -250,6 +250,18 @@ export interface Translations {
                 confirmMove: string;
             };
         };
+        new: {
+            title: string;
+            subtitle: string;
+            images: { title: string; desc: string; uploadHint: string; uploadTypes: string; cover: string; };
+            options: { title: string; desc: string; minQty: string; maxQty: string; discount: string; freeShipping: string; optionLabel: string; addOption: string; optionLabelPlaceholder: string; unlimitedPlaceholder: string; };
+            basic: { title: string; selectCategory: string; isNewLabel: string; isNewDesc: string; };
+            specs: { title: string; desc: string; };
+            content: { title: string; desc: string; productName: string; shortDesc: string; ingredients: string; howToUse: string; benefits: string; detailDesc: string; seoKeywords: string; };
+            translate: { label: string; desc: string; };
+            buttons: { save: string; saveWithTranslate: string; saving: string; savingTranslate: string; cancel: string; };
+            success: { withTranslate: string; withoutTranslate: string; };
+        };
         edit: {
             title: string;
             sku: string;

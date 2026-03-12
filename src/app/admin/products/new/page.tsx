@@ -3,6 +3,7 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Save, Loader2, Globe, Upload, X, ImagePlus, Package, Tag, Leaf, Droplets, Star, Sparkles, RefreshCw } from 'lucide-react';
+import { useTranslations } from '@/i18n/useTranslations';
 
 interface ImageItem { file: File; preview: string; url?: string; }
 interface Category { id: string; slug: string; nameKo: string; }
@@ -11,6 +12,10 @@ const MAX_IMAGES = 3;
 
 export default function NewProductPage() {
     const router = useRouter();
+    const t = useTranslations();
+    const n = t.admin.new;
+    const ef = t.admin.edit.fields;
+
     const [isLoading, setIsLoading] = useState(false);
     const [errorMsg, setErrorMsg] = useState('');
     const [successMsg, setSuccessMsg] = useState('');
@@ -19,7 +24,7 @@ export default function NewProductPage() {
     const [categories, setCategories] = useState<Category[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const [doTranslate, setDoTranslate] = useState(false); // default OFF: translate only when checked
+    const [doTranslate, setDoTranslate] = useState(false);
     const [options, setOptions] = useState([{ minQty: '1', maxQty: '', discountPct: '0', freeShipping: false, labelKo: '1개 기본' }]);
 
     const [form, setForm] = useState({
@@ -38,7 +43,6 @@ export default function NewProductPage() {
             .then(data => setCategories(Array.isArray(data) ? data : []))
             .catch(() => { });
 
-        // Clone support: read sessionStorage when ?clone=1
         if (typeof window !== 'undefined' && window.location.search.includes('clone=1')) {
             try {
                 const stored = sessionStorage.getItem('cloneProduct');
@@ -92,7 +96,6 @@ export default function NewProductPage() {
         setImages(prev => [...prev, ...toAdd.map(file => ({ file, preview: URL.createObjectURL(file) }))]);
     }, [images.length]);
 
-    // Global paste handler — Ctrl+V anywhere on the page adds image
     useEffect(() => {
         const handlePaste = (e: ClipboardEvent) => {
             const items = e.clipboardData?.items;
@@ -150,8 +153,8 @@ export default function NewProductPage() {
                 }),
             });
             const data = await res.json();
-            if (!res.ok) throw new Error(data.error || '저장 실패');
-            setSuccessMsg(doTranslate ? '✅ 상품이 등록되고 4개국어로 자동 번역되었습니다!' : '✅ 상품이 등록되었습니다. 필요 시 편집에서 번역하세요.');
+            if (!res.ok) throw new Error(data.error || 'Save failed');
+            setSuccessMsg(doTranslate ? n.success.withTranslate : n.success.withoutTranslate);
             setTimeout(() => router.push('/admin/products'), 1800);
         } catch (err: any) {
             setErrorMsg(err.message);
@@ -171,18 +174,18 @@ export default function NewProductPage() {
         <div className="max-w-4xl mx-auto py-8 px-4 space-y-6">
             <div className="mb-2">
                 <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                    <Globe className="text-blue-500 w-6 h-6" />상품 등록
+                    <Globe className="text-blue-500 w-6 h-6" />{n.title}
                 </h1>
-                <p className="text-sm text-gray-500 mt-1">구글 AI로 한·영·크메르·중문 자동 번역됩니다.</p>
+                <p className="text-sm text-gray-500 mt-1">{n.subtitle}</p>
             </div>
 
             {errorMsg && <div className="p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-md text-sm">{errorMsg}</div>}
             {successMsg && <div className="p-4 bg-green-50 border-l-4 border-green-500 text-green-700 rounded-md text-sm font-bold">{successMsg}</div>}
 
             <form onSubmit={handleSubmit} className="space-y-5">
-                {/* ① 이미지 */}
+                {/* ① Images */}
                 <div className="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-100">
-                    <Sec icon={<ImagePlus className="w-5 h-5 text-blue-500" />} title="상품 이미지 (최대 3장)" desc="첫 번째 이미지 = 대표사진 • 나중에 추가도 가능" />
+                    <Sec icon={<ImagePlus className="w-5 h-5 text-blue-500" />} title={n.images.title} desc={n.images.desc} />
                     <div className="p-5">
                         {images.length < MAX_IMAGES && (
                             <div className={`border-2 border-dashed rounded-xl p-7 text-center cursor-pointer transition-all ${dragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-400'}`}
@@ -190,8 +193,8 @@ export default function NewProductPage() {
                                 onDragOver={e => e.preventDefault()} onDrop={e => { e.preventDefault(); setDragActive(false); addFiles(e.dataTransfer.files); }}
                                 onClick={() => fileInputRef.current?.click()}>
                                 <Upload className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                                <p className="text-sm font-medium text-gray-600">클릭 · 드래그 · Ctrl+V 붙여넣기</p>
-                                <p className="text-xs text-gray-400 mt-1">PNG / JPG / WebP · 최대 10MB</p>
+                                <p className="text-sm font-medium text-gray-600">{n.images.uploadHint}</p>
+                                <p className="text-xs text-gray-400 mt-1">{n.images.uploadTypes}</p>
                                 <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={e => e.target.files && addFiles(e.target.files)} />
                             </div>
                         )}
@@ -200,7 +203,7 @@ export default function NewProductPage() {
                                 {images.map((img, i) => (
                                     <div key={i} className="relative group aspect-square">
                                         <img src={img.preview} className="w-full h-full object-cover rounded-xl border border-gray-200" />
-                                        {i === 0 && <span className="absolute top-2 left-2 bg-blue-600 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">🌟 대표</span>}
+                                        {i === 0 && <span className="absolute top-2 left-2 bg-blue-600 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">🌟 {n.images.cover}</span>}
                                         <button type="button" onClick={() => removeImage(i)} className="absolute top-2 right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow"><X className="w-3.5 h-3.5" /></button>
                                     </div>
                                 ))}
@@ -209,43 +212,38 @@ export default function NewProductPage() {
                     </div>
                 </div>
 
-                {/* ② 수량별 파격 옵션 설정 */}
+                {/* ② Bulk Discount Options */}
                 <div className="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-100">
-                    <Sec icon={<Star className="w-5 h-5 text-yellow-500" />} title="단위별 할인 및 파격 옵션" desc="많이 살수록, 묶음으로 살수록 혜택을 제공합니다." />
+                    <Sec icon={<Star className="w-5 h-5 text-yellow-500" />} title={n.options.title} desc={n.options.desc} />
                     <div className="p-5 space-y-4">
                         {options.map((opt, i) => (
                             <div key={i} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_auto_2fr_auto] gap-3 items-end bg-gray-50 p-3 rounded-lg border border-gray-200">
                                 <div>
-                                    <label className="block text-xs font-medium text-gray-600 mb-1">최소 수량</label>
-                                    <input type="number" value={opt.minQty} onChange={e => {
-                                        setOptions(options.map((o, idx) => idx === i ? { ...o, minQty: e.target.value } : o));
-                                    }} className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" min="1" />
+                                    <label className="block text-xs font-medium text-gray-600 mb-1">{n.options.minQty}</label>
+                                    <input type="number" value={opt.minQty} onChange={e => setOptions(options.map((o, idx) => idx === i ? { ...o, minQty: e.target.value } : o))}
+                                        className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" min="1" />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-medium text-gray-600 mb-1">최대 수량</label>
-                                    <input type="number" value={opt.maxQty} onChange={e => {
-                                        setOptions(options.map((o, idx) => idx === i ? { ...o, maxQty: e.target.value } : o));
-                                    }} className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="무제한" />
+                                    <label className="block text-xs font-medium text-gray-600 mb-1">{n.options.maxQty}</label>
+                                    <input type="number" value={opt.maxQty} onChange={e => setOptions(options.map((o, idx) => idx === i ? { ...o, maxQty: e.target.value } : o))}
+                                        className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder={n.options.unlimitedPlaceholder} />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-medium text-gray-600 mb-1">할인율(%)</label>
-                                    <input type="number" value={opt.discountPct} onChange={e => {
-                                        setOptions(options.map((o, idx) => idx === i ? { ...o, discountPct: e.target.value } : o));
-                                    }} className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+                                    <label className="block text-xs font-medium text-gray-600 mb-1">{n.options.discount}</label>
+                                    <input type="number" value={opt.discountPct} onChange={e => setOptions(options.map((o, idx) => idx === i ? { ...o, discountPct: e.target.value } : o))}
+                                        className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" />
                                 </div>
                                 <div className="pb-2">
                                     <label className="flex items-center gap-2 text-sm cursor-pointer whitespace-nowrap">
-                                        <input type="checkbox" checked={opt.freeShipping} onChange={e => {
-                                            setOptions(options.map((o, idx) => idx === i ? { ...o, freeShipping: e.target.checked } : o));
-                                        }} className="rounded text-blue-600 focus:ring-blue-500" />
-                                        무료 배송
+                                        <input type="checkbox" checked={opt.freeShipping} onChange={e => setOptions(options.map((o, idx) => idx === i ? { ...o, freeShipping: e.target.checked } : o))}
+                                            className="rounded text-blue-600 focus:ring-blue-500" />
+                                        {n.options.freeShipping}
                                     </label>
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-medium text-gray-600 mb-1">옵션 라벨 (선택)</label>
-                                    <input value={opt.labelKo} onChange={e => {
-                                        setOptions(options.map((o, idx) => idx === i ? { ...o, labelKo: e.target.value } : o));
-                                    }} className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="예: 2개 구매시 10% 할인" />
+                                    <label className="block text-xs font-medium text-gray-600 mb-1">{n.options.optionLabel}</label>
+                                    <input value={opt.labelKo} onChange={e => setOptions(options.map((o, idx) => idx === i ? { ...o, labelKo: e.target.value } : o))}
+                                        className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder={n.options.optionLabelPlaceholder} />
                                 </div>
                                 {options.length > 1 && (
                                     <button type="button" onClick={() => setOptions(options.filter((_, idx) => idx !== i))} className="mb-1 text-red-500 hover:bg-red-50 p-2 rounded-lg transition-colors">
@@ -256,41 +254,41 @@ export default function NewProductPage() {
                         ))}
                         <button type="button" onClick={() => setOptions([...options, { minQty: '2', maxQty: '', discountPct: '10', freeShipping: false, labelKo: '' }])}
                             className="text-sm text-blue-600 font-semibold flex items-center gap-1 hover:text-blue-700">
-                            + 수량별 옵션 추가하기
+                            {n.options.addOption}
                         </button>
                     </div>
                 </div>
 
-                {/* ③ 기본정보 + 카테고리 + 신상품 */}
+                {/* ③ Basic Info */}
                 <div className="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-100">
-                    <Sec icon={<Package className="w-5 h-5 text-gray-500" />} title="기본 정보 & 카테고리" />
+                    <Sec icon={<Package className="w-5 h-5 text-gray-500" />} title={n.basic.title} />
                     <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-xs font-medium text-gray-600 mb-1">SKU <span className="text-red-500">*</span></label>
-                            <input required name="sku" value={form.sku} onChange={handleChange} className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="예: COSRX-AHA-001" />
+                            <input required name="sku" value={form.sku} onChange={handleChange} className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="e.g. COSRX-AHA-001" />
                         </div>
                         <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">카테고리</label>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">{ef.category}</label>
                             <select name="categoryId" value={form.categoryId} onChange={handleChange} className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white">
-                                <option value="">— 카테고리 선택 —</option>
+                                <option value="">{n.basic.selectCategory}</option>
                                 {categories.filter(c => !['new', 'best', 'sale', 'foryou'].includes(c.slug)).map(c => (
                                     <option key={c.id} value={c.id}>{c.nameKo}</option>
                                 ))}
                             </select>
                         </div>
                         <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">판매가 (USD) <span className="text-red-500">*</span></label>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">{ef.price}</label>
                             <div className="relative">
                                 <span className="absolute left-3 top-2 text-gray-400 text-sm">$</span>
                                 <input required type="number" step="0.01" name="priceUsd" value={form.priceUsd} onChange={handleChange} className="w-full border border-gray-200 rounded-lg py-2 pl-6 pr-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="0.00" />
                             </div>
                         </div>
                         <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">재고 수량</label>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">{ef.stock}</label>
                             <input type="number" name="stockQty" value={form.stockQty} onChange={handleChange} className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" />
                         </div>
 
-                        {/* 신상품 등록 토글 */}
+                        {/* New Arrival toggle */}
                         <div className="md:col-span-2">
                             <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl border-2 transition-all select-none hover:border-yellow-300 hover:bg-yellow-50 group"
                                 style={{ borderColor: form.isNew ? '#F59E0B' : '#E5E7EB', background: form.isNew ? '#FFFBEB' : '' }}>
@@ -300,26 +298,26 @@ export default function NewProductPage() {
                                 </div>
                                 <div>
                                     <div className="font-semibold text-sm text-gray-800 flex items-center gap-1">
-                                        <Sparkles className={`w-4 h-4 ${form.isNew ? 'text-yellow-500' : 'text-gray-400'}`} /> 신상품으로 등록
+                                        <Sparkles className={`w-4 h-4 ${form.isNew ? 'text-yellow-500' : 'text-gray-400'}`} /> {n.basic.isNewLabel}
                                     </div>
-                                    <div className="text-xs text-gray-500 mt-0.5">홈 & 신상품 섹션에 표시됩니다</div>
+                                    <div className="text-xs text-gray-500 mt-0.5">{n.basic.isNewDesc}</div>
                                 </div>
                             </label>
                         </div>
                     </div>
                 </div>
 
-                {/* ④ 상품 사양 */}
+                {/* ④ Product Specs */}
                 <div className="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-100">
-                    <Sec icon={<Tag className="w-5 h-5 text-purple-500" />} title="상품 사양" desc="구매 결정에 핵심이 되는 정보" />
+                    <Sec icon={<Tag className="w-5 h-5 text-purple-500" />} title={n.specs.title} desc={n.specs.desc} />
                     <div className="p-5 grid grid-cols-2 md:grid-cols-3 gap-4">
                         {[
-                            { label: '브랜드명', name: 'brandName', placeholder: '예: COSRX, LANEIGE' },
-                            { label: '용량/중량', name: 'volume', placeholder: '예: 150ml, 50g' },
-                            { label: '원산지', name: 'origin', placeholder: '예: 대한민국' },
-                            { label: '피부타입', name: 'skinType', placeholder: '예: 모든피부, 건성' },
-                            { label: '유통기한(개월)', name: 'expiryMonths', placeholder: '예: 36' },
-                            { label: '인증/특징', name: 'certifications', placeholder: '예: 비건, EWG' },
+                            { label: ef.brand, name: 'brandName', placeholder: 'e.g. COSRX, LANEIGE' },
+                            { label: ef.volume, name: 'volume', placeholder: 'e.g. 150ml, 50g' },
+                            { label: ef.origin, name: 'origin', placeholder: 'e.g. South Korea' },
+                            { label: ef.skinType, name: 'skinType', placeholder: 'e.g. All, Dry, Oily' },
+                            { label: ef.expiry, name: 'expiryMonths', placeholder: 'e.g. 36' },
+                            { label: ef.certs, name: 'certifications', placeholder: 'e.g. Vegan, EWG' },
                         ].map(f => (
                             <div key={f.name}>
                                 <label className="block text-xs font-medium text-gray-600 mb-1">{f.label}</label>
@@ -329,68 +327,73 @@ export default function NewProductPage() {
                     </div>
                 </div>
 
-                {/* ⑤ 다국어 콘텐츠 */}
+                {/* ⑤ Content */}
                 <div className="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-100">
                     <div className="px-6 py-4 bg-blue-50 border-b border-blue-100 flex items-center justify-between">
                         <div>
-                            <h3 className="text-base font-semibold text-gray-900 flex items-center gap-2"><Globe className="w-5 h-5 text-blue-500" />콘텐츠</h3>
-                            <p className="text-xs text-blue-600 mt-0.5">하단 번역 체크 시 한·영·크메르·중문 자동 번역됩니다</p>
+                            <h3 className="text-base font-semibold text-gray-900 flex items-center gap-2"><Globe className="w-5 h-5 text-blue-500" />{n.content.title}</h3>
+                            <p className="text-xs text-blue-600 mt-0.5">{n.content.desc}</p>
                         </div>
                         <select name="baseLang" value={form.baseLang} onChange={handleChange} className="border border-blue-200 rounded-lg py-1.5 px-2 text-sm text-blue-700 font-bold bg-white focus:outline-none">
-                            <option value="ko">한국어 (KR)</option>
+                            <option value="ko">🇰🇷 한국어</option>
                             <option value="en">🇺🇸 English</option>
                         </select>
                     </div>
                     <div className="p-5 space-y-4">
                         <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">상품명 <span className="text-red-500">*</span></label>
-                            <input required name="name" value={form.name} onChange={handleChange} className="w-full border border-gray-200 rounded-lg py-2.5 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="예: COSRX AHA 7 화이트헤드 파워 리퀴드 150ml" />
+                            <label className="block text-xs font-medium text-gray-600 mb-1">{n.content.productName}</label>
+                            <input required name="name" value={form.name} onChange={handleChange} className="w-full border border-gray-200 rounded-lg py-2.5 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="e.g. COSRX AHA 7 Whitehead Power Liquid 150ml" />
                         </div>
                         <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">한 줄 요약 <span className="text-gray-400">(목록·검색 결과에 표시)</span></label>
-                            <input name="shortDesc" value={form.shortDesc} onChange={handleChange} className="w-full border border-gray-200 rounded-lg py-2.5 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="예: 각질 제거 + 모공 케어, 7% AHA로 맑고 투명한 피부" />
+                            <label className="block text-xs font-medium text-gray-600 mb-1">{n.content.shortDesc}</label>
+                            <input name="shortDesc" value={form.shortDesc} onChange={handleChange} className="w-full border border-gray-200 rounded-lg py-2.5 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="e.g. Exfoliates & refines pores with 7% AHA" />
                         </div>
                         <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1"><Leaf className="w-3.5 h-3.5 text-green-500" />주요 성분</label>
-                            <textarea name="ingredients" rows={2} value={form.ingredients} onChange={handleChange} className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none" placeholder="예: AHA(글리콜산) 7%, 판테놀, 나이아신아마이드, 히알루론산" />
+                            <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1"><Leaf className="w-3.5 h-3.5 text-green-500" />{n.content.ingredients}</label>
+                            <textarea name="ingredients" rows={2} value={form.ingredients} onChange={handleChange} className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none" placeholder="e.g. AHA (Glycolic Acid) 7%, Panthenol, Niacinamide, Hyaluronic Acid" />
                         </div>
                         <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1"><Droplets className="w-3.5 h-3.5 text-blue-500" />사용 방법</label>
-                            <textarea name="howToUse" rows={3} value={form.howToUse} onChange={handleChange} className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none" placeholder="1. 세안 후 화장솜에 묻혀 얼굴에 닦아내기&#10;2. 주 2~3회 사용&#10;3. 사용 후 자외선차단제 필수" />
+                            <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1"><Droplets className="w-3.5 h-3.5 text-blue-500" />{n.content.howToUse}</label>
+                            <textarea name="howToUse" rows={3} value={form.howToUse} onChange={handleChange} className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none" placeholder={"1. After cleansing, apply with a cotton pad\n2. Use 2–3x per week\n3. Follow with sunscreen"} />
                         </div>
                         <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1"><Star className="w-3.5 h-3.5 text-yellow-500" />주요 효능 / 특징</label>
-                            <textarea name="benefits" rows={3} value={form.benefits} onChange={handleChange} className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none" placeholder="• 각질 제거로 맑은 피부톤&#10;• 모공 케어&#10;• 저자극 포뮬라" />
+                            <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1"><Star className="w-3.5 h-3.5 text-yellow-500" />{n.content.benefits}</label>
+                            <textarea name="benefits" rows={3} value={form.benefits} onChange={handleChange} className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none" placeholder={"• Exfoliates dead skin for a brighter complexion\n• Minimizes pore appearance\n• Gentle low-pH formula"} />
                         </div>
                         <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">상세 설명</label>
-                            <textarea name="detailDesc" rows={4} value={form.detailDesc} onChange={handleChange} className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none" placeholder="브랜드 스토리, 개발 배경, 차별점 등을 자세히 입력하세요." />
+                            <label className="block text-xs font-medium text-gray-600 mb-1">{n.content.detailDesc}</label>
+                            <textarea name="detailDesc" rows={4} value={form.detailDesc} onChange={handleChange} className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none" placeholder="Brand story, product development background, key differentiators..." />
                         </div>
                         <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">SEO 키워드</label>
-                            <input name="seoKeywords" value={form.seoKeywords} onChange={handleChange} className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="예: 각질제거, AHA, COSRX, 스킨케어" />
+                            <label className="block text-xs font-medium text-gray-600 mb-1">{n.content.seoKeywords}</label>
+                            <input name="seoKeywords" value={form.seoKeywords} onChange={handleChange} className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="e.g. exfoliant, AHA, COSRX, skincare" />
                         </div>
-                        {/* Translate option */}
+                        {/* Auto-translate option */}
                         <label className={`flex items-start gap-3 cursor-pointer p-4 rounded-xl border-2 transition-all ${doTranslate ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300'}`}>
                             <input type="checkbox" checked={doTranslate} onChange={e => setDoTranslate(e.target.checked)}
                                 className="mt-0.5 rounded text-blue-600 focus:ring-blue-500" />
                             <div>
                                 <div className="font-semibold text-sm text-gray-800 flex items-center gap-1.5">
                                     <RefreshCw className={`w-4 h-4 ${doTranslate ? 'text-blue-600' : 'text-gray-400'}`} />
-                                    저장 시 4개국어 자동 번역
+                                    {n.translate.label}
                                 </div>
-                                <div className="text-xs text-gray-500 mt-0.5">체크 시 구글 번역 API로 한·영·크메르·중문이 생성됩니다. 미체크 시 입력 언어로만 저장됩니다.</div>
+                                <div className="text-xs text-gray-500 mt-0.5">{n.translate.desc}</div>
                             </div>
                         </label>
                     </div>
                 </div>
 
-                {/* 저장 */}
+                {/* Save */}
                 <div className="flex justify-end gap-3 pb-8">
-                    <button type="button" onClick={() => router.back()} className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50">취소</button>
+                    <button type="button" onClick={() => router.back()} className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50">
+                        {n.buttons.cancel}
+                    </button>
                     <button type="submit" disabled={isLoading} className="px-8 py-2.5 flex items-center gap-2 text-sm font-bold text-white bg-blue-600 rounded-xl shadow hover:bg-blue-700 disabled:opacity-70">
                         {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                        {isLoading ? (doTranslate ? '저장 & 번역 중...' : '저장 중...') : (doTranslate ? '저장 & 4개국어 자동 번역' : '저장')}
+                        {isLoading
+                            ? (doTranslate ? n.buttons.savingTranslate : n.buttons.saving)
+                            : (doTranslate ? n.buttons.saveWithTranslate : n.buttons.save)
+                        }
                     </button>
                 </div>
             </form>
