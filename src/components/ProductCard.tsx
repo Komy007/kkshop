@@ -5,6 +5,7 @@ import { ShoppingCart, Star, Package } from 'lucide-react';
 import { useSafeAppStore } from '@/store/useAppStore';
 import { useCartStore } from '@/store/useCartStore';
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface ProductData {
     id: string;
@@ -40,7 +41,6 @@ export default function ProductCard({ product }: ProductCardProps) {
     const addItem = useCartStore((s) => s.addItem);
 
     const [mounted, setMounted] = React.useState(false);
-    const [imgError, setImgError] = React.useState(false);
     React.useEffect(() => setMounted(true), []);
 
     const formatUsd = (price: number) => {
@@ -67,13 +67,13 @@ export default function ProductCard({ product }: ProductCardProps) {
 
             {/* Product Image Region */}
             <Link href={`/products/${product.id}`} className="relative aspect-[4/5] w-full bg-gray-100 overflow-hidden cursor-pointer block">
-                {product.imageUrl && !imgError ? (
-                    <img
+                {product.imageUrl ? (
+                    <Image
                         src={product.imageUrl}
                         alt={product.name}
-                        className="object-cover w-full h-full opacity-100 group-hover:scale-110 transition-all duration-700 ease-out"
-                        loading="lazy"
-                        onError={() => setImgError(true)}
+                        fill
+                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                        className="object-cover opacity-100 group-hover:scale-110 transition-all duration-700 ease-out"
                     />
                 ) : (
                     <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100 text-gray-300">

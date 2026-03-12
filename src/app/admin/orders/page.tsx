@@ -1,8 +1,9 @@
 import React from 'react';
 import { prisma } from '@/lib/api';
-import { ShoppingBag, Truck } from 'lucide-react';
+import { ShoppingBag, Truck, ChevronLeft, ChevronRight } from 'lucide-react';
 import OrderShipmentModal from '@/components/admin/OrderShipmentModal';
 import { revalidatePath } from 'next/cache';
+import { sendOrderStatusEmail } from '@/lib/mail';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,7 +19,10 @@ const ALLOWED_TRANSITIONS: Record<string, string[]> = {
 async function updateOrderStatus(orderId: string, newStatus: string) {
     'use server';
     // Validate state machine transition
-    const current = await prisma.order.findUnique({ where: { id: orderId }, select: { status: true } });
+    const current = await prisma.order.findUnique({
+        where: { id: orderId },
+        select: { status: true, customerEmail: true, shipment: { select: { carrier: true, trackingNumber: true, trackingUrl: true } } },
+    });
     if (!current) return;
     const allowed = ALLOWED_TRANSITIONS[current.status] ?? [];
     if (!allowed.includes(newStatus)) return; // silently reject invalid transitions
@@ -41,7 +45,6 @@ async function updateOrderStatus(orderId: string, newStatus: string) {
                     where: { id: item.productId },
                     data: {
                         stockQty: newStock,
-                        // If previously SOLDOUT and now has stock, re-activate
                         ...(product.status === 'SOLDOUT' && newStock > 0 ? { status: 'ACTIVE' } : {}),
                     },
                 });
@@ -63,6 +66,21 @@ async function updateOrderStatus(orderId: string, newStatus: string) {
         where: { id: orderId },
         data: { status: newStatus },
     });
+
+    // Send customer notification email (non-blocking)
+    if (current.customerEmail && ['CONFIRMED', 'SHIPPING', 'DELIVERED', 'CANCELLED'].includes(newStatus)) {
+        sendOrderStatusEmail(
+            current.customerEmail,
+            orderId,
+            newStatus as 'CONFIRMED' | 'SHIPPING' | 'DELIVERED' | 'CANCELLED',
+            newStatus === 'SHIPPING' && current.shipment ? {
+                carrier: current.shipment.carrier,
+                trackingNumber: current.shipment.trackingNumber,
+                trackingUrl: current.shipment.trackingUrl,
+            } : undefined
+        ).catch((e) => console.error('Order status email failed:', e));
+    }
+
     revalidatePath('/admin/orders');
 }
 
@@ -75,15 +93,26 @@ const STATUS_STYLE: Record<string, string> = {
     REFUNDED:  'bg-gray-50 text-gray-500 border-gray-200',
 };
 
-export default async function AdminOrdersPage() {
-    const orders = await prisma.order.findMany({
-        orderBy: { createdAt: 'desc' },
-        take: 100,
-        include: {
-            items: { include: { product: true } },
-            shipment: true,
-        },
-    });
+const PAGE_SIZE = 20;
+
+export default async function AdminOrdersPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
+    const params = await searchParams;
+    const page = Math.max(1, parseInt(params.page ?? '1', 10));
+    const skip = (page - 1) * PAGE_SIZE;
+
+    const [orders, total] = await Promise.all([
+        prisma.order.findMany({
+            orderBy: { createdAt: 'desc' },
+            skip,
+            take: PAGE_SIZE,
+            include: {
+                items: { include: { product: true } },
+                shipment: true,
+            },
+        }),
+        prisma.order.count(),
+    ]);
+    const totalPages = Math.ceil(total / PAGE_SIZE);
 
     const formatUsd = (price: any) =>
         new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(price));
@@ -98,7 +127,7 @@ export default async function AdminOrdersPage() {
                     <p className="text-sm text-gray-500 mt-0.5">Update status, add shipment tracking for each order.</p>
                 </div>
                 <div className="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold text-sm">
-                    {orders.length} Orders
+                    {total} Orders
                 </div>
             </header>
 
@@ -202,6 +231,30 @@ export default async function AdminOrdersPage() {
                     </table>
                 </div>
             </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+                <div className="mt-6 flex items-center justify-between">
+                    <p className="text-sm text-gray-500">
+                        Showing {skip + 1}–{Math.min(skip + PAGE_SIZE, total)} of {total} orders
+                    </p>
+                    <div className="flex items-center gap-2">
+                        {page > 1 && (
+                            <a href={`?page=${page - 1}`} className="flex items-center gap-1 px-3 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                                <ChevronLeft className="w-4 h-4" /> Prev
+                            </a>
+                        )}
+                        <span className="px-4 py-2 text-sm font-bold text-white bg-blue-600 rounded-lg">
+                            {page} / {totalPages}
+                        </span>
+                        {page < totalPages && (
+                            <a href={`?page=${page + 1}`} className="flex items-center gap-1 px-3 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                                Next <ChevronRight className="w-4 h-4" />
+                            </a>
+                        )}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

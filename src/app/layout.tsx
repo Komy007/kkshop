@@ -23,12 +23,23 @@ export const metadata: Metadata = {
     title: "KKshop.cc | Premium Korean Cosmetics & Lifestyle in Phnom Penh",
     description: "Cambodia's No.1 Premium Korean E-commerce. 100% authentic K-Beauty and lifestyle products delivered fast in Phnom Penh. ABA Pay & Wing accepted.",
     keywords: "Korean cosmetics Cambodia, K-Beauty Phnom Penh, Korean products Cambodia, KKshop, 한국 화장품 캄보디아",
+    alternates: {
+        canonical: 'https://kkshop.cc',
+        languages: {
+            'en': 'https://kkshop.cc',
+            'ko': 'https://kkshop.cc',
+            'km': 'https://kkshop.cc',
+            'zh': 'https://kkshop.cc',
+            'x-default': 'https://kkshop.cc',
+        },
+    },
     openGraph: {
         title: "KKshop.cc | Premium Korean Cosmetics & Lifestyle",
         description: "100% authentic K-Beauty in Phnom Penh. Same-day delivery.",
         locale: "en_US",
         type: "website",
         siteName: "KKshop.cc",
+        url: 'https://kkshop.cc',
     },
 };
 

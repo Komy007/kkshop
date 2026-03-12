@@ -5,6 +5,30 @@ import { prisma } from "@/lib/api"
 import bcrypt from "bcryptjs"
 import authConfig from "./auth.config"
 
+// Login rate limiting: max 10 attempts per IP per 15 minutes
+const loginAttempts = new Map<string, { count: number; firstAttempt: number }>();
+const LOGIN_MAX = 10;
+const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+
+setInterval(() => {
+    const now = Date.now();
+    for (const [key, val] of loginAttempts.entries()) {
+        if (now - val.firstAttempt > LOGIN_WINDOW_MS * 2) loginAttempts.delete(key);
+    }
+}, 10 * 60 * 1000);
+
+function checkLoginRateLimit(ip: string): boolean {
+    const now = Date.now();
+    const entry = loginAttempts.get(ip);
+    if (!entry || now - entry.firstAttempt > LOGIN_WINDOW_MS) {
+        loginAttempts.set(ip, { count: 1, firstAttempt: now });
+        return true;
+    }
+    if (entry.count >= LOGIN_MAX) return false;
+    entry.count++;
+    return true;
+}
+
 const nextAuthEnv = NextAuth({
     ...authConfig,
     session: { strategy: 'jwt' },
@@ -31,8 +55,15 @@ const nextAuthEnv = NextAuth({
                 email: { label: "Email", type: "email" },
                 password: { label: "Password", type: "password" }
             },
-            async authorize(credentials) {
+            async authorize(credentials, req) {
                 if (!credentials?.email || !credentials?.password) return null
+
+                // Rate limiting by IP
+                const forwarded = (req as any)?.headers?.['x-forwarded-for'];
+                const ip = (typeof forwarded === 'string' ? forwarded.split(',')[0] : '').trim() || 'unknown';
+                if (!checkLoginRateLimit(ip)) {
+                    throw new Error('Too many login attempts. Please wait 15 minutes.');
+                }
 
                 // Normalize email to lowercase to avoid case-sensitivity issues
                 const email = (credentials.email as string).toLowerCase().trim();

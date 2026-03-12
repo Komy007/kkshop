@@ -348,6 +348,85 @@ export async function sendSupplierReceivedEmail(to: string, companyName: string)
     await transporter.sendMail({ from: fromAddress, to: adminEmail, subject: `[KKShop Admin] New Supplier Application: ${companyName}`, html: adminHtml });
 }
 
+export async function sendOrderStatusEmail(
+    to: string,
+    orderId: string,
+    newStatus: 'CONFIRMED' | 'SHIPPING' | 'DELIVERED' | 'CANCELLED',
+    tracking?: { carrier?: string | null; trackingNumber?: string | null; trackingUrl?: string | null }
+) {
+    const { transporter, fromAddress } = await getTransporterAndFrom();
+    const baseUrl = process.env.NEXTAUTH_URL || 'https://kkshop.cc';
+    const shortId = orderId.slice(0, 12).toUpperCase();
+
+    const cfg = {
+        CONFIRMED: {
+            subject: `[KKShop] Order ${shortId} Confirmed ✅`,
+            headerBg: 'linear-gradient(135deg,#2563eb,#1d4ed8)',
+            icon: '✅', title: 'Order Confirmed',
+            message: 'Your order has been confirmed and is being prepared for shipping.',
+        },
+        SHIPPING: {
+            subject: `[KKShop] Order ${shortId} Shipped 🚚`,
+            headerBg: 'linear-gradient(135deg,#7c3aed,#5b21b6)',
+            icon: '🚚', title: 'Your Order is on the Way!',
+            message: 'Your order has been handed over to the courier and is on its way to you.',
+        },
+        DELIVERED: {
+            subject: `[KKShop] Order ${shortId} Delivered 📦`,
+            headerBg: 'linear-gradient(135deg,#16a34a,#15803d)',
+            icon: '📦', title: 'Order Delivered',
+            message: 'Your order has been delivered. We hope you enjoy your purchase! Leave a review to share your experience.',
+        },
+        CANCELLED: {
+            subject: `[KKShop] Order ${shortId} Cancelled`,
+            headerBg: 'linear-gradient(135deg,#dc2626,#b91c1c)',
+            icon: '❌', title: 'Order Cancelled',
+            message: 'Your order has been cancelled. If this was unexpected, please contact us.',
+        },
+    }[newStatus];
+
+    const trackingHtml = newStatus === 'SHIPPING' && tracking?.trackingNumber ? `
+        <div style="background:#f5f3ff;border:1px solid #e0d9ff;border-radius:8px;padding:14px 18px;margin:16px 0;">
+            <p style="margin:0 0 6px;font-size:11px;color:#7c3aed;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Tracking Information</p>
+            ${tracking.carrier ? `<p style="margin:0 0 4px;font-size:13px;color:#374151;">Carrier: <strong>${tracking.carrier}</strong></p>` : ''}
+            <p style="margin:0 0 4px;font-size:13px;color:#374151;">Tracking #: <strong style="font-family:monospace;">${tracking.trackingNumber}</strong></p>
+            ${tracking.trackingUrl ? `<a href="${tracking.trackingUrl}" style="display:inline-block;margin-top:8px;background:#6366f1;color:#fff;padding:8px 18px;border-radius:6px;text-decoration:none;font-weight:700;font-size:13px;">Track My Package →</a>` : ''}
+        </div>` : '';
+
+    const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f9fafb;font-family:Arial,sans-serif;">
+  <div style="max-width:520px;margin:32px auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.08);">
+    <div style="background:${cfg.headerBg};padding:28px 32px;">
+      <p style="margin:0 0 4px;font-size:12px;color:rgba(255,255,255,0.8);text-transform:uppercase;letter-spacing:1px;">Order Update</p>
+      <h1 style="margin:0;font-size:22px;color:#fff;font-weight:700;">${cfg.icon} ${cfg.title}</h1>
+    </div>
+    <div style="padding:28px 32px;">
+      <p style="margin:0 0 16px;font-size:15px;color:#374151;">${cfg.message}</p>
+      <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:12px 16px;margin-bottom:4px;">
+        <p style="margin:0;font-size:12px;color:#6b7280;">Order Reference</p>
+        <p style="margin:4px 0 0;font-size:14px;font-family:monospace;font-weight:700;color:#111827;">${shortId}…</p>
+      </div>
+      ${trackingHtml}
+      <div style="text-align:center;margin-top:24px;">
+        <a href="${baseUrl}/mypage" style="display:inline-block;background:#6366f1;color:#fff;padding:13px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;">
+          View My Orders →
+        </a>
+      </div>
+      ${newStatus === 'DELIVERED' ? `<p style="margin:16px 0 0;font-size:12px;color:#9ca3af;text-align:center;">Enjoyed your purchase? <a href="${baseUrl}/mypage" style="color:#6366f1;font-weight:700;">Leave a review</a> and earn reward points!</p>` : ''}
+    </div>
+    <div style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:14px 32px;text-align:center;">
+      <p style="margin:0;font-size:11px;color:#9ca3af;">&copy; ${new Date().getFullYear()} KKShop &middot; Cambodia K-Beauty</p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+    await transporter.sendMail({ from: fromAddress, to, subject: cfg.subject, html });
+}
+
 export async function sendSupplierStatusEmail(to: string, companyName: string, newStatus: 'APPROVED' | 'REJECTED' | 'SUSPENDED', adminNote?: string | null) {
     const { transporter, fromAddress } = await getTransporterAndFrom();
     const baseUrl = process.env.NEXTAUTH_URL || 'https://kkshop.cc';
