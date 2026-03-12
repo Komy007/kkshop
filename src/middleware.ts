@@ -10,6 +10,7 @@ export default middleware((req: any) => {
     const isLoggedIn = !!req.auth
     const isApiAuthRoute = nextUrl.pathname.startsWith('/api/auth')
     const isAdminRoute = nextUrl.pathname.startsWith('/admin')
+    const isSellerRoute = nextUrl.pathname.startsWith('/seller')
     const isAdminLoginRoute = nextUrl.pathname === '/admin/login'
 
     if (isApiAuthRoute) return
@@ -18,72 +19,74 @@ export default middleware((req: any) => {
     if (isAdminLoginRoute) {
         if (isLoggedIn) {
             const role = req.auth?.user?.role;
-            if (role === 'SUPERADMIN') {
-                return Response.redirect(new URL('/admin', nextUrl));
-            } else if (role === 'ADMIN') {
-                return Response.redirect(new URL('/admin/products/new', nextUrl));
-            }
-            // If just a regular USER accidentally hits /admin/login somehow and is logged in?
+            if (role === 'SUPERADMIN') return Response.redirect(new URL('/admin', nextUrl));
+            if (role === 'ADMIN') return Response.redirect(new URL('/admin/products', nextUrl));
+            if (role === 'SUPPLIER') return Response.redirect(new URL('/seller', nextUrl));
+            // CONSUMER/USER is already logged in, but hit /admin/login? Push to home.
             return Response.redirect(new URL('/', nextUrl));
         }
         return;
     }
 
-    // Require authentication for any other /admin route
-    if (isAdminRoute) {
+    // Role-Based Access Control (RBAC)
+    if (isAdminRoute || isSellerRoute) {
         if (!isLoggedIn) {
             return Response.redirect(new URL('/admin/login', nextUrl));
         }
 
         const role = req.auth?.user?.role;
 
-        // 0. If you are a SUPPLIER, you MUST be in /seller. Redirect them if they try to be in /admin
-        if (role === 'SUPPLIER') {
-            return Response.redirect(new URL('/seller', nextUrl));
-        }
-
-        // General fallback: if you are just a "USER", you can't be in /admin
-        if (role === 'USER') {
+        // 1. Block regular users FROM ANY admin/seller routes
+        if (role === 'USER' || !role) {
             return Response.redirect(new URL('/', nextUrl));
         }
 
-        // --- Role-Based Access Control within /admin ---
+        // 2. SUPPLIER access control
+        if (role === 'SUPPLIER') {
+            if (!isSellerRoute) {
+                return Response.redirect(new URL('/seller', nextUrl));
+            }
+            return; // Allow access to /seller
+        }
 
-        // 1. If you are just an ADMIN (not SUPERADMIN)
+        // 3. ADMIN (Staff) access control within /admin
         if (role === 'ADMIN') {
-            // Let's define routes ADMIN is explicitly allowed to see:
-            const allowedForAdmin = [
-                '/admin/products/new',
+            if (isSellerRoute) {
+                return Response.redirect(new URL('/admin/products', nextUrl));
+            }
+            
+            // ADMIN restricted paths
+            const adminAllowedPrefixes = [
                 '/admin/products',
-                '/admin/products/translations',
                 '/admin/inventory',
                 '/admin/customers',
                 '/admin/cs',
                 '/admin/reviews'
             ];
 
-            // If the current path is NOT in the allowed list, force them to their dashboard (/admin/products/new)
-            // (e.g. Trying to access /admin (Super Dashboard) or /admin/settings/roles)
-            const isAllowedPath = allowedForAdmin.some(route => nextUrl.pathname.startsWith(route));
-
-            // If they hit exactly '/admin' (the SuperAdmin dashboard), redirect to product reg
-            if (nextUrl.pathname === '/admin' || !isAllowedPath) {
-                return Response.redirect(new URL('/admin/products/new', nextUrl));
+            const isAllowed = adminAllowedPrefixes.some(p => nextUrl.pathname.startsWith(p));
+            // Deny SUPERADMIN ONLY areas like Dashboard (Stats), Role Settings, Global Settings
+            if (!isAllowed || nextUrl.pathname === '/admin') {
+                return Response.redirect(new URL('/admin/products', nextUrl));
             }
+            return;
         }
 
-        // 2. SUPERADMIN has access to ALL /admin routes natively.
-        return;
+        // 4. SUPERADMIN has full access
+        if (role === 'SUPERADMIN') {
+            return;
+        }
+
+        // Default: if role unknown, go home
+        return Response.redirect(new URL('/', nextUrl));
     }
 
-    // --- Global Redirection for Suppliers ---
-    if (isLoggedIn && req.auth?.user?.role === 'SUPPLIER' && !nextUrl.pathname.startsWith('/seller')) {
-        return Response.redirect(new URL('/seller', nextUrl));
-    }
-
-    // --- Onboarding: Google 로그인 후 전화번호/주소 미입력 시 ---
+    // --- Global Redirection for Suppliers if they wander into consumer view? ---
+    // (Optional: let them see front store, but keep them in seller for management)
+    
+    // --- Onboarding: Mandatory for everyone logged in without a phone (Google users) ---
     const isOnboardingRoute = nextUrl.pathname === '/onboarding';
-    if (isLoggedIn && (req.auth?.user as any)?.needsOnboarding && !isOnboardingRoute) {
+    if (isLoggedIn && (req.auth?.user as any)?.needsOnboarding && !isOnboardingRoute && !isAdminLoginRoute) {
         return Response.redirect(new URL('/onboarding', nextUrl));
     }
 

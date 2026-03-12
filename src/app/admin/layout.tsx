@@ -52,6 +52,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const [open, setOpen] = useState<string | null>(null);
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [userEmail, setUserEmail] = useState('');
+    const [userRole, setUserRole] = useState<string | null>(null);
 
     useEffect(() => {
         rehydrateLanguageStore();
@@ -63,7 +64,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             }
         }
         // Get user info
-        fetch('/api/auth/session').then(r => r.json()).then(s => setUserEmail(s?.user?.email || ''));
+        fetch('/api/auth/session').then(r => r.json()).then(s => {
+            setUserEmail(s?.user?.email || '');
+            setUserRole(s?.user?.role || 'USER');
+        });
     }, [pathname, ADMIN_NAV]);
 
     if (pathname === '/admin/login') return <>{children}</>;
@@ -83,7 +87,26 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
             {/* Nav */}
             <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-                {ADMIN_NAV.map(item => {
+                {ADMIN_NAV.filter(item => {
+                    // SUPERADMIN can see everything
+                    if (userRole === 'SUPERADMIN') return true;
+                    // ADMIN (Staff) restricted view
+                    if (userRole === 'ADMIN') {
+                        const adminAllowed = [
+                            t.admin.nav.products,
+                            t.admin.nav.orders,
+                            t.admin.nav.inventory,
+                            t.admin.nav.customers,
+                        ];
+                        // Also check for specific restricted children within allowed groups
+                        if (item.label === t.admin.nav.customers) {
+                            // STAFF can see customers, but not roles
+                            return true;
+                        }
+                        return adminAllowed.includes(item.label);
+                    }
+                    return false;
+                }).map(item => {
                     const Icon = item.icon;
                     if ('href' in item && item.href) {
                         const active = isActive(item.href);
@@ -97,6 +120,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     }
                     const anyActive = item.children?.some(c => pathname.startsWith(c.href));
                     const isOpenGroup = open === item.label || anyActive;
+                    
+                    // Filter children for ADMIN role
+                    const filteredChildren = item.children?.filter(child => {
+                        if (userRole === 'SUPERADMIN') return true;
+                        if (userRole === 'ADMIN') {
+                            // Staff cannot see 'Roles & Permissions'
+                            if (child.href === '/admin/settings/roles') return false;
+                            // Staff cannot see dashboard (if it's a child, but here it's root)
+                            return true;
+                        }
+                        return false;
+                    });
+
+                    if (!filteredChildren || filteredChildren.length === 0) return null;
+
                     return (
                         <div key={item.label}>
                             <button onClick={() => setOpen(prev => prev === item.label ? null : item.label)}
@@ -107,7 +145,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                             </button>
                             {isOpenGroup && (
                                 <div className="ml-7 mt-0.5 space-y-0.5 border-l border-white/10 pl-3">
-                                    {item.children?.map(child => (
+                                    {filteredChildren.map(child => (
                                         <Link key={child.href} href={child.href} onClick={() => setSidebarOpen(false)}
                                             className={`block px-3 py-2 rounded-lg text-sm transition-all ${isActive(child.href) ? 'bg-blue-600 text-white font-semibold' : 'text-slate-400 hover:bg-white/10 hover:text-white'}`}>
                                             {child.label}
