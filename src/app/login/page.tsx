@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useTranslations } from '@/i18n/useTranslations';
 import { Mail, Lock, Loader2 } from 'lucide-react';
@@ -61,7 +61,7 @@ const oauthErrorMessages: Record<string, string> = {
     Default: 'Sign-in failed. Please try again.',
 };
 
-export default function LoginPage() {
+function LoginContent() {
     const t = useTranslations();
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -260,5 +260,13 @@ export default function LoginPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function LoginPage() {
+    return (
+        <Suspense>
+            <LoginContent />
+        </Suspense>
     );
 }
