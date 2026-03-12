@@ -429,15 +429,17 @@ export default function Home() {
                 <FlashSaleSection t={t} />
 
                 {/* ── AI Curation Section ── */}
-                <div className="mb-2">
-                    <div className="px-3 flex items-center gap-2 mb-2">
-                        <div className="w-7 h-7 rounded-full bg-brand-primary/10 flex items-center justify-center">
-                            <span className="text-[9px] font-extrabold text-brand-primary">{t.forYou}</span>
+                {showPopular.length > 0 && (
+                    <div className="mb-2">
+                        <div className="px-3 flex items-center gap-2 mb-2">
+                            <div className="w-7 h-7 rounded-full bg-brand-primary/10 flex items-center justify-center">
+                                <span className="text-[9px] font-extrabold text-brand-primary">{t.forYou}</span>
+                            </div>
+                            <p className="text-[14px] text-black font-extrabold">Premium{t.curationTitle}</p>
                         </div>
-                        <p className="text-[14px] text-black font-extrabold">Premium{t.curationTitle}</p>
+                        <CurationSection products={showPopular} />
                     </div>
-                    <CurationSection products={products} />
-                </div>
+                )}
 
                 {/* ── Hot Deal Grid ── */}
                 <ProductGrid
