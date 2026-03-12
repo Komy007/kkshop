@@ -63,7 +63,7 @@ export default function AdminProductsPage() {
         }
     }, [page, search, activeSlug, categories.length]);
 
-    // Initial load - restore filters from sessionStorage
+    // Initial load - restore filters + scroll from sessionStorage
     useEffect(() => {
         const saved = sessionStorage.getItem('admin_products_filters');
         if (saved) {
@@ -83,11 +83,36 @@ export default function AdminProductsPage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    // Restore scroll position after products finish loading
+    useEffect(() => {
+        if (!loading && products.length > 0) {
+            const savedScroll = sessionStorage.getItem('admin_products_scroll');
+            if (savedScroll) {
+                requestAnimationFrame(() => {
+                    setTimeout(() => {
+                        window.scrollTo({ top: parseInt(savedScroll, 10), behavior: 'instant' });
+                    }, 50);
+                });
+            }
+        }
+    }, [loading, products.length]);
+
+    // Save scroll position continuously while browsing
+    useEffect(() => {
+        const handleScroll = () => {
+            sessionStorage.setItem('admin_products_scroll', window.scrollY.toString());
+        };
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
     // Fetch when page/search/category changes (but not on initial mount)
     const isFirstRender = useRef(true);
     useEffect(() => {
         if (isFirstRender.current) { isFirstRender.current = false; return; }
         sessionStorage.setItem('admin_products_filters', JSON.stringify({ search, activeSlug, page }));
+        // Reset scroll when filter/page changes intentionally
+        sessionStorage.removeItem('admin_products_scroll');
         fetchProducts(page, search, activeSlug);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [page, search, activeSlug]);
@@ -107,6 +132,8 @@ export default function AdminProductsPage() {
     };
 
     const handleEdit = (id: string) => {
+        // Explicitly save scroll position before navigating to edit page
+        sessionStorage.setItem('admin_products_scroll', window.scrollY.toString());
         router.push(`/admin/products/${id}/edit`);
     };
 
@@ -170,7 +197,7 @@ export default function AdminProductsPage() {
                     <button onClick={() => fetchProducts(page, search, activeSlug)} className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg">
                         <RefreshCw className="w-5 h-5" />
                     </button>
-                    <button onClick={() => router.push('/admin/products/new')} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 shadow-sm">
+                    <button onClick={() => { sessionStorage.removeItem('admin_products_scroll'); router.push('/admin/products/new'); }} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 shadow-sm">
                         <Plus className="w-4 h-4" /> {t.admin.products.newProduct}
                     </button>
                 </div>
