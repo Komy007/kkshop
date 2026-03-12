@@ -4,9 +4,35 @@ import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { sendVerificationEmail } from '@/lib/mail';
 
-// Simple in-memory rate limiting to prevent spam
+// In-memory rate limiting (auto-cleanup every 10 minutes to prevent memory leak)
 const rateLimitCache = new Map<string, { count: number; timestamp: number }>();
 const MAX_REQUESTS_PER_MINUTE = 5;
+const RATE_LIMIT_WINDOW_MS = 60 * 1000;
+
+// Cleanup stale entries every 10 minutes
+if (typeof setInterval !== 'undefined') {
+    setInterval(() => {
+        const now = Date.now();
+        for (const [key, val] of rateLimitCache.entries()) {
+            if (now - val.timestamp > RATE_LIMIT_WINDOW_MS * 2) {
+                rateLimitCache.delete(key);
+            }
+        }
+    }, 10 * 60 * 1000);
+}
+
+function getClientIp(req: Request): string {
+    // Trust Cloud Run's forwarded IP (first IP is real client)
+    const forwarded = req.headers.get('x-forwarded-for');
+    if (forwarded) {
+        const firstIp = forwarded.split(',')[0].trim();
+        // Basic IP validation to prevent spoofing with crafted values
+        if (/^[\d.]+$/.test(firstIp) || /^[a-f0-9:]+$/i.test(firstIp)) {
+            return firstIp;
+        }
+    }
+    return req.headers.get('x-real-ip') || 'unknown';
+}
 
 /**
  * Generates a unique 8-character referral code for a new user.
@@ -35,13 +61,12 @@ async function generateUniqueReferralCode(): Promise<string> {
 export async function POST(req: Request) {
     try {
         // --- 1. Rate Limiting Protection ---
-        const ip = req.headers.get('x-forwarded-for') || 'unknown-ip';
+        const ip = getClientIp(req);
         const now = Date.now();
-        const windowMs = 60 * 1000; // 1 minute
 
         const clientData = rateLimitCache.get(ip);
         if (clientData) {
-            if (now - clientData.timestamp < windowMs) {
+            if (now - clientData.timestamp < RATE_LIMIT_WINDOW_MS) {
                 if (clientData.count >= MAX_REQUESTS_PER_MINUTE) {
                     return NextResponse.json({ error: '너무 많은 요청이 발생했습니다. 잠시 후 다시 시도해주세요.' }, { status: 429 });
                 }

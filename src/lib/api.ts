@@ -93,45 +93,83 @@ function serializeProduct(product: any, langCode: string): TranslatedProduct {
     };
 }
 
-// ── Fetch by Category Slug ─────────────────────────────────────────────────
+// ── Fetch by Category Slug (with pagination) ──────────────────────────────
 export async function getProductsByLanguage(
     langCode: string,
-    categorySlug?: string | null
-): Promise<TranslatedProduct[]> {
+    categorySlug?: string | null,
+    limit: number = 48,
+    skip: number = 0,
+): Promise<{ products: TranslatedProduct[]; total: number }> {
     try {
         const where: any = { status: 'ACTIVE', approvalStatus: 'APPROVED' };
 
         if (categorySlug) {
             if (categorySlug === 'new') {
-                // 신상품: isNew=true 이거나 신상품 카테고리
                 where.OR = [
                     { isNew: true },
                     { category: { slug: 'new' } },
                 ];
-            } else if (categorySlug === 'all') {
-                // 전체보기: 필터 없음
-            } else {
+            } else if (categorySlug !== 'all') {
                 where.category = { slug: categorySlug };
             }
+        }
+
+        const [products, total] = await Promise.all([
+            prisma.product.findMany({
+                where,
+                include: {
+                    translations: { where: { langCode: { in: ['en', langCode] } } },
+                    category: { select: { slug: true } },
+                    images: { orderBy: { sortOrder: 'asc' }, take: 1 },
+                },
+                orderBy: [{ isNew: 'desc' }, { createdAt: 'desc' }],
+                take: Math.min(limit, 100), // 최대 100개 제한
+                skip,
+            }),
+            prisma.product.count({ where }),
+        ]);
+
+        return { products: products.map(p => serializeProduct(p, langCode)), total };
+    } catch (error) {
+        console.error('Error fetching products:', error);
+        return { products: [], total: 0 };
+    }
+}
+
+// ── Fetch small set for homepage sections ─────────────────────────────────
+export async function getProductsForSection(
+    langCode: string,
+    filter: 'hot' | 'new' | 'popular',
+    limit: number = 8,
+): Promise<TranslatedProduct[]> {
+    try {
+        const where: any = { status: 'ACTIVE', approvalStatus: 'APPROVED' };
+        let orderBy: any[] = [{ createdAt: 'desc' }];
+
+        if (filter === 'hot') {
+            where.isHotSale = true;
+            orderBy = [{ reviewCount: 'desc' }, { createdAt: 'desc' }];
+        } else if (filter === 'new') {
+            where.isNew = true;
+            orderBy = [{ createdAt: 'desc' }];
+        } else if (filter === 'popular') {
+            orderBy = [{ reviewAvg: 'desc' }, { reviewCount: 'desc' }];
         }
 
         const products = await prisma.product.findMany({
             where,
             include: {
-                // Fetch both EN (for name) and requested lang (for descriptions)
                 translations: { where: { langCode: { in: ['en', langCode] } } },
                 category: { select: { slug: true } },
                 images: { orderBy: { sortOrder: 'asc' }, take: 1 },
             },
-            orderBy: [
-                { isNew: 'desc' },
-                { createdAt: 'desc' },
-            ],
+            orderBy,
+            take: limit,
         });
 
         return products.map(p => serializeProduct(p, langCode));
     } catch (error) {
-        console.error('Error fetching products:', error);
+        console.error('Error fetching products for section:', error);
         return [];
     }
 }

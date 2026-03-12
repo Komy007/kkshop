@@ -3,6 +3,7 @@ import { prisma } from '@/lib/api';
 import { auth } from '@/auth';
 import bcrypt from 'bcryptjs';
 import { sendSupplierStatusEmail } from '@/lib/mail';
+import { logAudit, getIpFromRequest } from '@/lib/audit';
 
 // GET: List all suppliers (ADMIN/SUPERADMIN only)
 export async function GET(req: NextRequest) {
@@ -68,6 +69,21 @@ export async function PATCH(req: NextRequest) {
         await prisma.user.update({
             where: { id: supplier.userId },
             data: { role: 'USER' },
+        });
+    }
+
+    // 감사 로그
+    const actionMap: Record<string, any> = { APPROVED: 'APPROVE_SUPPLIER', REJECTED: 'REJECT_SUPPLIER', SUSPENDED: 'SUSPEND_SUPPLIER' };
+    if (actionMap[status]) {
+        logAudit({
+            userId: session.user.id!,
+            userEmail: session.user.email || '',
+            userRole: 'SUPERADMIN',
+            action: actionMap[status],
+            resource: 'suppliers',
+            resourceId: id,
+            details: { status, adminNote },
+            ipAddress: getIpFromRequest(req),
         });
     }
 

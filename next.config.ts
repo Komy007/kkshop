@@ -1,46 +1,53 @@
 import type { NextConfig } from 'next';
 
+const ContentSecurityPolicy = `
+  default-src 'self';
+  script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://apis.google.com;
+  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+  font-src 'self' https://fonts.gstatic.com;
+  img-src 'self' data: blob: https://storage.googleapis.com https://*.storage.googleapis.com https://images.unsplash.com https://i.pravatar.cc https://lh3.googleusercontent.com;
+  connect-src 'self' https://accounts.google.com https://storage.googleapis.com;
+  frame-src 'none';
+  object-src 'none';
+  base-uri 'self';
+  form-action 'self';
+  upgrade-insecure-requests;
+`.replace(/\n/g, '');
+
+const securityHeaders = [
+    { key: 'X-DNS-Prefetch-Control', value: 'on' },
+    { key: 'X-Frame-Options', value: 'DENY' },
+    { key: 'X-Content-Type-Options', value: 'nosniff' },
+    { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+    { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+    { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
+    { key: 'Content-Security-Policy', value: ContentSecurityPolicy },
+];
+
 const nextConfig: NextConfig = {
     output: 'standalone',
     typescript: {
-        // !! WARN !!
-        // Dangerously allow production builds to successfully complete even if
-        // your project has type errors. This is required because Vercel's free tier
-        // memory limit (1024MB) is causing OOM crashes during type checking.
         ignoreBuildErrors: true,
     },
+    async headers() {
+        return [
+            {
+                source: '/(.*)',
+                headers: securityHeaders,
+            },
+        ];
+    },
     images: {
-        // Prioritize modern formats for Cambodia's bandwidth constraints
         formats: ['image/webp', 'image/avif'],
-
-        // Optimized device sizes for mobile-first Cambodia market
         deviceSizes: [640, 750, 828, 1080, 1200],
         imageSizes: [16, 32, 48, 64, 96, 128, 256],
-
         remotePatterns: [
-            // Google Cloud Storage — primary image hosting
-            {
-                protocol: 'https',
-                hostname: 'storage.googleapis.com',
-            },
-            // GCS alternate domain
-            {
-                protocol: 'https',
-                hostname: '*.storage.googleapis.com',
-            },
-            // Unsplash — fallback / placeholder images
-            {
-                protocol: 'https',
-                hostname: 'images.unsplash.com',
-            },
-            // Pravatar — avatar placeholders
-            {
-                protocol: 'https',
-                hostname: 'i.pravatar.cc',
-            },
+            { protocol: 'https', hostname: 'storage.googleapis.com' },
+            { protocol: 'https', hostname: '*.storage.googleapis.com' },
+            { protocol: 'https', hostname: 'images.unsplash.com' },
+            { protocol: 'https', hostname: 'i.pravatar.cc' },
+            { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
         ],
-
-        // Cache optimized images for 30 days
         minimumCacheTTL: 2592000,
     },
 };

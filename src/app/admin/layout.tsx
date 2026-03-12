@@ -7,7 +7,7 @@ import { signOut } from 'next-auth/react';
 import {
     LayoutDashboard, Package, Users, ShoppingCart,
     Settings, Store, ChevronDown, LogOut,
-    Menu, X, Sparkles, ClipboardList, Globe, BarChart2, KeyRound,
+    Menu, X, Sparkles, ClipboardList, Globe, BarChart2, KeyRound, Shield,
 } from 'lucide-react';
 import { useAppStore, rehydrateLanguageStore } from '@/store/useAppStore';
 
@@ -70,7 +70,12 @@ const ADMIN_NAV = [
             { labelKo: '랜딩 페이지', labelEn: 'Landing Page',  href: '/admin/landing-settings',  roles: ['SUPERADMIN'] },
             { labelKo: 'SMTP 이메일', labelEn: 'Email Config',  href: '/admin/settings/email',    roles: ['SUPERADMIN'] },
             { labelKo: '배송 설정',   labelEn: 'Shipping',      href: '/admin/settings/shipping', roles: ['SUPERADMIN'] },
+            { labelKo: '보안 (2FA)', labelEn: 'Security / 2FA', href: '/admin/settings/security', roles: ['SUPERADMIN', 'ADMIN'] },
         ],
+    },
+    {
+        key: 'audit', labelKo: '감사 로그', labelEn: 'Audit Logs',
+        icon: Shield, href: '/admin/audit-logs', roles: ['SUPERADMIN'],
     },
     {
         key: 'password', labelKo: '비밀번호 변경', labelEn: 'Change Password',

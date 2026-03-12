@@ -54,6 +54,19 @@ const nextAuthEnv = NextAuth({
                 }
                 return null
             }
+        }),
+        // 2FA 확인용 가상 Provider (토큰 업데이트 트리거용)
+        CredentialsProvider({
+            id: '2fa-verify',
+            name: '2FA Verify',
+            credentials: { userId: { type: 'text' } },
+            async authorize(credentials) {
+                if (!credentials?.userId) return null;
+                const user = await prisma.user.findUnique({
+                    where: { id: credentials.userId as string }
+                });
+                return user ?? null;
+            }
         })
     ],
     callbacks: {
@@ -98,24 +111,43 @@ const nextAuthEnv = NextAuth({
                 token.role = (user as any).role || "USER";
                 token.preferredLanguage = (user as any).preferredLanguage || "en";
             }
-            // For Google OAuth, fetch DB user id and role since user.id may be the provider id
+            // For Google OAuth, fetch DB user id and role
             if (account?.provider === 'google' && token.email) {
                 try {
                     const dbUser = await prisma.user.findUnique({
                         where: { email: (token.email as string).toLowerCase() },
-                        select: { id: true, role: true, preferredLanguage: true, phone: true }
+                        select: { id: true, role: true, preferredLanguage: true, phone: true, twoFactorEnabled: true }
                     });
                     if (dbUser) {
                         token.sub = dbUser.id;
                         token.role = dbUser.role;
                         token.preferredLanguage = dbUser.preferredLanguage || 'en';
                         token.needsOnboarding = !dbUser.phone;
+                        // 관리자 2FA 체크
+                        if ((dbUser.role === 'ADMIN' || dbUser.role === 'SUPERADMIN') && dbUser.twoFactorEnabled) {
+                            token.twoFactorPending = true;
+                        }
                     }
                 } catch (err) {
                     console.error('JWT callback DB lookup error:', err);
                 }
             }
-            // On session update (after onboarding save), re-check phone
+            // Credentials 로그인 시 2FA 체크
+            if (user && account?.provider === 'credentials') {
+                const role = (user as any).role;
+                if (role === 'ADMIN' || role === 'SUPERADMIN') {
+                    try {
+                        const dbUser = await prisma.user.findUnique({
+                            where: { id: user.id },
+                            select: { twoFactorEnabled: true }
+                        });
+                        if (dbUser?.twoFactorEnabled) {
+                            token.twoFactorPending = true;
+                        }
+                    } catch {}
+                }
+            }
+            // On session update (clear 2FA pending or re-check phone)
             if ((token as any).trigger === 'update' && token.sub) {
                 try {
                     const dbUser = await prisma.user.findUnique({
@@ -123,6 +155,11 @@ const nextAuthEnv = NextAuth({
                         select: { phone: true }
                     });
                     if (dbUser?.phone) token.needsOnboarding = false;
+                    // twoFactorPending 해제는 verify API가 처리
+                    if ((token as any).twoFactorVerified) {
+                        token.twoFactorPending = false;
+                        delete (token as any).twoFactorVerified;
+                    }
                 } catch {}
             }
             return token;
@@ -133,6 +170,7 @@ const nextAuthEnv = NextAuth({
                 session.user.role = token.role || "USER";
                 session.user.preferredLanguage = token.preferredLanguage || "en";
                 session.user.needsOnboarding = token.needsOnboarding || false;
+                session.user.twoFactorPending = token.twoFactorPending || false;
             }
             return session;
         },

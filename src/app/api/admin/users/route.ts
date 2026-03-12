@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/api';
 import { auth } from '@/auth';
 import bcrypt from 'bcryptjs';
+import { logAudit, getIpFromRequest } from '@/lib/audit';
 
 export async function POST(req: Request) {
     try {
@@ -58,9 +59,20 @@ export async function POST(req: Request) {
             return user;
         });
 
-        return NextResponse.json({ 
-            success: true, 
-            user: { id: newUser.id, email: newUser.email, role: newUser.role } 
+        logAudit({
+            userId: session.user.id!,
+            userEmail: session.user.email || '',
+            userRole: 'SUPERADMIN',
+            action: 'CREATE_ADMIN_USER',
+            resource: 'users',
+            resourceId: newUser.id,
+            details: { email: normalizedEmail, role },
+            ipAddress: getIpFromRequest(req),
+        });
+
+        return NextResponse.json({
+            success: true,
+            user: { id: newUser.id, email: newUser.email, role: newUser.role }
         });
 
     } catch (error) {

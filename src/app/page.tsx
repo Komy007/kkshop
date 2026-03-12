@@ -343,7 +343,9 @@ export default function Home() {
     const t = homeT[language] || homeT.en;
 
     const [mounted, setMounted] = useState(false);
-    const [products, setProducts] = useState<TranslatedProduct[]>([]);
+    const [showHot, setShowHot] = useState<TranslatedProduct[]>([]);
+    const [showNew, setShowNew] = useState<TranslatedProduct[]>([]);
+    const [showPopular, setShowPopular] = useState<TranslatedProduct[]>([]);
     const [trustBadges, setTrustBadges] = useState<string[]>([]);
     const [topBanner, setTopBanner] = useState<any>(null);
 
@@ -351,10 +353,17 @@ export default function Home() {
 
     useEffect(() => {
         if (!mounted) return;
-        fetch(`/api/products?lang=${language}`)
-            .then(res => res.ok ? res.json() : [])
-            .then(data => setProducts(Array.isArray(data) ? data : []))
-            .catch(() => setProducts([]));
+        // 섹션별 독립 호출 — 전체 상품 로드 방지
+        const base = `/api/products?lang=${language}&limit=8`;
+        Promise.all([
+            fetch(`${base}&section=hot`).then(r => r.ok ? r.json() : { products: [] }),
+            fetch(`${base}&section=new`).then(r => r.ok ? r.json() : { products: [] }),
+            fetch(`${base}&section=popular`).then(r => r.ok ? r.json() : { products: [] }),
+        ]).then(([hot, newArr, pop]) => {
+            setShowHot(hot.products ?? []);
+            setShowNew(newArr.products ?? []);
+            setShowPopular(pop.products ?? []);
+        }).catch(() => {});
     }, [language, mounted]);
 
     useEffect(() => {
@@ -378,14 +387,7 @@ export default function Home() {
 
     if (!mounted) return null;
 
-    // Separate products by type — no fallback (empty sections are hidden by ProductGrid)
-    const showHot = products.filter(p => p.isHotSale);
-    const showNew = products.filter(p => p.isNew);
-    const showPopular = products.filter(p => p.reviewAvg >= 4 && p.reviewCount > 0);
-
-    const activeBadges = trustBadges.length > 0
-        ? trustBadges
-        : [t.freeShipping, t.authentic, t.fast];
+    const activeBadges = trustBadges.length > 0 ? trustBadges : [t.freeShipping, t.authentic, t.fast];
 
     return (
         <>

@@ -305,6 +305,9 @@ model User {
   preferredLanguage String    @default("en") @map("preferred_language") @db.VarChar(5)
   referralCode      String?   @unique @map("referral_code") @db.VarChar(20)  // 내 추천 코드
   referredByCode    String?   @map("referred_by_code") @db.VarChar(20)       // 가입 시 사용한 추천 코드
+  // 2FA (관리자 계정 보호)
+  twoFactorSecret   String?   @map("two_factor_secret") @db.VarChar(255)
+  twoFactorEnabled  Boolean   @default(false) @map("two_factor_enabled")
 
   accounts         Account[]
   sessions         Session[]
@@ -668,6 +671,29 @@ model BundleItem {
 
   @@unique([bundleId, productId])
   @@map("bundle_items")
+}
+
+// ---------------------------------------------------------------------------
+// Audit Log (관리자 행동 감사 기록)
+// ---------------------------------------------------------------------------
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String   @map("user_id")
+  userEmail  String   @map("user_email") @db.VarChar(255)
+  userRole   String   @map("user_role") @db.VarChar(20)
+  action     String   @db.VarChar(100)    // CREATE_PRODUCT, DELETE_USER, APPROVE_SUPPLIER 등
+  resource   String?  @db.VarChar(100)    // products, users, orders 등
+  resourceId String?  @map("resource_id") @db.VarChar(100)
+  details    Json?                         // 변경 전후 데이터
+  ipAddress  String?  @map("ip_address") @db.VarChar(45)
+
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([action])
+  @@map("audit_logs")
 }
 
 // ---------------------------------------------------------------------------

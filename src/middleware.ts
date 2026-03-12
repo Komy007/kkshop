@@ -15,6 +15,8 @@ export default middleware((req: any) => {
 
     if (isApiAuthRoute) return
 
+    const is2FAVerifyRoute = nextUrl.pathname === '/admin/2fa-verify';
+
     // Allow access to /admin/login even if not authenticated
     if (isAdminLoginRoute) {
         if (isLoggedIn) {
@@ -22,10 +24,21 @@ export default middleware((req: any) => {
             if (role === 'SUPERADMIN') return Response.redirect(new URL('/admin', nextUrl));
             if (role === 'ADMIN') return Response.redirect(new URL('/admin/products', nextUrl));
             if (role === 'SUPPLIER') return Response.redirect(new URL('/seller', nextUrl));
-            // CONSUMER/USER is already logged in, but hit /admin/login? Push to home.
             return Response.redirect(new URL('/', nextUrl));
         }
         return;
+    }
+
+    // 2FA 검증 대기 중: /admin/2fa-verify 로 강제 리다이렉트
+    if (isLoggedIn && (req.auth?.user as any)?.twoFactorPending && !is2FAVerifyRoute) {
+        if (isAdminRoute || isSellerRoute) {
+            return Response.redirect(new URL('/admin/2fa-verify', nextUrl));
+        }
+    }
+    // 2FA 이미 처리됐으면 /admin/2fa-verify 접근 불필요
+    if (isLoggedIn && !(req.auth?.user as any)?.twoFactorPending && is2FAVerifyRoute) {
+        const role = req.auth?.user?.role;
+        return Response.redirect(new URL(role === 'SUPERADMIN' ? '/admin' : '/admin/products', nextUrl));
     }
 
     // Role-Based Access Control (RBAC)
@@ -64,6 +77,8 @@ export default middleware((req: any) => {
                 '/admin/cs',
                 '/admin/reviews',
                 '/admin/coupons',
+                '/admin/2fa-verify',
+                '/admin/settings/security',
                 '/admin/categories',
                 '/admin/marketing',
                 '/admin/analytics',

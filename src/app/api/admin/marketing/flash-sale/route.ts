@@ -134,6 +134,20 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (new Date(startAt) >= new Date(endAt)) {
+      return NextResponse.json(
+        { error: '종료 시각은 시작 시각보다 나중이어야 합니다.' },
+        { status: 400 }
+      );
+    }
+
+    if (Number(salePriceUsd) <= 0) {
+      return NextResponse.json(
+        { error: '세일 가격은 0보다 커야 합니다.' },
+        { status: 400 }
+      );
+    }
+
     const product = await prisma.product.findUnique({
       where: { id: BigInt(productId) },
       select: { id: true },
@@ -223,8 +237,23 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
+    // Date validation when both dates provided or when updating one
+    const resolvedStart = startAt ? new Date(startAt) : existing.startAt;
+    const resolvedEnd = endAt ? new Date(endAt) : existing.endAt;
+    if (resolvedStart >= resolvedEnd) {
+      return NextResponse.json(
+        { error: '종료 시각은 시작 시각보다 나중이어야 합니다.' },
+        { status: 400 }
+      );
+    }
+
     const updateData: Record<string, unknown> = {};
-    if (salePriceUsd !== undefined) updateData.salePriceUsd = Number(salePriceUsd);
+    if (salePriceUsd !== undefined) {
+      if (Number(salePriceUsd) <= 0) {
+        return NextResponse.json({ error: '세일 가격은 0보다 커야 합니다.' }, { status: 400 });
+      }
+      updateData.salePriceUsd = Number(salePriceUsd);
+    }
     if (startAt !== undefined) updateData.startAt = new Date(startAt);
     if (endAt !== undefined) updateData.endAt = new Date(endAt);
     if (isActive !== undefined) updateData.isActive = isActive;
