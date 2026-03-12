@@ -98,6 +98,7 @@ model Product {
   category      Category?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
   @@index([categoryId])
+  @@index([supplierId])
   @@index([isNew])
   @@index([approvalStatus])
   @@index([isHotSale])

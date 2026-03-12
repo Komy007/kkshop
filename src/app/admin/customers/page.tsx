@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
-import { Users, Loader2, Trash2, Key, Shield, Search, RefreshCw, UserCheck } from 'lucide-react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { Users, Loader2, Trash2, Key, Search, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface Customer {
     id: string;
@@ -23,26 +23,45 @@ const ROLE_COLORS: Record<string, string> = {
 
 export default function CustomersPage() {
     const [customers, setCustomers] = useState<Customer[]>([]);
+    const [total, setTotal] = useState(0);
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(50);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
+    const [searchInput, setSearchInput] = useState('');
     const [processing, setProcessing] = useState<string | null>(null);
+    const searchTimer = useRef<NodeJS.Timeout | null>(null);
 
-    const fetchCustomers = useCallback(async () => {
+    const fetchCustomers = useCallback(async (p = page, q = search) => {
         setLoading(true);
-        const res = await fetch('/api/admin/customers');
+        const params = new URLSearchParams({ page: String(p) });
+        if (q) params.set('search', q);
+        const res = await fetch(`/api/admin/customers?${params}`);
         const data = await res.json();
-        setCustomers(Array.isArray(data) ? data : []);
+        setCustomers(Array.isArray(data.customers) ? data.customers : []);
+        setTotal(data.total ?? 0);
+        setPageSize(data.pageSize ?? 50);
         setLoading(false);
-    }, []);
+    }, [page, search]);
 
-    useEffect(() => { fetchCustomers(); }, [fetchCustomers]);
+    useEffect(() => { fetchCustomers(page, search); }, [page, search]);
+
+    // Debounced search
+    const handleSearchChange = (val: string) => {
+        setSearchInput(val);
+        if (searchTimer.current) clearTimeout(searchTimer.current);
+        searchTimer.current = setTimeout(() => {
+            setPage(1);
+            setSearch(val);
+        }, 400);
+    };
 
     const changeRole = async (id: string, role: string) => {
         if (!confirm(`이 회원의 역할을 "${role}"로 변경하시겠습니까?`)) return;
         setProcessing(id + '_role');
         await fetch('/api/admin/customers', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, role }) });
         setProcessing(null);
-        fetchCustomers();
+        fetchCustomers(page, search);
     };
 
     const resetPassword = async (id: string, email: string) => {
@@ -60,13 +79,10 @@ export default function CustomersPage() {
         setProcessing(id + '_del');
         await fetch(`/api/admin/customers?id=${id}`, { method: 'DELETE' });
         setProcessing(null);
-        fetchCustomers();
+        fetchCustomers(page, search);
     };
 
-    const filtered = customers.filter(c => {
-        const q = search.toLowerCase();
-        return !q || (c.name || '').toLowerCase().includes(q) || (c.email || '').toLowerCase().includes(q);
-    });
+    const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
     return (
         <div className="max-w-6xl mx-auto py-8 px-4">
@@ -75,15 +91,17 @@ export default function CustomersPage() {
                     <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
                         <Users className="w-6 h-6 text-purple-500" /> 회원 관리
                     </h1>
-                    <p className="text-sm text-gray-500 mt-0.5">총 {customers.length}명 회원</p>
+                    <p className="text-sm text-gray-500 mt-0.5">총 {total.toLocaleString()}명 회원</p>
                 </div>
-                <button onClick={fetchCustomers} className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg"><RefreshCw className="w-5 h-5" /></button>
+                <button onClick={() => fetchCustomers(page, search)} className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg">
+                    <RefreshCw className="w-5 h-5" />
+                </button>
             </div>
 
             {/* Search */}
             <div className="relative mb-4">
                 <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
-                <input type="text" value={search} onChange={e => setSearch(e.target.value)}
+                <input type="text" value={searchInput} onChange={e => handleSearchChange(e.target.value)}
                     placeholder="이름, 이메일 검색..."
                     className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white shadow-sm" />
             </div>
@@ -91,71 +109,93 @@ export default function CustomersPage() {
             {loading ? (
                 <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-purple-500" /></div>
             ) : (
-                <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-                    <div className="overflow-x-auto">
-                    <table className="w-full text-left">
-                        <thead>
-                            <tr className="bg-gray-50 border-b border-gray-100 text-xs text-gray-500 font-medium">
-                                <th className="py-3 px-4">회원 정보</th>
-                                <th className="py-3 px-4 hidden md:table-cell">연락처</th>
-                                <th className="py-3 px-4">역할 변경</th>
-                                <th className="py-3 px-4 hidden sm:table-cell">가입일</th>
-                                <th className="py-3 px-4 text-right">관리</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-50">
-                            {filtered.map(c => {
-                                const isProcessing = (suffix: string) => processing === c.id + suffix;
-                                return (
-                                    <tr key={c.id} className="hover:bg-gray-50 transition-colors">
-                                        <td className="py-3 px-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-400 to-blue-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-                                                    {(c.name || c.email || 'U').charAt(0).toUpperCase()}
-                                                </div>
-                                                <div>
-                                                    <div className="font-medium text-gray-900 text-sm">{c.name || '(이름 없음)'}</div>
-                                                    <div className="text-xs text-gray-400">{c.email}</div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="py-3 px-4 hidden md:table-cell text-sm text-gray-500">{c.phone || '-'}</td>
-                                        <td className="py-3 px-4">
-                                            <select value={c.role} onChange={e => changeRole(c.id, e.target.value)}
-                                                disabled={!!processing}
-                                                className={`text-xs font-semibold rounded-full px-2 py-1 border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-500 ${ROLE_COLORS[c.role] || 'bg-gray-100 text-gray-700'}`}>
-                                                {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
-                                            </select>
-                                        </td>
-                                        <td className="py-3 px-4 hidden sm:table-cell text-xs text-gray-400">
-                                            {new Date(c.createdAt).toLocaleDateString('ko-KR')}
-                                        </td>
-                                        <td className="py-3 px-4">
-                                            <div className="flex items-center justify-end gap-1">
-                                                <button onClick={() => resetPassword(c.id, c.email || '')}
-                                                    disabled={!!processing}
-                                                    title="비밀번호 초기화"
-                                                    className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50">
-                                                    {isProcessing('_pw') ? <Loader2 className="w-4 h-4 animate-spin" /> : <Key className="w-4 h-4" />}
-                                                </button>
-                                                <button onClick={() => deleteCustomer(c.id, c.name || c.email || '')}
-                                                    disabled={!!processing}
-                                                    title="회원 삭제"
-                                                    className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50">
-                                                    {isProcessing('_del') ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                                                </button>
-                                            </div>
-                                        </td>
+                <>
+                    <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left">
+                                <thead>
+                                    <tr className="bg-gray-50 border-b border-gray-100 text-xs text-gray-500 font-medium">
+                                        <th className="py-3 px-4">회원 정보</th>
+                                        <th className="py-3 px-4 hidden md:table-cell">연락처</th>
+                                        <th className="py-3 px-4">역할 변경</th>
+                                        <th className="py-3 px-4 hidden sm:table-cell">가입일</th>
+                                        <th className="py-3 px-4 text-right">관리</th>
                                     </tr>
-                                );
-                            })}
-                            {filtered.length === 0 && (
-                                <tr><td colSpan={5} className="py-10 text-center text-gray-400 text-sm">회원이 없습니다.</td></tr>
-                            )}
-                        </tbody>
-                    </table>
+                                </thead>
+                                <tbody className="divide-y divide-gray-50">
+                                    {customers.map(c => {
+                                        const isProcessing = (suffix: string) => processing === c.id + suffix;
+                                        return (
+                                            <tr key={c.id} className="hover:bg-gray-50 transition-colors">
+                                                <td className="py-3 px-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-400 to-blue-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                                                            {(c.name || c.email || 'U').charAt(0).toUpperCase()}
+                                                        </div>
+                                                        <div>
+                                                            <div className="font-medium text-gray-900 text-sm">{c.name || '(이름 없음)'}</div>
+                                                            <div className="text-xs text-gray-400">{c.email}</div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="py-3 px-4 hidden md:table-cell text-sm text-gray-500">{c.phone || '-'}</td>
+                                                <td className="py-3 px-4">
+                                                    <select value={c.role} onChange={e => changeRole(c.id, e.target.value)}
+                                                        disabled={!!processing}
+                                                        className={`text-xs font-semibold rounded-full px-2 py-1 border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-500 ${ROLE_COLORS[c.role] || 'bg-gray-100 text-gray-700'}`}>
+                                                        {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+                                                    </select>
+                                                </td>
+                                                <td className="py-3 px-4 hidden sm:table-cell text-xs text-gray-400">
+                                                    {new Date(c.createdAt).toLocaleDateString('ko-KR')}
+                                                </td>
+                                                <td className="py-3 px-4">
+                                                    <div className="flex items-center justify-end gap-1">
+                                                        <button onClick={() => resetPassword(c.id, c.email || '')}
+                                                            disabled={!!processing}
+                                                            title="비밀번호 초기화"
+                                                            className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50">
+                                                            {isProcessing('_pw') ? <Loader2 className="w-4 h-4 animate-spin" /> : <Key className="w-4 h-4" />}
+                                                        </button>
+                                                        <button onClick={() => deleteCustomer(c.id, c.name || c.email || '')}
+                                                            disabled={!!processing}
+                                                            title="회원 삭제"
+                                                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50">
+                                                            {isProcessing('_del') ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                    {customers.length === 0 && (
+                                        <tr><td colSpan={5} className="py-10 text-center text-gray-400 text-sm">회원이 없습니다.</td></tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
-                </div>
+
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                        <div className="flex items-center justify-between mt-4">
+                            <p className="text-sm text-gray-500">
+                                {((page - 1) * pageSize + 1).toLocaleString()}–{Math.min(page * pageSize, total).toLocaleString()} / {total.toLocaleString()}명
+                            </p>
+                            <div className="flex items-center gap-1">
+                                <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
+                                    className="p-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-40">
+                                    <ChevronLeft className="w-4 h-4" />
+                                </button>
+                                <span className="text-sm text-gray-700 px-2">{page} / {totalPages}</span>
+                                <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
+                                    className="p-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-40">
+                                    <ChevronRight className="w-4 h-4" />
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </>
             )}
         </div>
     );

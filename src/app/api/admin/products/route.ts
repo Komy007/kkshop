@@ -9,7 +9,9 @@ export const dynamic = 'force-dynamic';
 const translate = new Translate();
 const TARGET_LANGS = ['ko', 'en', 'km', 'zh'];
 
-// ── GET: list all products (admin) ──────────────────────────────────────────
+const PAGE_SIZE = 50;
+
+// ── GET: list products (admin) with pagination + search + category filter ────
 export async function GET(req: Request) {
     try {
         const session = await auth();
@@ -20,27 +22,43 @@ export async function GET(req: Request) {
         const { searchParams } = new URL(req.url);
         const status = searchParams.get('status');
         const approvalStatus = searchParams.get('approvalStatus');
+        const search = searchParams.get('search')?.trim() || '';
+        const categorySlug = searchParams.get('category') || '';
+        const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
 
         const where: any = {};
         if (status) where.status = status;
         if (approvalStatus) where.approvalStatus = approvalStatus;
-        else if (!status) {
-            // By default for the list, we show APPROVED items unless specified
-            where.approvalStatus = 'APPROVED';
+        else if (!status) where.approvalStatus = 'APPROVED';
+        if (categorySlug && categorySlug !== 'all') {
+            where.category = { slug: categorySlug };
         }
-        const products = await prisma.product.findMany({
-            where,
-            include: {
-                translations: {
-                    where: { langCode: 'ko' },
-                    select: { langCode: true, name: true },
+        if (search) {
+            where.OR = [
+                { translations: { some: { langCode: 'ko', name: { contains: search, mode: 'insensitive' } } } },
+                { sku: { contains: search, mode: 'insensitive' } },
+                { brandName: { contains: search, mode: 'insensitive' } },
+            ];
+        }
+
+        const [products, total] = await Promise.all([
+            prisma.product.findMany({
+                where,
+                include: {
+                    translations: {
+                        where: { langCode: 'ko' },
+                        select: { langCode: true, name: true },
+                    },
+                    category: { select: { id: true, slug: true, nameKo: true } },
+                    images: { orderBy: { sortOrder: 'asc' }, take: 1 },
+                    _count: { select: { images: true } },
                 },
-                category: { select: { id: true, slug: true, nameKo: true } },
-                images: { orderBy: { sortOrder: 'asc' }, take: 1 },
-                _count: { select: { images: true } },
-            },
-            orderBy: [{ isNew: 'desc' }, { createdAt: 'desc' }],
-        });
+                orderBy: [{ isNew: 'desc' }, { createdAt: 'desc' }],
+                skip: (page - 1) * PAGE_SIZE,
+                take: PAGE_SIZE,
+            }),
+            prisma.product.count({ where }),
+        ]);
 
         // Serialize BigInt and Decimal (including nested)
         const safe = products.map(p => ({
@@ -50,10 +68,8 @@ export async function GET(req: Request) {
             priceUsd: p.priceUsd.toString(),
             reviewAvg: p.reviewAvg.toString(),
             hotSalePrice: p.hotSalePrice?.toString() ?? null,
-            category: p.category ? {
-                ...p.category,
-                id: p.category.id.toString(),
-            } : null,
+            costPrice: p.costPrice?.toString() ?? null,
+            category: p.category ? { ...p.category, id: p.category.id.toString() } : null,
             images: p.images.map(img => ({
                 ...img,
                 id: img.id.toString(),
@@ -61,7 +77,7 @@ export async function GET(req: Request) {
             }))
         }));
 
-        return NextResponse.json(safe);
+        return NextResponse.json({ products: safe, total, page, pageSize: PAGE_SIZE });
     } catch (error: any) {
         console.error('GET /api/admin/products error:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

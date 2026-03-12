@@ -378,14 +378,10 @@ export default function Home() {
 
     if (!mounted) return null;
 
-    // Separate products by type
-    const hotProducts = products.filter(p => p.isHotSale);
-    const newProducts = products.filter(p => p.isNew);
-    const popularProducts = products.filter(p => p.reviewAvg >= 4 && p.reviewCount > 0);
-    // Fallback: if no special products, use all
-    const showHot = hotProducts.length > 0 ? hotProducts : products.slice(0, 6);
-    const showNew = newProducts.length > 0 ? newProducts : products.slice(0, 6);
-    const showPopular = popularProducts.length > 0 ? popularProducts : products.slice(0, 6);
+    // Separate products by type — no fallback (empty sections are hidden by ProductGrid)
+    const showHot = products.filter(p => p.isHotSale);
+    const showNew = products.filter(p => p.isNew);
+    const showPopular = products.filter(p => p.reviewAvg >= 4 && p.reviewCount > 0);
 
     const activeBadges = trustBadges.length > 0
         ? trustBadges
