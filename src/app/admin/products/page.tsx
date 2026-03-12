@@ -44,15 +44,6 @@ export default function AdminProductsPage() {
             const [pData, cData] = await Promise.all([pRes.json(), cRes.json()]);
             setProducts(Array.isArray(pData) ? pData : []);
             setCategories(Array.isArray(cData) ? cData : []);
-
-            // Restore scroll position after products are loaded
-            const savedScroll = sessionStorage.getItem('admin_products_scroll');
-            if (savedScroll) {
-                setTimeout(() => {
-                    window.scrollTo({ top: parseInt(savedScroll), behavior: 'instant' });
-                    sessionStorage.removeItem('admin_products_scroll');
-                }, 100);
-            }
         } catch (error) {
             console.error('Fetch error:', error);
         } finally {
@@ -60,21 +51,47 @@ export default function AdminProductsPage() {
         }
     }, []);
 
+    // 1. Initial Load: Restore Filters
     useEffect(() => {
-        // Restore filters from sessionStorage
         const savedFilters = sessionStorage.getItem('admin_products_filters');
         if (savedFilters) {
             const { search: s, activeSlug: a } = JSON.parse(savedFilters);
-            setSearch(s || '');
-            setActiveSlug(a || 'all');
+            if (s !== undefined) setSearch(s);
+            if (a !== undefined) setActiveSlug(a);
         }
         fetchAll();
     }, [fetchAll]);
 
-    // Save filters and scroll before navigation
-    const handleEdit = (id: string) => {
+    // 2. Continuous Sync: Save Filters & Scroll to sessionStorage
+    useEffect(() => {
         sessionStorage.setItem('admin_products_filters', JSON.stringify({ search, activeSlug }));
-        sessionStorage.setItem('admin_products_scroll', window.scrollY.toString());
+    }, [search, activeSlug]);
+
+    useEffect(() => {
+        const handleScroll = () => {
+            sessionStorage.setItem('admin_products_scroll', window.scrollY.toString());
+        };
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    // 3. Restore Scroll Position after Data Loading & Rendering
+    useEffect(() => {
+        if (!loading && products.length > 0) {
+            const savedScroll = sessionStorage.getItem('admin_products_scroll');
+            if (savedScroll) {
+                // Use requestAnimationFrame to ensure DOM is updated
+                requestAnimationFrame(() => {
+                    setTimeout(() => {
+                        window.scrollTo({ top: parseInt(savedScroll), behavior: 'instant' });
+                    }, 50);
+                });
+            }
+        }
+    }, [loading, products.length]);
+
+    const handleEdit = (id: string) => {
+        // Scroll is already being saved via scroll event listener
         router.push(`/admin/products/${id}/edit`);
     };
 

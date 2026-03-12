@@ -216,11 +216,16 @@ export default function EditProductPage() {
             setSuccessMsg(retranslate ? '✅ 저장 완료! 4개국어 번역이 재생성되었습니다.' : '✅ 상품이 저장되었습니다.');
             setDeleteImageIds([]);
             setNewImages([]);
-            // Refresh images + translations
+            // Refresh images + translations (minimal refresh before redirect)
             const fresh = await fetch(`/api/admin/products/${productId}`).then(r => r.json());
             setExistingImages(fresh.images ?? []);
             setAllTranslations(fresh.translations ?? []);
-            setTimeout(() => setSuccessMsg(''), 3000);
+            
+            // Redirect to list page after a short delay
+            setTimeout(() => {
+                setSuccessMsg('');
+                router.push('/admin/products');
+            }, 1000);
         } catch (err: any) {
             setErrorMsg(err.message);
         } finally {
