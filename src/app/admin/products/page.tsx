@@ -36,17 +36,47 @@ export default function AdminProductsPage() {
 
     const fetchAll = useCallback(async () => {
         setLoading(true);
-        const [pRes, cRes] = await Promise.all([
-            fetch('/api/admin/products'),
-            fetch('/api/admin/categories'),
-        ]);
-        const [pData, cData] = await Promise.all([pRes.json(), cRes.json()]);
-        setProducts(Array.isArray(pData) ? pData : []);
-        setCategories(Array.isArray(cData) ? cData : []);
-        setLoading(false);
+        try {
+            const [pRes, cRes] = await Promise.all([
+                fetch('/api/admin/products'),
+                fetch('/api/admin/categories'),
+            ]);
+            const [pData, cData] = await Promise.all([pRes.json(), cRes.json()]);
+            setProducts(Array.isArray(pData) ? pData : []);
+            setCategories(Array.isArray(cData) ? cData : []);
+
+            // Restore scroll position after products are loaded
+            const savedScroll = sessionStorage.getItem('admin_products_scroll');
+            if (savedScroll) {
+                setTimeout(() => {
+                    window.scrollTo({ top: parseInt(savedScroll), behavior: 'instant' });
+                    sessionStorage.removeItem('admin_products_scroll');
+                }, 100);
+            }
+        } catch (error) {
+            console.error('Fetch error:', error);
+        } finally {
+            setLoading(false);
+        }
     }, []);
 
-    useEffect(() => { fetchAll(); }, [fetchAll]);
+    useEffect(() => {
+        // Restore filters from sessionStorage
+        const savedFilters = sessionStorage.getItem('admin_products_filters');
+        if (savedFilters) {
+            const { search: s, activeSlug: a } = JSON.parse(savedFilters);
+            setSearch(s || '');
+            setActiveSlug(a || 'all');
+        }
+        fetchAll();
+    }, [fetchAll]);
+
+    // Save filters and scroll before navigation
+    const handleEdit = (id: string) => {
+        sessionStorage.setItem('admin_products_filters', JSON.stringify({ search, activeSlug }));
+        sessionStorage.setItem('admin_products_scroll', window.scrollY.toString());
+        router.push(`/admin/products/${id}/edit`);
+    };
 
     // Category tabs: All + each category
     const tabs = [
@@ -186,7 +216,11 @@ export default function AdminProductsPage() {
                                         <tr className="hover:bg-gray-50 transition-colors">
                                             <td className="py-3 px-4">
                                                 {p.imageUrl
-                                                    ? <img src={p.imageUrl} alt={koName} className="w-12 h-12 object-cover rounded-lg border border-gray-100" />
+                                                    ? <img src={p.imageUrl.startsWith('http') || p.imageUrl.startsWith('/') ? p.imageUrl : `/${p.imageUrl}`}
+                                                        alt={koName} className="w-12 h-12 object-cover rounded-lg border border-gray-100"
+                                                        onError={(e) => {
+                                                            (e.target as HTMLImageElement).src = 'https://placehold.co/100x100?text=No+Image';
+                                                        }} />
                                                     : <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center"><ImageIcon className="w-5 h-5 text-gray-300" /></div>
                                                 }
                                             </td>
@@ -231,7 +265,7 @@ export default function AdminProductsPage() {
                                             </td>
                                             <td className="py-3 px-4 text-right">
                                                 <div className="flex items-center justify-end gap-1">
-                                                    <button onClick={() => router.push(`/admin/products/${p.id}/edit`)}
+                                                    <button onClick={() => handleEdit(p.id)}
                                                         className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="편집">
                                                         <Edit3 className="w-4 h-4" />
                                                     </button>

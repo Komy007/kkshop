@@ -271,7 +271,11 @@ export default function EditProductPage() {
                                 <div className="grid grid-cols-4 gap-3">
                                     {existingImages.filter(img => !deleteImageIds.includes(img.id)).map((img, i) => (
                                         <div key={img.id} className="relative group aspect-square">
-                                            <img src={img.url} className="w-full h-full object-cover rounded-xl border border-gray-200" />
+                                            <img src={img.url.startsWith('http') || img.url.startsWith('/') ? img.url : `/${img.url}`}
+                                                className="w-full h-full object-cover rounded-xl border border-gray-200"
+                                                onError={(e) => {
+                                                    (e.target as HTMLImageElement).src = 'https://placehold.co/400x400?text=Image+Load+Error';
+                                                }} />
                                             {i === 0 && <span className="absolute top-2 left-2 bg-blue-600 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">대표</span>}
                                             <button type="button" onClick={() => removeExistingImage(img.id)}
                                                 className="absolute top-2 right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow">
