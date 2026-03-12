@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { authenticator } from 'otplib';
+import { authenticator } from '@otplib/preset-default';
 import QRCode from 'qrcode';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/api';
