@@ -86,11 +86,11 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json(supplier);
 }
 
-// POST: Create a new supplier (ADMIN/SUPERADMIN only)
+// POST: Create a new supplier (SUPERADMIN only)
 export async function POST(req: NextRequest) {
     const session = await auth();
-    if (!session?.user || !['ADMIN', 'SUPERADMIN'].includes(session.user.role ?? '')) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!session?.user || session.user.role !== 'SUPERADMIN') {
+        return NextResponse.json({ error: 'Unauthorized. SUPERADMIN required.' }, { status: 403 });
     }
 
     const body = await req.json();
@@ -103,15 +103,16 @@ export async function POST(req: NextRequest) {
     try {
         let user = await prisma.user.findUnique({ where: { email: contactEmail.toLowerCase() } });
 
+        if (password.length < 8) {
+            return NextResponse.json({ error: '비밀번호는 최소 8자리 이상이어야 합니다.' }, { status: 400 });
+        }
+
         if (user) {
             const existingSupplier = await prisma.supplier.findUnique({ where: { userId: user.id } });
             if (existingSupplier) {
                 return NextResponse.json({ error: '해당 이메일은 이미 공급자 계정이 있습니다.' }, { status: 400 });
             }
-            user = await prisma.user.update({
-                where: { id: user.id },
-                data: { role: 'SUPPLIER' }
-            });
+            // Keep existing user, supplier will be PENDING approval
         } else {
             const hashedPassword = await bcrypt.hash(password, 12);
             user = await prisma.user.create({
@@ -119,7 +120,7 @@ export async function POST(req: NextRequest) {
                     name: companyName,
                     email: contactEmail.toLowerCase(),
                     hashedPassword,
-                    role: 'SUPPLIER',
+                    role: 'USER', // Role set to SUPPLIER only after approval
                     phone: phone || null,
                 }
             });
@@ -134,8 +135,8 @@ export async function POST(req: NextRequest) {
                 contactEmail: contactEmail.toLowerCase(),
                 description: description || null,
                 commissionRate: commissionRate ? parseFloat(commissionRate) : 30,
-                status: 'APPROVED',
-                adminNote: '관리자가 직접 생성함',
+                status: 'PENDING',
+                adminNote: 'SUPERADMIN이 직접 생성함 - 승인 대기',
             },
             include: {
                 user: { select: { email: true, name: true } },

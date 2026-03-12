@@ -98,8 +98,8 @@ export default function RolesSecurityPage() {
         e.preventDefault();
         if (!selectedAdmin) return;
 
-        if (newPassword.length < 6) {
-            setErrorMsg('비밀번호는 최소 6자리 이상이어야 합니다.');
+        if (newPassword.length < 8) {
+            setErrorMsg('비밀번호는 최소 8자리 이상이어야 합니다.');
             return;
         }
 
@@ -161,7 +161,7 @@ export default function RolesSecurityPage() {
                 </div>
             )}
 
-            {errorMsg && !isModalOpen && (
+            {errorMsg && !isCreateModalOpen && !isPasswordModalOpen && (
                 <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-md text-sm font-bold flex gap-2 items-center">
                     <AlertCircle className="w-5 h-5" /> {errorMsg}
                 </div>
@@ -240,7 +240,7 @@ export default function RolesSecurityPage() {
                             <div>
                                 <label className="block text-xs font-bold text-gray-600 mb-1">초기 비밀번호</label>
                                 <input required type="text" value={createForm.password} onChange={e => setCreateForm({...createForm, password: e.target.value})}
-                                    className="w-full border p-2.5 rounded-lg text-sm font-mono focus:ring-2 focus:ring-blue-500" placeholder="최소 6자" />
+                                    className="w-full border p-2.5 rounded-lg text-sm font-mono focus:ring-2 focus:ring-blue-500" placeholder="최소 8자" />
                             </div>
                             <div>
                                 <label className="block text-xs font-bold text-gray-600 mb-1">권한 설정</label>
@@ -288,7 +288,7 @@ export default function RolesSecurityPage() {
 
                         <form onSubmit={handlePasswordChange}>
                             <div className="p-6 space-y-4">
-                                {errorMsg && isModalOpen && (
+                                {errorMsg && isPasswordModalOpen && (
                                     <div className="p-3 bg-red-50 text-red-600 text-sm rounded-md border border-red-100">
                                         {errorMsg}
                                     </div>

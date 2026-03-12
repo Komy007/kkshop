@@ -58,10 +58,16 @@ export default middleware((req: any) => {
             // ADMIN restricted paths
             const adminAllowedPrefixes = [
                 '/admin/products',
+                '/admin/orders',
                 '/admin/inventory',
                 '/admin/customers',
                 '/admin/cs',
-                '/admin/reviews'
+                '/admin/reviews',
+                '/admin/coupons',
+                '/admin/categories',
+                '/admin/marketing',
+                '/admin/analytics',
+                '/admin/change-password',
             ];
 
             const isAllowed = adminAllowedPrefixes.some(p => nextUrl.pathname.startsWith(p));
