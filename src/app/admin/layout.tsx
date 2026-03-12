@@ -118,12 +118,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const canSee = (roles: readonly string[]) =>
         roles.includes(userRole);
 
-    const NavLabel = ({ labelKo, labelEn }: { labelKo: string; labelEn: string }) => (
-        <span className="flex-1 text-left">
-            <span className="block text-sm font-medium leading-tight">{labelKo}</span>
-            <span className="block text-[10px] opacity-50 leading-tight">{labelEn}</span>
-        </span>
-    );
+    const NavLabel = ({ labelKo, labelEn }: { labelKo: string; labelEn: string }) => {
+        const primary = language === 'ko' ? labelKo : labelEn;
+        const secondary = language === 'ko' ? labelEn : labelKo;
+        return (
+            <span className="flex-1 text-left">
+                <span className="block text-sm font-medium leading-tight">{primary}</span>
+                <span className="block text-[10px] opacity-40 leading-tight">{secondary}</span>
+            </span>
+        );
+    };
 
     const SidebarContent = () => (
         <div className="flex flex-col h-full">
@@ -176,8 +180,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                         <Link key={child.href} href={child.href} onClick={() => setSidebarOpen(false)}
                                             className={`flex items-center px-3 py-1.5 rounded-lg transition-all ${isActive(child.href) ? 'bg-blue-600 text-white font-semibold' : 'text-slate-400 hover:bg-white/10 hover:text-white'}`}>
                                             <span className="flex-1">
-                                                <span className="block text-sm leading-tight">{child.labelKo}</span>
-                                                <span className="block text-[10px] opacity-50 leading-tight">{child.labelEn}</span>
+                                                <span className="block text-sm leading-tight">{language === 'ko' ? child.labelKo : child.labelEn}</span>
+                                                <span className="block text-[10px] opacity-40 leading-tight">{language === 'ko' ? child.labelEn : child.labelKo}</span>
                                             </span>
                                         </Link>
                                     ))}
@@ -202,7 +206,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     {(['ko', 'en'] as const).map(lang => (
                         <button key={lang} onClick={() => setLanguage(lang)}
                             className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${language === lang ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>
-                            {lang === 'ko' ? '🇰🇷 KO' : '🇺🇸 EN'}
+                            {lang === 'ko' ? '한국어' : 'English'}
                         </button>
                     ))}
                 </div>
@@ -210,13 +214,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <Link href="/" target="_blank"
                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-400 hover:text-white hover:bg-white/10 rounded-xl transition-all">
                     <Globe className="w-4 h-4" />
-                    <span className="text-xs">쇼핑몰 보기 / View Store</span>
+                    <span className="text-xs">{language === 'ko' ? '쇼핑몰 보기' : 'View Store'}</span>
                 </Link>
                 <button
                     onClick={() => signOut({ callbackUrl: window.location.origin + '/' })}
                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-400 hover:text-white hover:bg-white/10 rounded-xl transition-all">
                     <LogOut className="w-4 h-4" />
-                    <span className="text-xs">로그아웃 / Logout</span>
+                    <span className="text-xs">{language === 'ko' ? '로그아웃' : 'Logout'}</span>
                 </button>
             </div>
         </div>

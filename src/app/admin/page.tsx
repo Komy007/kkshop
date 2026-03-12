@@ -196,15 +196,15 @@ export default function AdminDashboard() {
                 {[
                     {
                         href: '/admin/products/new',
-                        icon: <Plus className="w-5 h-5 text-blue-600" />,
-                        color: 'bg-blue-50',
+                        icon: <Plus className="w-5 h-5 text-rose-600" />,
+                        color: 'bg-rose-50',
                         label: 'Add New Product',
                         desc: 'Register product with auto-translation (KO/EN/KM/ZH)',
                     },
                     {
                         href: '/admin/products',
-                        icon: <Package className="w-5 h-5 text-indigo-600" />,
-                        color: 'bg-indigo-50',
+                        icon: <Package className="w-5 h-5 text-blue-600" />,
+                        color: 'bg-blue-50',
                         label: 'Manage Products',
                         desc: 'Edit, delete, categorize, toggle Hot Sale & New',
                     },
