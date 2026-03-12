@@ -150,10 +150,11 @@ export async function getProductsForSection(
             where.isHotSale = true;
             orderBy = [{ reviewCount: 'desc' }, { createdAt: 'desc' }];
         } else if (filter === 'new') {
-            where.isNew = true;
+            // Show all recent products by date — no isNew flag required
+            // isNew flag is only used for badge display, not filtering
             orderBy = [{ createdAt: 'desc' }];
         } else if (filter === 'popular') {
-            orderBy = [{ reviewAvg: 'desc' }, { reviewCount: 'desc' }];
+            orderBy = [{ reviewAvg: 'desc' }, { reviewCount: 'desc' }, { createdAt: 'desc' }];
         }
 
         const products = await prisma.product.findMany({

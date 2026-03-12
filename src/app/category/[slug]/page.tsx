@@ -8,10 +8,10 @@ import { useAppStore, useSafeAppStore } from '@/store/useAppStore';
 import { type TranslatedProduct } from '@/lib/api';
 
 const categoryTitles: Record<string, Record<string, string>> = {
-    ko: { skincare: '스킨케어', makeup: '메이크업', 'hair-body': '헤어/바디', living: '생활용품', health: '건강식품', new: '신상품', best: '베스트 상품', sale: '할인 상품' },
-    en: { skincare: 'Skincare', makeup: 'Makeup', 'hair-body': 'Hair/Body', living: 'Living', health: 'Health', new: 'New Arrivals', best: 'Bestseller', sale: 'Sale' },
-    km: { skincare: 'ថែស្បែក', makeup: 'គ្រឿងសំអាង', 'hair-body': 'សក់/រាងកាយ', living: 'គ្រឿងប្រើប្រាស់', health: 'សុខភាព', new: 'ផលិតផលថ្មី', best: 'ពេញនិយម', sale: 'បញ្ចុះតម្លៃ' },
-    zh: { skincare: '护肤', makeup: '彩妆', 'hair-body': '洗护', living: '生活用品', health: '保健品', new: '新品', best: '热销', sale: '折扣' }
+    ko: { all: '전체 상품', skincare: '스킨케어', makeup: '메이크업', 'hair-body': '헤어/바디', living: '생활용품', health: '건강식품', new: '신상품', best: '베스트 상품', sale: '할인 상품' },
+    en: { all: 'All Products', skincare: 'Skincare', makeup: 'Makeup', 'hair-body': 'Hair/Body', living: 'Living', health: 'Health', new: 'New Arrivals', best: 'Bestseller', sale: 'Sale' },
+    km: { all: 'ផលិតផលទាំងអស់', skincare: 'ថែស្បែក', makeup: 'គ្រឿងសំអាង', 'hair-body': 'សក់/រាងកាយ', living: 'គ្រឿងប្រើប្រាស់', health: 'សុខភាព', new: 'ផលិតផលថ្មី', best: 'ពេញនិយម', sale: 'បញ្ចុះតម្លៃ' },
+    zh: { all: '全部商品', skincare: '护肤', makeup: '彩妆', 'hair-body': '洗护', living: '生活用品', health: '保健品', new: '新品', best: '热销', sale: '折扣' }
 };
 
 const commonUi: Record<string, Record<string, string>> = {
@@ -41,8 +41,11 @@ export default function CategoryDetailPage() {
         setIsLoading(true);
         async function fetchCategoryProducts() {
             try {
-                const res = await fetch(`/api/products?lang=${language}&category=${slug}`);
-                if (res.ok) setProducts(await res.json());
+                const res = await fetch(`/api/products?lang=${language}&category=${slug}&limit=100`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setProducts(Array.isArray(data) ? data : (data.products ?? []));
+                }
             } catch (error) {
                 console.error('Failed to load category products', error);
             } finally {
@@ -75,7 +78,7 @@ export default function CategoryDetailPage() {
                         <div className="text-6xl mb-4 opacity-30 grayscale">📦</div>
                         <p className="text-gray-500 font-medium">{uiText}</p>
                         <Link href="/" className="inline-block mt-6 px-8 py-3 bg-white border border-gray-300 rounded-full text-gray-700 font-bold text-sm hover:bg-gray-50 hover:text-brand-primary transition-all shadow-sm">
-                            쇼핑 홈으로 가기
+                            {language === 'ko' ? '쇼핑 홈으로 가기' : 'Back to Home'}
                         </Link>
                     </div>
                 ) : (

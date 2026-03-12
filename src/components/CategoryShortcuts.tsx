@@ -72,7 +72,7 @@ const shortcuts: Shortcut[] = [
     { key: 'best',       emoji: '👑', href: '/category/best',      gradient: 'from-yellow-500/20 to-amber-500/20' },
     { key: 'newArrivals',emoji: '✨', href: '/category/new',       gradient: 'from-violet-500/20 to-indigo-500/20' },
     { key: 'sale',       emoji: '🔥', href: '/category/sale',      gradient: 'from-red-500/20 to-orange-500/20' },
-    { key: 'all',        emoji: '📦', href: '/category',           gradient: 'from-gray-500/20 to-slate-500/20' },
+    { key: 'all',        emoji: '📦', href: '/category/all',       gradient: 'from-gray-500/20 to-slate-500/20' },
 ];
 
 export default function CategoryShortcuts() {
