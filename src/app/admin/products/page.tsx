@@ -5,7 +5,9 @@ import { useRouter } from 'next/navigation';
 import {
     Plus, Search, Trash2, Package, RefreshCw, Loader2,
     Image as ImageIcon, Sparkles, Edit3, CheckCircle, XCircle, FolderInput, Copy,
+    Menu, X, ClipboardList, Globe,
 } from 'lucide-react';
+import { useTranslations } from '@/i18n/useTranslations';
 
 interface Category { id: string; slug: string; nameKo: string; isSystem: boolean; }
 interface Product {
@@ -25,6 +27,7 @@ const STATUS_BADGE: Record<string, { label: string; className: string }> = {
 
 export default function AdminProductsPage() {
     const router = useRouter();
+    const t = useTranslations();
     const [products, setProducts] = useState<Product[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
     const [loading, setLoading] = useState(true);
@@ -125,7 +128,7 @@ export default function AdminProductsPage() {
     };
 
     const handleDelete = async (id: string, name: string) => {
-        if (!confirm(`"${name}" 상품을 삭제하시겠습니까?`)) return;
+        if (!confirm(`"${name}" - ${t.common.delete}?`)) return;
         setDeleting(id);
         await fetch(`/api/admin/products?id=${id}`, { method: 'DELETE' });
         setDeleting(null);
@@ -161,18 +164,23 @@ export default function AdminProductsPage() {
         return products.filter(p => p.category?.slug === slug).length;
     };
 
+    const tabName = (tab: any) => {
+        if (tab.slug === 'all') return t.shortcuts.all;
+        return tab.nameKo;
+    };
+
     return (
         <div className="max-w-6xl mx-auto py-8 px-4">
             {/* Header */}
             <div className="flex items-center justify-between mb-5">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2"><Package className="w-6 h-6 text-blue-500" /> 상품 관리</h1>
-                    <p className="text-sm text-gray-500 mt-0.5">총 {products.length}개 상품</p>
+                    <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2"><Package className="w-6 h-6 text-blue-500" /> {t.admin.products.title}</h1>
+                    <p className="text-sm text-gray-500 mt-0.5">{t.admin.products.totalCount.replace('{count}', products.length.toString())}</p>
                 </div>
                 <div className="flex gap-2">
                     <button onClick={fetchAll} className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg"><RefreshCw className="w-5 h-5" /></button>
                     <button onClick={() => router.push('/admin/products/new')} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 shadow-sm">
-                        <Plus className="w-4 h-4" /> 새 상품 등록
+                        <Plus className="w-4 h-4" /> {t.admin.products.newProduct}
                     </button>
                 </div>
             </div>
@@ -185,7 +193,7 @@ export default function AdminProductsPage() {
                     return (
                         <button key={tab.slug} onClick={() => setActiveSlug(tab.slug)}
                             className={`flex-shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-colors border ${active ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'}`}>
-                            {tab.nameKo} {cnt > 0 && <span className={`ml-1 text-xs ${active ? 'opacity-80' : 'text-gray-400'}`}>({cnt})</span>}
+                            {tabName(tab)} {cnt > 0 && <span className={`ml-1 text-xs ${active ? 'opacity-80' : 'text-gray-400'}`}>({cnt})</span>}
                         </button>
                     );
                 })}
@@ -195,7 +203,7 @@ export default function AdminProductsPage() {
             <div className="relative mb-4">
                 <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
                 <input type="text" value={search} onChange={e => setSearch(e.target.value)}
-                    placeholder="상품명, SKU, 브랜드 검색..."
+                    placeholder={t.admin.products.searchPlaceholder}
                     className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white shadow-sm" />
             </div>
 
@@ -205,7 +213,7 @@ export default function AdminProductsPage() {
             ) : filtered.length === 0 ? (
                 <div className="text-center py-16 bg-white rounded-xl border border-gray-100">
                     <Package className="w-12 h-12 text-gray-200 mx-auto mb-3" />
-                    <p className="text-gray-500">{search ? '검색 결과가 없습니다.' : '이 카테고리에 상품이 없습니다.'}</p>
+                    <p className="text-gray-500">{search ? t.common.noResults : t.admin.products.searchPlaceholder}</p>
                 </div>
             ) : (
                 <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
@@ -213,20 +221,27 @@ export default function AdminProductsPage() {
                     <table className="w-full text-left">
                         <thead>
                             <tr className="bg-gray-50 border-b border-gray-100 text-xs text-gray-500 font-medium">
-                                <th className="py-3 px-4">이미지</th>
-                                <th className="py-3 px-4">상품명</th>
-                                <th className="py-3 px-4 hidden md:table-cell">카테고리</th>
-                                <th className="py-3 px-4">가격/재고</th>
-                                <th className="py-3 px-4 hidden lg:table-cell">마진</th>
-                                <th className="py-3 px-4">상태</th>
-                                <th className="py-3 px-4">신상품</th>
-                                <th className="py-3 px-4 text-right">관리</th>
+                                <th className="py-3 px-4">{t.admin.products.table.image}</th>
+                                <th className="py-3 px-4">{t.admin.products.table.name}</th>
+                                <th className="py-3 px-4 hidden md:table-cell">{t.admin.products.table.category}</th>
+                                <th className="py-3 px-4">{t.admin.products.table.priceStock}</th>
+                                <th className="py-3 px-4 hidden lg:table-cell">{t.admin.products.table.margin}</th>
+                                <th className="py-3 px-4">{t.admin.products.table.status}</th>
+                                <th className="py-3 px-4">{t.admin.products.table.isNew}</th>
+                                <th className="py-3 px-4 text-right">{t.admin.products.table.manage}</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
                             {filtered.map(p => {
                                 const koName = p.translations.find(t => t.langCode === 'ko')?.name || p.sku;
-                                const badge = STATUS_BADGE[p.status] ?? { label: '숨김', className: 'bg-gray-100 text-gray-500' };
+                                const currentBrand = p.brandName || '';
+                                const currentName = p.translations.find(tr => tr.langCode === t.nav.about === 'About' ? 'en' : 'ko')?.name || koName;
+                                const statusMap: any = {
+                                    ACTIVE: t.admin.products.status.active,
+                                    INACTIVE: t.admin.products.status.inactive,
+                                    SOLDOUT: t.admin.products.status.soldout
+                                };
+                                const statusLabel = statusMap[p.status] || p.status;
 
                                 return (
                                     <React.Fragment key={p.id}>
@@ -242,7 +257,7 @@ export default function AdminProductsPage() {
                                                 }
                                             </td>
                                             <td className="py-3 px-4">
-                                                <div className="font-medium text-gray-900 text-sm line-clamp-1">{koName}</div>
+                                                <div className="font-medium text-gray-900 text-sm line-clamp-1">{currentName}</div>
                                                 <div className="text-xs text-gray-400">{p.sku}</div>
                                                 {p._count.images > 0 && <div className="text-xs text-blue-400">🖼 +{p._count.images}장</div>}
                                             </td>
@@ -256,7 +271,7 @@ export default function AdminProductsPage() {
                                             <td className="py-3 px-4">
                                                 <div className="font-bold text-gray-900 text-sm">${Number(p.priceUsd).toFixed(2)}</div>
                                                 <div className={`text-xs ${p.stockQty === 0 ? 'text-red-500 font-bold' : p.stockAlertQty !== undefined && p.stockQty <= p.stockAlertQty ? 'text-amber-500 font-semibold' : 'text-gray-500'}`}>
-                                                    재고 {p.stockQty}{p.stockQty === 0 ? ' ⚠품절' : p.stockAlertQty !== undefined && p.stockQty <= p.stockAlertQty ? ' ⚠저재고' : ''}
+                                                    {t.admin.edit.fields.stock} {p.stockQty}{p.stockQty === 0 ? ' ⚠SoldOut' : p.stockAlertQty !== undefined && p.stockQty <= p.stockAlertQty ? ' ⚠Low' : ''}
                                                 </div>
                                             </td>
                                             <td className="py-3 px-4 hidden lg:table-cell">
@@ -268,30 +283,30 @@ export default function AdminProductsPage() {
                                             </td>
                                             <td className="py-3 px-4">
                                                 <button onClick={() => toggleStatus(p)}
-                                                    className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold transition-all ${badge.className} hover:opacity-75`}>
+                                                    className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold transition-all ${p.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'} hover:opacity-75`}>
                                                     {p.status === 'ACTIVE' ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
-                                                    {badge.label}
+                                                    {statusLabel}
                                                 </button>
                                             </td>
                                             <td className="py-3 px-4">
                                                 <button onClick={() => toggleIsNew(p)}
                                                     className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold transition-all ${p.isNew ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
                                                     <Sparkles className="w-3 h-3" />
-                                                    {p.isNew ? 'NEW' : '일반'}
+                                                    {p.isNew ? 'NEW' : t.admin.edit.fields.isNew}
                                                 </button>
                                             </td>
                                             <td className="py-3 px-4 text-right">
                                                 <div className="flex items-center justify-end gap-1">
                                                     <button onClick={() => handleEdit(p.id)}
-                                                        className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="편집">
+                                                        className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title={t.admin.actions.edit}>
                                                         <Edit3 className="w-4 h-4" />
                                                     </button>
                                                     <button onClick={() => handleClone(p.id)}
-                                                        className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors" title="복사">
+                                                        className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors" title={t.admin.actions.clone}>
                                                         <Copy className="w-4 h-4" />
                                                     </button>
-                                                    <button onClick={() => handleDelete(p.id, koName)} disabled={deleting === p.id}
-                                                        className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50" title="삭제">
+                                                    <button onClick={() => handleDelete(p.id, currentName)} disabled={deleting === p.id}
+                                                        className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50" title={t.admin.actions.delete}>
                                                         {deleting === p.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                                                     </button>
                                                 </div>
@@ -303,17 +318,17 @@ export default function AdminProductsPage() {
                                                 <td colSpan={7} className="px-4 py-3">
                                                     <div className="flex items-center gap-3">
                                                         <span className="text-sm font-medium text-blue-700 flex items-center gap-1">
-                                                            <FolderInput className="w-4 h-4" /> 카테고리 이동:
+                                                            <FolderInput className="w-4 h-4" /> {t.admin.actions.moveCategory}:
                                                         </span>
                                                         <select value={moveCategoryId} onChange={e => setMoveCategoryId(e.target.value)}
                                                             className="flex-1 border border-blue-200 rounded-lg py-1.5 px-3 text-sm focus:outline-none bg-white">
-                                                            <option value="">— 미분류 —</option>
+                                                            <option value="">— {t.mypage.orderStatus.cancelled === '주문취소' ? '미분류' : 'Uncategorized'} —</option>
                                                             {categories.map(c => (
-                                                                <option key={c.id} value={c.id}>{c.nameKo}{c.isSystem ? ' ✦' : ''}</option>
+                                                                <option key={c.id} value={c.id}>{tabName(c)}{c.isSystem ? ' ✦' : ''}</option>
                                                             ))}
                                                         </select>
-                                                        <button onClick={() => moveCategory(p.id)} className="px-3 py-1.5 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700">이동</button>
-                                                        <button onClick={() => setMovingId(null)} className="px-3 py-1.5 bg-gray-200 text-gray-700 text-sm rounded-lg hover:bg-gray-300">취소</button>
+                                                        <button onClick={() => moveCategory(p.id)} className="px-3 py-1.5 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700">{t.admin.actions.confirmMove}</button>
+                                                        <button onClick={() => setMovingId(null)} className="px-3 py-1.5 bg-gray-200 text-gray-700 text-sm rounded-lg hover:bg-gray-300">{t.admin.actions.cancel}</button>
                                                     </div>
                                                 </td>
                                             </tr>

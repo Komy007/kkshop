@@ -198,5 +198,106 @@ export interface Translations {
         save: string;
         delete: string;
         search: string;
+        edit: string;
+    };
+
+    // Admin
+    admin: {
+        nav: {
+            dashboard: string;
+            products: string;
+            reviews: string;
+            reviewProducts: string;
+            newProduct: string;
+            categories: string;
+            orders: string;
+            inventory: string;
+            customers: string;
+            customerList: string;
+            roles: string;
+            suppliers: string;
+            settings: string;
+            landingSettings: string;
+            changePassword: string;
+            viewStore: string;
+        };
+        products: {
+            title: string;
+            totalCount: string;
+            newProduct: string;
+            searchPlaceholder: string;
+            table: {
+                image: string;
+                name: string;
+                category: string;
+                priceStock: string;
+                margin: string;
+                status: string;
+                isNew: string;
+                manage: string;
+            };
+            status: {
+                active: string;
+                inactive: string;
+                soldout: string;
+            };
+            actions: {
+                edit: string;
+                clone: string;
+                delete: string;
+                moveCategory: string;
+                cancel: string;
+                confirmMove: string;
+            };
+        };
+        edit: {
+            title: string;
+            sku: string;
+            sections: {
+                images: string;
+                basic: string;
+                options: string;
+                specs: string;
+                content: string;
+                preview: string;
+            };
+            fields: {
+                sku: string;
+                category: string;
+                supplier: string;
+                status: string;
+                price: string;
+                cost: string;
+                stock: string;
+                alert: string;
+                approval: string;
+                isNew: string;
+                isHot: string;
+                hotPrice: string;
+                brand: string;
+                volume: string;
+                origin: string;
+                skinType: string;
+                expiry: string;
+                certs: string;
+                name: string;
+                shortDesc: string;
+                ingredients: string;
+                howToUse: string;
+                benefits: string;
+                detailDesc: string;
+                seo: string;
+            };
+            retranslate: {
+                label: string;
+                desc: string;
+            };
+            buttons: {
+                save: string;
+                saving: string;
+                cancel: string;
+                addOption: string;
+            };
+        };
     };
 }

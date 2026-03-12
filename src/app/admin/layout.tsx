@@ -7,47 +7,54 @@ import { signOut } from 'next-auth/react';
 import {
     LayoutDashboard, Package, Users, ShoppingCart,
     Settings, Store, Tag, ChevronDown, LogOut,
-    Menu, X, Sparkles, ClipboardList,
+    Menu, X, Sparkles, ClipboardList, Globe,
 } from 'lucide-react';
+import { useTranslations } from '@/i18n/useTranslations';
+import { useAppStore, rehydrateLanguageStore } from '@/store/useAppStore';
 
-const ADMIN_NAV = [
-    { label: '대시보드', icon: LayoutDashboard, href: '/admin' },
+const getAdminNav = (t: any) => [
+    { label: t.admin.nav.dashboard, icon: LayoutDashboard, href: '/admin' },
     {
-        label: '상품 관리', icon: Package,
+        label: t.admin.nav.products, icon: Package,
         children: [
-            { label: '전체 상품 목록', href: '/admin/products' },
-            { label: '리뷰 관리', href: '/admin/reviews' },
-            { label: '🟡 상품 검수', href: '/admin/products/review' },
-            { label: '새 상품 등록', href: '/admin/products/new' },
-            { label: '카테고리 관리', href: '/admin/categories' },
+            { label: t.admin.products.title, href: '/admin/products' },
+            { label: t.admin.nav.reviews, href: '/admin/reviews' },
+            { label: t.admin.nav.reviewProducts, href: '/admin/products/review' },
+            { label: t.admin.products.newProduct, href: '/admin/products/new' },
+            { label: t.admin.nav.categories, href: '/admin/categories' },
         ],
     },
-    { label: '주문 관리', icon: ShoppingCart, href: '/admin/orders' },
-    { label: '재고 관리', icon: ClipboardList, href: '/admin/inventory' },
+    { label: t.admin.nav.orders, icon: ShoppingCart, href: '/admin/orders' },
+    { label: t.admin.nav.inventory, icon: ClipboardList, href: '/admin/inventory' },
     {
-        label: '회원 관리', icon: Users,
+        label: t.admin.nav.customers, icon: Users,
         children: [
-            { label: '전체 회원 목록', href: '/admin/customers' },
-            { label: '관리자 권한 설정', href: '/admin/settings/roles' },
+            { label: t.admin.nav.customerList, href: '/admin/customers' },
+            { label: t.admin.nav.roles, href: '/admin/settings/roles' },
         ],
     },
-    { label: '공급업체 관리', icon: Store, href: '/admin/suppliers' },
+    { label: t.admin.nav.suppliers, icon: Store, href: '/admin/suppliers' },
     {
-        label: '설정', icon: Settings,
+        label: t.admin.nav.settings, icon: Settings,
         children: [
-            { label: '랜딩 페이지 설정', href: '/admin/landing-settings' },
-            { label: '비밀번호 변경', href: '/admin/change-password' },
+            { label: t.admin.nav.landingSettings, href: '/admin/landing-settings' },
+            { label: t.admin.nav.changePassword, href: '/admin/change-password' },
         ],
     },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-    const pathname = usePathname();
+    const params = usePathname();
+    const t = useTranslations();
+    const { language, setLanguage } = useAppStore();
+    const ADMIN_NAV = getAdminNav(t);
+
     const [open, setOpen] = useState<string | null>(null);
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [userEmail, setUserEmail] = useState('');
 
     useEffect(() => {
+        rehydrateLanguageStore();
         // Auto-expand active group
         for (const item of ADMIN_NAV) {
             if (item.children?.some(c => pathname.startsWith(c.href))) {
@@ -57,7 +64,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         }
         // Get user info
         fetch('/api/auth/session').then(r => r.json()).then(s => setUserEmail(s?.user?.email || ''));
-    }, [pathname]);
+    }, [pathname, ADMIN_NAV]);
 
     if (pathname === '/admin/login') return <>{children}</>;
 
@@ -116,16 +123,29 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             {/* User Footer */}
             <div className="border-t border-white/10 p-4">
                 {userEmail && (
-                    <div className="text-xs text-slate-500 truncate px-1 mb-2">{userEmail}</div>
+                    <div className="text-xs text-slate-500 truncate px-1 mb-3">{userEmail}</div>
                 )}
+                
+                {/* Language Switcher */}
+                <div className="flex items-center gap-1 bg-white/5 p-1 rounded-xl mb-3">
+                    <button onClick={() => setLanguage('ko')}
+                        className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-bold transition-all ${language === 'ko' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>
+                        🇰🇷 KO
+                    </button>
+                    <button onClick={() => setLanguage('en')}
+                        className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-bold transition-all ${language === 'en' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>
+                        🇺🇸 EN
+                    </button>
+                </div>
+
                 <Link href="/" target="_blank"
                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-400 hover:text-white hover:bg-white/10 rounded-xl transition-all mb-1">
-                    <Sparkles className="w-4 h-4" />쇼핑몰 보기
+                    <Sparkles className="w-4 h-4" />{t.admin.nav.viewStore}
                 </Link>
                 <button
                     onClick={() => signOut({ callbackUrl: window.location.origin + '/' })}
                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-400 hover:text-white hover:bg-white/10 rounded-xl transition-all">
-                    <LogOut className="w-4 h-4" />로그아웃
+                    <LogOut className="w-4 h-4" />{t.mypage.logout}
                 </button>
             </div>
         </div>

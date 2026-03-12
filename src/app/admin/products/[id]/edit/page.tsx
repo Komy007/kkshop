@@ -5,8 +5,9 @@ import { useRouter, useParams } from 'next/navigation';
 import {
     Save, Loader2, Globe, Upload, X, ImagePlus, Package, Tag, Leaf,
     Droplets, Star, Sparkles, RefreshCw, DollarSign, AlertTriangle, ArrowLeft,
-    Flame, CheckCircle,
+    Flame, CheckCircle, Globe,
 } from 'lucide-react';
+import { useTranslations } from '@/i18n/useTranslations';
 
 interface ImageItem { id?: string; url: string; isNew?: boolean; file?: File; preview?: string; }
 interface Category { id: string; slug: string; nameKo: string; isSystem?: boolean; }
@@ -36,6 +37,7 @@ export default function EditProductPage() {
     const router = useRouter();
     const params = useParams();
     const productId = params.id as string;
+    const t = useTranslations();
 
     const [isLoading, setIsLoading] = useState(false);
     const [isFetching, setIsFetching] = useState(true);
@@ -212,8 +214,8 @@ export default function EditProductPage() {
                 }),
             });
             const data = await res.json();
-            if (!res.ok) throw new Error(data.error || '저장 실패');
-            setSuccessMsg(retranslate ? '✅ 저장 완료! 4개국어 번역이 재생성되었습니다.' : '✅ 상품이 저장되었습니다.');
+            if (!res.ok) throw new Error(data.error || 'Fail');
+            setSuccessMsg(retranslate ? t.admin.edit.retranslate.label : t.common.save + ' OK');
             setDeleteImageIds([]);
             setNewImages([]);
             // Refresh images + translations (minimal refresh before redirect)
@@ -254,9 +256,9 @@ export default function EditProductPage() {
                 </button>
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                        <Package className="text-blue-500 w-6 h-6" />상품 편집
+                        <Package className="text-blue-500 w-6 h-6" /> {t.admin.edit.title}
                     </h1>
-                    <p className="text-sm text-gray-500 mt-0.5">SKU: {form.sku}</p>
+                    <p className="text-sm text-gray-500 mt-0.5">{t.admin.edit.sku}: {form.sku}</p>
                 </div>
             </div>
 
@@ -267,7 +269,7 @@ export default function EditProductPage() {
 
                 {/* ① 이미지 관리 */}
                 <div className="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-100">
-                    <Sec icon={<ImagePlus className="w-5 h-5 text-blue-500" />} title="이미지 관리" desc="첫 번째 이미지 = 대표사진 · 최대 10장" />
+                    <Sec icon={<ImagePlus className="w-5 h-5 text-blue-500" />} title={t.admin.edit.sections.images} desc="Max 10 images" />
                     <div className="p-5 space-y-4">
                         {/* Existing images */}
                         {existingImages.filter(img => !deleteImageIds.includes(img.id)).length > 0 && (
@@ -281,7 +283,7 @@ export default function EditProductPage() {
                                                 onError={(e) => {
                                                     (e.target as HTMLImageElement).src = 'https://placehold.co/400x400?text=Image+Load+Error';
                                                 }} />
-                                            {i === 0 && <span className="absolute top-2 left-2 bg-blue-600 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">대표</span>}
+                                            {i === 0 && <span className="absolute top-2 left-2 bg-blue-600 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">{t.common.confirm === '확인' ? '대표' : 'Main'}</span>}
                                             <button type="button" onClick={() => removeExistingImage(img.id)}
                                                 className="absolute top-2 right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow">
                                                 <X className="w-3.5 h-3.5" />
@@ -325,15 +327,15 @@ export default function EditProductPage() {
 
                 {/* ② 기본 정보 & 판매 설정 */}
                 <div className="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-100">
-                    <Sec icon={<Package className="w-5 h-5 text-gray-500" />} title="기본 정보 & 판매 설정" />
+                    <Sec icon={<Package className="w-5 h-5 text-gray-500" />} title={t.admin.edit.sections.basic} />
                     <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">SKU *</label>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">{t.admin.edit.fields.sku}</label>
                             <input required name="sku" value={form.sku} onChange={handleChange}
                                 className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" />
                         </div>
                         <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">카테고리</label>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">{t.admin.edit.fields.category}</label>
                             <select name="categoryId" value={form.categoryId} onChange={handleChange}
                                 className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white">
                                 <option value="">— 미분류 —</option>
@@ -351,7 +353,7 @@ export default function EditProductPage() {
                             </select>
                         </div>
                         <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">공급업체</label>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">{t.admin.edit.fields.supplier}</label>
                             <select name="supplierId" value={form.supplierId} onChange={handleChange}
                                 className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white">
                                 <option value="">— 없음 —</option>
@@ -361,7 +363,7 @@ export default function EditProductPage() {
                             </select>
                         </div>
                         <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">판매 상태</label>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">{t.admin.edit.fields.status}</label>
                             <select name="status" value={form.status} onChange={handleChange}
                                 className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white">
                                 <option value="ACTIVE">판매중</option>
@@ -370,7 +372,7 @@ export default function EditProductPage() {
                             </select>
                         </div>
                         <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">판매가 (USD) *</label>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">{t.admin.edit.fields.price}</label>
                             <div className="relative">
                                 <span className="absolute left-3 top-2 text-gray-400 text-sm">$</span>
                                 <input required type="number" step="0.01" name="priceUsd" value={form.priceUsd} onChange={handleChange}
@@ -379,10 +381,10 @@ export default function EditProductPage() {
                         </div>
                         <div>
                             <label className="block text-xs font-medium text-gray-600 mb-1">
-                                매입가(원가) (USD)
+                                {t.admin.edit.fields.cost}
                                 {marginPct !== null && (
                                     <span className={`ml-2 font-bold ${marginPct >= 30 ? 'text-green-600' : marginPct >= 15 ? 'text-yellow-600' : 'text-red-600'}`}>
-                                        → 마진 {marginPct}%
+                                        → Margin {marginPct}%
                                     </span>
                                 )}
                             </label>
@@ -394,18 +396,18 @@ export default function EditProductPage() {
                             </div>
                         </div>
                         <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">현재 재고</label>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">{t.admin.edit.fields.stock}</label>
                             <input type="number" name="stockQty" value={form.stockQty} onChange={handleChange}
                                 className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" />
                         </div>
                         <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">저재고 알림 기준</label>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">{t.admin.edit.fields.alert}</label>
                             <input type="number" name="stockAlertQty" value={form.stockAlertQty} onChange={handleChange}
                                 className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" />
                         </div>
                         {/* 승인 상태 */}
                         <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">검수 상태</label>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">{t.admin.edit.fields.approval}</label>
                             <select name="approvalStatus" value={form.approvalStatus} onChange={handleChange}
                                 className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white">
                                 <option value="APPROVED">✅ 승인됨</option>
@@ -438,7 +440,7 @@ export default function EditProductPage() {
                         </div>
                         {form.isHotSale && (
                             <div>
-                                <label className="block text-xs font-medium text-gray-600 mb-1">핫세일 가격 (USD)</label>
+                                <label className="block text-xs font-medium text-gray-600 mb-1">{t.admin.edit.fields.hotPrice}</label>
                                 <div className="relative">
                                     <span className="absolute left-3 top-2 text-gray-400 text-sm">$</span>
                                     <input type="number" step="0.01" name="hotSalePrice" value={form.hotSalePrice} onChange={handleChange}
@@ -451,7 +453,7 @@ export default function EditProductPage() {
 
                 {/* ③ 수량별 할인 옵션 */}
                 <div className="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-100">
-                    <Sec icon={<Star className="w-5 h-5 text-yellow-500" />} title="수량별 할인 옵션" desc="많이 살수록 혜택을 제공합니다." />
+                    <Sec icon={<Star className="w-5 h-5 text-yellow-500" />} title={t.admin.edit.sections.options} desc="" />
                     <div className="p-5 space-y-3">
                         {options.map((opt, i) => (
                             <div key={i} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_auto_2fr_auto] gap-3 items-end bg-gray-50 p-3 rounded-lg border border-gray-200">
@@ -490,22 +492,22 @@ export default function EditProductPage() {
                         ))}
                         <button type="button" onClick={() => setOptions([...options, { minQty: '2', maxQty: '', discountPct: '10', freeShipping: false, labelKo: '' }])}
                             className="text-sm text-blue-600 font-semibold flex items-center gap-1 hover:text-blue-700">
-                            + 옵션 추가
+                            {t.admin.edit.buttons.addOption}
                         </button>
                     </div>
                 </div>
 
                 {/* ④ 상품 사양 */}
                 <div className="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-100">
-                    <Sec icon={<Tag className="w-5 h-5 text-purple-500" />} title="상품 사양" />
+                    <Sec icon={<Tag className="w-5 h-5 text-purple-500" />} title={t.admin.edit.sections.specs} />
                     <div className="p-5 grid grid-cols-2 md:grid-cols-3 gap-4">
                         {[
-                            { label: '브랜드명', name: 'brandName', placeholder: '예: COSRX, LANEIGE' },
-                            { label: '용량/중량', name: 'volume', placeholder: '예: 150ml, 50g' },
-                            { label: '원산지', name: 'origin', placeholder: '예: 대한민국' },
-                            { label: '피부타입', name: 'skinType', placeholder: '예: 모든피부, 건성' },
-                            { label: '유통기한(개월)', name: 'expiryMonths', placeholder: '예: 36' },
-                            { label: '인증/특징', name: 'certifications', placeholder: '예: 비건, EWG' },
+                            { label: t.admin.edit.fields.brand, name: 'brandName', placeholder: 'K-Brand' },
+                            { label: t.admin.edit.fields.volume, name: 'volume', placeholder: '150ml' },
+                            { label: t.admin.edit.fields.origin, name: 'origin', placeholder: 'Korea' },
+                            { label: t.admin.edit.fields.skinType, name: 'skinType', placeholder: 'All Skin Types' },
+                            { label: t.admin.edit.fields.expiry, name: 'expiryMonths', placeholder: '36' },
+                            { label: t.admin.edit.fields.certs, name: 'certifications', placeholder: 'Vegan' },
                         ].map(f => (
                             <div key={f.name}>
                                 <label className="block text-xs font-medium text-gray-600 mb-1">{f.label}</label>
@@ -522,44 +524,44 @@ export default function EditProductPage() {
                     <div className="px-6 py-4 bg-blue-50 border-b border-blue-100 flex items-center justify-between">
                         <div>
                             <h3 className="text-base font-semibold text-gray-900 flex items-center gap-2">
-                                <Globe className="w-5 h-5 text-blue-500" />콘텐츠 (한국어 기준)
+                                <Globe className="w-5 h-5 text-blue-500" />{t.admin.edit.sections.content}
                             </h3>
-                            <p className="text-xs text-blue-600 mt-0.5">저장 후 번역 재생성 옵션을 선택할 수 있습니다</p>
+                            <p className="text-xs text-blue-600 mt-0.5">{t.admin.edit.retranslate.desc}</p>
                         </div>
                     </div>
                     <div className="p-5 space-y-4">
                         <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">상품명 *</label>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">{t.admin.edit.fields.name}</label>
                             <input required name="name" value={form.name} onChange={handleChange}
                                 className="w-full border border-gray-200 rounded-lg py-2.5 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" />
                         </div>
                         <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">한 줄 요약</label>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">{t.admin.edit.fields.shortDesc}</label>
                             <input name="shortDesc" value={form.shortDesc} onChange={handleChange}
                                 className="w-full border border-gray-200 rounded-lg py-2.5 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" />
                         </div>
                         <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1"><Leaf className="w-3.5 h-3.5 text-green-500" />주요 성분</label>
+                            <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1"><Leaf className="w-3.5 h-3.5 text-green-500" />{t.admin.edit.fields.ingredients}</label>
                             <textarea name="ingredients" rows={2} value={form.ingredients} onChange={handleChange}
                                 className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none" />
                         </div>
                         <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1"><Droplets className="w-3.5 h-3.5 text-blue-500" />사용 방법</label>
+                            <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1"><Droplets className="w-3.5 h-3.5 text-blue-500" />{t.admin.edit.fields.howToUse}</label>
                             <textarea name="howToUse" rows={3} value={form.howToUse} onChange={handleChange}
                                 className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none" />
                         </div>
                         <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1"><Star className="w-3.5 h-3.5 text-yellow-500" />주요 효능/특징</label>
+                            <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1"><Star className="w-3.5 h-3.5 text-yellow-500" />{t.admin.edit.fields.benefits}</label>
                             <textarea name="benefits" rows={3} value={form.benefits} onChange={handleChange}
                                 className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none" />
                         </div>
                         <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">상세 설명</label>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">{t.admin.edit.fields.detailDesc}</label>
                             <textarea name="detailDesc" rows={4} value={form.detailDesc} onChange={handleChange}
                                 className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none" />
                         </div>
                         <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">SEO 키워드</label>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">{t.admin.edit.fields.seo}</label>
                             <input name="seoKeywords" value={form.seoKeywords} onChange={handleChange}
                                 className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" />
                         </div>
@@ -570,9 +572,9 @@ export default function EditProductPage() {
                             <div>
                                 <div className="font-semibold text-sm text-gray-800 flex items-center gap-1.5">
                                     <RefreshCw className={`w-4 h-4 ${retranslate ? 'text-blue-600' : 'text-gray-400'}`} />
-                                    저장 시 4개국어 번역 재생성
+                                    {t.admin.edit.retranslate.label}
                                 </div>
-                                <div className="text-xs text-gray-500 mt-0.5">체크 시 한·영·크메르·중문 번역이 새로 생성됩니다. 구글 번역 API 사용.</div>
+                                <div className="text-xs text-gray-500 mt-0.5">{t.admin.edit.retranslate.desc}</div>
                             </div>
                         </label>
                     </div>
@@ -582,12 +584,12 @@ export default function EditProductPage() {
                 <div className="flex justify-end gap-3 pb-8">
                     <button type="button" onClick={() => router.back()}
                         className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50">
-                        취소
+                        {t.admin.edit.buttons.cancel}
                     </button>
                     <button type="submit" disabled={isLoading}
                         className="px-8 py-2.5 flex items-center gap-2 text-sm font-bold text-white bg-blue-600 rounded-xl shadow hover:bg-blue-700 disabled:opacity-70">
                         {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                        {isLoading ? '저장 중...' : '저장'}
+                        {isLoading ? t.admin.edit.buttons.saving : t.admin.edit.buttons.save}
                     </button>
                 </div>
             </form>
@@ -597,9 +599,9 @@ export default function EditProductPage() {
                 <div className="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-100 mb-8">
                     <div className="px-6 py-4 bg-indigo-50 border-b border-indigo-100">
                         <h3 className="text-base font-semibold text-gray-900 flex items-center gap-2">
-                            <Globe className="w-5 h-5 text-indigo-500" />번역 현황 확인
+                            <Globe className="w-5 h-5 text-indigo-500" />{t.admin.edit.sections.preview}
                         </h3>
-                        <p className="text-xs text-indigo-600 mt-0.5">현재 저장된 4개국어 번역 내용을 확인하세요</p>
+                        <p className="text-xs text-indigo-600 mt-0.5">View 4-language translations</p>
                     </div>
                     <div className="p-5">
                         {/* Language tabs */}
