@@ -26,7 +26,7 @@ export default function SellerProductNewPage() {
     });
 
     useEffect(() => {
-        fetch('/api/admin/categories').then(r => r.json()).then(d => setCategories(Array.isArray(d) ? d.filter((c: any) => !c.isSystem) : []));
+        fetch('/api/categories').then(r => r.json()).then(d => setCategories(Array.isArray(d) ? d.filter((c: any) => !c.isSystem) : []));
     }, []);
 
     // Global paste handler — Ctrl+V anywhere on the page adds image
@@ -93,6 +93,7 @@ export default function SellerProductNewPage() {
         setTranslating(false);
 
         const payload = {
+            ...form,                    // sku, priceUsd, stockQty, categoryId, brandName, volume, origin, skinType, expiryMonths, nameKo, ...
             imageUrls,
             options,
             approvalStatus: 'PENDING',  // 항상 검수 대기로 등록

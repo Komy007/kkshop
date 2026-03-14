@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import {
     LayoutDashboard, Package, ShoppingCart, ChevronDown,
-    LogOut, Menu, X, Store,
+    LogOut, Menu, X, Store, Banknote, KeyRound,
 } from 'lucide-react';
 
 const NAV = [
@@ -15,16 +15,24 @@ const NAV = [
         icon: LayoutDashboard, href: '/seller',
     },
     {
-        key: 'products', labelKo: '상품 관리', labelEn: 'Products',
+        key: 'products', labelKo: '상품 관리', labelEn: 'My Products',
         icon: Package,
         children: [
-            { labelKo: '내 상품 목록', labelEn: 'My Products', href: '/seller/products' },
+            { labelKo: '상품 목록', labelEn: 'Product List', href: '/seller/products' },
             { labelKo: '새 상품 등록', labelEn: 'New Product',  href: '/seller/products/new' },
         ],
     },
     {
-        key: 'orders', labelKo: '주문 현황', labelEn: 'Orders',
+        key: 'orders', labelKo: '주문 현황', labelEn: 'My Orders',
         icon: ShoppingCart, href: '/seller/orders',
+    },
+    {
+        key: 'payouts', labelKo: '정산 내역', labelEn: 'My Payouts',
+        icon: Banknote, href: '/seller/payouts',
+    },
+    {
+        key: 'password', labelKo: '비밀번호 변경', labelEn: 'Change Password',
+        icon: KeyRound, href: '/seller/change-password',
     },
 ];
 
@@ -43,7 +51,9 @@ export default function SellerLayout({ children }: { children: React.ReactNode }
         }
     }, [pathname]);
 
-    const isActive = (href: string) =>
+    // Exact match for child items to prevent sibling highlight bug
+    const isChildActive  = (href: string) => pathname === href;
+    const isLeafActive   = (href: string) =>
         pathname === href || (href !== '/seller' && pathname.startsWith(href + '/'));
 
     const NavLabel = ({ labelKo, labelEn }: { labelKo: string; labelEn: string }) => (
@@ -72,10 +82,10 @@ export default function SellerLayout({ children }: { children: React.ReactNode }
                     const Icon = item.icon;
 
                     if ('href' in item && item.href) {
-                        const active = isActive(item.href);
+                        const active = isLeafActive(item.href);
                         return (
                             <Link key={item.key} href={item.href} onClick={() => setSidebarOpen(false)}
-                                className={`flex items-center gap-3 px-3 py-2 rounded-xl transition-all ${active ? 'bg-teal-600 text-white' : 'text-slate-400 hover:bg-white/10 hover:text-white'}`}>
+                                className={`flex items-center gap-3 px-3 py-2 rounded-xl transition-all ${active ? 'bg-teal-600 text-white shadow-sm' : 'text-slate-400 hover:bg-white/10 hover:text-white'}`}>
                                 <Icon className="w-4 h-4 flex-shrink-0" />
                                 <NavLabel labelKo={item.labelKo} labelEn={item.labelEn} />
                             </Link>
@@ -83,13 +93,13 @@ export default function SellerLayout({ children }: { children: React.ReactNode }
                     }
 
                     const childList = 'children' in item ? item.children ?? [] : [];
-                    const anyActive = childList.some(c => pathname.startsWith(c.href));
+                    const anyActive = childList.some(c => isChildActive(c.href));
                     const isOpenGroup = open === item.key || anyActive;
 
                     return (
                         <div key={item.key}>
                             <button onClick={() => setOpen(p => p === item.key ? null : item.key)}
-                                className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all ${anyActive ? 'text-white' : 'text-slate-400 hover:bg-white/10 hover:text-white'}`}>
+                                className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all ${anyActive ? 'text-white bg-white/5' : 'text-slate-400 hover:bg-white/10 hover:text-white'}`}>
                                 <Icon className="w-4 h-4 flex-shrink-0" />
                                 <NavLabel labelKo={item.labelKo} labelEn={item.labelEn} />
                                 <ChevronDown className={`w-3.5 h-3.5 flex-shrink-0 transition-transform ${isOpenGroup ? 'rotate-180' : ''}`} />
@@ -98,7 +108,7 @@ export default function SellerLayout({ children }: { children: React.ReactNode }
                                 <div className="ml-7 mt-0.5 space-y-0.5 border-l border-white/10 pl-3">
                                     {childList.map(child => (
                                         <Link key={child.href} href={child.href} onClick={() => setSidebarOpen(false)}
-                                            className={`flex items-center px-3 py-1.5 rounded-lg transition-all ${isActive(child.href) ? 'bg-teal-600 text-white font-semibold' : 'text-slate-400 hover:bg-white/10 hover:text-white'}`}>
+                                            className={`flex items-center px-3 py-1.5 rounded-lg transition-all ${isChildActive(child.href) ? 'bg-teal-600 text-white font-semibold shadow-sm' : 'text-slate-400 hover:bg-white/10 hover:text-white'}`}>
                                             <span className="flex-1">
                                                 <span className="block text-sm leading-tight">{child.labelKo}</span>
                                                 <span className="block text-[10px] opacity-50 leading-tight">{child.labelEn}</span>

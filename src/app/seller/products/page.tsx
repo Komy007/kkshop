@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { Package, Plus, Loader2, RefreshCw, Clock, CheckCircle, XCircle, Search, ImageIcon, Edit3 } from 'lucide-react';
+import { Package, Plus, Loader2, RefreshCw, Clock, CheckCircle, XCircle, Search, ImageIcon, Edit3, AlertCircle } from 'lucide-react';
 
 interface Product {
     id: string;
@@ -28,14 +28,21 @@ const APPROVAL_BADGE: Record<string, { label: string; icon: any; className: stri
 export default function SellerProductsPage() {
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [search, setSearch] = useState('');
     const [tab, setTab] = useState<'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED'>('ALL');
 
     const fetch_ = useCallback(async () => {
         setLoading(true);
+        setError(null);
         const res = await fetch('/api/seller/products');
         const data = await res.json();
-        setProducts(Array.isArray(data) ? data : []);
+        if (!res.ok) {
+            setError(data?.error || '상품 목록을 불러오지 못했습니다.');
+            setProducts([]);
+        } else {
+            setProducts(Array.isArray(data) ? data : []);
+        }
         setLoading(false);
     }, []);
 
@@ -88,6 +95,12 @@ export default function SellerProductsPage() {
 
             {loading ? (
                 <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-teal-500" /></div>
+            ) : error ? (
+                <div className="flex flex-col items-center justify-center py-16 bg-white rounded-xl border gap-3">
+                    <AlertCircle className="w-12 h-12 text-yellow-400" />
+                    <p className="text-gray-700 font-semibold">상품 목록을 불러올 수 없습니다</p>
+                    <p className="text-sm text-gray-400">{error === 'No supplier profile' ? '공급업체 프로필이 등록되지 않았습니다. 관리자에게 문의하세요.' : error}</p>
+                </div>
             ) : filtered.length === 0 ? (
                 <div className="text-center py-16 bg-white rounded-xl border">
                     <Package className="w-12 h-12 text-gray-200 mx-auto mb-3" />
