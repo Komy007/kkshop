@@ -6,6 +6,7 @@ import {
     Package, Users, ShoppingCart, Store, TrendingUp,
     Plus, Eye, Settings, ArrowRight, Sparkles, BarChart3,
     CheckCircle, Clock, AlertCircle, DollarSign, ClipboardList,
+    RotateCcw, MessageSquare, Image, FileUp, Banknote, Search, Star,
 } from 'lucide-react';
 
 interface Stats {
@@ -256,6 +257,62 @@ export default function AdminDashboard() {
                         color: 'bg-teal-50',
                         label: 'Supplier Management',
                         desc: 'Approve suppliers, adjust commission rates',
+                    },
+                    {
+                        href: '/admin/orders/returns',
+                        icon: <RotateCcw className="w-5 h-5 text-orange-600" />,
+                        color: 'bg-orange-50',
+                        label: 'Returns & Refunds',
+                        desc: 'Review cancelled orders, approve or reject refunds',
+                    },
+                    {
+                        href: '/admin/support',
+                        icon: <MessageSquare className="w-5 h-5 text-sky-600" />,
+                        color: 'bg-sky-50',
+                        label: 'CS Support (Q&A)',
+                        desc: 'Answer pending product Q&A tickets from customers',
+                    },
+                    {
+                        href: '/admin/marketing/banners',
+                        icon: <Image className="w-5 h-5 text-pink-600" />,
+                        color: 'bg-pink-50',
+                        label: 'Homepage Banners',
+                        desc: 'Add, reorder, and toggle hero banner slides',
+                    },
+                    {
+                        href: '/admin/products/bulk-import',
+                        icon: <FileUp className="w-5 h-5 text-violet-600" />,
+                        color: 'bg-violet-50',
+                        label: 'Bulk Product Import',
+                        desc: 'Upload a CSV to register many products at once',
+                    },
+                    {
+                        href: '/admin/suppliers/payouts',
+                        icon: <Banknote className="w-5 h-5 text-teal-600" />,
+                        color: 'bg-teal-50',
+                        label: 'Supplier Payouts',
+                        desc: 'Revenue breakdown, commission, and net payout per supplier',
+                    },
+                    {
+                        href: '/admin/suppliers/commission',
+                        icon: <DollarSign className="w-5 h-5 text-emerald-600" />,
+                        color: 'bg-emerald-50',
+                        label: 'Commission Rules',
+                        desc: 'Set global and per-supplier commission rates',
+                    },
+                    {
+                        href: '/admin/settings/seo',
+                        icon: <Search className="w-5 h-5 text-indigo-600" />,
+                        color: 'bg-indigo-50',
+                        label: 'SEO Settings',
+                        desc: 'Site meta, OG image, Google Analytics & verification',
+                    },
+                    {
+                        href: '/admin/settings/points',
+                        icon: <Star className="w-5 h-5 text-yellow-600" />,
+                        color: 'bg-yellow-50',
+                        label: 'Points & Rewards',
+                        desc: 'Earn rate, redeem rate, expiry, welcome & review bonuses',
                     },
                     {
                         href: '/admin/landing-settings',

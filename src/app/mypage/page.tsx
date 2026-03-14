@@ -2,13 +2,14 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { Package, Heart, Clock, LogOut, ChevronRight, ShoppingBag, Loader2, Truck, MapPin, Gift, UserPlus, Share2, Plus, Pencil, Trash2, Check, X, Mail } from 'lucide-react';
+import { Package, Heart, Clock, LogOut, ChevronRight, ShoppingBag, Loader2, Truck, MapPin, Gift, UserPlus, Share2, Plus, Pencil, Trash2, Check, X, Mail, KeyRound, Eye, EyeOff } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import { useTranslations } from '@/i18n/useTranslations';
 import { useCartStore } from '@/store/useCartStore';
 import Footer from '@/components/Footer';
+import type { Translations } from '@/i18n';
 
-type TabKey = 'orders' | 'wishlist' | 'recent' | 'addresses' | 'referral';
+type TabKey = 'orders' | 'wishlist' | 'recent' | 'addresses' | 'referral' | 'password';
 
 interface OrderItem {
     id: string;
@@ -90,8 +91,7 @@ function ProductMiniCard({
     priceUsd,
     stockQty,
     onRemove,
-    removeLabel,
-    addCartLabel,
+    t,
 }: {
     id: string;
     imageUrl: string | null;
@@ -99,8 +99,7 @@ function ProductMiniCard({
     priceUsd: number;
     stockQty: number;
     onRemove?: (id: string) => void;
-    removeLabel: string;
-    addCartLabel: string;
+    t: Translations;
 }) {
     const formatUsd = (p: number) =>
         new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(p);
@@ -133,7 +132,7 @@ function ProductMiniCard({
                 )}
                 {stockQty <= 0 && (
                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                        <span className="text-white text-xs font-bold bg-black/60 px-2 py-1 rounded">품절</span>
+                        <span className="text-white text-xs font-bold bg-black/60 px-2 py-1 rounded">{t.mypage.soldOutLabel}</span>
                     </div>
                 )}
             </a>
@@ -150,13 +149,13 @@ function ProductMiniCard({
                         }`}
                         disabled={stockQty <= 0}
                     >
-                        {added ? '✓' : addCartLabel}
+                        {added ? '✓' : t.mypage.addToCart}
                     </button>
                     {onRemove && (
                         <button
                             onClick={() => onRemove(id)}
                             className="px-2 py-1.5 rounded-lg bg-gray-100 text-gray-500 hover:bg-red-50 hover:text-red-500 transition-colors"
-                            title={removeLabel}
+                            title={t.mypage.removeWishlist}
                         >
                             <Heart className="w-3.5 h-3.5 fill-current" />
                         </button>
@@ -187,6 +186,7 @@ function AddressForm({
     onSave: (data: AddressFormData) => void;
     onCancel: () => void;
 }) {
+    const t = useTranslations();
     const [form, setForm] = useState<AddressFormData>({
         label: initial?.label || '',
         recipientName: initial?.recipientName || '',
@@ -211,20 +211,20 @@ function AddressForm({
         <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3 shadow-sm">
             <div className="grid grid-cols-2 gap-3">
                 <div>
-                    <label className="text-xs font-bold text-gray-600 block mb-1">라벨 (예: 집, 회사)</label>
+                    <label className="text-xs font-bold text-gray-600 block mb-1">{t.mypage.addressLabel}</label>
                     <input
                         type="text"
-                        placeholder="집"
+                        placeholder={t.mypage.addressLabelPlaceholder}
                         value={form.label}
                         onChange={e => handle('label', e.target.value)}
                         className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-brand-primary"
                     />
                 </div>
                 <div>
-                    <label className="text-xs font-bold text-gray-600 block mb-1">수령인 이름</label>
+                    <label className="text-xs font-bold text-gray-600 block mb-1">{t.mypage.recipientName}</label>
                     <input
                         type="text"
-                        placeholder="이름"
+                        placeholder={t.mypage.namePlaceholder}
                         value={form.recipientName}
                         onChange={e => handle('recipientName', e.target.value)}
                         className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-brand-primary"
@@ -233,7 +233,7 @@ function AddressForm({
             </div>
             <div className="grid grid-cols-2 gap-3">
                 <div>
-                    <label className="text-xs font-bold text-gray-600 block mb-1">전화번호</label>
+                    <label className="text-xs font-bold text-gray-600 block mb-1">{t.mypage.phoneNumber}</label>
                     <input
                         type="tel"
                         placeholder="+855 XX XXX XXXX"
@@ -243,13 +243,13 @@ function AddressForm({
                     />
                 </div>
                 <div>
-                    <label className="text-xs font-bold text-gray-600 block mb-1">주/도시</label>
+                    <label className="text-xs font-bold text-gray-600 block mb-1">{t.mypage.province}</label>
                     <select
                         value={form.province}
                         onChange={e => handle('province', e.target.value)}
                         className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-brand-primary bg-white"
                     >
-                        <option value="">선택하세요</option>
+                        <option value="">{t.mypage.selectProvince}</option>
                         {cambodianProvinces.map(p => (
                             <option key={p} value={p}>{p}</option>
                         ))}
@@ -257,7 +257,7 @@ function AddressForm({
                 </div>
             </div>
             <div>
-                <label className="text-xs font-bold text-gray-600 block mb-1">상세 주소</label>
+                <label className="text-xs font-bold text-gray-600 block mb-1">{t.mypage.detailAddress}</label>
                 <input
                     type="text"
                     placeholder="Street, Village, Sangkat..."
@@ -273,20 +273,20 @@ function AddressForm({
                     onChange={e => handle('isDefault', e.target.checked)}
                     className="w-4 h-4 accent-brand-primary"
                 />
-                <span className="text-sm font-medium text-gray-700">기본 주소로 설정</span>
+                <span className="text-sm font-medium text-gray-700">{t.mypage.setAsDefault}</span>
             </label>
             <div className="flex gap-2 pt-1">
                 <button
                     onClick={() => onSave(form)}
                     className="flex-1 py-2.5 rounded-xl bg-brand-primary text-white font-bold text-sm hover:bg-brand-primary/90 transition-colors flex items-center justify-center gap-1.5"
                 >
-                    <Check className="w-4 h-4" /> 저장
+                    <Check className="w-4 h-4" /> {t.common.save}
                 </button>
                 <button
                     onClick={onCancel}
                     className="flex-1 py-2.5 rounded-xl bg-gray-100 text-gray-600 font-bold text-sm hover:bg-gray-200 transition-colors flex items-center justify-center gap-1.5"
                 >
-                    <X className="w-4 h-4" /> 취소
+                    <X className="w-4 h-4" /> {t.common.cancel}
                 </button>
             </div>
         </div>
@@ -324,6 +324,13 @@ export default function MyPage() {
     // Referral
     const [referralCopied, setReferralCopied] = useState(false);
     const [linkCopied, setLinkCopied] = useState(false);
+
+    // Change Password
+    const [pwForm, setPwForm] = useState({ current: '', next: '', confirm: '' });
+    const [pwShow, setPwShow] = useState({ current: false, next: false, confirm: false });
+    const [pwLoading, setPwLoading] = useState(false);
+    const [pwError, setPwError] = useState('');
+    const [pwSuccess, setPwSuccess] = useState(false);
 
     // Email verification banner
     const [resendLoading, setResendLoading] = useState(false);
@@ -456,7 +463,7 @@ export default function MyPage() {
 
     // Delete address
     const handleDeleteAddress = async (id: string) => {
-        if (!confirm('이 주소를 삭제하시겠습니까?')) return;
+        if (!confirm(t.mypage.deleteAddressConfirm)) return;
         try {
             await fetch('/api/user/addresses', {
                 method: 'DELETE',
@@ -488,6 +495,35 @@ export default function MyPage() {
         });
     };
 
+    // Change password
+    const handleChangePassword = async () => {
+        setPwError('');
+        if (pwForm.next.length < 8) { setPwError(t.mypage.passwordMinLength); return; }
+        if (pwForm.next !== pwForm.confirm) { setPwError(t.mypage.passwordMismatch); return; }
+        setPwLoading(true);
+        try {
+            const res = await fetch('/api/user/change-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ currentPassword: pwForm.current, newPassword: pwForm.next }),
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                if (data.error === 'wrong_password') setPwError(t.mypage.passwordWrong);
+                else if (data.error === 'no_password') setPwError(t.mypage.passwordNoAccount);
+                else setPwError(t.common.error);
+            } else {
+                setPwSuccess(true);
+                setPwForm({ current: '', next: '', confirm: '' });
+                setTimeout(() => setPwSuccess(false), 4000);
+            }
+        } catch {
+            setPwError(t.common.error);
+        } finally {
+            setPwLoading(false);
+        }
+    };
+
     // Logout
     const handleLogout = () => {
         signOut({ callbackUrl: window.location.origin + '/' });
@@ -515,8 +551,9 @@ export default function MyPage() {
         { key: 'orders', icon: Package, label: t.mypage.orders },
         { key: 'wishlist', icon: Heart, label: t.mypage.wishlist },
         { key: 'recent', icon: Clock, label: t.mypage.recentlyViewed },
-        { key: 'addresses', icon: MapPin, label: t.mypage.addresses || 'Addresses' },
-        { key: 'referral', icon: Gift, label: t.mypage.referral || 'Referral' },
+        { key: 'addresses', icon: MapPin, label: t.mypage.addresses },
+        { key: 'referral', icon: Gift, label: t.mypage.referral },
+        { key: 'password', icon: KeyRound, label: t.mypage.changePassword },
     ];
 
     const formatUsd = (price: number) =>
@@ -588,7 +625,7 @@ export default function MyPage() {
                     <div className="flex items-center gap-5">
                         <div className="w-16 h-16 rounded-full bg-gradient-to-br from-brand-primary to-brand-accent flex items-center justify-center shadow-inner">
                             <span className="text-white font-black text-2xl">
-                                {((user?.name || user?.email || 'U') as string)[0].toUpperCase()}
+                                {(user?.name ?? user?.email ?? 'U').charAt(0).toUpperCase()}
                             </span>
                         </div>
                         <div>
@@ -693,7 +730,7 @@ export default function MyPage() {
                                                 )}
 
                                                 <div className="flex items-center justify-between">
-                                                    <span className="text-sm text-gray-600 font-bold">{order.items.reduce((acc, it) => acc + it.quantity, 0)} items</span>
+                                                    <span className="text-sm text-gray-600 font-bold">{t.mypage.orderItems.replace('{n}', String(order.items.reduce((acc, it) => acc + it.quantity, 0)))}</span>
                                                     <div className="flex items-center gap-2">
                                                         <span className="font-black text-[#E52528] text-lg">{formatUsd(order.totalUsd)}</span>
                                                         <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-brand-primary transition-colors" />
@@ -730,8 +767,7 @@ export default function MyPage() {
                                                     priceUsd={product.priceUsd}
                                                     stockQty={product.stockQty}
                                                     onRemove={() => removeFromWishlist(product.id)}
-                                                    removeLabel="찜 해제"
-                                                    addCartLabel="장바구니 담기"
+                                                    t={t}
                                                 />
                                             );
                                         })}
@@ -760,8 +796,7 @@ export default function MyPage() {
                                                 name={product.name}
                                                 priceUsd={product.priceUsd}
                                                 stockQty={product.stockQty}
-                                                removeLabel=""
-                                                addCartLabel="장바구니 담기"
+                                                t={t}
                                             />
                                         ))}
                                     </div>
@@ -773,14 +808,14 @@ export default function MyPage() {
                         {activeTab === 'addresses' && (
                             <div className="animate-fade-in space-y-4">
                                 <div className="flex items-center justify-between">
-                                    <h3 className="font-extrabold text-black text-base">주소록</h3>
+                                    <h3 className="font-extrabold text-black text-base">{t.mypage.addressBook}</h3>
                                     {!showAddressForm && (
                                         <button
                                             onClick={() => { setShowAddressForm(true); setEditingAddress(null); }}
                                             className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand-primary text-white text-sm font-bold hover:bg-brand-primary/90 transition-colors shadow-sm"
                                         >
                                             <Plus className="w-4 h-4" />
-                                            새 주소 추가
+                                            {t.mypage.addNewAddress}
                                         </button>
                                     )}
                                 </div>
@@ -797,7 +832,7 @@ export default function MyPage() {
                                 ) : addresses.length === 0 && !showAddressForm ? (
                                     <div className="text-center py-16 bg-white rounded-2xl border border-gray-100">
                                         <MapPin className="w-12 h-12 mx-auto text-gray-300 mb-4" />
-                                        <p className="text-gray-500 font-bold">저장된 주소가 없습니다</p>
+                                        <p className="text-gray-500 font-bold">{t.mypage.noAddresses}</p>
                                     </div>
                                 ) : (
                                     <div className="space-y-3">
@@ -821,7 +856,7 @@ export default function MyPage() {
                                                                     )}
                                                                     {addr.isDefault && (
                                                                         <span className="text-xs font-extrabold text-brand-primary bg-brand-primary/10 px-2 py-0.5 rounded-full border border-brand-primary/20">
-                                                                            기본 주소
+                                                                            {t.mypage.defaultAddress}
                                                                         </span>
                                                                     )}
                                                                 </div>
@@ -834,14 +869,14 @@ export default function MyPage() {
                                                                 <button
                                                                     onClick={() => { setEditingAddress(addr); setShowAddressForm(false); }}
                                                                     className="p-2 rounded-lg text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                                                                    title="수정"
+                                                                    title={t.common.edit}
                                                                 >
                                                                     <Pencil className="w-4 h-4" />
                                                                 </button>
                                                                 <button
                                                                     onClick={() => handleDeleteAddress(addr.id)}
                                                                     className="p-2 rounded-lg text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors"
-                                                                    title="삭제"
+                                                                    title={t.common.delete}
                                                                 >
                                                                     <Trash2 className="w-4 h-4" />
                                                                 </button>
@@ -863,15 +898,15 @@ export default function MyPage() {
                                     <div className="w-16 h-16 rounded-full bg-brand-primary/10 flex items-center justify-center mx-auto mb-3">
                                         <UserPlus className="w-8 h-8 text-brand-primary" />
                                     </div>
-                                    <h3 className="font-extrabold text-xl text-black mb-1">친구 초대</h3>
+                                    <h3 className="font-extrabold text-xl text-black mb-1">{t.mypage.referralTitle}</h3>
                                     <p className="text-gray-500 text-sm font-medium">
-                                        친구에게 이 코드를 공유하면 가입시 보상 포인트를 받습니다
+                                        {t.mypage.referralDesc}
                                     </p>
                                 </div>
 
                                 {/* Referral Code Box */}
                                 <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
-                                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">내 추천 코드</p>
+                                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">{t.mypage.myReferralCode}</p>
                                     <div className="flex items-center gap-3">
                                         <div className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-mono font-black text-xl text-brand-primary tracking-widest text-center select-all">
                                             {user?.referralCode || 'KK------'}
@@ -881,9 +916,9 @@ export default function MyPage() {
                                             className="px-4 py-3 rounded-xl bg-brand-primary text-white font-bold text-sm hover:bg-brand-primary/90 transition-colors shadow-sm flex items-center gap-1.5 whitespace-nowrap"
                                         >
                                             {referralCopied ? (
-                                                <><Check className="w-4 h-4" /> 복사됨!</>
+                                                <><Check className="w-4 h-4" /> {t.mypage.codeCopied}</>
                                             ) : (
-                                                <><Share2 className="w-4 h-4" /> 코드 복사</>
+                                                <><Share2 className="w-4 h-4" /> {t.mypage.copyCode}</>
                                             )}
                                         </button>
                                     </div>
@@ -891,7 +926,7 @@ export default function MyPage() {
 
                                 {/* Share Link */}
                                 <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
-                                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">초대 링크</p>
+                                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">{t.mypage.inviteLink}</p>
                                     <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 mb-3">
                                         <span className="flex-1 text-xs text-gray-600 font-medium truncate">
                                             {typeof window !== 'undefined' ? `${window.location.origin}/signup?ref=${user?.referralCode || ''}` : '/signup?ref=...'}
@@ -902,35 +937,143 @@ export default function MyPage() {
                                         className="w-full py-3 rounded-xl border-2 border-brand-primary text-brand-primary font-bold text-sm hover:bg-brand-primary hover:text-white transition-colors flex items-center justify-center gap-2"
                                     >
                                         {linkCopied ? (
-                                            <><Check className="w-4 h-4" /> 링크 복사됨!</>
+                                            <><Check className="w-4 h-4" /> {t.mypage.linkCopied}</>
                                         ) : (
-                                            <><Share2 className="w-4 h-4" /> 링크 복사</>
+                                            <><Share2 className="w-4 h-4" /> {t.mypage.copyLink}</>
                                         )}
                                     </button>
                                 </div>
 
                                 {/* Stats */}
                                 <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
-                                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">초대 현황</p>
+                                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">{t.mypage.inviteStats}</p>
                                     <div className="flex items-center justify-center gap-3">
                                         <div className="text-center">
                                             <p className="text-3xl font-black text-brand-primary">{user?.referralCount ?? 0}</p>
-                                            <p className="text-xs text-gray-500 font-medium mt-1">초대한 친구</p>
+                                            <p className="text-xs text-gray-500 font-medium mt-1">{t.mypage.invitedFriends}</p>
                                         </div>
                                     </div>
                                 </div>
 
                                 {/* Instructions */}
                                 <div className="bg-gray-50 rounded-2xl border border-gray-200 p-4">
-                                    <p className="text-xs font-extrabold text-gray-700 mb-2">이용 방법</p>
+                                    <p className="text-xs font-extrabold text-gray-700 mb-2">{t.mypage.howToUse}</p>
                                     <ol className="space-y-1.5 text-xs text-gray-600 font-medium list-decimal list-inside">
-                                        <li>위의 추천 코드 또는 링크를 친구에게 공유하세요</li>
-                                        <li>친구가 코드로 가입하면 보너스 포인트를 받습니다</li>
-                                        <li>친구의 첫 구매 시 추가 포인트 적립</li>
+                                        <li>{t.mypage.referralStep1}</li>
+                                        <li>{t.mypage.referralStep2}</li>
+                                        <li>{t.mypage.referralStep3}</li>
                                     </ol>
                                 </div>
                             </div>
                         )}
+                        {/* ── Change Password Tab ── */}
+                        {activeTab === 'password' && (
+                            <div className="animate-fade-in max-w-md mx-auto space-y-5">
+                                <div className="text-center mb-2">
+                                    <div className="w-16 h-16 rounded-full bg-brand-primary/10 flex items-center justify-center mx-auto mb-3">
+                                        <KeyRound className="w-8 h-8 text-brand-primary" />
+                                    </div>
+                                    <h3 className="font-extrabold text-xl text-black">{t.mypage.changePassword}</h3>
+                                </div>
+
+                                {pwSuccess && (
+                                    <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-xl text-green-700 text-sm font-bold">
+                                        <Check className="w-4 h-4 flex-shrink-0" />
+                                        {t.mypage.passwordChanged}
+                                    </div>
+                                )}
+
+                                {pwError && (
+                                    <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm font-medium">
+                                        {pwError}
+                                    </div>
+                                )}
+
+                                <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm space-y-4">
+                                    {/* Current Password */}
+                                    <div>
+                                        <label className="text-xs font-bold text-gray-600 block mb-1">{t.mypage.currentPassword}</label>
+                                        <div className="relative">
+                                            <input
+                                                type={pwShow.current ? 'text' : 'password'}
+                                                value={pwForm.current}
+                                                onChange={e => setPwForm(p => ({ ...p, current: e.target.value }))}
+                                                className="w-full px-3 py-2.5 pr-10 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-brand-primary"
+                                                autoComplete="current-password"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setPwShow(p => ({ ...p, current: !p.current }))}
+                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                            >
+                                                {pwShow.current ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* New Password */}
+                                    <div>
+                                        <label className="text-xs font-bold text-gray-600 block mb-1">{t.mypage.newPassword}</label>
+                                        <div className="relative">
+                                            <input
+                                                type={pwShow.next ? 'text' : 'password'}
+                                                value={pwForm.next}
+                                                onChange={e => setPwForm(p => ({ ...p, next: e.target.value }))}
+                                                className="w-full px-3 py-2.5 pr-10 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-brand-primary"
+                                                autoComplete="new-password"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setPwShow(p => ({ ...p, next: !p.next }))}
+                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                            >
+                                                {pwShow.next ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                            </button>
+                                        </div>
+                                        {pwForm.next.length > 0 && pwForm.next.length < 8 && (
+                                            <p className="text-xs text-orange-500 mt-1">{t.mypage.passwordMinLength}</p>
+                                        )}
+                                    </div>
+
+                                    {/* Confirm Password */}
+                                    <div>
+                                        <label className="text-xs font-bold text-gray-600 block mb-1">{t.mypage.confirmPassword}</label>
+                                        <div className="relative">
+                                            <input
+                                                type={pwShow.confirm ? 'text' : 'password'}
+                                                value={pwForm.confirm}
+                                                onChange={e => setPwForm(p => ({ ...p, confirm: e.target.value }))}
+                                                className="w-full px-3 py-2.5 pr-10 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-brand-primary"
+                                                autoComplete="new-password"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setPwShow(p => ({ ...p, confirm: !p.confirm }))}
+                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                            >
+                                                {pwShow.confirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                            </button>
+                                        </div>
+                                        {pwForm.confirm.length > 0 && pwForm.next !== pwForm.confirm && (
+                                            <p className="text-xs text-red-500 mt-1">{t.mypage.passwordMismatch}</p>
+                                        )}
+                                    </div>
+
+                                    <button
+                                        onClick={handleChangePassword}
+                                        disabled={pwLoading || !pwForm.current || !pwForm.next || !pwForm.confirm}
+                                        className="w-full py-3 rounded-xl bg-brand-primary text-white font-bold text-sm hover:bg-brand-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                                    >
+                                        {pwLoading ? (
+                                            <><Loader2 className="w-4 h-4 animate-spin" /> {t.mypage.passwordChanging}</>
+                                        ) : (
+                                            <><KeyRound className="w-4 h-4" /> {t.mypage.changePassword}</>
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
                     </div>
                 </div>
             </div>
