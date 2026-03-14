@@ -147,12 +147,58 @@ export interface Translations {
         };
         emptyOrders: string;
         emptyWishlist: string;
-        addresses?: string;
-        referral?: string;
-        addToCart?: string;
-        emailVerifyTitle?: string;
-        emailVerifyDesc?: string;
-        emailVerifyResend?: string;
+        addresses: string;
+        referral: string;
+        addToCart: string;
+        emailVerifyTitle: string;
+        emailVerifyDesc: string;
+        emailVerifyResend: string;
+        // Address Section
+        addressBook: string;
+        addNewAddress: string;
+        noAddresses: string;
+        defaultAddress: string;
+        deleteAddressConfirm: string;
+        // Address Form Fields
+        addressLabel: string;
+        addressLabelPlaceholder: string;
+        recipientName: string;
+        namePlaceholder: string;
+        phoneNumber: string;
+        province: string;
+        selectProvince: string;
+        detailAddress: string;
+        setAsDefault: string;
+        // Referral
+        referralTitle: string;
+        referralDesc: string;
+        myReferralCode: string;
+        codeCopied: string;
+        copyCode: string;
+        inviteLink: string;
+        linkCopied: string;
+        copyLink: string;
+        inviteStats: string;
+        invitedFriends: string;
+        howToUse: string;
+        referralStep1: string;
+        referralStep2: string;
+        referralStep3: string;
+        // Misc
+        removeWishlist: string;
+        orderItems: string;
+        soldOutLabel: string;
+        // Change Password Tab
+        changePassword: string;
+        currentPassword: string;
+        newPassword: string;
+        confirmPassword: string;
+        passwordMinLength: string;
+        passwordMismatch: string;
+        passwordWrong: string;
+        passwordNoAccount: string;
+        passwordChanged: string;
+        passwordChanging: string;
     };
 
     // Auth / Login
@@ -169,6 +215,30 @@ export interface Translations {
         facebook: string;
         telegram: string;
         tiktok: string;
+    };
+
+    // About Us Page
+    about: {
+        badge: string;
+        heroSubtitle: string;
+        sec1Title: string;
+        sec1Desc: string;
+        card1Title: string; card1Desc: string;
+        card2Title: string; card2Desc: string;
+        card3Title: string; card3Desc: string;
+        sec2Title: string;
+        sec2Desc: string;
+        card4Title: string; card4Desc: string;
+        card5Title: string; card5Desc: string;
+        card6Title: string; card6Desc: string;
+        sec3Title: string;
+        sec3Desc: string;
+        tag1: string; tag2: string; tag3: string; tag4: string;
+        sec4Badge: string;
+        sec4Title: string;
+        sec4Desc: string;
+        contactTitle: string;
+        contactDesc: string;
     };
 
     // Footer

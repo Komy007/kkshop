@@ -29,6 +29,7 @@ export default function GNB() {
     const [userMenuOpen, setUserMenuOpen] = useState(false);
     const [mounted, setMounted] = useState(false);
     const [wishlistCount, setWishlistCount] = useState(0);
+    const desktopLangRef = useRef<HTMLDivElement>(null);
     const langRef = useRef<HTMLDivElement>(null);
     const userRef = useRef<HTMLDivElement>(null);
 
@@ -78,7 +79,7 @@ export default function GNB() {
     // Close menus on outside click
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
-            if (langRef.current && !langRef.current.contains(e.target as Node)) {
+            if (desktopLangRef.current && !desktopLangRef.current.contains(e.target as Node)) {
                 setLangOpen(false);
             }
             if (userRef.current && !userRef.current.contains(e.target as Node)) {
@@ -133,7 +134,7 @@ export default function GNB() {
                     {/* Actions */}
                     <div className="hidden md:flex items-center gap-4">
                         {/* Language Selector */}
-                        <div className="relative" ref={langRef}>
+                        <div className="relative" ref={desktopLangRef}>
                             <button
                                 onClick={() => setLangOpen(!langOpen)}
                                 className="flex items-center gap-2 px-3 py-2 rounded-full hover:bg-gray-100 transition-colors text-sm text-gray-700 font-bold"

@@ -4,8 +4,11 @@ import React from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Mail, Phone, MessageCircle, ShieldCheck, Sparkles, MapPin, Store, Check } from 'lucide-react';
 import TaegukgiIcon from '@/components/TaegukgiIcon';
+import { useTranslations } from '@/i18n/useTranslations';
 
 export default function AboutPage() {
+    const t = useTranslations().about;
+
     return (
         <main className="min-h-screen bg-gray-900 text-white overflow-x-hidden">
 
@@ -46,7 +49,7 @@ export default function AboutPage() {
                 <div className="relative z-10 text-center max-w-2xl mx-auto mt-20">
                     <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-card mb-5">
                         <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
-                        <span className="text-xs font-semibold tracking-widest text-blue-200 uppercase">Cambodia's #1 Korean Shopping Platform</span>
+                        <span className="text-xs font-semibold tracking-widest text-blue-200 uppercase">{t.badge}</span>
                     </div>
 
                     <h1 className="text-4xl sm:text-6xl font-black mb-5 leading-tight">
@@ -55,10 +58,7 @@ export default function AboutPage() {
                     </h1>
 
                     <p className="text-lg sm:text-xl text-gray-200 font-semibold leading-relaxed mb-3">
-                        100% Authentic Korean Cosmetics &amp;<br className="hidden sm:block" /> Korean-Quality Products — Delivered to Your Door
-                    </p>
-                    <p className="text-sm text-gray-400 leading-relaxed">
-                        캄보디아 NO.1 한국 쇼핑 플랫폼 · 정품 한국 화장품 · 집 앞까지 배송
+                        {t.heroSubtitle}
                     </p>
 
                     <div className="flex flex-wrap items-center justify-center gap-3 mt-8">
@@ -80,23 +80,15 @@ export default function AboutPage() {
                         <div className="w-14 h-14 rounded-2xl bg-blue-500/20 flex items-center justify-center mb-4">
                             <ShieldCheck className="w-7 h-7 text-blue-400" />
                         </div>
-                        <h2 className="text-2xl sm:text-4xl font-bold mb-4">
-                            100% Authentic Korean Cosmetics
-                        </h2>
-                        <p className="text-gray-400 text-base sm:text-lg leading-relaxed max-w-xl">
-                            Every single beauty and skincare product on KKShop is <strong className="text-white">manufactured in South Korea</strong>.
-                            No compromises. No imitations. We guarantee origin authenticity — protecting your skin with genuine K-Beauty only.
-                        </p>
-                        <p className="text-gray-500 text-sm mt-3">
-                            모든 뷰티·스킨케어 상품은 100% 한국산 정품입니다. 원산지 보증을 철저히 지킵니다.
-                        </p>
+                        <h2 className="text-2xl sm:text-4xl font-bold mb-4">{t.sec1Title}</h2>
+                        <p className="text-gray-400 text-base sm:text-lg leading-relaxed max-w-xl">{t.sec1Desc}</p>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         {[
-                            { icon: <TaegukgiIcon className="w-10 h-[27px]" />, title: 'Made in Korea', desc: 'All cosmetics & skincare are genuine Korean-brand products manufactured in South Korea' },
-                            { icon: <span className="text-3xl">🔬</span>, title: 'Korean-Certified', desc: 'Products meet Korean MFDS safety standards — trusted by Korean consumers daily' },
-                            { icon: <span className="text-3xl">💯</span>, title: 'No Counterfeits', desc: 'Zero tolerance for replicas or imitations — 100% authentic K-Beauty only' },
+                            { icon: <TaegukgiIcon className="w-10 h-[27px]" />, title: t.card1Title, desc: t.card1Desc },
+                            { icon: <span className="text-3xl">🔬</span>, title: t.card2Title, desc: t.card2Desc },
+                            { icon: <span className="text-3xl">💯</span>, title: t.card3Title, desc: t.card3Desc },
                         ].map(item => (
                             <div key={item.title} className="glass-card rounded-2xl p-5 flex flex-col gap-3">
                                 <span>{item.icon}</span>
@@ -117,31 +109,21 @@ export default function AboutPage() {
                         <div className="w-14 h-14 rounded-2xl bg-amber-500/20 flex items-center justify-center mb-4">
                             <Sparkles className="w-7 h-7 text-amber-400" />
                         </div>
-                        <h2 className="text-2xl sm:text-4xl font-bold mb-4">
-                            Korean-Quality Verified Products
-                        </h2>
-                        <p className="text-gray-400 text-base sm:text-lg leading-relaxed max-w-xl">
-                            Beyond cosmetics, we curate lifestyle products by <strong className="text-white">Korean consumer standards</strong> — meaning Koreans actually use, trust, and recommend them for quality and value.
-                            Not necessarily shipped from Korea, but verified through real Korean insight: great quality, great price, no compromise.
-                        </p>
-                        <p className="text-gray-500 text-sm mt-3">
-                            화장품 외 생활용품은 한국인이 직접 사용·검증한 가성비 우수 제품만 엄선합니다. 한국에서 직송이 아닌, 한국인의 기준으로 검증된 상품입니다.
-                        </p>
+                        <h2 className="text-2xl sm:text-4xl font-bold mb-4">{t.sec2Title}</h2>
+                        <p className="text-gray-400 text-base sm:text-lg leading-relaxed max-w-xl">{t.sec2Desc}</p>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="glass-card rounded-2xl p-6 sm:col-span-2 flex items-center gap-5">
                             <span className="text-4xl flex-shrink-0">🏆</span>
                             <div>
-                                <h3 className="font-bold text-white text-lg mb-1">Korean Insight, Best Value</h3>
-                                <p className="text-gray-400 text-sm leading-relaxed">
-                                    Lifestyle products curated through real Korean consumer insight — trusted, tested, and loved by Koreans for their quality and value. Whatever Koreans choose for their daily lives, we bring to Cambodia at the best price.
-                                </p>
+                                <h3 className="font-bold text-white text-lg mb-1">{t.card4Title}</h3>
+                                <p className="text-gray-400 text-sm leading-relaxed">{t.card4Desc}</p>
                             </div>
                         </div>
                         {[
-                            { emoji: '🏠', title: 'Smart Home & Living', desc: 'Functional, well-designed home products Koreans actually use' },
-                            { emoji: '💰', title: 'Best Value Price', desc: 'Korean market pricing standards applied — quality without overpaying' },
+                            { emoji: '🏠', title: t.card5Title, desc: t.card5Desc },
+                            { emoji: '💰', title: t.card6Title, desc: t.card6Desc },
                         ].map(item => (
                             <div key={item.title} className="glass-card rounded-2xl p-6 flex flex-col gap-3">
                                 <span className="text-3xl">{item.emoji}</span>
@@ -164,24 +146,12 @@ export default function AboutPage() {
                             <div className="w-14 h-14 rounded-2xl bg-cyan-500/20 flex items-center justify-center mb-4 mx-auto">
                                 <MapPin className="w-7 h-7 text-cyan-400" />
                             </div>
-                            <h2 className="text-2xl sm:text-4xl font-bold mb-4">
-                                Quality Delivered to Your Home in Cambodia
-                            </h2>
-                            <p className="text-gray-300 text-base sm:text-lg leading-relaxed max-w-xl mx-auto mb-6">
-                                <strong className="text-white">Cambodia can now receive authentic Korean products without going abroad.</strong>{' '}
-                                Shop from your smartphone. We deliver directly to your door — anywhere in Cambodia.
-                                No import hassle, no middlemen, no fakes.
-                            </p>
-                            <p className="text-gray-500 text-sm mb-8">
-                                이제 캄보디아에서도 집에서 한국 정품을 편리하게 받아볼 수 있습니다.
+                            <h2 className="text-2xl sm:text-4xl font-bold mb-4">{t.sec3Title}</h2>
+                            <p className="text-gray-300 text-base sm:text-lg leading-relaxed max-w-xl mx-auto mb-8">
+                                {t.sec3Desc}
                             </p>
                             <div className="flex flex-wrap items-center justify-center gap-3">
-                                {[
-                                    'Phnom Penh Delivery',
-                                    'Nationwide Shipping',
-                                    'Fast & Safe Packaging',
-                                    'Order by Phone',
-                                ].map(tag => (
+                                {[t.tag1, t.tag2, t.tag3, t.tag4].map(tag => (
                                     <span key={tag} className="flex items-center gap-1.5 text-xs bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 px-3 py-1.5 rounded-full font-medium">
                                         <Check className="w-3 h-3" />{tag}
                                     </span>
@@ -201,14 +171,10 @@ export default function AboutPage() {
                         </div>
                         <div>
                             <div className="inline-flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold px-2.5 py-1 rounded-full mb-2 uppercase tracking-wider">
-                                Coming Soon
+                                {t.sec4Badge}
                             </div>
-                            <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">Korean Mart Category</h2>
-                            <p className="text-gray-400 text-sm sm:text-base leading-relaxed">
-                                We&apos;re expanding! Authentic Korean food, instant noodles, snacks, household goods, and grocery items from Korean supermarkets — coming to KKShop soon.
-                                Everything from ramyeon to kitchen essentials, delivered to your Cambodian home.
-                            </p>
-                            <p className="text-gray-500 text-xs mt-2">한국 식품·생필품 카테고리 추가 예정입니다.</p>
+                            <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">{t.sec4Title}</h2>
+                            <p className="text-gray-400 text-sm sm:text-base leading-relaxed">{t.sec4Desc}</p>
                         </div>
                     </div>
                 </div>
@@ -218,9 +184,8 @@ export default function AboutPage() {
             <section className="py-20 px-6 bg-gray-900 border-t border-white/5">
                 <div className="max-w-xl mx-auto">
                     <div className="text-center mb-8">
-                        <h2 className="text-2xl font-bold mb-2">Contact Us</h2>
-                        <p className="text-gray-400 text-sm">Questions? We reply fast — in English, Korean, and Khmer.</p>
-                        <p className="text-gray-500 text-xs mt-1">문의사항은 빠르게 답변드립니다.</p>
+                        <h2 className="text-2xl font-bold mb-2">{t.contactTitle}</h2>
+                        <p className="text-gray-400 text-sm">{t.contactDesc}</p>
                     </div>
 
                     <div className="flex flex-col gap-4">
