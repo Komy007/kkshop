@@ -6,14 +6,18 @@ import { Save, Loader2, ChevronLeft, AlertCircle, CheckCircle, Upload, X, ImageP
 
 const SIZE_PRESETS = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Free Size'];
 
+interface Category { id: string; nameKo: string; nameEn?: string; parentId?: string | null; }
+
 interface ProductForm {
     name: string; shortDesc: string; detailDesc: string;
     ingredients: string; howToUse: string; benefits: string;
-    priceUsd: string; volume: string; skinType: string; origin: string;
+    priceUsd: string; stockQty: string; volume: string; skinType: string; origin: string;
+    categoryId: string;
 }
 const EMPTY: ProductForm = {
     name: '', shortDesc: '', detailDesc: '', ingredients: '',
-    howToUse: '', benefits: '', priceUsd: '', volume: '', skinType: '', origin: '',
+    howToUse: '', benefits: '', priceUsd: '', stockQty: '0', volume: '', skinType: '', origin: '',
+    categoryId: '',
 };
 const BADGE: Record<string, string> = {
     PENDING:  'bg-yellow-100 text-yellow-700',
@@ -55,6 +59,11 @@ export default function SellerProductEditPage() {
     const [approvalStatus, setApprovalStatus] = useState('');
     const [message,        setMessage]        = useState<{ type: 'success' | 'error'; text: string; textKo: string } | null>(null);
 
+    // Category state
+    const [categories,  setCategories] = useState<Category[]>([]);
+    const [catLoading,  setCatLoading] = useState(true);
+    const [catError,    setCatError]   = useState(false);
+
     // Image state
     const [existingImages, setExistingImages] = useState<{ id: string; url: string }[]>([]);
     const [deleteImageIds, setDeleteImageIds] = useState<string[]>([]);
@@ -70,6 +79,17 @@ export default function SellerProductEditPage() {
     const [sizeVars,   setSizeVars]   = useState<{ label: string; stock: string; price: string }[]>([]);
     const [customVars, setCustomVars] = useState([{ label: '', stock: '0', price: '' }]);
 
+    // Load categories (public, no auth needed)
+    const loadCategories = useCallback(() => {
+        setCatLoading(true); setCatError(false);
+        fetch('/api/categories')
+            .then(r => { if (!r.ok) throw new Error(); return r.json(); })
+            .then(d => { setCategories(Array.isArray(d) ? d : []); setCatLoading(false); })
+            .catch(() => { setCatError(true); setCatLoading(false); });
+    }, []);
+
+    useEffect(() => { loadCategories(); }, [loadCategories]);
+
     useEffect(() => {
         fetch(`/api/seller/products/${productId}`)
             .then(r => r.json())
@@ -77,16 +97,18 @@ export default function SellerProductEditPage() {
                 if (data.error) { router.push('/seller/products'); return; }
                 const ko = data.translations?.find((t: any) => t.langCode === 'ko') ?? {};
                 setForm({
-                    name:        ko.name        ?? '',
-                    shortDesc:   ko.shortDesc   ?? '',
-                    detailDesc:  ko.detailDesc  ?? '',
-                    ingredients: ko.ingredients ?? '',
-                    howToUse:    ko.howToUse    ?? '',
-                    benefits:    ko.benefits    ?? '',
-                    priceUsd:    data.priceUsd  ?? '',
-                    volume:      data.volume    ?? '',
-                    skinType:    data.skinType  ?? '',
-                    origin:      data.origin    ?? '',
+                    name:        ko.name            ?? '',
+                    shortDesc:   ko.shortDesc       ?? '',
+                    detailDesc:  ko.detailDesc      ?? '',
+                    ingredients: ko.ingredients     ?? '',
+                    howToUse:    ko.howToUse        ?? '',
+                    benefits:    ko.benefits        ?? '',
+                    priceUsd:    data.priceUsd      ?? '',
+                    stockQty:    String(data.stockQty ?? 0),
+                    volume:      data.volume        ?? '',
+                    skinType:    data.skinType      ?? '',
+                    origin:      data.origin        ?? '',
+                    categoryId:  data.categoryId    ?? '',
                 });
                 setApprovalStatus(data.approvalStatus ?? 'PENDING');
                 setExistingImages(data.images ?? []);
@@ -380,6 +402,42 @@ export default function SellerProductEditPage() {
                     </h2>
                     <p className="text-[11px] text-gray-400 mb-4 ml-3.5">기본 정보</p>
                     <div className="space-y-4">
+                        {/* Category */}
+                        <Field en="Category" ko="카테고리" required>
+                            {catLoading ? (
+                                <div className={`${inp} flex items-center gap-2 text-gray-400 bg-gray-50`}>
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    <span className="text-sm">Loading… · 불러오는 중…</span>
+                                </div>
+                            ) : catError ? (
+                                <div className={`${inp} flex items-center justify-between bg-red-50 border-red-200 text-red-600 text-sm`}>
+                                    <span>Failed to load · 불러오기 실패</span>
+                                    <button type="button" onClick={loadCategories} className="text-xs font-bold underline ml-2">Retry</button>
+                                </div>
+                            ) : categories.length === 0 ? (
+                                <div className={`${inp} bg-amber-50 border-amber-200 text-amber-700 text-sm`}>
+                                    No categories — ask admin to add categories first.
+                                    <span className="block text-xs opacity-70 mt-0.5">카테고리가 없습니다. 관리자에게 문의하세요.</span>
+                                </div>
+                            ) : (
+                                <select value={form.categoryId} onChange={e => setForm(p => ({ ...p, categoryId: e.target.value }))} className={inp}>
+                                    <option value="">— Select category · 카테고리 선택 —</option>
+                                    {categories.filter(c => !c.parentId).map(parent => {
+                                        const subs = categories.filter(c => c.parentId === parent.id);
+                                        return subs.length > 0 ? (
+                                            <optgroup key={parent.id} label={`📁 ${parent.nameEn || parent.nameKo}`}>
+                                                {subs.map(s => (
+                                                    <option key={s.id} value={s.id}>{s.nameEn || s.nameKo}</option>
+                                                ))}
+                                            </optgroup>
+                                        ) : (
+                                            <option key={parent.id} value={parent.id}>{parent.nameEn || parent.nameKo}</option>
+                                        );
+                                    })}
+                                </select>
+                            )}
+                        </Field>
+
                         <Field en="Product Name" ko="상품명 (한국어)" required>
                             <input type="text" value={form.name} onChange={set('name')} required
                                 placeholder="e.g. Hydrating Ampoule Serum / 수분 앰플 세럼" className={inp} />
@@ -405,6 +463,9 @@ export default function SellerProductEditPage() {
                     <div className="grid grid-cols-2 gap-4">
                         <Field en="Price (USD)" ko="판매가">
                             <input type="number" step="0.01" min="0" value={form.priceUsd} onChange={set('priceUsd')} placeholder="0.00" className={inp} />
+                        </Field>
+                        <Field en="Stock Quantity" ko="재고 수량">
+                            <input type="number" min="0" value={form.stockQty} onChange={set('stockQty')} placeholder="0" className={inp} />
                         </Field>
                         <Field en="Volume / Weight" ko="용량/중량">
                             <input type="text" value={form.volume} onChange={set('volume')} placeholder="e.g. 50ml, 200g" className={inp} />

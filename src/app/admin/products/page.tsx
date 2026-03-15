@@ -12,8 +12,9 @@ import { useTranslations } from '@/i18n/useTranslations';
 interface Category { id: string; slug: string; nameKo: string; isSystem: boolean; }
 interface Product {
     id: string; sku: string; priceUsd: string; costPrice?: string | null; stockQty: number;
-    stockAlertQty?: number; status: string; imageUrl?: string; brandName?: string; isNew: boolean;
-    createdAt: string;
+    stockAlertQty?: number; status: string; approvalStatus: string;
+    imageUrl?: string; brandName?: string; isNew: boolean;
+    supplierId?: string | null; createdAt: string;
     translations: { langCode: string; name: string }[];
     _count: { images: number };
     category?: { id: string; slug: string; nameKo: string } | null;
@@ -31,17 +32,22 @@ export default function AdminProductsPage() {
     const [search, setSearch] = useState('');
     const [searchInput, setSearchInput] = useState('');
     const [activeSlug, setActiveSlug] = useState('all');
-    const [deleting, setDeleting] = useState<string | null>(null);
-    const [movingId, setMovingId] = useState<string | null>(null);
+    const [deleting,       setDeleting]       = useState<string | null>(null);
+    const [movingId,       setMovingId]       = useState<string | null>(null);
     const [moveCategoryId, setMoveCategoryId] = useState('');
+    const [approvingId,    setApprovingId]    = useState<string | null>(null); // row open for approve/reject
+    const [rejectReason,   setRejectReason]   = useState('');
+    const [actionLoading,  setActionLoading]  = useState<string | null>(null);
+    const [approvalFilter, setApprovalFilter] = useState('all'); // 'all' | 'PENDING'
     const searchTimer = useRef<NodeJS.Timeout | null>(null);
 
-    const fetchProducts = useCallback(async (p = page, q = search, slug = activeSlug) => {
+    const fetchProducts = useCallback(async (p = page, q = search, slug = activeSlug, apf = approvalFilter) => {
         setLoading(true);
         try {
             const params = new URLSearchParams({ page: String(p) });
             if (q) params.set('search', q);
             if (slug && slug !== 'all') params.set('category', slug);
+            if (apf && apf !== 'all') params.set('approvalStatus', apf);
 
             const [pRes, cRes] = await Promise.all([
                 fetch(`/api/admin/products?${params}`),
@@ -61,7 +67,7 @@ export default function AdminProductsPage() {
         } finally {
             setLoading(false);
         }
-    }, [page, search, activeSlug, categories.length]);
+    }, [page, search, activeSlug, approvalFilter, categories.length]);
 
     // Initial load - restore filters + scroll from sessionStorage
     useEffect(() => {
@@ -106,16 +112,15 @@ export default function AdminProductsPage() {
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
-    // Fetch when page/search/category changes (but not on initial mount)
+    // Fetch when page/search/category/approvalFilter changes (but not on initial mount)
     const isFirstRender = useRef(true);
     useEffect(() => {
         if (isFirstRender.current) { isFirstRender.current = false; return; }
         sessionStorage.setItem('admin_products_filters', JSON.stringify({ search, activeSlug, page }));
-        // Reset scroll when filter/page changes intentionally
         sessionStorage.removeItem('admin_products_scroll');
-        fetchProducts(page, search, activeSlug);
+        fetchProducts(page, search, activeSlug, approvalFilter);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [page, search, activeSlug]);
+    }, [page, search, activeSlug, approvalFilter]);
 
     const handleSearchChange = (val: string) => {
         setSearchInput(val);
@@ -173,7 +178,32 @@ export default function AdminProductsPage() {
     };
 
     const toggleStatus = (p: Product) => patch(p.id, { status: p.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE' });
-    const toggleIsNew = (p: Product) => patch(p.id, { isNew: !p.isNew });
+    const toggleIsNew  = (p: Product) => patch(p.id, { isNew: !p.isNew });
+
+    const handleApprove = async (id: string) => {
+        setActionLoading(id + '_approve');
+        await fetch('/api/admin/products', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, approvalStatus: 'APPROVED', status: 'ACTIVE' }),
+        });
+        setActionLoading(null);
+        setApprovingId(null);
+        fetchProducts(page, search, activeSlug, approvalFilter);
+    };
+
+    const handleReject = async (id: string) => {
+        setActionLoading(id + '_reject');
+        await fetch('/api/admin/products', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, approvalStatus: 'REJECTED', status: 'INACTIVE' }),
+        });
+        setActionLoading(null);
+        setApprovingId(null);
+        setRejectReason('');
+        fetchProducts(page, search, activeSlug, approvalFilter);
+    };
     const moveCategory = async (id: string) => {
         await patch(id, { categoryId: moveCategoryId || null });
         setMovingId(null);
@@ -201,6 +231,27 @@ export default function AdminProductsPage() {
                         <Plus className="w-4 h-4" /> {t.admin.products.newProduct}
                     </button>
                 </div>
+            </div>
+
+            {/* Approval filter pills */}
+            <div className="flex gap-2 mb-3 flex-wrap">
+                {[
+                    { val: 'all',     label: 'All Products',      labelKo: '전체 상품',   color: 'blue'   },
+                    { val: 'PENDING', label: '🔔 Pending Review', labelKo: '검수 대기',   color: 'amber'  },
+                    { val: 'APPROVED',label: 'Approved',          labelKo: '승인됨',      color: 'green'  },
+                    { val: 'REJECTED',label: 'Rejected',          labelKo: '반려됨',      color: 'red'    },
+                ].map(f => (
+                    <button key={f.val} onClick={() => { setApprovalFilter(f.val); setPage(1); }}
+                        className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${approvalFilter === f.val
+                            ? f.color === 'amber' ? 'bg-amber-500 text-white border-amber-500'
+                            : f.color === 'green' ? 'bg-green-600 text-white border-green-600'
+                            : f.color === 'red'   ? 'bg-red-600 text-white border-red-600'
+                            : 'bg-blue-600 text-white border-blue-600'
+                            : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'}`}>
+                        {f.label}
+                        <span className="opacity-60 ml-1">· {f.labelKo}</span>
+                    </button>
+                ))}
             </div>
 
             {/* Category Tabs */}
@@ -242,6 +293,7 @@ export default function AdminProductsPage() {
                                         <th className="py-3 px-4">{t.admin.products.table.priceStock}</th>
                                         <th className="py-3 px-4 hidden lg:table-cell">{t.admin.products.table.margin}</th>
                                         <th className="py-3 px-4">{t.admin.products.table.status}</th>
+                                        <th className="py-3 px-4 hidden md:table-cell">Review <span className="opacity-60">· 검수</span></th>
                                         <th className="py-3 px-4">{t.admin.products.table.isNew}</th>
                                         <th className="py-3 px-4 text-right">{t.admin.products.table.manage}</th>
                                     </tr>
@@ -297,6 +349,24 @@ export default function AdminProductsPage() {
                                                             {statusMap[p.status] || p.status}
                                                         </button>
                                                     </td>
+                                                    {/* Review status cell */}
+                                                    <td className="py-3 px-4 hidden md:table-cell">
+                                                        {p.approvalStatus === 'PENDING' ? (
+                                                            <button
+                                                                onClick={() => { setApprovingId(approvingId === p.id ? null : p.id); setRejectReason(''); }}
+                                                                className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-700 hover:bg-amber-200 transition-colors border border-amber-200 animate-pulse">
+                                                                🔔 Pending · 검수 대기
+                                                            </button>
+                                                        ) : p.approvalStatus === 'REJECTED' ? (
+                                                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-red-100 text-red-600">
+                                                                <XCircle className="w-3 h-3" /> Rejected · 반려
+                                                            </span>
+                                                        ) : (
+                                                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-600">
+                                                                <CheckCircle className="w-3 h-3" /> OK
+                                                            </span>
+                                                        )}
+                                                    </td>
                                                     <td className="py-3 px-4">
                                                         <button onClick={() => toggleIsNew(p)}
                                                             className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold transition-all ${p.isNew ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
@@ -322,7 +392,7 @@ export default function AdminProductsPage() {
                                                 {/* Category move row */}
                                                 {movingId === p.id && (
                                                     <tr className="bg-blue-50">
-                                                        <td colSpan={8} className="px-4 py-3">
+                                                        <td colSpan={9} className="px-4 py-3">
                                                             <div className="flex items-center gap-3">
                                                                 <span className="text-sm font-medium text-blue-700 flex items-center gap-1">
                                                                     <FolderInput className="w-4 h-4" /> {t.admin.products.actions.moveCategory}:
@@ -336,6 +406,51 @@ export default function AdminProductsPage() {
                                                                 </select>
                                                                 <button onClick={() => moveCategory(p.id)} className="px-3 py-1.5 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700">{t.admin.products.actions.confirmMove}</button>
                                                                 <button onClick={() => setMovingId(null)} className="px-3 py-1.5 bg-gray-200 text-gray-700 text-sm rounded-lg hover:bg-gray-300">{t.admin.products.actions.cancel}</button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                )}
+
+                                                {/* ── Approve / Reject row ── */}
+                                                {approvingId === p.id && (
+                                                    <tr className="bg-amber-50 border-t border-amber-100">
+                                                        <td colSpan={9} className="px-4 py-4">
+                                                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                                                                <div className="flex-1">
+                                                                    <p className="text-xs font-bold text-amber-800 mb-1.5">
+                                                                        🔔 Review Decision · 검수 결정 — <span className="font-normal opacity-80">{koName}</span>
+                                                                    </p>
+                                                                    <input
+                                                                        value={rejectReason}
+                                                                        onChange={e => setRejectReason(e.target.value)}
+                                                                        placeholder="Rejection reason (optional, shown to seller) · 반려 사유 (선택사항, 셀러에게 표시)"
+                                                                        className="w-full border border-amber-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white"
+                                                                    />
+                                                                </div>
+                                                                <div className="flex gap-2 flex-shrink-0">
+                                                                    <button
+                                                                        onClick={() => handleApprove(p.id)}
+                                                                        disabled={actionLoading === p.id + '_approve'}
+                                                                        className="flex items-center gap-1.5 px-4 py-2 bg-green-600 text-white text-sm font-bold rounded-lg hover:bg-green-700 disabled:opacity-60 transition-colors shadow-sm">
+                                                                        {actionLoading === p.id + '_approve'
+                                                                            ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                                            : <CheckCircle className="w-3.5 h-3.5" />}
+                                                                        Approve &amp; Publish <span className="opacity-70 font-normal">· 승인</span>
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => handleReject(p.id)}
+                                                                        disabled={actionLoading === p.id + '_reject'}
+                                                                        className="flex items-center gap-1.5 px-4 py-2 bg-red-600 text-white text-sm font-bold rounded-lg hover:bg-red-700 disabled:opacity-60 transition-colors shadow-sm">
+                                                                        {actionLoading === p.id + '_reject'
+                                                                            ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                                            : <XCircle className="w-3.5 h-3.5" />}
+                                                                        Reject <span className="opacity-70 font-normal">· 반려</span>
+                                                                    </button>
+                                                                    <button onClick={() => setApprovingId(null)}
+                                                                        className="px-3 py-2 border border-gray-200 text-gray-500 text-sm rounded-lg hover:bg-gray-50">
+                                                                        Cancel · 취소
+                                                                    </button>
+                                                                </div>
                                                             </div>
                                                         </td>
                                                     </tr>

@@ -28,8 +28,10 @@ export async function GET(req: Request) {
 
         const where: any = {};
         if (status) where.status = status;
-        if (approvalStatus) where.approvalStatus = approvalStatus;
-        else if (!status) where.approvalStatus = 'APPROVED';
+        // approvalStatus filter: 'pending' → PENDING only, 'all' or empty → no filter (show everything)
+        if (approvalStatus && approvalStatus !== 'all') {
+            where.approvalStatus = approvalStatus.toUpperCase();
+        }
         if (categorySlug && categorySlug !== 'all') {
             where.category = { slug: categorySlug };
         }
@@ -53,7 +55,7 @@ export async function GET(req: Request) {
                     images: { orderBy: { sortOrder: 'asc' }, take: 1 },
                     _count: { select: { images: true } },
                 },
-                orderBy: [{ isNew: 'desc' }, { createdAt: 'desc' }],
+                orderBy: [{ approvalStatus: 'asc' }, { isNew: 'desc' }, { createdAt: 'desc' }],
                 skip: (page - 1) * PAGE_SIZE,
                 take: PAGE_SIZE,
             }),

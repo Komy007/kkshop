@@ -118,7 +118,7 @@ export async function PATCH(
     const body = await req.json();
     const {
         name, shortDesc, detailDesc, ingredients, howToUse, benefits,
-        priceUsd, volume, skinType, origin,
+        priceUsd, stockQty, volume, skinType, origin, categoryId,
         imageUrls = [],      // new GCS URLs to add
         deleteImageIds = [], // existing image IDs to remove
         options,             // full options replacement (undefined = no change)
@@ -189,10 +189,12 @@ export async function PATCH(
             approvalStatus: 'PENDING', // Always reset to pending on seller edit
             imageUrl: firstImg?.url ?? null,
         };
-        if (priceUsd !== undefined) updateData.priceUsd = parseFloat(priceUsd);
-        if (volume !== undefined) updateData.volume = volume || null;
-        if (skinType !== undefined) updateData.skinType = skinType || null;
-        if (origin !== undefined) updateData.origin = origin || null;
+        if (priceUsd !== undefined)   updateData.priceUsd   = parseFloat(priceUsd);
+        if (stockQty !== undefined)   updateData.stockQty   = parseInt(stockQty) || 0;
+        if (categoryId !== undefined) updateData.categoryId = categoryId ? BigInt(categoryId) : null;
+        if (volume !== undefined)     updateData.volume     = volume || null;
+        if (skinType !== undefined)   updateData.skinType   = skinType || null;
+        if (origin !== undefined)     updateData.origin     = origin || null;
 
         await tx.product.update({
             where: { id: product.id },
