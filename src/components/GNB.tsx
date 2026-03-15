@@ -118,19 +118,6 @@ export default function GNB() {
                         </span>
                     </Link>
 
-                    {/* Desktop Nav */}
-                    <nav className="hidden md:flex items-center gap-8">
-                        <Link href="/category/skincare" className="text-sm font-bold text-gray-700 hover:text-brand-primary transition-colors">
-                            Skincare
-                        </Link>
-                        <Link href="/category/living" className="text-sm font-bold text-gray-700 hover:text-brand-secondary transition-colors">
-                            Living
-                        </Link>
-                        <Link href="/about" className="text-sm font-bold text-gray-700 hover:text-brand-accent transition-colors">
-                            About
-                        </Link>
-                    </nav>
-
                     {/* Actions */}
                     <div className="hidden md:flex items-center gap-4">
                         {/* Language Selector */}

@@ -21,6 +21,8 @@ export async function GET(
         include: {
             translations: { orderBy: { langCode: 'asc' } },
             images: { orderBy: { sortOrder: 'asc' } },
+            options: { orderBy: { sortOrder: 'asc' } },
+            variants: { orderBy: { sortOrder: 'asc' } },
         },
     });
 
@@ -69,6 +71,24 @@ export async function GET(
             altText: img.altText ?? null,
             sortOrder: img.sortOrder,
         })),
+        options: (product as any).options?.map((o: any) => ({
+            id: o.id.toString(),
+            minQty: o.minQty,
+            maxQty: o.maxQty ?? null,
+            discountPct: o.discountPct.toString(),
+            freeShipping: o.freeShipping,
+            labelKo: o.labelKo ?? null,
+            labelEn: o.labelEn ?? null,
+            sortOrder: o.sortOrder,
+        })) ?? [],
+        variants: (product as any).variants?.map((v: any) => ({
+            id: v.id.toString(),
+            variantType: v.variantType,
+            variantValue: v.variantValue,
+            stockQty: v.stockQty,
+            priceUsd: v.priceUsd?.toString() ?? null,
+            sortOrder: v.sortOrder,
+        })) ?? [],
     });
 }
 
@@ -101,6 +121,8 @@ export async function PATCH(
         priceUsd, volume, skinType, origin,
         imageUrls = [],      // new GCS URLs to add
         deleteImageIds = [], // existing image IDs to remove
+        options,             // full options replacement (undefined = no change)
+        variants,            // full variants replacement (undefined = no change)
     } = body;
 
     await prisma.$transaction(async (tx) => {
@@ -176,6 +198,42 @@ export async function PATCH(
             where: { id: product.id },
             data: updateData,
         });
+
+        // Replace options if provided
+        if (options !== undefined) {
+            await tx.productOption.deleteMany({ where: { productId: product.id } });
+            if (Array.isArray(options) && options.length > 0) {
+                await tx.productOption.createMany({
+                    data: options.map((opt: any, i: number) => ({
+                        productId: product.id,
+                        minQty: parseInt(opt.minQty) || 1,
+                        maxQty: opt.maxQty ? parseInt(opt.maxQty) : null,
+                        discountPct: parseFloat(opt.discountPct) || 0,
+                        freeShipping: Boolean(opt.freeShipping),
+                        labelKo: opt.labelKo || null,
+                        labelEn: opt.labelKo || null, // auto-translated later by admin
+                        sortOrder: i,
+                    })),
+                });
+            }
+        }
+
+        // Replace variants if provided
+        if (variants !== undefined) {
+            await tx.productVariant.deleteMany({ where: { productId: product.id } });
+            if (Array.isArray(variants) && variants.length > 0) {
+                await tx.productVariant.createMany({
+                    data: variants.map((v: any, i: number) => ({
+                        productId: product.id,
+                        variantType: v.variantType,
+                        variantValue: v.variantValue,
+                        stockQty: parseInt(v.stockQty) || 0,
+                        priceUsd: v.priceUsd ? parseFloat(v.priceUsd) : null,
+                        sortOrder: i,
+                    })),
+                });
+            }
+        }
     });
 
     return NextResponse.json({ success: true, message: '수정 완료. 관리자 검수 후 판매됩니다.' });

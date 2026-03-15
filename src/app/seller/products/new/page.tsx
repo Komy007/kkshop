@@ -2,20 +2,29 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Upload, X, Loader2, Sparkles, Info, CheckCircle } from 'lucide-react';
+import { Upload, X, Loader2, Sparkles, Info, CheckCircle, Plus } from 'lucide-react';
 
 interface Category { id: string; slug: string; nameKo: string; nameEn?: string; }
+
+const SIZE_PRESETS = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Free Size'];
 
 export default function SellerProductNewPage() {
     const router  = useRouter();
     const fileRef = useRef<HTMLInputElement>(null);
-    const [images,     setImages]     = useState<File[]>([]);
-    const [previews,   setPreviews]   = useState<string[]>([]);
-    const [categories, setCategories] = useState<Category[]>([]);
-    const [options,    setOptions]    = useState([{ minQty: '1', maxQty: '', discountPct: '0', freeShipping: false, labelKo: '1 unit (default)' }]);
-    const [submitting, setSubmitting] = useState(false);
-    const [translating,setTranslating]= useState(false);
-    const [success,    setSuccess]    = useState(false);
+    const [images,      setImages]     = useState<File[]>([]);
+    const [previews,    setPreviews]   = useState<string[]>([]);
+    const [categories,  setCategories] = useState<Category[]>([]);
+    const [options,     setOptions]    = useState([{ minQty: '1', maxQty: '', discountPct: '0', freeShipping: false, labelKo: '1 unit (default)' }]);
+    const [submitting,  setSubmitting] = useState(false);
+    const [translating, setTranslating]= useState(false);
+    const [success,     setSuccess]    = useState(false);
+
+    // ── Variant state ──────────────────────────────────────────────────────
+    const [variantEnabled, setVariantEnabled] = useState(false);
+    const [variantType,    setVariantType]    = useState<'color' | 'size' | 'custom'>('color');
+    const [colorVars,  setColorVars]  = useState([{ name: '', hex: '#FF6B6B', stock: '0', price: '' }]);
+    const [sizeVars,   setSizeVars]   = useState<{ label: string; stock: string; price: string }[]>([]);
+    const [customVars, setCustomVars] = useState([{ label: '', stock: '0', price: '' }]);
 
     const [form, setForm] = useState({
         sku: '', priceUsd: '', stockQty: '0', categoryId: '',
@@ -75,8 +84,8 @@ export default function SellerProductNewPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!form.nameKo)   return alert('Product name is required. · 상품명을 입력해주세요.');
-        if (!form.priceUsd) return alert('Price is required. · 판매가를 입력해주세요.');
+        if (!form.nameKo)     return alert('Product name is required. · 상품명을 입력해주세요.');
+        if (!form.priceUsd)   return alert('Price is required. · 판매가를 입력해주세요.');
         if (!form.categoryId) return alert('Please select a category. · 카테고리를 선택해주세요.');
 
         setSubmitting(true); setTranslating(true);
@@ -90,12 +99,49 @@ export default function SellerProductNewPage() {
                 const up = await fetch('/api/upload', { method: 'POST', body: fd });
                 const upData = await up.json();
                 imageUrls = upData.urls || [];
-            } catch { /* ignore upload error */ }
+            } catch { /* ignore */ }
         }
         setTranslating(false);
 
+        // ── Build variants payload ──────────────────────────────────────
+        let variantsPayload: any[] = [];
+        if (variantEnabled) {
+            if (variantType === 'color') {
+                variantsPayload = colorVars
+                    .filter(v => v.name.trim())
+                    .map((v, i) => ({
+                        variantType: 'color',
+                        variantValue: `${v.name.trim()}|${v.hex}`,
+                        stockQty: parseInt(v.stock) || 0,
+                        priceUsd: v.price || null,
+                        sortOrder: i,
+                    }));
+            } else if (variantType === 'size') {
+                variantsPayload = sizeVars
+                    .filter(v => v.label.trim())
+                    .map((v, i) => ({
+                        variantType: 'size',
+                        variantValue: v.label,
+                        stockQty: parseInt(v.stock) || 0,
+                        priceUsd: v.price || null,
+                        sortOrder: i,
+                    }));
+            } else {
+                variantsPayload = customVars
+                    .filter(v => v.label.trim())
+                    .map((v, i) => ({
+                        variantType: 'custom',
+                        variantValue: v.label.trim(),
+                        stockQty: parseInt(v.stock) || 0,
+                        priceUsd: v.price || null,
+                        sortOrder: i,
+                    }));
+            }
+        }
+
         const payload = {
             ...form, imageUrls, options,
+            variants: variantsPayload,
             approvalStatus: 'PENDING',
             status: 'INACTIVE',
         };
@@ -153,8 +199,9 @@ export default function SellerProductNewPage() {
         </div>
     );
 
-    const inp = "w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500";
-    const ta  = "w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 resize-none";
+    const inp   = "w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500";
+    const ta    = "w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 resize-none";
+    const vInp  = "px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500";
 
     return (
         <div className="max-w-3xl mx-auto py-7 px-4">
@@ -174,7 +221,7 @@ export default function SellerProductNewPage() {
 
             <form onSubmit={handleSubmit} className="space-y-4">
 
-                {/* Images */}
+                {/* ── Images ── */}
                 <Section title="📸 Product Images" sub="상품 이미지 — max 3 photos · 최대 3장">
                     <div className="flex gap-3 flex-wrap">
                         {previews.map((src, i) => (
@@ -203,7 +250,7 @@ export default function SellerProductNewPage() {
                     <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={e => addImages(e.target.files)} />
                 </Section>
 
-                {/* Basic info */}
+                {/* ── Basic info ── */}
                 <Section title="📦 Basic Information" sub="기본 정보">
                     <div className="grid grid-cols-2 gap-4">
                         <Field en="SKU (Product Code)" ko="상품코드" required>
@@ -244,7 +291,7 @@ export default function SellerProductNewPage() {
                     </div>
                 </Section>
 
-                {/* Volume options */}
+                {/* ── Quantity Discount Options ── */}
                 <Section title="🎁 Quantity Discount Options" sub="단위별 할인 옵션 — optional · 선택사항">
                     <div className="space-y-4">
                         {options.map((opt, i) => (
@@ -292,7 +339,212 @@ export default function SellerProductNewPage() {
                     </div>
                 </Section>
 
-                {/* Multilingual content */}
+                {/* ── Product Variants ── */}
+                <Section title="🎨 Product Variants" sub="색상·사이즈·커스텀 옵션 — optional · 선택사항">
+                    {/* Toggle switch */}
+                    <label className="flex items-center gap-3 cursor-pointer select-none">
+                        <button
+                            type="button"
+                            role="switch"
+                            aria-checked={variantEnabled}
+                            onClick={() => setVariantEnabled(p => !p)}
+                            className={`relative inline-flex w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-1 ${variantEnabled ? 'bg-teal-500' : 'bg-gray-200'}`}
+                        >
+                            <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${variantEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
+                        </button>
+                        <span className="text-sm font-semibold text-gray-800">
+                            Enable product variants
+                            <span className="text-xs text-gray-400 ml-2 font-normal">색상 / 사이즈 / 기타 옵션 사용</span>
+                        </span>
+                    </label>
+
+                    {variantEnabled && (
+                        <div className="mt-5 space-y-5">
+                            {/* Type selector */}
+                            <div>
+                                <p className="text-xs font-semibold text-gray-600 mb-2">Variant Type · 옵션 종류:</p>
+                                <div className="flex flex-wrap gap-2">
+                                    {(['color', 'size', 'custom'] as const).map(t => (
+                                        <button key={t} type="button" onClick={() => setVariantType(t)}
+                                            className={`px-4 py-2 rounded-xl text-sm font-bold border transition-all ${variantType === t ? 'bg-teal-500 text-white border-teal-500 shadow-sm' : 'bg-white text-gray-600 border-gray-200 hover:border-teal-300 hover:text-teal-700'}`}>
+                                            {t === 'color' ? '🎨 Color · 색상' : t === 'size' ? '📏 Size · 사이즈' : '🏷️ Custom · 기타'}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* ── Color variants ── */}
+                            {variantType === 'color' && (
+                                <div className="space-y-3">
+                                    <p className="text-xs text-gray-500">
+                                        Pick a color and enter its name. Optionally set individual stock &amp; price per color.
+                                        <span className="block opacity-70">색상을 선택하고 이름을 입력하세요. 색상별 재고/가격을 개별 설정할 수 있습니다.</span>
+                                    </p>
+                                    <div className="grid grid-cols-[40px_1fr_72px_88px_28px] gap-2 px-1 text-xs font-semibold text-gray-400">
+                                        <span />
+                                        <span>Color name · 색상명</span>
+                                        <span className="text-center">Stock</span>
+                                        <span className="text-center">Price (opt)</span>
+                                        <span />
+                                    </div>
+                                    {colorVars.map((cv, i) => (
+                                        <div key={i} className="grid grid-cols-[40px_1fr_72px_88px_28px] gap-2 items-center bg-gray-50 rounded-xl p-2.5 border border-gray-100">
+                                            <input
+                                                type="color"
+                                                value={cv.hex}
+                                                onChange={e => setColorVars(p => p.map((c, idx) => idx === i ? { ...c, hex: e.target.value } : c))}
+                                                className="w-8 h-8 rounded-lg border border-gray-200 cursor-pointer p-0.5 bg-white"
+                                                title="Pick color"
+                                            />
+                                            <input
+                                                value={cv.name}
+                                                onChange={e => setColorVars(p => p.map((c, idx) => idx === i ? { ...c, name: e.target.value } : c))}
+                                                placeholder="e.g. Rose Pink"
+                                                className={vInp}
+                                            />
+                                            <input
+                                                type="number"
+                                                value={cv.stock}
+                                                onChange={e => setColorVars(p => p.map((c, idx) => idx === i ? { ...c, stock: e.target.value } : c))}
+                                                className={`text-center ${vInp}`}
+                                                min="0"
+                                            />
+                                            <input
+                                                type="number" step="0.01"
+                                                value={cv.price}
+                                                onChange={e => setColorVars(p => p.map((c, idx) => idx === i ? { ...c, price: e.target.value } : c))}
+                                                placeholder="—"
+                                                className={`text-center ${vInp}`}
+                                            />
+                                            {colorVars.length > 1 ? (
+                                                <button type="button" onClick={() => setColorVars(p => p.filter((_, idx) => idx !== i))}
+                                                    className="p-1 text-red-400 hover:bg-red-50 rounded-lg">
+                                                    <X className="w-3.5 h-3.5" />
+                                                </button>
+                                            ) : <span />}
+                                        </div>
+                                    ))}
+                                    {colorVars.length < 10 && (
+                                        <button type="button" onClick={() => setColorVars(p => [...p, { name: '', hex: '#4A90E2', stock: '0', price: '' }])}
+                                            className="text-sm font-bold text-teal-600 flex items-center gap-1.5 hover:text-teal-700 bg-teal-50 px-3 py-2 rounded-lg border border-teal-100 transition-colors">
+                                            <Plus className="w-4 h-4" /> Add Color · 색상 추가
+                                        </button>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* ── Size variants ── */}
+                            {variantType === 'size' && (
+                                <div className="space-y-4">
+                                    <div>
+                                        <p className="text-xs font-semibold text-gray-600 mb-2">Quick Add · 빠른 추가:</p>
+                                        <div className="flex flex-wrap gap-2">
+                                            {SIZE_PRESETS.map(s => {
+                                                const added = sizeVars.some(v => v.label === s);
+                                                return (
+                                                    <button key={s} type="button"
+                                                        onClick={() => !added && setSizeVars(p => [...p, { label: s, stock: '0', price: '' }])}
+                                                        disabled={added}
+                                                        className={`px-3 py-1.5 rounded-lg text-sm font-bold border transition-all ${added ? 'bg-teal-100 text-teal-600 border-teal-200 opacity-50 cursor-not-allowed' : 'bg-white text-gray-600 border-gray-200 hover:border-teal-400 hover:text-teal-700'}`}>
+                                                        {s}
+                                                    </button>
+                                                );
+                                            })}
+                                            <button type="button"
+                                                onClick={() => setSizeVars(p => [...p, { label: '', stock: '0', price: '' }])}
+                                                className="px-3 py-1.5 rounded-lg text-sm font-bold border border-dashed border-gray-300 text-gray-500 hover:border-teal-400 hover:text-teal-600 transition-all flex items-center gap-1">
+                                                <Plus className="w-3.5 h-3.5" /> Custom
+                                            </button>
+                                        </div>
+                                    </div>
+                                    {sizeVars.length > 0 && (
+                                        <div className="space-y-2">
+                                            <div className="grid grid-cols-[1fr_72px_88px_28px] gap-2 px-1 text-xs font-semibold text-gray-400">
+                                                <span>Size · 사이즈</span>
+                                                <span className="text-center">Stock</span>
+                                                <span className="text-center">Price (opt)</span>
+                                                <span />
+                                            </div>
+                                            {sizeVars.map((sv, i) => (
+                                                <div key={i} className="grid grid-cols-[1fr_72px_88px_28px] gap-2 items-center bg-gray-50 p-2.5 rounded-xl border border-gray-100">
+                                                    <input
+                                                        value={sv.label}
+                                                        onChange={e => setSizeVars(p => p.map((s, idx) => idx === i ? { ...s, label: e.target.value } : s))}
+                                                        placeholder="e.g. M, 95"
+                                                        className={`font-semibold ${vInp}`}
+                                                    />
+                                                    <input type="number"
+                                                        value={sv.stock}
+                                                        onChange={e => setSizeVars(p => p.map((s, idx) => idx === i ? { ...s, stock: e.target.value } : s))}
+                                                        className={`text-center ${vInp}`} min="0" />
+                                                    <input type="number" step="0.01"
+                                                        value={sv.price}
+                                                        onChange={e => setSizeVars(p => p.map((s, idx) => idx === i ? { ...s, price: e.target.value } : s))}
+                                                        placeholder="—"
+                                                        className={`text-center ${vInp}`} />
+                                                    <button type="button" onClick={() => setSizeVars(p => p.filter((_, idx) => idx !== i))}
+                                                        className="p-1 text-red-400 hover:bg-red-50 rounded-lg">
+                                                        <X className="w-3.5 h-3.5" />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                    {sizeVars.length === 0 && (
+                                        <p className="text-xs text-gray-400 italic">Click size presets above or &quot;+ Custom&quot; to add sizes. · 위 버튼으로 사이즈를 추가하세요.</p>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* ── Custom variants ── */}
+                            {variantType === 'custom' && (
+                                <div className="space-y-3">
+                                    <p className="text-xs text-gray-500">
+                                        Add any custom options — bundle sets, scents, kit types, etc.
+                                        <span className="block opacity-70">커스텀 옵션 추가 (예: 세트 구성, 향기, 용도별 등)</span>
+                                    </p>
+                                    <div className="grid grid-cols-[1fr_72px_88px_28px] gap-2 px-1 text-xs font-semibold text-gray-400">
+                                        <span>Option name · 옵션명</span>
+                                        <span className="text-center">Stock</span>
+                                        <span className="text-center">Price (opt)</span>
+                                        <span />
+                                    </div>
+                                    {customVars.map((cv, i) => (
+                                        <div key={i} className="grid grid-cols-[1fr_72px_88px_28px] gap-2 items-center bg-gray-50 p-2.5 rounded-xl border border-gray-100">
+                                            <input
+                                                value={cv.label}
+                                                onChange={e => setCustomVars(p => p.map((c, idx) => idx === i ? { ...c, label: e.target.value } : c))}
+                                                placeholder="e.g. Starter Kit, Lavender"
+                                                className={vInp}
+                                            />
+                                            <input type="number"
+                                                value={cv.stock}
+                                                onChange={e => setCustomVars(p => p.map((c, idx) => idx === i ? { ...c, stock: e.target.value } : c))}
+                                                className={`text-center ${vInp}`} min="0" />
+                                            <input type="number" step="0.01"
+                                                value={cv.price}
+                                                onChange={e => setCustomVars(p => p.map((c, idx) => idx === i ? { ...c, price: e.target.value } : c))}
+                                                placeholder="—"
+                                                className={`text-center ${vInp}`} />
+                                            {customVars.length > 1 ? (
+                                                <button type="button" onClick={() => setCustomVars(p => p.filter((_, idx) => idx !== i))}
+                                                    className="p-1 text-red-400 hover:bg-red-50 rounded-lg">
+                                                    <X className="w-3.5 h-3.5" />
+                                                </button>
+                                            ) : <span />}
+                                        </div>
+                                    ))}
+                                    <button type="button" onClick={() => setCustomVars(p => [...p, { label: '', stock: '0', price: '' }])}
+                                        className="text-sm font-bold text-teal-600 flex items-center gap-1.5 hover:text-teal-700 bg-teal-50 px-3 py-2 rounded-lg border border-teal-100 transition-colors">
+                                        <Plus className="w-4 h-4" /> Add Option · 옵션 추가
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </Section>
+
+                {/* ── Product Description ── */}
                 <Section title="🌐 Product Description" sub="상품 설명 — Enter in Korean/English → auto-translated to 4 languages · 입력 후 4개국어 자동 번역">
                     <div className="space-y-4">
                         <div className="flex items-center gap-2 text-xs text-teal-600 bg-teal-50 px-3 py-2 rounded-lg border border-teal-100">

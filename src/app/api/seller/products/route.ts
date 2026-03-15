@@ -51,7 +51,7 @@ export async function POST(req: Request) {
     const {
         sku, priceUsd, stockQty, categoryId, brandName, volume, origin, skinType, expiryMonths,
         nameKo, shortDescKo, detailDescKo, ingredientsKo, howToUseKo, benefitsKo,
-        imageUrls = [], options = [],
+        imageUrls = [], options = [], variants = [],
     } = body;
 
     if (!sku || !priceUsd || !nameKo) return NextResponse.json({ error: '필수 값 누락' }, { status: 400 });
@@ -106,6 +106,14 @@ export async function POST(req: Request) {
         };
     }));
 
+    const variantsData = (variants as any[]).map((v: any, i: number) => ({
+        variantType: v.variantType,
+        variantValue: v.variantValue,
+        stockQty: parseInt(v.stockQty) || 0,
+        priceUsd: v.priceUsd ? parseFloat(v.priceUsd) : null,
+        sortOrder: i,
+    }));
+
     const product = await prisma.product.create({
         data: {
             sku,
@@ -127,6 +135,9 @@ export async function POST(req: Request) {
             }),
             ...(optionsData.length > 0 && {
                 options: { create: optionsData },
+            }),
+            ...(variantsData.length > 0 && {
+                variants: { create: variantsData },
             }),
         },
     });

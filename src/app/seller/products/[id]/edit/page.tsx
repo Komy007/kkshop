@@ -2,38 +2,30 @@
 
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Save, Loader2, ChevronLeft, AlertCircle, CheckCircle, Upload, X, ImagePlus } from 'lucide-react';
+import { Save, Loader2, ChevronLeft, AlertCircle, CheckCircle, Upload, X, ImagePlus, Plus } from 'lucide-react';
+
+const SIZE_PRESETS = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Free Size'];
 
 interface ProductForm {
-    name: string;
-    shortDesc: string;
-    detailDesc: string;
-    ingredients: string;
-    howToUse: string;
-    benefits: string;
-    priceUsd: string;
-    volume: string;
-    skinType: string;
-    origin: string;
+    name: string; shortDesc: string; detailDesc: string;
+    ingredients: string; howToUse: string; benefits: string;
+    priceUsd: string; volume: string; skinType: string; origin: string;
 }
-
 const EMPTY: ProductForm = {
     name: '', shortDesc: '', detailDesc: '', ingredients: '',
     howToUse: '', benefits: '', priceUsd: '', volume: '', skinType: '', origin: '',
 };
-
 const BADGE: Record<string, string> = {
     PENDING:  'bg-yellow-100 text-yellow-700',
     APPROVED: 'bg-green-100 text-green-700',
     REJECTED: 'bg-red-100 text-red-600',
 };
 const BADGE_LABEL: Record<string, { en: string; ko: string }> = {
-    PENDING:  { en: 'Under Review', ko: '검수 대기중' },
+    PENDING:  { en: 'Under Review',    ko: '검수 대기중' },
     APPROVED: { en: 'Approved & Live', ko: '판매 승인됨' },
-    REJECTED: { en: 'Rejected', ko: '반려됨' },
+    REJECTED: { en: 'Rejected',        ko: '반려됨' },
 };
 
-/* EN big / KO small label */
 const Field = ({ en, ko, required, children }: { en: string; ko: string; required?: boolean; children: React.ReactNode }) => (
     <div>
         <label className="block mb-1.5">
@@ -46,26 +38,37 @@ const Field = ({ en, ko, required, children }: { en: string; ko: string; require
     </div>
 );
 
-const inp = "w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 outline-none";
-const ta  = "w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 outline-none resize-none";
+const inp  = "w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 outline-none";
+const ta   = "w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 outline-none resize-none";
+const vInp = "px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500";
 
 export default function SellerProductEditPage() {
-    const params = useParams();
-    const router = useRouter();
+    const params    = useParams();
+    const router    = useRouter();
     const productId = params.id as string;
-    const fileRef = useRef<HTMLInputElement>(null);
+    const fileRef   = useRef<HTMLInputElement>(null);
 
-    const [form, setForm] = useState<ProductForm>(EMPTY);
-    const [loading, setLoading] = useState(true);
-    const [saving, setSaving] = useState(false);
-    const [uploading, setUploading] = useState(false);
+    const [form,           setForm]           = useState<ProductForm>(EMPTY);
+    const [loading,        setLoading]        = useState(true);
+    const [saving,         setSaving]         = useState(false);
+    const [uploading,      setUploading]      = useState(false);
     const [approvalStatus, setApprovalStatus] = useState('');
-    const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string; textKo: string } | null>(null);
+    const [message,        setMessage]        = useState<{ type: 'success' | 'error'; text: string; textKo: string } | null>(null);
 
     // Image state
     const [existingImages, setExistingImages] = useState<{ id: string; url: string }[]>([]);
     const [deleteImageIds, setDeleteImageIds] = useState<string[]>([]);
-    const [newImages, setNewImages] = useState<{ file: File; preview: string }[]>([]);
+    const [newImages,      setNewImages]      = useState<{ file: File; preview: string }[]>([]);
+
+    // Options (quantity discount) state
+    const [options, setOptions] = useState<{ minQty: string; maxQty: string; discountPct: string; freeShipping: boolean; labelKo: string }[]>([]);
+
+    // Variant state
+    const [variantEnabled, setVariantEnabled] = useState(false);
+    const [variantType,    setVariantType]    = useState<'color' | 'size' | 'custom'>('color');
+    const [colorVars,  setColorVars]  = useState([{ name: '', hex: '#FF6B6B', stock: '0', price: '' }]);
+    const [sizeVars,   setSizeVars]   = useState<{ label: string; stock: string; price: string }[]>([]);
+    const [customVars, setCustomVars] = useState([{ label: '', stock: '0', price: '' }]);
 
     useEffect(() => {
         fetch(`/api/seller/products/${productId}`)
@@ -87,6 +90,44 @@ export default function SellerProductEditPage() {
                 });
                 setApprovalStatus(data.approvalStatus ?? 'PENDING');
                 setExistingImages(data.images ?? []);
+
+                // Load options
+                const rawOptions = data.options ?? [];
+                if (rawOptions.length > 0) {
+                    setOptions(rawOptions.map((o: any) => ({
+                        minQty:      String(o.minQty),
+                        maxQty:      o.maxQty ? String(o.maxQty) : '',
+                        discountPct: String(parseFloat(o.discountPct)),
+                        freeShipping: Boolean(o.freeShipping),
+                        labelKo:     o.labelKo ?? '',
+                    })));
+                }
+
+                // Load variants
+                const rawVariants = data.variants ?? [];
+                if (rawVariants.length > 0) {
+                    setVariantEnabled(true);
+                    const vType = rawVariants[0].variantType as 'color' | 'size' | 'custom';
+                    setVariantType(vType);
+                    if (vType === 'color') {
+                        setColorVars(rawVariants.map((v: any) => {
+                            const [name = '', hex = '#FF6B6B'] = v.variantValue.split('|');
+                            return { name, hex, stock: String(v.stockQty), price: v.priceUsd ?? '' };
+                        }));
+                    } else if (vType === 'size') {
+                        setSizeVars(rawVariants.map((v: any) => ({
+                            label: v.variantValue,
+                            stock: String(v.stockQty),
+                            price: v.priceUsd ?? '',
+                        })));
+                    } else {
+                        setCustomVars(rawVariants.map((v: any) => ({
+                            label: v.variantValue,
+                            stock: String(v.stockQty),
+                            price: v.priceUsd ?? '',
+                        })));
+                    }
+                }
             })
             .finally(() => setLoading(false));
     }, [productId, router]);
@@ -101,7 +142,6 @@ export default function SellerProductEditPage() {
         ]);
     }, [existingImages, deleteImageIds, newImages.length]);
 
-    /* Ctrl+V paste anywhere */
     useEffect(() => {
         const handlePaste = (e: ClipboardEvent) => {
             const items = e.clipboardData?.items;
@@ -144,33 +184,69 @@ export default function SellerProductEditPage() {
             let uploadedUrls: string[] = [];
             if (newImages.length > 0) {
                 setUploading(true);
-                for (const img of newImages) {
-                    const fd = new FormData();
-                    fd.append('file', img.file);
-                    const up = await fetch('/api/upload', { method: 'POST', body: fd });
-                    const upData = await up.json();
-                    if (upData.url) uploadedUrls.push(upData.url);
-                }
+                const fd = new FormData();
+                newImages.forEach(img => fd.append('files', img.file));
+                const up = await fetch('/api/upload', { method: 'POST', body: fd });
+                const upData = await up.json();
+                uploadedUrls = upData.urls || [];
                 setUploading(false);
             }
 
-            // 2. Save product
+            // 2. Build variants payload
+            let variantsPayload: any[] = [];
+            if (variantEnabled) {
+                if (variantType === 'color') {
+                    variantsPayload = colorVars
+                        .filter(v => v.name.trim())
+                        .map((v, i) => ({
+                            variantType: 'color',
+                            variantValue: `${v.name.trim()}|${v.hex}`,
+                            stockQty: parseInt(v.stock) || 0,
+                            priceUsd: v.price || null,
+                            sortOrder: i,
+                        }));
+                } else if (variantType === 'size') {
+                    variantsPayload = sizeVars
+                        .filter(v => v.label.trim())
+                        .map((v, i) => ({
+                            variantType: 'size',
+                            variantValue: v.label,
+                            stockQty: parseInt(v.stock) || 0,
+                            priceUsd: v.price || null,
+                            sortOrder: i,
+                        }));
+                } else {
+                    variantsPayload = customVars
+                        .filter(v => v.label.trim())
+                        .map((v, i) => ({
+                            variantType: 'custom',
+                            variantValue: v.label.trim(),
+                            stockQty: parseInt(v.stock) || 0,
+                            priceUsd: v.price || null,
+                            sortOrder: i,
+                        }));
+                }
+            }
+            // variantEnabled=false → send [] to clear all variants
+
+            // 3. Save product
             const res = await fetch(`/api/seller/products/${productId}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     ...form,
-                    imageUrls: uploadedUrls,
+                    imageUrls:    uploadedUrls,
                     deleteImageIds,
+                    options:      options.length > 0 ? options : [],
+                    variants:     variantsPayload,
                 }),
             });
             const data = await res.json();
             if (res.ok) {
-                setMessage({ type: 'success', text: 'Changes saved! Redirecting… · 저장 완료! 목록으로 이동합니다…', textKo: '수정이 완료되었습니다. 재검수 대기중입니다.' });
+                setMessage({ type: 'success', text: 'Changes saved! Redirecting…', textKo: '수정 완료. 재검수 대기 중입니다.' });
                 setApprovalStatus('PENDING');
                 setDeleteImageIds([]);
                 setNewImages([]);
-                // Redirect to product list after short delay so user can see success message
                 setTimeout(() => router.push('/seller/products'), 2000);
             } else {
                 setMessage({ type: 'error', text: 'Failed to save changes.', textKo: data.error ?? '저장에 실패했습니다.' });
@@ -191,9 +267,9 @@ export default function SellerProductEditPage() {
         );
     }
 
-    const badgeInfo = BADGE_LABEL[approvalStatus];
+    const badgeInfo      = BADGE_LABEL[approvalStatus];
     const visibleExisting = existingImages.filter(img => !deleteImageIds.includes(img.id));
-    const totalImages = visibleExisting.length + newImages.length;
+    const totalImages     = visibleExisting.length + newImages.length;
 
     return (
         <div className="max-w-2xl mx-auto py-8 px-4">
@@ -220,7 +296,7 @@ export default function SellerProductEditPage() {
                 <div>
                     <strong>Re-review Notice:</strong> Saving changes will reset approval status to <strong>Under Review</strong>.
                     Admin approval required before going live (usually 1–2 business days).
-                    <span className="block text-xs opacity-75 mt-0.5">수정 시 재검수 안내: 상품을 수정하면 검수 상태가 대기중으로 변경됩니다. 관리자 승인 후 다시 판매됩니다 (보통 1~2 영업일 소요).</span>
+                    <span className="block text-xs opacity-75 mt-0.5">수정 시 재검수 안내: 상품을 수정하면 검수 상태가 대기중으로 변경됩니다.</span>
                 </div>
             </div>
 
@@ -239,84 +315,55 @@ export default function SellerProductEditPage() {
 
             <form onSubmit={handleSubmit} className="space-y-5">
 
-                {/* ── Product Images ─────────────────────────────────────── */}
+                {/* ── Product Images ── */}
                 <section className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
                     <h2 className="text-sm font-bold text-gray-900 mb-0.5 flex items-center gap-2">
                         <span className="w-1.5 h-4 bg-teal-500 rounded-full inline-block" />
                         Product Images
                         <span className="text-[10px] font-normal text-gray-400 ml-1">{totalImages}/5 · 상품 이미지</span>
                     </h2>
-                    <p className="text-[11px] text-gray-400 mb-4 ml-3.5">Click × to remove · 상품 이미지 최대 5장</p>
-
+                    <p className="text-[11px] text-gray-400 mb-4 ml-3.5">Hover &amp; click × to remove · 상품 이미지 최대 5장</p>
                     <div className="flex gap-3 flex-wrap">
-                        {/* Existing images */}
                         {visibleExisting.map((img, i) => (
                             <div key={img.id} className="relative w-24 h-24 group">
-                                <img
-                                    src={img.url}
-                                    alt={`Product image ${i + 1}`}
+                                <img src={img.url} alt={`Image ${i + 1}`}
                                     className="w-24 h-24 object-cover rounded-xl border border-gray-200"
-                                    onError={(e) => {
-                                        (e.target as HTMLImageElement).src = 'https://placehold.co/96x96?text=Error';
-                                    }}
-                                />
+                                    onError={e => { (e.target as HTMLImageElement).src = 'https://placehold.co/96x96?text=Error'; }} />
                                 {i === 0 && (
                                     <span className="absolute bottom-1 left-1 bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded font-bold">
                                         Main · 대표
                                     </span>
                                 )}
-                                <button
-                                    type="button"
-                                    onClick={() => removeExisting(img.id)}
-                                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center shadow opacity-0 group-hover:opacity-100 transition-opacity"
-                                >
+                                <button type="button" onClick={() => removeExisting(img.id)}
+                                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center shadow opacity-0 group-hover:opacity-100 transition-opacity">
                                     <X className="w-3 h-3" />
                                 </button>
                             </div>
                         ))}
-
-                        {/* New images (not uploaded yet) */}
                         {newImages.map((img, i) => (
                             <div key={`new-${i}`} className="relative w-24 h-24 group">
-                                <img
-                                    src={img.preview}
-                                    alt="New"
-                                    className="w-24 h-24 object-cover rounded-xl border-2 border-teal-300"
-                                />
+                                <img src={img.preview} alt="New"
+                                    className="w-24 h-24 object-cover rounded-xl border-2 border-teal-300" />
                                 <span className="absolute bottom-1 left-1 bg-teal-600 text-white text-[9px] px-1.5 py-0.5 rounded font-bold">
                                     New · 신규
                                 </span>
-                                <button
-                                    type="button"
-                                    onClick={() => removeNew(i)}
-                                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center shadow"
-                                >
+                                <button type="button" onClick={() => removeNew(i)}
+                                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center shadow">
                                     <X className="w-3 h-3" />
                                 </button>
                             </div>
                         ))}
-
-                        {/* Add button */}
                         {totalImages < 5 && (
-                            <button
-                                type="button"
-                                onClick={() => fileRef.current?.click()}
-                                className="w-24 h-24 border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center text-gray-400 hover:border-teal-400 hover:text-teal-600 transition-colors"
-                            >
+                            <button type="button" onClick={() => fileRef.current?.click()}
+                                className="w-24 h-24 border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center text-gray-400 hover:border-teal-400 hover:text-teal-600 transition-colors">
                                 <ImagePlus className="w-5 h-5 mb-1" />
                                 <span className="text-xs font-medium">Add</span>
                                 <span className="text-[9px] opacity-60 mt-0.5">or Ctrl+V</span>
                             </button>
                         )}
                     </div>
-                    <input
-                        ref={fileRef}
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        className="hidden"
-                        onChange={e => e.target.files && addFiles(e.target.files)}
-                    />
+                    <input ref={fileRef} type="file" accept="image/*" multiple className="hidden"
+                        onChange={e => e.target.files && addFiles(e.target.files)} />
                     {uploading && (
                         <div className="mt-3 flex items-center gap-2 text-xs text-teal-600">
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -325,7 +372,7 @@ export default function SellerProductEditPage() {
                     )}
                 </section>
 
-                {/* ── Basic Info ─────────────────────────────────────────── */}
+                {/* ── Basic Info ── */}
                 <section className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
                     <h2 className="text-sm font-bold text-gray-900 mb-0.5 flex items-center gap-2">
                         <span className="w-1.5 h-4 bg-teal-500 rounded-full inline-block" />
@@ -334,37 +381,21 @@ export default function SellerProductEditPage() {
                     <p className="text-[11px] text-gray-400 mb-4 ml-3.5">기본 정보</p>
                     <div className="space-y-4">
                         <Field en="Product Name" ko="상품명 (한국어)" required>
-                            <input
-                                type="text"
-                                value={form.name}
-                                onChange={set('name')}
-                                required
-                                placeholder="e.g. Hydrating Ampoule Serum / 수분 앰플 세럼"
-                                className={inp}
-                            />
+                            <input type="text" value={form.name} onChange={set('name')} required
+                                placeholder="e.g. Hydrating Ampoule Serum / 수분 앰플 세럼" className={inp} />
                         </Field>
                         <Field en="Short Description" ko="짧은 설명">
-                            <textarea
-                                value={form.shortDesc}
-                                onChange={set('shortDesc')}
-                                rows={2}
-                                placeholder="1–2 line summary shown on product cards · 상품 요약 설명"
-                                className={ta}
-                            />
+                            <textarea value={form.shortDesc} onChange={set('shortDesc')} rows={2}
+                                placeholder="1–2 line summary shown on product cards · 상품 요약 설명" className={ta} />
                         </Field>
                         <Field en="Detailed Description" ko="상세 설명">
-                            <textarea
-                                value={form.detailDesc}
-                                onChange={set('detailDesc')}
-                                rows={5}
-                                placeholder="Product features, effects, detailed information · 상품 상세 설명"
-                                className={`${ta} resize-y`}
-                            />
+                            <textarea value={form.detailDesc} onChange={set('detailDesc')} rows={5}
+                                placeholder="Product features, effects, detailed information · 상품 상세 설명" className={`${ta} resize-y`} />
                         </Field>
                     </div>
                 </section>
 
-                {/* ── Pricing & Specs ────────────────────────────────────── */}
+                {/* ── Pricing & Specs ── */}
                 <section className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
                     <h2 className="text-sm font-bold text-gray-900 mb-0.5 flex items-center gap-2">
                         <span className="w-1.5 h-4 bg-teal-500 rounded-full inline-block" />
@@ -379,15 +410,15 @@ export default function SellerProductEditPage() {
                             <input type="text" value={form.volume} onChange={set('volume')} placeholder="e.g. 50ml, 200g" className={inp} />
                         </Field>
                         <Field en="Skin Type" ko="피부타입">
-                            <input type="text" value={form.skinType} onChange={set('skinType')} placeholder="e.g. All skin types · 건성, 지성, 복합성" className={inp} />
+                            <input type="text" value={form.skinType} onChange={set('skinType')} placeholder="e.g. All skin types" className={inp} />
                         </Field>
                         <Field en="Country of Origin" ko="제조국">
-                            <input type="text" value={form.origin} onChange={set('origin')} placeholder="e.g. South Korea · 대한민국" className={inp} />
+                            <input type="text" value={form.origin} onChange={set('origin')} placeholder="e.g. South Korea" className={inp} />
                         </Field>
                     </div>
                 </section>
 
-                {/* ── Ingredients & Usage ────────────────────────────────── */}
+                {/* ── Ingredients & Usage ── */}
                 <section className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
                     <h2 className="text-sm font-bold text-gray-900 mb-0.5 flex items-center gap-2">
                         <span className="w-1.5 h-4 bg-teal-500 rounded-full inline-block" />
@@ -410,20 +441,250 @@ export default function SellerProductEditPage() {
                     </div>
                 </section>
 
-                {/* ── Submit ─────────────────────────────────────────────── */}
+                {/* ── Quantity Discount Options ── */}
+                <section className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+                    <h2 className="text-sm font-bold text-gray-900 mb-0.5 flex items-center gap-2">
+                        <span className="w-1.5 h-4 bg-teal-500 rounded-full inline-block" />
+                        Quantity Discount Options
+                    </h2>
+                    <p className="text-[11px] text-gray-400 mb-4 ml-3.5">단위별 할인 옵션 — optional · 선택사항</p>
+                    <div className="space-y-3">
+                        {options.length === 0 && (
+                            <p className="text-xs text-gray-400 italic">No quantity options set. Click below to add. · 수량 옵션 없음.</p>
+                        )}
+                        {options.map((opt, i) => (
+                            <div key={i} className="grid grid-cols-[1fr_1fr_1fr_auto_1fr_auto] gap-2 items-end bg-teal-50/50 p-3 rounded-xl border border-teal-100 relative">
+                                <div>
+                                    <label className="block text-[10px] font-semibold text-gray-600 mb-1">Min Qty</label>
+                                    <input type="number" value={opt.minQty}
+                                        onChange={e => setOptions(options.map((o, idx) => idx === i ? { ...o, minQty: e.target.value } : o))}
+                                        className={inp} min="1" />
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-semibold text-gray-600 mb-1">Max Qty</label>
+                                    <input type="number" value={opt.maxQty}
+                                        onChange={e => setOptions(options.map((o, idx) => idx === i ? { ...o, maxQty: e.target.value } : o))}
+                                        className={inp} placeholder="∞" />
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-semibold text-gray-600 mb-1">Discount %</label>
+                                    <input type="number" value={opt.discountPct}
+                                        onChange={e => setOptions(options.map((o, idx) => idx === i ? { ...o, discountPct: e.target.value } : o))}
+                                        className={inp} />
+                                </div>
+                                <div className="pb-2">
+                                    <label className="flex items-center gap-1.5 text-xs cursor-pointer font-semibold text-gray-600 whitespace-nowrap">
+                                        <input type="checkbox" checked={opt.freeShipping}
+                                            onChange={e => setOptions(options.map((o, idx) => idx === i ? { ...o, freeShipping: e.target.checked } : o))}
+                                            className="rounded text-teal-600 border-gray-300 w-3.5 h-3.5" />
+                                        Free Ship
+                                    </label>
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-semibold text-gray-600 mb-1">Label · 라벨</label>
+                                    <input value={opt.labelKo}
+                                        onChange={e => setOptions(options.map((o, idx) => idx === i ? { ...o, labelKo: e.target.value } : o))}
+                                        className={inp} placeholder="e.g. Buy 2 get 10% off" />
+                                </div>
+                                <button type="button" onClick={() => setOptions(options.filter((_, idx) => idx !== i))}
+                                    className="mb-1 p-1.5 text-red-400 hover:bg-red-50 rounded-lg">
+                                    <X className="w-4 h-4" />
+                                </button>
+                            </div>
+                        ))}
+                        <button type="button" onClick={() => setOptions([...options, { minQty: '2', maxQty: '', discountPct: '10', freeShipping: false, labelKo: '' }])}
+                            className="text-sm text-teal-600 font-bold flex items-center gap-1 hover:text-teal-700 bg-teal-50 px-3 py-2 rounded-lg border border-teal-100 transition-colors">
+                            <Plus className="w-4 h-4" /> Add Quantity Option · 수량 옵션 추가
+                        </button>
+                    </div>
+                </section>
+
+                {/* ── Product Variants ── */}
+                <section className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+                    <h2 className="text-sm font-bold text-gray-900 mb-0.5 flex items-center gap-2">
+                        <span className="w-1.5 h-4 bg-teal-500 rounded-full inline-block" />
+                        Product Variants
+                    </h2>
+                    <p className="text-[11px] text-gray-400 mb-4 ml-3.5">색상·사이즈·커스텀 옵션 — optional · 선택사항</p>
+
+                    {/* Toggle */}
+                    <label className="flex items-center gap-3 cursor-pointer select-none">
+                        <button type="button" role="switch" aria-checked={variantEnabled}
+                            onClick={() => setVariantEnabled(p => !p)}
+                            className={`relative inline-flex w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-1 ${variantEnabled ? 'bg-teal-500' : 'bg-gray-200'}`}>
+                            <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${variantEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
+                        </button>
+                        <span className="text-sm font-semibold text-gray-800">
+                            Enable product variants
+                            <span className="text-xs text-gray-400 ml-2 font-normal">색상 / 사이즈 / 기타 옵션 사용</span>
+                        </span>
+                    </label>
+
+                    {variantEnabled && (
+                        <div className="mt-5 space-y-5">
+                            {/* Type selector */}
+                            <div>
+                                <p className="text-xs font-semibold text-gray-600 mb-2">Variant Type · 옵션 종류:</p>
+                                <div className="flex flex-wrap gap-2">
+                                    {(['color', 'size', 'custom'] as const).map(t => (
+                                        <button key={t} type="button" onClick={() => setVariantType(t)}
+                                            className={`px-4 py-2 rounded-xl text-sm font-bold border transition-all ${variantType === t ? 'bg-teal-500 text-white border-teal-500 shadow-sm' : 'bg-white text-gray-600 border-gray-200 hover:border-teal-300 hover:text-teal-700'}`}>
+                                            {t === 'color' ? '🎨 Color · 색상' : t === 'size' ? '📏 Size · 사이즈' : '🏷️ Custom · 기타'}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* ── Color ── */}
+                            {variantType === 'color' && (
+                                <div className="space-y-3">
+                                    <div className="grid grid-cols-[32px_1fr_68px_84px_28px] gap-2 px-1 text-[10px] font-semibold text-gray-400">
+                                        <span />
+                                        <span>Color name · 색상명</span>
+                                        <span className="text-center">Stock</span>
+                                        <span className="text-center">Price (opt)</span>
+                                        <span />
+                                    </div>
+                                    {colorVars.map((cv, i) => (
+                                        <div key={i} className="grid grid-cols-[32px_1fr_68px_84px_28px] gap-2 items-center bg-gray-50 rounded-xl p-2.5 border border-gray-100">
+                                            <input type="color" value={cv.hex}
+                                                onChange={e => setColorVars(p => p.map((c, idx) => idx === i ? { ...c, hex: e.target.value } : c))}
+                                                className="w-8 h-8 rounded-lg border border-gray-200 cursor-pointer p-0.5 bg-white" />
+                                            <input value={cv.name}
+                                                onChange={e => setColorVars(p => p.map((c, idx) => idx === i ? { ...c, name: e.target.value } : c))}
+                                                placeholder="e.g. Rose Pink"
+                                                className={vInp} />
+                                            <input type="number" value={cv.stock}
+                                                onChange={e => setColorVars(p => p.map((c, idx) => idx === i ? { ...c, stock: e.target.value } : c))}
+                                                className={`text-center ${vInp}`} min="0" />
+                                            <input type="number" step="0.01" value={cv.price}
+                                                onChange={e => setColorVars(p => p.map((c, idx) => idx === i ? { ...c, price: e.target.value } : c))}
+                                                placeholder="—"
+                                                className={`text-center ${vInp}`} />
+                                            {colorVars.length > 1 ? (
+                                                <button type="button" onClick={() => setColorVars(p => p.filter((_, idx) => idx !== i))}
+                                                    className="p-1 text-red-400 hover:bg-red-50 rounded-lg">
+                                                    <X className="w-3.5 h-3.5" />
+                                                </button>
+                                            ) : <span />}
+                                        </div>
+                                    ))}
+                                    {colorVars.length < 10 && (
+                                        <button type="button" onClick={() => setColorVars(p => [...p, { name: '', hex: '#4A90E2', stock: '0', price: '' }])}
+                                            className="text-sm font-bold text-teal-600 flex items-center gap-1.5 bg-teal-50 px-3 py-2 rounded-lg border border-teal-100 hover:text-teal-700 transition-colors">
+                                            <Plus className="w-4 h-4" /> Add Color · 색상 추가
+                                        </button>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* ── Size ── */}
+                            {variantType === 'size' && (
+                                <div className="space-y-4">
+                                    <div>
+                                        <p className="text-xs font-semibold text-gray-600 mb-2">Quick Add · 빠른 추가:</p>
+                                        <div className="flex flex-wrap gap-2">
+                                            {SIZE_PRESETS.map(s => {
+                                                const added = sizeVars.some(v => v.label === s);
+                                                return (
+                                                    <button key={s} type="button"
+                                                        onClick={() => !added && setSizeVars(p => [...p, { label: s, stock: '0', price: '' }])}
+                                                        disabled={added}
+                                                        className={`px-3 py-1.5 rounded-lg text-sm font-bold border transition-all ${added ? 'bg-teal-100 text-teal-600 border-teal-200 opacity-50 cursor-not-allowed' : 'bg-white text-gray-600 border-gray-200 hover:border-teal-400 hover:text-teal-700'}`}>
+                                                        {s}
+                                                    </button>
+                                                );
+                                            })}
+                                            <button type="button"
+                                                onClick={() => setSizeVars(p => [...p, { label: '', stock: '0', price: '' }])}
+                                                className="px-3 py-1.5 rounded-lg text-sm font-bold border border-dashed border-gray-300 text-gray-500 hover:border-teal-400 hover:text-teal-600 flex items-center gap-1">
+                                                <Plus className="w-3.5 h-3.5" /> Custom
+                                            </button>
+                                        </div>
+                                    </div>
+                                    {sizeVars.length > 0 && (
+                                        <div className="space-y-2">
+                                            <div className="grid grid-cols-[1fr_68px_84px_28px] gap-2 px-1 text-[10px] font-semibold text-gray-400">
+                                                <span>Size · 사이즈</span>
+                                                <span className="text-center">Stock</span>
+                                                <span className="text-center">Price (opt)</span>
+                                                <span />
+                                            </div>
+                                            {sizeVars.map((sv, i) => (
+                                                <div key={i} className="grid grid-cols-[1fr_68px_84px_28px] gap-2 items-center bg-gray-50 p-2.5 rounded-xl border border-gray-100">
+                                                    <input value={sv.label}
+                                                        onChange={e => setSizeVars(p => p.map((s, idx) => idx === i ? { ...s, label: e.target.value } : s))}
+                                                        placeholder="e.g. M, 95"
+                                                        className={`font-semibold ${vInp}`} />
+                                                    <input type="number" value={sv.stock}
+                                                        onChange={e => setSizeVars(p => p.map((s, idx) => idx === i ? { ...s, stock: e.target.value } : s))}
+                                                        className={`text-center ${vInp}`} min="0" />
+                                                    <input type="number" step="0.01" value={sv.price}
+                                                        onChange={e => setSizeVars(p => p.map((s, idx) => idx === i ? { ...s, price: e.target.value } : s))}
+                                                        placeholder="—"
+                                                        className={`text-center ${vInp}`} />
+                                                    <button type="button" onClick={() => setSizeVars(p => p.filter((_, idx) => idx !== i))}
+                                                        className="p-1 text-red-400 hover:bg-red-50 rounded-lg">
+                                                        <X className="w-3.5 h-3.5" />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                    {sizeVars.length === 0 && (
+                                        <p className="text-xs text-gray-400 italic">Click size presets above to add. · 사이즈를 추가하세요.</p>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* ── Custom ── */}
+                            {variantType === 'custom' && (
+                                <div className="space-y-3">
+                                    <div className="grid grid-cols-[1fr_68px_84px_28px] gap-2 px-1 text-[10px] font-semibold text-gray-400">
+                                        <span>Option name · 옵션명</span>
+                                        <span className="text-center">Stock</span>
+                                        <span className="text-center">Price (opt)</span>
+                                        <span />
+                                    </div>
+                                    {customVars.map((cv, i) => (
+                                        <div key={i} className="grid grid-cols-[1fr_68px_84px_28px] gap-2 items-center bg-gray-50 p-2.5 rounded-xl border border-gray-100">
+                                            <input value={cv.label}
+                                                onChange={e => setCustomVars(p => p.map((c, idx) => idx === i ? { ...c, label: e.target.value } : c))}
+                                                placeholder="e.g. Starter Kit, Lavender"
+                                                className={vInp} />
+                                            <input type="number" value={cv.stock}
+                                                onChange={e => setCustomVars(p => p.map((c, idx) => idx === i ? { ...c, stock: e.target.value } : c))}
+                                                className={`text-center ${vInp}`} min="0" />
+                                            <input type="number" step="0.01" value={cv.price}
+                                                onChange={e => setCustomVars(p => p.map((c, idx) => idx === i ? { ...c, price: e.target.value } : c))}
+                                                placeholder="—"
+                                                className={`text-center ${vInp}`} />
+                                            {customVars.length > 1 ? (
+                                                <button type="button" onClick={() => setCustomVars(p => p.filter((_, idx) => idx !== i))}
+                                                    className="p-1 text-red-400 hover:bg-red-50 rounded-lg">
+                                                    <X className="w-3.5 h-3.5" />
+                                                </button>
+                                            ) : <span />}
+                                        </div>
+                                    ))}
+                                    <button type="button" onClick={() => setCustomVars(p => [...p, { label: '', stock: '0', price: '' }])}
+                                        className="text-sm font-bold text-teal-600 flex items-center gap-1.5 bg-teal-50 px-3 py-2 rounded-lg border border-teal-100 hover:text-teal-700 transition-colors">
+                                        <Plus className="w-4 h-4" /> Add Option · 옵션 추가
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </section>
+
+                {/* ── Submit ── */}
                 <div className="flex gap-3 pt-2">
-                    <button
-                        type="button"
-                        onClick={() => router.back()}
-                        className="flex-1 py-3 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors"
-                    >
+                    <button type="button" onClick={() => router.back()}
+                        className="flex-1 py-3 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors">
                         Cancel <span className="text-[11px] opacity-60">· 취소</span>
                     </button>
-                    <button
-                        type="submit"
-                        disabled={saving}
-                        className="flex-1 flex items-center justify-center gap-2 py-3 bg-teal-600 text-white rounded-xl text-sm font-bold hover:bg-teal-700 transition-colors disabled:opacity-60"
-                    >
+                    <button type="submit" disabled={saving}
+                        className="flex-1 flex items-center justify-center gap-2 py-3 bg-teal-600 text-white rounded-xl text-sm font-bold hover:bg-teal-700 transition-colors disabled:opacity-60">
                         {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                         {saving
                             ? <span>{uploading ? 'Uploading… · 업로드 중…' : 'Saving… · 저장 중…'}</span>
