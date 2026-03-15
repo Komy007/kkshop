@@ -25,12 +25,12 @@ interface Order {
     items: OrderItem[];
 }
 
-const STATUS_BADGE: Record<string, { label: string; color: string }> = {
-    PENDING:   { label: '결제대기', color: 'bg-yellow-100 text-yellow-700' },
-    CONFIRMED: { label: '주문확인', color: 'bg-blue-100 text-blue-700' },
-    SHIPPING:  { label: '배송중',   color: 'bg-purple-100 text-purple-700' },
-    DELIVERED: { label: '배송완료', color: 'bg-green-100 text-green-700' },
-    CANCELLED: { label: '취소됨',   color: 'bg-red-100 text-red-600' },
+const STATUS_BADGE: Record<string, { en: string; ko: string; color: string }> = {
+    PENDING:   { en: 'Awaiting Payment', ko: '결제대기', color: 'bg-yellow-100 text-yellow-700' },
+    CONFIRMED: { en: 'Confirmed',        ko: '주문확인', color: 'bg-blue-100 text-blue-700'    },
+    SHIPPING:  { en: 'Shipping',         ko: '배송중',   color: 'bg-purple-100 text-purple-700' },
+    DELIVERED: { en: 'Delivered',        ko: '배송완료', color: 'bg-green-100 text-green-700'  },
+    CANCELLED: { en: 'Cancelled',        ko: '취소됨',   color: 'bg-red-100 text-red-600'      },
 };
 
 export default function SellerOrdersPage() {
@@ -55,11 +55,11 @@ export default function SellerOrdersPage() {
             <div className="flex items-center justify-between mb-6">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                        <ShoppingCart className="w-6 h-6 text-teal-500" /> 주문 현황
+                        <ShoppingCart className="w-6 h-6 text-teal-500" /> My Orders
                     </h1>
-                    <p className="text-sm text-gray-500 mt-0.5">내 상품이 포함된 주문 목록 (최근 50건)</p>
+                    <p className="text-sm text-gray-400 mt-0.5">주문 현황 — orders containing my products · 내 상품 주문 (최근 50건)</p>
                 </div>
-                <button onClick={load} className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg">
+                <button onClick={load} title="Refresh · 새로고침" className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg">
                     <RefreshCw className="w-5 h-5" />
                 </button>
             </div>
@@ -71,32 +71,34 @@ export default function SellerOrdersPage() {
             ) : orders.length === 0 ? (
                 <div className="text-center py-16 bg-white rounded-xl border">
                     <ShoppingCart className="w-12 h-12 text-gray-200 mx-auto mb-3" />
-                    <p className="text-gray-500">아직 주문이 없습니다.</p>
+                    <p className="text-gray-800 font-bold">No Orders Yet</p>
+                    <p className="text-sm text-gray-400 mt-1">아직 주문이 없습니다.</p>
                 </div>
             ) : (
                 <div className="space-y-4">
                     {orders.map(order => {
-                        const badge = STATUS_BADGE[order.status] ?? { label: order.status, color: 'bg-gray-100 text-gray-600' };
+                        const badge = STATUS_BADGE[order.status] ?? { en: order.status, ko: order.status, color: 'bg-gray-100 text-gray-600' };
                         return (
                             <div key={order.id} className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
                                 {/* Order Header */}
                                 <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-b bg-gray-50">
                                     <div className="flex items-center gap-4">
                                         <span className="font-mono text-xs text-gray-400">#{order.id.slice(0, 8).toUpperCase()}</span>
-                                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${badge.color}`}>
-                                            {badge.label}
+                                        <span className={`inline-flex flex-col px-2.5 py-1 rounded-full text-xs font-bold ${badge.color}`}>
+                                            <span className="leading-tight">{badge.en}</span>
+                                            <span className="text-[10px] opacity-70 leading-tight">{badge.ko}</span>
                                         </span>
                                     </div>
                                     <div className="text-sm text-gray-500">
-                                        {new Date(order.createdAt).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                        {new Date(order.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                     </div>
                                 </div>
 
-                                {/* Order Items (only items from this supplier) */}
+                                {/* Order Items */}
                                 <div className="divide-y divide-gray-50">
                                     {order.items.map((item, i) => {
-                                        const name = item.product?.translations?.[0]?.name ?? '상품명 없음';
-                                        const img = item.product?.imageUrl;
+                                        const name = item.product?.translations?.[0]?.name ?? 'Unknown Product';
+                                        const img  = item.product?.imageUrl;
                                         return (
                                             <div key={i} className="flex items-center gap-4 px-5 py-4">
                                                 {img ? (
@@ -115,7 +117,7 @@ export default function SellerOrdersPage() {
                                                 <div className="text-right flex-shrink-0">
                                                     <p className="font-bold text-gray-900 text-sm">${Number(item.priceUsd).toFixed(2)} × {item.quantity}</p>
                                                     <p className="text-xs text-teal-600 font-semibold mt-0.5">
-                                                        소계 ${(Number(item.priceUsd) * item.quantity).toFixed(2)}
+                                                        Subtotal <span className="opacity-60">· 소계</span> ${(Number(item.priceUsd) * item.quantity).toFixed(2)}
                                                     </p>
                                                 </div>
                                             </div>
@@ -131,7 +133,7 @@ export default function SellerOrdersPage() {
                                         {' · '}{order.address}
                                     </div>
                                     <div className="font-black text-gray-900">
-                                        합계 ${Number(order.totalUsd).toFixed(2)}
+                                        Total <span className="opacity-60 text-xs">· 합계</span> ${Number(order.totalUsd).toFixed(2)}
                                     </div>
                                 </div>
                             </div>

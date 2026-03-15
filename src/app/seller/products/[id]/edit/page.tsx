@@ -22,6 +22,33 @@ const EMPTY: ProductForm = {
     howToUse: '', benefits: '', priceUsd: '', volume: '', skinType: '', origin: '',
 };
 
+const BADGE: Record<string, string> = {
+    PENDING:  'bg-yellow-100 text-yellow-700',
+    APPROVED: 'bg-green-100 text-green-700',
+    REJECTED: 'bg-red-100 text-red-600',
+};
+const BADGE_LABEL: Record<string, { en: string; ko: string }> = {
+    PENDING:  { en: 'Under Review', ko: '검수 대기중' },
+    APPROVED: { en: 'Approved & Live', ko: '판매 승인됨' },
+    REJECTED: { en: 'Rejected', ko: '반려됨' },
+};
+
+/* EN big / KO small label */
+const Field = ({ en, ko, required, children }: { en: string; ko: string; required?: boolean; children: React.ReactNode }) => (
+    <div>
+        <label className="block mb-1.5">
+            <span className="text-xs font-semibold text-gray-800">
+                {en}{required && <span className="text-red-500 ml-0.5">*</span>}
+            </span>
+            <span className="text-[10px] text-gray-400 ml-1.5">{ko}</span>
+        </label>
+        {children}
+    </div>
+);
+
+const inp = "w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 outline-none";
+const ta  = "w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 outline-none resize-none";
+
 export default function SellerProductEditPage() {
     const params = useParams();
     const router = useRouter();
@@ -31,7 +58,7 @@ export default function SellerProductEditPage() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [approvalStatus, setApprovalStatus] = useState('');
-    const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+    const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string; textKo: string } | null>(null);
 
     useEffect(() => {
         fetch(`/api/seller/products/${productId}`)
@@ -40,16 +67,16 @@ export default function SellerProductEditPage() {
                 if (data.error) { router.push('/seller/products'); return; }
                 const ko = data.translations?.find((t: any) => t.langCode === 'ko') ?? {};
                 setForm({
-                    name: ko.name ?? '',
-                    shortDesc: ko.shortDesc ?? '',
-                    detailDesc: ko.detailDesc ?? '',
+                    name:        ko.name        ?? '',
+                    shortDesc:   ko.shortDesc   ?? '',
+                    detailDesc:  ko.detailDesc  ?? '',
                     ingredients: ko.ingredients ?? '',
-                    howToUse: ko.howToUse ?? '',
-                    benefits: ko.benefits ?? '',
-                    priceUsd: data.priceUsd ?? '',
-                    volume: data.volume ?? '',
-                    skinType: data.skinType ?? '',
-                    origin: data.origin ?? '',
+                    howToUse:    ko.howToUse    ?? '',
+                    benefits:    ko.benefits    ?? '',
+                    priceUsd:    data.priceUsd  ?? '',
+                    volume:      data.volume    ?? '',
+                    skinType:    data.skinType  ?? '',
+                    origin:      data.origin    ?? '',
                 });
                 setApprovalStatus(data.approvalStatus ?? 'PENDING');
             })
@@ -61,7 +88,10 @@ export default function SellerProductEditPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!form.name.trim()) { setMessage({ type: 'error', text: '상품명을 입력하세요.' }); return; }
+        if (!form.name.trim()) {
+            setMessage({ type: 'error', text: 'Product name is required.', textKo: '상품명을 입력하세요.' });
+            return;
+        }
 
         setSaving(true);
         setMessage(null);
@@ -73,13 +103,13 @@ export default function SellerProductEditPage() {
             });
             const data = await res.json();
             if (res.ok) {
-                setMessage({ type: 'success', text: data.message ?? '저장되었습니다.' });
+                setMessage({ type: 'success', text: 'Changes saved. Pending re-review.', textKo: '저장 완료. 재검수 대기중입니다.' });
                 setApprovalStatus('PENDING');
             } else {
-                setMessage({ type: 'error', text: data.error ?? '저장에 실패했습니다.' });
+                setMessage({ type: 'error', text: 'Failed to save changes.', textKo: data.error ?? '저장에 실패했습니다.' });
             }
         } catch {
-            setMessage({ type: 'error', text: '오류가 발생했습니다.' });
+            setMessage({ type: 'error', text: 'An error occurred.', textKo: '오류가 발생했습니다.' });
         } finally {
             setSaving(false);
         }
@@ -93,14 +123,7 @@ export default function SellerProductEditPage() {
         );
     }
 
-    const BADGE: Record<string, string> = {
-        PENDING: 'bg-yellow-100 text-yellow-700',
-        APPROVED: 'bg-green-100 text-green-700',
-        REJECTED: 'bg-red-100 text-red-600',
-    };
-    const BADGE_LABEL: Record<string, string> = {
-        PENDING: '검수 대기중', APPROVED: '판매 승인됨', REJECTED: '반려됨',
-    };
+    const badgeInfo = BADGE_LABEL[approvalStatus];
 
     return (
         <div className="max-w-2xl mx-auto py-8 px-4">
@@ -110,84 +133,89 @@ export default function SellerProductEditPage() {
                     <ChevronLeft className="w-5 h-5 text-gray-500" />
                 </button>
                 <div className="flex-1">
-                    <h1 className="text-xl font-bold text-gray-900">상품 수정</h1>
-                    <p className="text-xs text-gray-400 mt-0.5">수정 후 재검수가 진행됩니다</p>
+                    <h1 className="text-xl font-bold text-gray-900">Edit Product</h1>
+                    <p className="text-xs text-gray-400 mt-0.5">상품 수정 — re-review required after saving · 수정 후 재검수 진행</p>
                 </div>
-                <span className={`text-xs font-bold px-3 py-1 rounded-full ${BADGE[approvalStatus] ?? 'bg-gray-100 text-gray-600'}`}>
-                    {BADGE_LABEL[approvalStatus] ?? approvalStatus}
-                </span>
+                {badgeInfo && (
+                    <span className={`text-xs font-bold px-3 py-1 rounded-full ${BADGE[approvalStatus] ?? 'bg-gray-100 text-gray-600'}`}>
+                        <span className="block leading-tight">{badgeInfo.en}</span>
+                        <span className="block text-[10px] opacity-70 leading-tight">{badgeInfo.ko}</span>
+                    </span>
+                )}
             </div>
 
             {/* Re-approval notice */}
             <div className="mb-5 p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3 text-sm text-amber-700">
                 <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
                 <div>
-                    <strong>수정 시 재검수 안내:</strong> 상품을 수정하면 검수 상태가 <strong>대기중</strong>으로 변경됩니다.
-                    관리자 승인 후 다시 판매됩니다 (보통 1~2 영업일 소요).
+                    <strong>Re-review Notice:</strong> Saving changes will reset approval status to <strong>Under Review</strong>.
+                    Admin approval required before going live (usually 1–2 business days).
+                    <span className="block text-xs opacity-75 mt-0.5">수정 시 재검수 안내: 상품을 수정하면 검수 상태가 대기중으로 변경됩니다. 관리자 승인 후 다시 판매됩니다 (보통 1~2 영업일 소요).</span>
                 </div>
             </div>
 
             {/* Message */}
             {message && (
-                <div className={`mb-5 p-4 rounded-xl flex items-center gap-3 text-sm font-medium ${message.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-600 border border-red-200'}`}>
+                <div className={`mb-5 p-4 rounded-xl flex items-start gap-3 text-sm font-medium ${message.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-600 border border-red-200'}`}>
                     {message.type === 'success'
-                        ? <CheckCircle className="w-4 h-4 flex-shrink-0" />
-                        : <AlertCircle className="w-4 h-4 flex-shrink-0" />}
-                    {message.text}
+                        ? <CheckCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                        : <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />}
+                    <div>
+                        <div>{message.text}</div>
+                        <div className="text-xs opacity-75 mt-0.5">{message.textKo}</div>
+                    </div>
                 </div>
             )}
 
             <form onSubmit={handleSubmit} className="space-y-5">
                 {/* Basic Info */}
                 <section className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-                    <h2 className="text-sm font-bold text-gray-700 mb-4 flex items-center gap-2">
+                    <h2 className="text-sm font-bold text-gray-900 mb-0.5 flex items-center gap-2">
                         <span className="w-1.5 h-4 bg-teal-500 rounded-full inline-block" />
-                        기본 정보
+                        Basic Information
                     </h2>
+                    <p className="text-[11px] text-gray-400 mb-4 ml-3.5">기본 정보</p>
                     <div className="space-y-4">
-                        <div>
-                            <label className="block text-xs font-semibold text-gray-600 mb-1.5">상품명 (한국어) *</label>
+                        <Field en="Product Name" ko="상품명 (한국어)" required>
                             <input
                                 type="text"
                                 value={form.name}
                                 onChange={set('name')}
                                 required
-                                placeholder="상품명을 입력하세요"
-                                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 outline-none"
+                                placeholder="e.g. Hydrating Ampoule Serum / 수분 앰플 세럼"
+                                className={inp}
                             />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-semibold text-gray-600 mb-1.5">짧은 설명</label>
+                        </Field>
+                        <Field en="Short Description" ko="짧은 설명">
                             <textarea
                                 value={form.shortDesc}
                                 onChange={set('shortDesc')}
                                 rows={2}
-                                placeholder="상품 요약 설명 (검색 결과에 표시)"
-                                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 outline-none resize-none"
+                                placeholder="1–2 line summary shown on product cards · 상품 요약 설명"
+                                className={ta}
                             />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-semibold text-gray-600 mb-1.5">상세 설명</label>
+                        </Field>
+                        <Field en="Detailed Description" ko="상세 설명">
                             <textarea
                                 value={form.detailDesc}
                                 onChange={set('detailDesc')}
                                 rows={5}
-                                placeholder="상품 상세 설명을 입력하세요"
-                                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 outline-none resize-y"
+                                placeholder="Product features, effects, detailed information · 상품 상세 설명"
+                                className={`${ta} resize-y`}
                             />
-                        </div>
+                        </Field>
                     </div>
                 </section>
 
                 {/* Pricing & Specs */}
                 <section className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-                    <h2 className="text-sm font-bold text-gray-700 mb-4 flex items-center gap-2">
+                    <h2 className="text-sm font-bold text-gray-900 mb-0.5 flex items-center gap-2">
                         <span className="w-1.5 h-4 bg-teal-500 rounded-full inline-block" />
-                        가격 및 제품 정보
+                        Price &amp; Product Details
                     </h2>
+                    <p className="text-[11px] text-gray-400 mb-4 ml-3.5">가격 및 제품 정보</p>
                     <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-xs font-semibold text-gray-600 mb-1.5">판매가 (USD)</label>
+                        <Field en="Price (USD)" ko="판매가">
                             <input
                                 type="number"
                                 step="0.01"
@@ -195,79 +223,74 @@ export default function SellerProductEditPage() {
                                 value={form.priceUsd}
                                 onChange={set('priceUsd')}
                                 placeholder="0.00"
-                                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 outline-none"
+                                className={inp}
                             />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-semibold text-gray-600 mb-1.5">용량/중량</label>
+                        </Field>
+                        <Field en="Volume / Weight" ko="용량/중량">
                             <input
                                 type="text"
                                 value={form.volume}
                                 onChange={set('volume')}
-                                placeholder="예: 50ml, 200g"
-                                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 outline-none"
+                                placeholder="e.g. 50ml, 200g"
+                                className={inp}
                             />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-semibold text-gray-600 mb-1.5">피부타입</label>
+                        </Field>
+                        <Field en="Skin Type" ko="피부타입">
                             <input
                                 type="text"
                                 value={form.skinType}
                                 onChange={set('skinType')}
-                                placeholder="예: 건성, 지성, 복합성"
-                                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 outline-none"
+                                placeholder="e.g. All skin types · 건성, 지성, 복합성"
+                                className={inp}
                             />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-semibold text-gray-600 mb-1.5">제조국</label>
+                        </Field>
+                        <Field en="Country of Origin" ko="제조국">
                             <input
                                 type="text"
                                 value={form.origin}
                                 onChange={set('origin')}
-                                placeholder="예: 대한민국"
-                                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 outline-none"
+                                placeholder="e.g. South Korea · 대한민국"
+                                className={inp}
                             />
-                        </div>
+                        </Field>
                     </div>
                 </section>
 
                 {/* Ingredients & Usage */}
                 <section className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-                    <h2 className="text-sm font-bold text-gray-700 mb-4 flex items-center gap-2">
+                    <h2 className="text-sm font-bold text-gray-900 mb-0.5 flex items-center gap-2">
                         <span className="w-1.5 h-4 bg-teal-500 rounded-full inline-block" />
-                        성분 및 사용법
+                        Ingredients &amp; Usage
                     </h2>
+                    <p className="text-[11px] text-gray-400 mb-4 ml-3.5">성분 및 사용법</p>
                     <div className="space-y-4">
-                        <div>
-                            <label className="block text-xs font-semibold text-gray-600 mb-1.5">성분 정보</label>
+                        <Field en="Key Ingredients" ko="성분 정보">
                             <textarea
                                 value={form.ingredients}
                                 onChange={set('ingredients')}
                                 rows={3}
-                                placeholder="주요 성분을 입력하세요"
-                                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 outline-none resize-y"
+                                placeholder="e.g. Hyaluronic Acid, Niacinamide… · 주요 성분을 입력하세요"
+                                className={`${ta} resize-y`}
                             />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-semibold text-gray-600 mb-1.5">사용 방법</label>
+                        </Field>
+                        <Field en="How to Use" ko="사용 방법">
                             <textarea
                                 value={form.howToUse}
                                 onChange={set('howToUse')}
                                 rows={2}
-                                placeholder="사용 방법을 입력하세요"
-                                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 outline-none resize-y"
+                                placeholder="e.g. After cleansing, apply to face… · 사용 방법을 입력하세요"
+                                className={`${ta} resize-y`}
                             />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-semibold text-gray-600 mb-1.5">효능/혜택</label>
+                        </Field>
+                        <Field en="Benefits / Features" ko="효능/혜택">
                             <textarea
                                 value={form.benefits}
                                 onChange={set('benefits')}
                                 rows={2}
-                                placeholder="제품의 주요 효능이나 혜택을 입력하세요"
-                                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 outline-none resize-y"
+                                placeholder="e.g. 24hr hydration, brightening… · 제품의 주요 효능이나 혜택"
+                                className={`${ta} resize-y`}
                             />
-                        </div>
+                        </Field>
                     </div>
                 </section>
 
@@ -278,7 +301,7 @@ export default function SellerProductEditPage() {
                         onClick={() => router.back()}
                         className="flex-1 py-3 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors"
                     >
-                        취소
+                        Cancel <span className="text-[11px] opacity-60">· 취소</span>
                     </button>
                     <button
                         type="submit"
@@ -286,7 +309,10 @@ export default function SellerProductEditPage() {
                         className="flex-1 flex items-center justify-center gap-2 py-3 bg-teal-600 text-white rounded-xl text-sm font-bold hover:bg-teal-700 transition-colors disabled:opacity-60"
                     >
                         {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                        {saving ? '저장 중...' : '수정 요청 제출'}
+                        {saving
+                            ? <span>Saving… <span className="text-[11px] opacity-70">· 저장 중…</span></span>
+                            : <span>Submit Changes <span className="text-[11px] opacity-70">· 수정 요청 제출</span></span>
+                        }
                     </button>
                 </div>
             </form>
