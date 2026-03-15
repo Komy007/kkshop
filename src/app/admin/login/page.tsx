@@ -27,8 +27,19 @@ export default function AdminLoginPage() {
             if (res?.error) {
                 setError('이메일 또는 비밀번호가 일치하지 않습니다.');
             } else if (res?.ok) {
-                // Let the middleware handle the redirect based on role
-                window.location.href = '/admin/products/new';
+                // Fetch session to route by role
+                const sessionRes = await fetch('/api/auth/session');
+                const sessionData = await sessionRes.json();
+                const role = sessionData?.user?.role;
+                if (role === 'SUPPLIER') {
+                    window.location.href = '/seller';
+                } else if (role === 'SUPERADMIN') {
+                    window.location.href = '/admin';
+                } else if (role === 'ADMIN') {
+                    window.location.href = '/admin/products';
+                } else {
+                    window.location.href = '/';
+                }
             }
         } catch (err) {
             setError('로그인 처리 중 오류가 발생했습니다.');
