@@ -50,7 +50,9 @@ export interface CategoryInfo {
     nameZh: string;
     sortOrder: number;
     isSystem: boolean;
+    parentId?: string | null;
     productCount?: number;
+    children?: CategoryInfo[];
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -175,10 +177,10 @@ export async function getProductsForSection(
     }
 }
 
-// ── Fetch all categories ───────────────────────────────────────────────────
+// ── Fetch all categories (flat list, includes parentId) ───────────────────
 export async function getAllCategories(): Promise<CategoryInfo[]> {
     const cats = await prisma.category.findMany({
-        orderBy: { sortOrder: 'asc' },
+        orderBy: [{ parentId: 'asc' }, { sortOrder: 'asc' }],
         include: { _count: { select: { products: true } } },
     });
     return cats.map(c => ({
@@ -190,6 +192,22 @@ export async function getAllCategories(): Promise<CategoryInfo[]> {
         nameZh: c.nameZh,
         sortOrder: c.sortOrder,
         isSystem: c.isSystem,
+        parentId: c.parentId ? c.parentId.toString() : null,
         productCount: (c as any)._count?.products ?? 0,
     }));
+}
+
+// ── Build category tree (top-level with children nested) ──────────────────
+export function buildCategoryTree(flat: CategoryInfo[]): CategoryInfo[] {
+    const map: Record<string, CategoryInfo> = {};
+    const roots: CategoryInfo[] = [];
+    flat.forEach(c => { map[c.id] = { ...c, children: [] }; });
+    flat.forEach(c => {
+        if (c.parentId && map[c.parentId]) {
+            map[c.parentId]!.children!.push(map[c.id]!);
+        } else {
+            roots.push(map[c.id]!);
+        }
+    });
+    return roots;
 }

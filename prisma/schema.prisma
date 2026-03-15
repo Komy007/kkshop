@@ -33,14 +33,19 @@ model Language {
 // ---------------------------------------------------------------------------
 
 model Category {
-  id        BigInt   @id @default(autoincrement())
-  slug      String   @unique @db.VarChar(50)
-  nameKo    String   @map("name_ko") @db.VarChar(100)
-  nameEn    String   @map("name_en") @db.VarChar(100)
-  nameKm    String   @map("name_km") @db.VarChar(100)
-  nameZh    String   @map("name_zh") @db.VarChar(100)
-  sortOrder Int      @default(0) @map("sort_order")
-  isSystem  Boolean  @default(false) @map("is_system")
+  id        BigInt    @id @default(autoincrement())
+  slug      String    @unique @db.VarChar(50)
+  nameKo    String    @map("name_ko") @db.VarChar(100)
+  nameEn    String    @map("name_en") @db.VarChar(100)
+  nameKm    String    @map("name_km") @db.VarChar(100)
+  nameZh    String    @map("name_zh") @db.VarChar(100)
+  sortOrder Int       @default(0) @map("sort_order")
+  isSystem  Boolean   @default(false) @map("is_system")
+
+  // Sub-category support
+  parentId  BigInt?   @map("parent_id")
+  parent    Category?  @relation("SubCategories", fields: [parentId], references: [id])
+  children  Category[] @relation("SubCategories")
 
   products  Product[]
 

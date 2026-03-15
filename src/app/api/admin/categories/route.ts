@@ -45,19 +45,22 @@ export async function POST(req: Request) {
         }
 
         const body = await req.json();
-        const { slug, nameKo, nameEn, nameKm, nameZh, sortOrder } = body;
+        const { slug, nameKo, nameEn, nameKm, nameZh, sortOrder, parentId } = body;
 
-        if (!slug || !nameKo || !nameEn || !nameKm || !nameZh) {
-            return NextResponse.json({ error: 'All fields (slug and 4-language names) are required.' }, { status: 400 });
+        if (!slug || !nameKo || !nameEn) {
+            return NextResponse.json({ error: 'Slug, Korean name, and English name are required.' }, { status: 400 });
         }
 
         // Check if slug already exists
-        const existing = await prisma.category.findUnique({
-            where: { slug }
-        });
-
+        const existing = await prisma.category.findUnique({ where: { slug } });
         if (existing) {
             return NextResponse.json({ error: 'A category with this Slug already exists.' }, { status: 409 });
+        }
+
+        // Validate parentId if provided
+        if (parentId) {
+            const parent = await prisma.category.findUnique({ where: { id: BigInt(parentId) } });
+            if (!parent) return NextResponse.json({ error: 'Parent category not found.' }, { status: 404 });
         }
 
         const newCategory = await prisma.category.create({
@@ -65,10 +68,11 @@ export async function POST(req: Request) {
                 slug,
                 nameKo,
                 nameEn,
-                nameKm,
-                nameZh,
+                nameKm: nameKm || nameEn,
+                nameZh: nameZh || nameEn,
                 sortOrder: sortOrder ? parseInt(sortOrder) : 0,
-                isSystem: false // User-created categories are not system categories by default
+                isSystem: false,
+                parentId: parentId ? BigInt(parentId) : null,
             }
         });
 

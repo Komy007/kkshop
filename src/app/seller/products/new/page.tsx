@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Upload, X, Loader2, Sparkles, Info, CheckCircle, Plus } from 'lucide-react';
 
-interface Category { id: string; slug: string; nameKo: string; nameEn?: string; }
+interface Category { id: string; slug: string; nameKo: string; nameEn?: string; parentId?: string | null; }
 
 const SIZE_PRESETS = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Free Size'];
 
@@ -297,9 +297,23 @@ export default function SellerProductNewPage() {
                             ) : (
                                 <select value={form.categoryId} onChange={e => set('categoryId', e.target.value)} className={inp} required>
                                     <option value="">— Select category · 카테고리 선택 —</option>
-                                    {categories.map(c => (
-                                        <option key={c.id} value={c.id}>{c.nameEn || c.nameKo}</option>
-                                    ))}
+                                    {/* Top-level categories as optgroup, sub-categories inside */}
+                                    {categories.filter(c => !c.parentId).map(parent => {
+                                        const subs = categories.filter(c => c.parentId === parent.id);
+                                        return subs.length > 0 ? (
+                                            <optgroup key={parent.id} label={`📁 ${parent.nameEn || parent.nameKo}`}>
+                                                {subs.map(s => (
+                                                    <option key={s.id} value={s.id}>
+                                                        {s.nameEn || s.nameKo}
+                                                    </option>
+                                                ))}
+                                            </optgroup>
+                                        ) : (
+                                            <option key={parent.id} value={parent.id}>
+                                                {parent.nameEn || parent.nameKo}
+                                            </option>
+                                        );
+                                    })}
                                 </select>
                             )}
                         </Field>
