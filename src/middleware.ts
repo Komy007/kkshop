@@ -38,7 +38,10 @@ export default middleware((req: any) => {
     // 2FA 이미 처리됐으면 /admin/2fa-verify 접근 불필요
     if (isLoggedIn && !(req.auth?.user as any)?.twoFactorPending && is2FAVerifyRoute) {
         const role = req.auth?.user?.role;
-        return Response.redirect(new URL(role === 'SUPERADMIN' ? '/admin' : '/admin/products', nextUrl));
+        const dest = role === 'SUPERADMIN' ? '/admin'
+                   : role === 'SUPPLIER'   ? '/seller'
+                   : '/admin/products';
+        return Response.redirect(new URL(dest, nextUrl));
     }
 
     // Role-Based Access Control (RBAC)

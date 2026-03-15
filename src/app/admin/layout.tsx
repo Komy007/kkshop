@@ -201,7 +201,7 @@ const SELLER_NAV: readonly NavItem[] = [
         key: 'seller-password',
         labelKo: '비밀번호 변경', labelEn: 'Change Password',
         icon: KeyRound,
-        href: '/admin/change-password',
+        href: '/seller/change-password',
         roles: ['SUPPLIER'],
     },
 ] as const;
