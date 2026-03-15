@@ -166,13 +166,12 @@ export default function SellerProductEditPage() {
             });
             const data = await res.json();
             if (res.ok) {
-                setMessage({ type: 'success', text: 'Changes saved. Pending re-review.', textKo: '저장 완료. 재검수 대기중입니다.' });
+                setMessage({ type: 'success', text: 'Changes saved! Redirecting… · 저장 완료! 목록으로 이동합니다…', textKo: '수정이 완료되었습니다. 재검수 대기중입니다.' });
                 setApprovalStatus('PENDING');
                 setDeleteImageIds([]);
                 setNewImages([]);
-                // Refresh images from server
-                const fresh = await fetch(`/api/seller/products/${productId}`).then(r => r.json());
-                setExistingImages(fresh.images ?? []);
+                // Redirect to product list after short delay so user can see success message
+                setTimeout(() => router.push('/seller/products'), 2000);
             } else {
                 setMessage({ type: 'error', text: 'Failed to save changes.', textKo: data.error ?? '저장에 실패했습니다.' });
             }
