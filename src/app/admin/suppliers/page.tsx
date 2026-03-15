@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { CheckCircle, XCircle, Clock, Building2, ChevronDown, ChevronUp, Loader2, Plus, X, AlertCircle } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, Building2, ChevronDown, ChevronUp, Loader2, Plus, X, AlertCircle, KeyRound, Eye, EyeOff } from 'lucide-react';
 
 interface Supplier {
     id: string;
+    userId: string;          // User account ID — for password reset
     companyName: string;
     brandName?: string;
     country?: string;
@@ -52,6 +53,14 @@ export default function AdminSuppliersPage() {
     });
     const [addLoading, setAddLoading] = useState(false);
     const [addError,   setAddError]   = useState('');
+
+    // Password reset modal
+    const [pwModal, setPwModal] = useState<{ userId: string; email: string } | null>(null);
+    const [pwValue,   setPwValue]   = useState('');
+    const [pwShow,    setPwShow]    = useState(false);
+    const [pwLoading, setPwLoading] = useState(false);
+    const [pwError,   setPwError]   = useState('');
+    const [pwSuccess, setPwSuccess] = useState('');
 
     // Toast notification
     const [toast, setToast] = useState<{ msg: string; msgKo: string; type: 'success' | 'error' } | null>(null);
@@ -125,6 +134,23 @@ export default function AdminSuppliersPage() {
         };
         const lbl = labels[status];
         if (lbl) showToast(lbl.en, lbl.ko, status === 'APPROVED' ? 'success' : 'error');
+    };
+
+    const handlePasswordReset = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!pwModal) return;
+        if (pwValue.length < 8) { setPwError('Password must be at least 8 characters · 최소 8자 이상'); return; }
+        setPwLoading(true); setPwError(''); setPwSuccess('');
+        const res  = await fetch('/api/admin/users/password', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ targetUserId: pwModal.userId, newPassword: pwValue }),
+        });
+        const data = await res.json();
+        setPwLoading(false);
+        if (!res.ok) { setPwError(data.error || 'Failed · 실패'); return; }
+        setPwSuccess('Password changed successfully · 비밀번호가 변경되었습니다');
+        setTimeout(() => { setPwModal(null); setPwValue(''); setPwSuccess(''); setPwError(''); }, 1800);
     };
 
     const FILTERS = ['', 'PENDING', 'APPROVED', 'REJECTED', 'SUSPENDED'] as const;
@@ -369,6 +395,13 @@ export default function AdminSuppliersPage() {
                                                 {actionLoading === s.id + 'SUSPENDED' ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
                                                 Suspend <span className="opacity-70 font-normal">· 정지</span>
                                             </button>
+                                            {/* 🔑 Password Reset Button */}
+                                            <button
+                                                onClick={() => { setPwModal({ userId: s.userId, email: s.user?.email || s.contactEmail }); setPwValue(''); setPwError(''); setPwSuccess(''); }}
+                                                className="flex items-center gap-2 px-4 py-2 bg-slate-700 text-white rounded-xl text-sm font-bold hover:bg-slate-800 transition-colors">
+                                                <KeyRound className="w-4 h-4" />
+                                                Reset Password <span className="opacity-70 font-normal">· 비밀번호 초기화</span>
+                                            </button>
                                             <button onClick={() => setExpanded(null)}
                                                 className="ml-auto px-4 py-2 border border-gray-200 text-gray-500 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors">
                                                 Close <span className="opacity-60">· 닫기</span>
@@ -379,6 +412,78 @@ export default function AdminSuppliersPage() {
                             </div>
                         );
                     })}
+                </div>
+            )}
+        {/* ── Password Reset Modal ── */}
+            {pwModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+                        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                            <div>
+                                <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                                    <KeyRound className="w-5 h-5 text-slate-700" />
+                                    Reset Password <span className="text-sm font-normal text-gray-400">· 비밀번호 초기화</span>
+                                </h3>
+                                <p className="text-xs text-gray-500 mt-0.5">
+                                    <span className="font-semibold text-blue-600">{pwModal.email}</span>
+                                </p>
+                            </div>
+                            <button onClick={() => setPwModal(null)} className="text-gray-400 hover:text-gray-600 p-1">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handlePasswordReset} className="p-6 space-y-4">
+                            {pwError && (
+                                <div className="p-3 bg-red-50 text-red-600 text-sm rounded-xl border border-red-100 flex items-start gap-2">
+                                    <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" /> {pwError}
+                                </div>
+                            )}
+                            {pwSuccess && (
+                                <div className="p-3 bg-green-50 text-green-700 text-sm font-bold rounded-xl border border-green-100 flex items-center gap-2">
+                                    <CheckCircle className="w-4 h-4" /> {pwSuccess}
+                                </div>
+                            )}
+
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                                    New Password <span className="text-gray-400 font-normal">· 새 비밀번호</span>
+                                    <span className="text-red-500 ml-0.5">*</span>
+                                </label>
+                                <div className="relative">
+                                    <input
+                                        type={pwShow ? 'text' : 'password'}
+                                        value={pwValue}
+                                        onChange={e => setPwValue(e.target.value)}
+                                        minLength={8}
+                                        required
+                                        autoFocus
+                                        placeholder="Minimum 8 characters · 최소 8자"
+                                        className="w-full border border-gray-200 rounded-xl py-2.5 px-3 pr-10 text-sm font-mono focus:ring-2 focus:ring-slate-500 focus:outline-none"
+                                    />
+                                    <button type="button" onClick={() => setPwShow(v => !v)}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                                        {pwShow ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                    </button>
+                                </div>
+                                <p className="text-xs text-gray-400 mt-1.5">
+                                    ✓ Encrypted with Bcrypt before saving · Bcrypt 암호화 후 저장됩니다
+                                </p>
+                            </div>
+
+                            <div className="flex gap-3 pt-2">
+                                <button type="button" onClick={() => setPwModal(null)}
+                                    className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-600 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors">
+                                    Cancel <span className="opacity-60">· 취소</span>
+                                </button>
+                                <button type="submit" disabled={pwLoading || !!pwSuccess}
+                                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-800 text-white rounded-xl text-sm font-bold hover:bg-slate-900 disabled:opacity-60 transition-colors shadow-sm">
+                                    {pwLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <KeyRound className="w-4 h-4" />}
+                                    Save &amp; Encrypt <span className="opacity-70 font-normal">· 저장</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             )}
         </div>
