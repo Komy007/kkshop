@@ -128,7 +128,7 @@ export async function PATCH(req: Request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
         }
         const body = await req.json();
-        const { id, categoryId, isNew, status, approvalStatus, stockQty, priceUsd, isHotSale, hotSalePrice, costPrice, stockAlertQty } = body;
+        const { id, categoryId, isNew, status, approvalStatus, rejectionReason, stockQty, priceUsd, isHotSale, hotSalePrice, costPrice, stockAlertQty } = body;
         if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
 
         const data: any = {};
@@ -137,13 +137,27 @@ export async function PATCH(req: Request) {
         if (isHotSale !== undefined) data.isHotSale = Boolean(isHotSale);
         if (hotSalePrice !== undefined) {
             const parsedHot = hotSalePrice ? parseFloat(hotSalePrice) : null;
-            if (parsedHot !== null && priceUsd !== undefined && parsedHot >= parseFloat(priceUsd)) {
+            // Fetch current price if not provided in request to avoid incorrect comparison
+            let comparePrice = priceUsd !== undefined ? parseFloat(priceUsd) : null;
+            if (comparePrice === null && parsedHot !== null) {
+                const current = await prisma.product.findUnique({ where: { id: BigInt(id) }, select: { priceUsd: true } });
+                comparePrice = current ? parseFloat(current.priceUsd.toString()) : null;
+            }
+            if (parsedHot !== null && comparePrice !== null && parsedHot >= comparePrice) {
                 return NextResponse.json({ error: 'Hot sale price must be lower than the regular price.' }, { status: 400 });
             }
             data.hotSalePrice = parsedHot;
         }
         if (status !== undefined) data.status = status;
-        if (approvalStatus !== undefined) data.approvalStatus = approvalStatus;
+        if (approvalStatus !== undefined) {
+            data.approvalStatus = approvalStatus;
+            // Save rejection reason when rejecting; clear it when approving
+            if (approvalStatus === 'REJECTED') {
+                data.rejectionReason = rejectionReason?.trim() || null;
+            } else if (approvalStatus === 'APPROVED') {
+                data.rejectionReason = null;
+            }
+        }
         if (stockQty !== undefined) data.stockQty = parseInt(stockQty);
         if (priceUsd !== undefined) data.priceUsd = parseFloat(priceUsd);
         if (costPrice !== undefined) data.costPrice = costPrice ? parseFloat(costPrice) : null;

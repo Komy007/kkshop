@@ -50,6 +50,7 @@ export async function GET(
         expiryMonths: product.expiryMonths ?? null,
         status: product.status,
         approvalStatus: product.approvalStatus,
+        rejectionReason: product.rejectionReason ?? null,
         imageUrl: product.imageUrl ?? null,
         isNew: product.isNew,
         isHotSale: product.isHotSale,

@@ -43,6 +43,7 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
             supplierId: product.supplierId ?? null,
             status: product.status,
             approvalStatus: product.approvalStatus,
+            rejectionReason: product.rejectionReason ?? null,
             imageUrl: product.imageUrl ?? null,
             isNew: product.isNew,
             isHotSale: product.isHotSale,
@@ -153,7 +154,11 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
         if (categoryId !== undefined) productData.categoryId = categoryId ? BigInt(categoryId) : null;
         if (supplierId !== undefined) productData.supplierId = supplierId || null;
         if (status !== undefined) productData.status = status;
-        if (approvalStatus !== undefined) productData.approvalStatus = approvalStatus;
+        if (approvalStatus !== undefined) {
+            productData.approvalStatus = approvalStatus;
+            if (approvalStatus === 'REJECTED') productData.rejectionReason = body.rejectionReason?.trim() || null;
+            if (approvalStatus === 'APPROVED') productData.rejectionReason = null;
+        }
         if (isNew !== undefined) productData.isNew = Boolean(isNew);
         if (isHotSale !== undefined) productData.isHotSale = Boolean(isHotSale);
         if (hotSalePrice !== undefined) {

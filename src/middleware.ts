@@ -88,9 +88,10 @@ export default middleware((req: any) => {
                 '/admin/change-password',
             ];
 
-            const isAllowed = adminAllowedPrefixes.some(p => nextUrl.pathname.startsWith(p));
-            // Deny SUPERADMIN ONLY areas like Dashboard (Stats), Role Settings, Global Settings
-            if (!isAllowed || nextUrl.pathname === '/admin') {
+            const isAllowed = adminAllowedPrefixes.some(p => nextUrl.pathname.startsWith(p))
+                || nextUrl.pathname === '/admin'; // allow dashboard home
+            // Deny SUPERADMIN ONLY areas (suppliers, global settings, etc.)
+            if (!isAllowed) {
                 return Response.redirect(new URL('/admin/products', nextUrl));
             }
             return;

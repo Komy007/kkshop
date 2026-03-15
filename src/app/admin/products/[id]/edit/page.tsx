@@ -68,6 +68,7 @@ export default function EditProductPage() {
     const [form, setForm] = useState({
         sku: '', priceUsd: '', costPrice: '', stockQty: '0', stockAlertQty: '10',
         categoryId: '', supplierId: '', status: 'ACTIVE', approvalStatus: 'APPROVED',
+        rejectionReason: '',
         isNew: false, isHotSale: false, hotSalePrice: '',
         brandName: '', volume: '', skinType: '', origin: '',
         expiryMonths: '', certifications: '',
@@ -106,6 +107,7 @@ export default function EditProductPage() {
                     supplierId: p.supplierId ?? '',
                     status: p.status ?? 'ACTIVE',
                     approvalStatus: p.approvalStatus ?? 'APPROVED',
+                    rejectionReason: p.rejectionReason ?? '',
                     isNew: p.isNew ?? false,
                     isHotSale: p.isHotSale ?? false,
                     hotSalePrice: p.hotSalePrice ?? '',
@@ -463,11 +465,23 @@ export default function EditProductPage() {
                             <label className="block text-xs font-medium text-gray-600 mb-1">{t.admin.edit.fields.approval}</label>
                             <select name="approvalStatus" value={form.approvalStatus} onChange={handleChange}
                                 className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white">
-                                <option value="APPROVED">✅ 승인됨</option>
-                                <option value="PENDING">🟡 검수 대기</option>
-                                <option value="REJECTED">❌ 반려</option>
+                                <option value="APPROVED">✅ Approved · 승인됨</option>
+                                <option value="PENDING">🟡 Pending Review · 검수 대기</option>
+                                <option value="REJECTED">❌ Rejected · 반려</option>
                             </select>
                         </div>
+                        {/* 반려 사유 */}
+                        {form.approvalStatus === 'REJECTED' && (
+                            <div className="md:col-span-2">
+                                <label className="block text-xs font-medium text-red-600 mb-1">
+                                    Rejection Reason · 반려 사유
+                                    <span className="ml-1 font-normal text-gray-400">(shown to seller · 셀러에게 표시됨)</span>
+                                </label>
+                                <textarea name="rejectionReason" value={form.rejectionReason} onChange={handleChange} rows={2}
+                                    placeholder="e.g. Missing product images, incorrect price · 예: 상품 이미지 누락, 가격 오류"
+                                    className="w-full border border-red-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-red-400 focus:outline-none bg-red-50/30 resize-none" />
+                            </div>
+                        )}
                         {/* isNew */}
                         <div className="flex gap-3">
                             <label className="flex-1 flex items-center gap-3 cursor-pointer p-3 rounded-xl border-2 transition-all select-none hover:border-yellow-300 hover:bg-yellow-50"

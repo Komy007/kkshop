@@ -3,39 +3,79 @@ import { prisma } from '@/lib/api';
 import { auth } from '@/auth';
 import { translate } from '@/lib/translate';
 
-// ── GET: 내 상품 목록 ────────────────────────────────────────────────────────
-export async function GET() {
+const PAGE_SIZE = 30;
+
+// ── GET: 내 상품 목록 (with pagination) ──────────────────────────────────────
+export async function GET(req: Request) {
     const session = await auth();
     if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const supplier = await prisma.supplier.findUnique({ where: { userId: session.user.id } });
     if (!supplier) return NextResponse.json({ error: 'No supplier profile' }, { status: 403 });
 
-    const products = await prisma.product.findMany({
-        where: { supplierId: supplier.id },
-        include: {
-            translations: { where: { langCode: 'ko' }, select: { langCode: true, name: true } },
-            images: { orderBy: { sortOrder: 'asc' }, take: 1 },
-            _count: { select: { images: true } },
-        },
-        orderBy: { createdAt: 'desc' },
-    });
+    const { searchParams } = new URL(req.url);
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
+    // approvalStatus filter for server-side tab filtering
+    const approvalFilter = searchParams.get('approvalStatus') || 'ALL';
+    const search = searchParams.get('search')?.trim() || '';
 
-    return NextResponse.json(products.map(p => ({
-        ...p,
+    const where: any = { supplierId: supplier.id };
+    if (approvalFilter && approvalFilter !== 'ALL') where.approvalStatus = approvalFilter;
+    if (search) {
+        where.OR = [
+            { translations: { some: { name: { contains: search, mode: 'insensitive' } } } },
+            { sku: { contains: search, mode: 'insensitive' } },
+        ];
+    }
+
+    const [products, total] = await Promise.all([
+        prisma.product.findMany({
+            where,
+            include: {
+                translations: { where: { langCode: { in: ['ko', 'en'] } }, select: { langCode: true, name: true } },
+                images: { orderBy: { sortOrder: 'asc' }, take: 1 },
+                _count: { select: { images: true } },
+            },
+            orderBy: { createdAt: 'desc' },
+            skip: (page - 1) * PAGE_SIZE,
+            take: PAGE_SIZE,
+        }),
+        prisma.product.count({ where }),
+    ]);
+
+    return NextResponse.json({
+        products: products.map(p => ({
         id: p.id.toString(),
-        categoryId: p.categoryId?.toString() ?? null,
+        sku: p.sku,
         priceUsd: p.priceUsd.toString(),
-        reviewAvg: p.reviewAvg.toString(),
+        stockQty: p.stockQty,
+        categoryId: p.categoryId?.toString() ?? null,
+        status: p.status,
+        approvalStatus: p.approvalStatus,
+        rejectionReason: p.rejectionReason ?? null,
+        imageUrl: p.imageUrl ?? null,
+        brandName: p.brandName ?? null,
+        isNew: p.isNew,
+        isHotSale: p.isHotSale,
         hotSalePrice: p.hotSalePrice?.toString() ?? null,
         costPrice: p.costPrice?.toString() ?? null,
-        // Strip BigInt id/productId from images — only need url/sortOrder for list display
+        reviewAvg: p.reviewAvg.toString(),
+        reviewCount: p.reviewCount,
+        createdAt: p.createdAt,
+        updatedAt: p.updatedAt,
+        translations: p.translations,
         images: p.images.map(img => ({
             url: img.url,
             altText: img.altText ?? null,
             sortOrder: img.sortOrder,
         })),
-    })));
+        _count: p._count,
+    })),
+        total,
+        page,
+        pageSize: PAGE_SIZE,
+        totalPages: Math.ceil(total / PAGE_SIZE),
+    });
 }
 
 // ── POST: 새 상품 등록 (PENDING으로 저장) ────────────────────────────────────
@@ -92,8 +132,14 @@ export async function POST(req: Request) {
 
     const optionsData = await Promise.all(options.map(async (opt: any, i: number) => {
         let labelEn = opt.labelKo || null;
+        let labelKm = opt.labelKo || null;
+        let labelZh = opt.labelKo || null;
         if (opt.labelKo) {
-            labelEn = await translateField(opt.labelKo, 'en');
+            [labelEn, labelKm, labelZh] = await Promise.all([
+                translateField(opt.labelKo, 'en'),
+                translateField(opt.labelKo, 'km'),
+                translateField(opt.labelKo, 'zh'),
+            ]);
         }
         return {
             minQty: parseInt(opt.minQty) || 1,
@@ -102,6 +148,8 @@ export async function POST(req: Request) {
             freeShipping: Boolean(opt.freeShipping),
             labelKo: opt.labelKo || null,
             labelEn,
+            labelKm,
+            labelZh,
             sortOrder: i
         };
     }));

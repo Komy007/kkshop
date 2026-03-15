@@ -197,7 +197,7 @@ export default function AdminProductsPage() {
         await fetch('/api/admin/products', {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id, approvalStatus: 'REJECTED', status: 'INACTIVE' }),
+            body: JSON.stringify({ id, approvalStatus: 'REJECTED', status: 'INACTIVE', rejectionReason: rejectReason }),
         });
         setActionLoading(null);
         setApprovingId(null);
