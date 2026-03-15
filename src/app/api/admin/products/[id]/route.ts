@@ -134,6 +134,7 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
             brandName, volume, skinType, origin, expiryMonths, certifications,
             baseLang, name, shortDesc, detailDesc, ingredients, howToUse, benefits, seoKeywords,
             retranslate = false,
+            directTranslations, // [{ langCode, name, shortDesc, ... }] — direct per-language edit, no Google Translate
             imageUrls = [], // new image URLs to add
             deleteImageIds = [], // image IDs to delete
             options = [], // full options replacement
@@ -174,7 +175,23 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
         // Handle translations
         let translationsToUpsert: any[] = [];
 
-        if (name !== undefined && baseLang) {
+        // Priority: directTranslations (from 4-lang tab editor) > retranslate > single baseLang update
+        if (directTranslations && Array.isArray(directTranslations) && directTranslations.length > 0 && !retranslate) {
+            // Direct per-language edit — save each language as provided, no Google Translate
+            for (const dt of directTranslations) {
+                if (!dt.langCode || !dt.name) continue;
+                translationsToUpsert.push({
+                    langCode: dt.langCode,
+                    name: dt.name ?? '',
+                    shortDesc: dt.shortDesc || null,
+                    detailDesc: dt.detailDesc || null,
+                    seoKeywords: dt.seoKeywords || null,
+                    ingredients: dt.ingredients || null,
+                    howToUse: dt.howToUse || null,
+                    benefits: dt.benefits || null,
+                });
+            }
+        } else if (name !== undefined && baseLang) {
             if (retranslate) {
                 // Translate to all languages
                 for (const lang of TARGET_LANGS) {

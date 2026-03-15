@@ -96,7 +96,12 @@ export async function PATCH(
     }
 
     const body = await req.json();
-    const { name, shortDesc, detailDesc, ingredients, howToUse, benefits, priceUsd, volume, skinType, origin } = body;
+    const {
+        name, shortDesc, detailDesc, ingredients, howToUse, benefits,
+        priceUsd, volume, skinType, origin,
+        imageUrls = [],      // new GCS URLs to add
+        deleteImageIds = [], // existing image IDs to remove
+    } = body;
 
     await prisma.$transaction(async (tx) => {
         // Update Korean translation (base language for seller)
@@ -124,9 +129,43 @@ export async function PATCH(
             });
         }
 
+        // Delete removed images
+        if (deleteImageIds.length > 0) {
+            await tx.productImage.deleteMany({
+                where: {
+                    id: { in: deleteImageIds.map((imgId: string) => BigInt(imgId)) },
+                    productId: product.id,
+                },
+            });
+        }
+
+        // Add new images
+        if (imageUrls.length > 0) {
+            const maxSort = await tx.productImage.findFirst({
+                where: { productId: product.id },
+                orderBy: { sortOrder: 'desc' },
+                select: { sortOrder: true },
+            });
+            const startSort = (maxSort?.sortOrder ?? -1) + 1;
+            await tx.productImage.createMany({
+                data: imageUrls.map((url: string, i: number) => ({
+                    productId: product.id,
+                    url,
+                    sortOrder: startSort + i,
+                })),
+            });
+        }
+
+        // Update main imageUrl to first remaining image
+        const firstImg = await tx.productImage.findFirst({
+            where: { productId: product.id },
+            orderBy: { sortOrder: 'asc' },
+        });
+
         // Update product fields (limited)
         const updateData: any = {
             approvalStatus: 'PENDING', // Always reset to pending on seller edit
+            imageUrl: firstImg?.url ?? null,
         };
         if (priceUsd !== undefined) updateData.priceUsd = parseFloat(priceUsd);
         if (volume !== undefined) updateData.volume = volume || null;

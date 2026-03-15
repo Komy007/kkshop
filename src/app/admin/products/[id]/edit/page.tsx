@@ -46,6 +46,13 @@ export default function EditProductPage() {
     const [retranslate, setRetranslate] = useState(false); // default OFF: translate only when checkbox is checked
     const [allTranslations, setAllTranslations] = useState<ProductData['translations']>([]);
     const [transPreviewLang, setTransPreviewLang] = useState<string>('en');
+
+    // 4-language direct edit state
+    type LangFields = { name: string; shortDesc: string; detailDesc: string; ingredients: string; howToUse: string; benefits: string; seoKeywords: string };
+    const EMPTY_LANG: LangFields = { name: '', shortDesc: '', detailDesc: '', ingredients: '', howToUse: '', benefits: '', seoKeywords: '' };
+    const [langTranslations, setLangTranslations] = useState<Record<string, LangFields>>({ ko: { ...EMPTY_LANG }, en: { ...EMPTY_LANG }, km: { ...EMPTY_LANG }, zh: { ...EMPTY_LANG } });
+    const [activeLangTab, setActiveLangTab] = useState<'ko' | 'en' | 'km' | 'zh'>('ko');
+    const [isAutoTranslating, setIsAutoTranslating] = useState(false);
     const [categories, setCategories] = useState<Category[]>([]);
     const [suppliers, setSuppliers] = useState<Supplier[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -119,6 +126,23 @@ export default function EditProductPage() {
                 });
                 setAllTranslations(p.translations ?? []);
                 setExistingImages(p.images ?? []);
+
+                // Initialize 4-language direct edit state from API
+                const langs = ['ko', 'en', 'km', 'zh'];
+                const langMap: Record<string, LangFields> = {};
+                langs.forEach(lang => {
+                    const tr = p.translations?.find((t: any) => t.langCode === lang) ?? {};
+                    langMap[lang] = {
+                        name: tr.name ?? '',
+                        shortDesc: tr.shortDesc ?? '',
+                        detailDesc: tr.detailDesc ?? '',
+                        ingredients: tr.ingredients ?? '',
+                        howToUse: tr.howToUse ?? '',
+                        benefits: tr.benefits ?? '',
+                        seoKeywords: tr.seoKeywords ?? '',
+                    };
+                });
+                setLangTranslations(langMap);
                 setOptions(p.options?.map((o: any) => ({
                     id: o.id, minQty: String(o.minQty), maxQty: o.maxQty ? String(o.maxQty) : '',
                     discountPct: o.discountPct, freeShipping: o.freeShipping,
@@ -195,11 +219,27 @@ export default function EditProductPage() {
         setIsLoading(true); setErrorMsg(''); setSuccessMsg('');
         try {
             const newImageUrls = newImages.length > 0 ? await uploadNewImages() : [];
+            // Build directTranslations for all 4 languages
+            // If retranslate is true, we use KO as base and server will auto-translate
+            // If false, we send all 4 language fields directly
+            const directTranslations = retranslate
+                ? undefined
+                : Object.entries(langTranslations).map(([langCode, fields]) => ({ langCode, ...fields }));
+
             const res = await fetch(`/api/admin/products/${productId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     ...form,
+                    // When retranslate=true: use KO fields from langTranslations as baseLang source
+                    name: langTranslations.ko.name || form.name,
+                    shortDesc: langTranslations.ko.shortDesc || form.shortDesc,
+                    detailDesc: langTranslations.ko.detailDesc || form.detailDesc,
+                    ingredients: langTranslations.ko.ingredients || form.ingredients,
+                    howToUse: langTranslations.ko.howToUse || form.howToUse,
+                    benefits: langTranslations.ko.benefits || form.benefits,
+                    seoKeywords: langTranslations.ko.seoKeywords || form.seoKeywords,
+                    baseLang: 'ko',
                     isNew: form.isNew,
                     isHotSale: form.isHotSale,
                     hotSalePrice: form.hotSalePrice || null,
@@ -208,6 +248,7 @@ export default function EditProductPage() {
                     supplierId: form.supplierId || null,
                     expiryMonths: form.expiryMonths ? parseInt(form.expiryMonths) : null,
                     retranslate,
+                    directTranslations,
                     imageUrls: newImageUrls,
                     deleteImageIds,
                     options: options.map((o, i) => ({ ...o, sortOrder: i })),
@@ -215,13 +256,25 @@ export default function EditProductPage() {
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Fail');
-            setSuccessMsg(retranslate ? t.admin.edit.retranslate.label : t.common.save + ' OK');
+            setSuccessMsg(retranslate ? 'Auto-translated & Saved · 자동번역 완료' : 'Saved successfully · 저장 완료');
             setDeleteImageIds([]);
             setNewImages([]);
             // Refresh images + translations (minimal refresh before redirect)
             const fresh = await fetch(`/api/admin/products/${productId}`).then(r => r.json());
             setExistingImages(fresh.images ?? []);
             setAllTranslations(fresh.translations ?? []);
+            // Update lang translations state from fresh data
+            const freshLangs: Record<string, LangFields> = {};
+            ['ko', 'en', 'km', 'zh'].forEach(lang => {
+                const tr = fresh.translations?.find((t: any) => t.langCode === lang) ?? {};
+                freshLangs[lang] = {
+                    name: tr.name ?? '', shortDesc: tr.shortDesc ?? '',
+                    detailDesc: tr.detailDesc ?? '', ingredients: tr.ingredients ?? '',
+                    howToUse: tr.howToUse ?? '', benefits: tr.benefits ?? '',
+                    seoKeywords: tr.seoKeywords ?? '',
+                };
+            });
+            setLangTranslations(freshLangs);
             
             // Redirect to list page after a short delay
             setTimeout(() => {
@@ -519,62 +572,127 @@ export default function EditProductPage() {
                     </div>
                 </div>
 
-                {/* ⑤ 콘텐츠 & 번역 */}
+                {/* ⑤ 4-Language Content Editor */}
                 <div className="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-100">
-                    <div className="px-6 py-4 bg-blue-50 border-b border-blue-100 flex items-center justify-between">
+                    <div className="px-6 py-4 bg-blue-50 border-b border-blue-100 flex items-center justify-between gap-3 flex-wrap">
                         <div>
                             <h3 className="text-base font-semibold text-gray-900 flex items-center gap-2">
-                                <Globe className="w-5 h-5 text-blue-500" />{t.admin.edit.sections.content}
+                                <Globe className="w-5 h-5 text-blue-500" />
+                                4-Language Content Editor
+                                <span className="text-xs font-normal text-blue-500">· 4개국어 직접 편집</span>
                             </h3>
-                            <p className="text-xs text-blue-600 mt-0.5">{t.admin.edit.retranslate.desc}</p>
+                            <p className="text-xs text-blue-600 mt-0.5">Edit each language tab directly, or use Auto-Translate to generate from Korean · 각 언어를 직접 수정하거나 자동번역 사용</p>
                         </div>
+                        {/* Auto-translate button */}
+                        <button
+                            type="button"
+                            disabled={isAutoTranslating}
+                            onClick={async () => {
+                                setIsAutoTranslating(true);
+                                setRetranslate(true);
+                                // Trigger submit with retranslate=true will be handled on form submit
+                                // Instead, we preview by setting retranslate flag
+                                setIsAutoTranslating(false);
+                            }}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border-2 transition-all ${retranslate ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-blue-600 border-blue-300 hover:border-blue-500'}`}
+                            title="On Save: auto-translate Korean fields to EN/KM/ZH"
+                        >
+                            <RefreshCw className={`w-3.5 h-3.5 ${isAutoTranslating ? 'animate-spin' : ''}`} />
+                            {retranslate ? '✓ Auto-Translate ON' : 'Auto-Translate from KO'}
+                            <span className="opacity-70 font-normal">· 자동번역</span>
+                        </button>
                     </div>
+
+                    {/* Language tabs */}
+                    <div className="flex border-b border-gray-100 bg-gray-50">
+                        {([
+                            { code: 'ko', flag: '🇰🇷', label: 'Korean', sub: '한국어' },
+                            { code: 'en', flag: '🇺🇸', label: 'English', sub: 'EN' },
+                            { code: 'km', flag: '🇰🇭', label: 'Khmer', sub: 'ភាសាខ្មែរ' },
+                            { code: 'zh', flag: '🇨🇳', label: 'Chinese', sub: '中文' },
+                        ] as { code: 'ko' | 'en' | 'km' | 'zh'; flag: string; label: string; sub: string }[]).map(({ code, flag, label, sub }) => {
+                            const hasTrans = allTranslations.some(tr => tr.langCode === code && tr.name);
+                            const isActive = activeLangTab === code;
+                            return (
+                                <button
+                                    key={code}
+                                    type="button"
+                                    onClick={() => setActiveLangTab(code)}
+                                    className={`flex-1 flex flex-col items-center py-3 px-2 text-xs font-bold border-b-2 transition-all ${isActive ? 'border-blue-500 text-blue-700 bg-white' : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-white/60'}`}
+                                >
+                                    <span className="text-base mb-0.5">{flag}</span>
+                                    <span>{label}</span>
+                                    <span className="font-normal opacity-60">{sub}</span>
+                                    <span className={`mt-1 w-1.5 h-1.5 rounded-full ${hasTrans ? 'bg-green-400' : 'bg-gray-300'}`} />
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    {/* Tab content */}
                     <div className="p-5 space-y-4">
-                        <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">{t.admin.edit.fields.name}</label>
-                            <input required name="name" value={form.name} onChange={handleChange}
-                                className="w-full border border-gray-200 rounded-lg py-2.5 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">{t.admin.edit.fields.shortDesc}</label>
-                            <input name="shortDesc" value={form.shortDesc} onChange={handleChange}
-                                className="w-full border border-gray-200 rounded-lg py-2.5 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1"><Leaf className="w-3.5 h-3.5 text-green-500" />{t.admin.edit.fields.ingredients}</label>
-                            <textarea name="ingredients" rows={2} value={form.ingredients} onChange={handleChange}
-                                className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none" />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1"><Droplets className="w-3.5 h-3.5 text-blue-500" />{t.admin.edit.fields.howToUse}</label>
-                            <textarea name="howToUse" rows={3} value={form.howToUse} onChange={handleChange}
-                                className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none" />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1"><Star className="w-3.5 h-3.5 text-yellow-500" />{t.admin.edit.fields.benefits}</label>
-                            <textarea name="benefits" rows={3} value={form.benefits} onChange={handleChange}
-                                className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none" />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">{t.admin.edit.fields.detailDesc}</label>
-                            <textarea name="detailDesc" rows={4} value={form.detailDesc} onChange={handleChange}
-                                className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none" />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">{t.admin.edit.fields.seo}</label>
-                            <input name="seoKeywords" value={form.seoKeywords} onChange={handleChange}
-                                className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" />
-                        </div>
-                        {/* Re-translate option */}
-                        <label className={`flex items-start gap-3 cursor-pointer p-4 rounded-xl border-2 transition-all ${retranslate ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300'}`}>
+                        {retranslate && activeLangTab !== 'ko' && (
+                            <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700">
+                                <RefreshCw className="w-3.5 h-3.5 flex-shrink-0" />
+                                Auto-Translate is ON — this language will be auto-generated from Korean on save · 저장 시 한국어 기준으로 자동번역됩니다
+                            </div>
+                        )}
+
+                        {(['name', 'shortDesc', 'detailDesc', 'ingredients', 'howToUse', 'benefits', 'seoKeywords'] as const).map(field => {
+                            const labels: Record<string, { en: string; ko: string; rows?: number }> = {
+                                name:        { en: 'Product Name', ko: '상품명', rows: 1 },
+                                shortDesc:   { en: 'Short Description', ko: '짧은 설명', rows: 2 },
+                                detailDesc:  { en: 'Detailed Description', ko: '상세 설명', rows: 5 },
+                                ingredients: { en: 'Key Ingredients', ko: '성분 정보', rows: 3 },
+                                howToUse:    { en: 'How to Use', ko: '사용 방법', rows: 2 },
+                                benefits:    { en: 'Benefits / Features', ko: '효능/특징', rows: 2 },
+                                seoKeywords: { en: 'SEO Keywords', ko: 'SEO 키워드', rows: 1 },
+                            };
+                            const lbl = labels[field];
+                            const rows = lbl.rows ?? 2;
+                            const val = langTranslations[activeLangTab]?.[field] ?? '';
+                            const onChange = (v: string) => setLangTranslations(prev => ({
+                                ...prev,
+                                [activeLangTab]: { ...prev[activeLangTab], [field]: v },
+                            }));
+                            return (
+                                <div key={field}>
+                                    <label className="block text-xs font-semibold text-gray-700 mb-1">
+                                        {lbl.en}
+                                        <span className="text-[10px] text-gray-400 font-normal ml-1.5">{lbl.ko}</span>
+                                        {field === 'name' && <span className="text-red-500 ml-0.5">*</span>}
+                                    </label>
+                                    {rows === 1 ? (
+                                        <input
+                                            value={val}
+                                            onChange={e => onChange(e.target.value)}
+                                            disabled={retranslate && activeLangTab !== 'ko'}
+                                            className="w-full border border-gray-200 rounded-lg py-2.5 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none disabled:bg-gray-50 disabled:text-gray-400"
+                                        />
+                                    ) : (
+                                        <textarea
+                                            rows={rows}
+                                            value={val}
+                                            onChange={e => onChange(e.target.value)}
+                                            disabled={retranslate && activeLangTab !== 'ko'}
+                                            className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none disabled:bg-gray-50 disabled:text-gray-400"
+                                        />
+                                    )}
+                                </div>
+                            );
+                        })}
+
+                        {/* Auto-translate toggle */}
+                        <label className={`flex items-start gap-3 cursor-pointer p-3 rounded-xl border-2 transition-all ${retranslate ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300'}`}>
                             <input type="checkbox" checked={retranslate} onChange={e => setRetranslate(e.target.checked)}
                                 className="mt-0.5 rounded text-blue-600 focus:ring-blue-500" />
                             <div>
                                 <div className="font-semibold text-sm text-gray-800 flex items-center gap-1.5">
                                     <RefreshCw className={`w-4 h-4 ${retranslate ? 'text-blue-600' : 'text-gray-400'}`} />
-                                    {t.admin.edit.retranslate.label}
+                                    Auto-Translate All Languages from Korean
+                                    <span className="text-[10px] font-normal text-gray-500">· 한국어 기준 4개국어 자동번역</span>
                                 </div>
-                                <div className="text-xs text-gray-500 mt-0.5">{t.admin.edit.retranslate.desc}</div>
+                                <div className="text-xs text-gray-500 mt-0.5">On save, EN / KM / ZH will be auto-generated via Google Translate · 저장 시 구글 번역으로 자동 생성됩니다</div>
                             </div>
                         </label>
                     </div>
@@ -594,81 +712,6 @@ export default function EditProductPage() {
                 </div>
             </form>
 
-            {/* ⑥ 번역 현황 패널 (저장 후 확인용) */}
-            {allTranslations.length > 0 && (
-                <div className="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-100 mb-8">
-                    <div className="px-6 py-4 bg-indigo-50 border-b border-indigo-100">
-                        <h3 className="text-base font-semibold text-gray-900 flex items-center gap-2">
-                            <Globe className="w-5 h-5 text-indigo-500" />{t.admin.edit.sections.preview}
-                        </h3>
-                        <p className="text-xs text-indigo-600 mt-0.5">View 4-language translations</p>
-                    </div>
-                    <div className="p-5">
-                        {/* Language tabs */}
-                        <div className="flex gap-2 mb-4 flex-wrap">
-                            {[
-                                { code: 'ko', label: '🇰🇷 한국어', color: 'red' },
-                                { code: 'en', label: '🇺🇸 English', color: 'blue' },
-                                { code: 'km', label: '🇰🇭 ខ្មែរ', color: 'green' },
-                                { code: 'zh', label: '🇨🇳 中文', color: 'yellow' },
-                            ].map(({ code, label, color }) => {
-                                const hasTrans = allTranslations.some(t => t.langCode === code && t.name);
-                                return (
-                                    <button key={code} onClick={() => setTransPreviewLang(code)}
-                                        className={`px-4 py-1.5 rounded-full text-sm font-bold border-2 transition-all flex items-center gap-1.5 ${transPreviewLang === code ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'}`}>
-                                        {label}
-                                        <span className={`w-2 h-2 rounded-full ${hasTrans ? 'bg-green-400' : 'bg-red-300'}`} />
-                                    </button>
-                                );
-                            })}
-                        </div>
-
-                        {/* Translation content */}
-                        {(() => {
-                            const t = allTranslations.find(tr => tr.langCode === transPreviewLang);
-                            if (!t) return <p className="text-sm text-gray-400 py-4 text-center">이 언어 번역이 없습니다.</p>;
-                            return (
-                                <div className="space-y-3 text-sm">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                        <div className="bg-gray-50 rounded-lg p-3">
-                                            <p className="text-xs font-bold text-gray-500 mb-1">상품명</p>
-                                            <p className="text-gray-800 font-medium">{t.name || <span className="text-red-400 italic">없음</span>}</p>
-                                        </div>
-                                        <div className="bg-gray-50 rounded-lg p-3">
-                                            <p className="text-xs font-bold text-gray-500 mb-1">한 줄 요약</p>
-                                            <p className="text-gray-700">{t.shortDesc || <span className="text-gray-400 italic">없음</span>}</p>
-                                        </div>
-                                    </div>
-                                    {t.detailDesc && (
-                                        <div className="bg-gray-50 rounded-lg p-3">
-                                            <p className="text-xs font-bold text-gray-500 mb-1">상세 설명</p>
-                                            <p className="text-gray-700 whitespace-pre-wrap line-clamp-4">{t.detailDesc}</p>
-                                        </div>
-                                    )}
-                                    {t.ingredients && (
-                                        <div className="bg-gray-50 rounded-lg p-3">
-                                            <p className="text-xs font-bold text-gray-500 mb-1">성분</p>
-                                            <p className="text-gray-700 whitespace-pre-wrap line-clamp-3">{t.ingredients}</p>
-                                        </div>
-                                    )}
-                                    {t.howToUse && (
-                                        <div className="bg-gray-50 rounded-lg p-3">
-                                            <p className="text-xs font-bold text-gray-500 mb-1">사용 방법</p>
-                                            <p className="text-gray-700 whitespace-pre-wrap line-clamp-3">{t.howToUse}</p>
-                                        </div>
-                                    )}
-                                    {t.benefits && (
-                                        <div className="bg-gray-50 rounded-lg p-3">
-                                            <p className="text-xs font-bold text-gray-500 mb-1">효능/특징</p>
-                                            <p className="text-gray-700 whitespace-pre-wrap line-clamp-3">{t.benefits}</p>
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        })()}
-                    </div>
-                </div>
-            )}
         </div>
     );
 }
