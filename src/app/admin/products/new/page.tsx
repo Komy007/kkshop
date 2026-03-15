@@ -6,7 +6,7 @@ import { Save, Loader2, Globe, Upload, X, ImagePlus, Package, Tag, Leaf, Droplet
 import { useTranslations } from '@/i18n/useTranslations';
 
 interface ImageItem { file: File; preview: string; url?: string; }
-interface Category { id: string; slug: string; nameKo: string; }
+interface Category { id: string; slug: string; nameKo: string; nameEn?: string; parentId?: string | null; }
 
 const MAX_IMAGES = 3;
 
@@ -38,7 +38,8 @@ export default function NewProductPage() {
     });
 
     useEffect(() => {
-        fetch('/api/admin/categories')
+        // /api/categories is public — works for ADMIN, SUPERADMIN, SUPPLIER alike
+        fetch('/api/categories')
             .then(r => r.json())
             .then(data => setCategories(Array.isArray(data) ? data : []))
             .catch(() => { });
@@ -271,9 +272,18 @@ export default function NewProductPage() {
                             <label className="block text-xs font-medium text-gray-600 mb-1">{ef.category}</label>
                             <select name="categoryId" value={form.categoryId} onChange={handleChange} className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white">
                                 <option value="">{n.basic.selectCategory}</option>
-                                {categories.filter(c => !['new', 'best', 'sale', 'foryou'].includes(c.slug)).map(c => (
-                                    <option key={c.id} value={c.id}>{c.nameKo}</option>
-                                ))}
+                                {categories.filter(c => !c.parentId).map(parent => {
+                                    const subs = categories.filter(c => c.parentId === parent.id);
+                                    return subs.length > 0 ? (
+                                        <optgroup key={parent.id} label={`📁 ${parent.nameEn || parent.nameKo}`}>
+                                            {subs.map(s => (
+                                                <option key={s.id} value={s.id}>{s.nameEn || s.nameKo}</option>
+                                            ))}
+                                        </optgroup>
+                                    ) : (
+                                        <option key={parent.id} value={parent.id}>{parent.nameEn || parent.nameKo}</option>
+                                    );
+                                })}
                             </select>
                         </div>
                         <div>
