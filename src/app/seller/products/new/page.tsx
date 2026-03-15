@@ -13,7 +13,9 @@ export default function SellerProductNewPage() {
     const fileRef = useRef<HTMLInputElement>(null);
     const [images,      setImages]     = useState<File[]>([]);
     const [previews,    setPreviews]   = useState<string[]>([]);
-    const [categories,  setCategories] = useState<Category[]>([]);
+    const [categories,     setCategories]    = useState<Category[]>([]);
+    const [catLoading,     setCatLoading]    = useState(true);
+    const [catError,       setCatError]      = useState(false);
     const [options,     setOptions]    = useState([{ minQty: '1', maxQty: '', discountPct: '0', freeShipping: false, labelKo: '1 unit (default)' }]);
     const [submitting,  setSubmitting] = useState(false);
     const [translating, setTranslating]= useState(false);
@@ -33,11 +35,25 @@ export default function SellerProductNewPage() {
         ingredientsKo: '', howToUseKo: '', benefitsKo: '',
     });
 
-    useEffect(() => {
+    const loadCategories = () => {
+        setCatLoading(true);
+        setCatError(false);
         fetch('/api/categories')
-            .then(r => r.json())
-            .then(d => setCategories(Array.isArray(d) ? d.filter((c: any) => !c.isSystem) : []));
-    }, []);
+            .then(r => {
+                if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                return r.json();
+            })
+            .then(d => {
+                setCategories(Array.isArray(d) ? d : []);
+                setCatLoading(false);
+            })
+            .catch(() => {
+                setCatError(true);
+                setCatLoading(false);
+            });
+    };
+
+    useEffect(() => { loadCategories(); }, []);
 
     /* Global Ctrl+V image paste */
     useEffect(() => {
@@ -258,12 +274,34 @@ export default function SellerProductNewPage() {
                                 placeholder="e.g. MY-BRAND-001" className={inp} required />
                         </Field>
                         <Field en="Category" ko="카테고리" required>
-                            <select value={form.categoryId} onChange={e => set('categoryId', e.target.value)} className={inp} required>
-                                <option value="">— Select category · 카테고리 선택 —</option>
-                                {categories.map(c => (
-                                    <option key={c.id} value={c.id}>{c.nameEn || c.nameKo}</option>
-                                ))}
-                            </select>
+                            {catLoading ? (
+                                <div className={`${inp} flex items-center gap-2 text-gray-400 bg-gray-50`}>
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    <span className="text-sm">Loading categories… · 카테고리 불러오는 중…</span>
+                                </div>
+                            ) : catError ? (
+                                <div className="space-y-1">
+                                    <div className={`${inp} flex items-center justify-between bg-red-50 border-red-200 text-red-600`}>
+                                        <span className="text-sm">Failed to load — · 불러오기 실패</span>
+                                        <button type="button" onClick={loadCategories}
+                                            className="text-xs font-bold underline hover:no-underline ml-2">
+                                            Retry · 재시도
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : categories.length === 0 ? (
+                                <div className={`${inp} bg-amber-50 border-amber-200 text-amber-700 text-sm`}>
+                                    No categories available — please ask admin to add categories first.
+                                    <span className="block text-xs opacity-70 mt-0.5">카테고리가 없습니다. 관리자에게 카테고리 추가를 요청하세요.</span>
+                                </div>
+                            ) : (
+                                <select value={form.categoryId} onChange={e => set('categoryId', e.target.value)} className={inp} required>
+                                    <option value="">— Select category · 카테고리 선택 —</option>
+                                    {categories.map(c => (
+                                        <option key={c.id} value={c.id}>{c.nameEn || c.nameKo}</option>
+                                    ))}
+                                </select>
+                            )}
                         </Field>
                         <Field en="Brand Name" ko="브랜드명">
                             <input value={form.brandName} onChange={e => set('brandName', e.target.value)}
