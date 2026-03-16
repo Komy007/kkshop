@@ -241,3 +241,53 @@ export async function PATCH(
 
     return NextResponse.json({ success: true, message: '수정 완료. 관리자 검수 후 판매됩니다.' });
 }
+
+// ── DELETE: seller removes own product (no active orders) ─────────────────
+export async function DELETE(
+    _req: Request,
+    context: { params: Promise<{ id: string }> }
+) {
+    const { id } = await context.params;
+    const session = await auth();
+    if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const supplier = await prisma.supplier.findUnique({ where: { userId: session.user.id } });
+    if (!supplier) return NextResponse.json({ error: 'Supplier not found' }, { status: 404 });
+
+    const product = await prisma.product.findUnique({
+        where: { id: BigInt(id) },
+        select: { id: true, supplierId: true, approvalStatus: true },
+    });
+
+    if (!product) return NextResponse.json({ error: 'Product not found' }, { status: 404 });
+    if (!product.supplierId || product.supplierId !== supplier.id) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    // Block deletion if there are active orders
+    const activeOrderCount = await prisma.orderItem.count({
+        where: {
+            productId: product.id,
+            order: { status: { in: ['PENDING', 'CONFIRMED', 'SHIPPING'] } },
+        },
+    });
+    if (activeOrderCount > 0) {
+        return NextResponse.json(
+            { error: `진행 중인 주문(${activeOrderCount}건)이 있어 삭제할 수 없습니다. Active orders exist.` },
+            { status: 409 }
+        );
+    }
+
+    // Cascade delete — remove child records first, then the product
+    await prisma.$transaction([
+        prisma.productTranslation.deleteMany({ where: { productId: product.id } }),
+        prisma.productImage.deleteMany(      { where: { productId: product.id } }),
+        prisma.productVariant.deleteMany(    { where: { productId: product.id } }),
+        prisma.productOption.deleteMany(     { where: { productId: product.id } }),
+        prisma.wishlistItem.deleteMany(      { where: { productId: product.id } }),
+        prisma.recentlyViewed.deleteMany(    { where: { productId: product.id } }),
+        prisma.product.delete(               { where: { id: product.id } }),
+    ]);
+
+    return NextResponse.json({ success: true, message: '상품이 삭제되었습니다.' });
+}

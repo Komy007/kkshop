@@ -41,7 +41,7 @@ export default function AdminPendingProductsPage() {
                 id,
                 approvalStatus: status,
                 status: status === 'APPROVED' ? 'ACTIVE' : 'INACTIVE',
-                adminNote: rejectReason || null,
+                rejectionReason: rejectReason || null,
             }),
         });
         setProcessing(null);

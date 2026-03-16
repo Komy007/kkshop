@@ -4,7 +4,7 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import {
     Package, Plus, Loader2, RefreshCw, Clock, CheckCircle, XCircle,
-    Search, Edit3, AlertCircle, ChevronLeft, ChevronRight,
+    Search, Edit3, AlertCircle, ChevronLeft, ChevronRight, Trash2,
 } from 'lucide-react';
 
 interface Product {
@@ -48,6 +48,8 @@ export default function SellerProductsPage() {
     const [search,   setSearch]     = useState('');
     const [searchInput, setSearchInput] = useState('');
     const [tab,      setTab]        = useState<'ALL'|'PENDING'|'APPROVED'|'REJECTED'>('ALL');
+    const [deletingId,   setDeletingId]   = useState<string | null>(null);
+    const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
     const searchTimer = useRef<NodeJS.Timeout | null>(null);
 
@@ -89,6 +91,23 @@ export default function SellerProductsPage() {
         setSearch('');
         setSearchInput('');
         load(1, '', key);
+    };
+
+    const handleDelete = async (id: string) => {
+        setDeletingId(id);
+        setConfirmDeleteId(null);
+        try {
+            const res = await fetch(`/api/seller/products/${id}`, { method: 'DELETE' });
+            const data = await res.json();
+            if (!res.ok) {
+                alert('삭제 실패 · Delete failed: ' + (data?.error || 'Unknown error'));
+            } else {
+                load(page, search, tab);
+            }
+        } catch {
+            alert('삭제 중 오류가 발생했습니다. · Error occurred during deletion.');
+        }
+        setDeletingId(null);
     };
 
     return (
@@ -174,7 +193,7 @@ export default function SellerProductsPage() {
                                     <th className="py-3 px-4">Price / Stock</th>
                                     <th className="py-3 px-4">Status · 상태</th>
                                     <th className="py-3 px-4 hidden sm:table-cell">Date</th>
-                                    <th className="py-3 px-4">Edit</th>
+                                    <th className="py-3 px-4">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-50">
@@ -228,10 +247,36 @@ export default function SellerProductsPage() {
                                                 {new Date(p.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
                                             </td>
                                             <td className="py-3 px-4">
-                                                <Link href={`/seller/products/${p.id}/edit`}
-                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-gray-100 hover:bg-teal-50 hover:text-teal-700 text-gray-600 rounded-lg transition-colors">
-                                                    <Edit3 className="w-3 h-3" /> Edit
-                                                </Link>
+                                                <div className="flex items-center gap-1.5">
+                                                    <Link href={`/seller/products/${p.id}/edit`}
+                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-gray-100 hover:bg-teal-50 hover:text-teal-700 text-gray-600 rounded-lg transition-colors">
+                                                        <Edit3 className="w-3 h-3" /> Edit
+                                                    </Link>
+                                                    {/* Delete button — confirm inline */}
+                                                    {confirmDeleteId === p.id ? (
+                                                        <div className="flex items-center gap-1">
+                                                            <button
+                                                                onClick={() => handleDelete(p.id)}
+                                                                disabled={deletingId === p.id}
+                                                                className="px-2 py-1.5 text-xs font-bold bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50">
+                                                                {deletingId === p.id ? <Loader2 className="w-3 h-3 animate-spin" /> : '확인'}
+                                                            </button>
+                                                            <button
+                                                                onClick={() => setConfirmDeleteId(null)}
+                                                                className="px-2 py-1.5 text-xs font-semibold bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200">
+                                                                취소
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => setConfirmDeleteId(p.id)}
+                                                            disabled={deletingId === p.id}
+                                                            className="inline-flex items-center gap-1 px-2 py-1.5 text-xs font-semibold text-red-400 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors disabled:opacity-30"
+                                                            title="Delete product · 상품 삭제">
+                                                            <Trash2 className="w-3 h-3" />
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </td>
                                         </tr>
                                     );
