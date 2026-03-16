@@ -82,7 +82,10 @@ export default function AdminProductsPage() {
                 setSearch(restoredSearch);
                 setActiveSlug(restoredSlug);
                 setPage(restoredPage);
-                return; // fetchProducts will be called by the state change effects below
+                // Must call fetchProducts directly — state changes above are async,
+                // and the second useEffect skips on first render via isFirstRender guard.
+                fetchProducts(restoredPage, restoredSearch, restoredSlug, 'all');
+                return;
             } catch {}
         }
         fetchProducts(1, '', 'all');
