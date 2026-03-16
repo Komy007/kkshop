@@ -52,6 +52,7 @@ export async function GET(req: Request) {
                         select: { langCode: true, name: true },
                     },
                     category: { select: { id: true, slug: true, nameKo: true } },
+                    supplier: { select: { id: true, companyName: true } },
                     images: { orderBy: { sortOrder: 'asc' }, take: 1 },
                     _count: { select: { images: true } },
                 },
@@ -72,6 +73,7 @@ export async function GET(req: Request) {
             hotSalePrice: p.hotSalePrice?.toString() ?? null,
             costPrice: p.costPrice?.toString() ?? null,
             category: p.category ? { ...p.category, id: p.category.id.toString() } : null,
+            supplier: p.supplier ? { id: p.supplier.id.toString(), companyName: p.supplier.companyName } : null,
             images: p.images.map(img => ({
                 ...img,
                 id: img.id.toString(),
