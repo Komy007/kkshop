@@ -51,7 +51,7 @@ export async function POST(request: Request) {
         let shippingFee = 0;
         if (province) {
             const provinceRecord = await prisma.shippingProvince.findFirst({
-                where: { nameEn: province },
+                where: { nameEn: { equals: province, mode: 'insensitive' } },
                 select: { shippingFee: true },
             });
             if (provinceRecord) {
@@ -88,14 +88,12 @@ export async function POST(request: Request) {
             appliedCouponId = coupon.id;
 
             if (coupon.type === 'PERCENT') {
-                // Cap percent discount to subtotal (safety)
-                discountAmount = Math.min(
-                    subtotalUsd * (Number(coupon.discountValue) / 100),
-                    subtotalUsd
-                );
+                // Cap percent discount to subtotal, rounded to 2 decimal places
+                const raw = subtotalUsd * (Number(coupon.discountValue) / 100);
+                discountAmount = Math.round(Math.min(raw, subtotalUsd) * 100) / 100;
             } else if (coupon.type === 'FIXED') {
                 // CRITICAL: cap fixed discount to subtotal — prevents negative totals
-                discountAmount = Math.min(Number(coupon.discountValue), subtotalUsd);
+                discountAmount = Math.min(Math.round(Number(coupon.discountValue) * 100) / 100, subtotalUsd);
             } else if (coupon.type === 'FREE_SHIPPING') {
                 shippingFee = 0;
             }

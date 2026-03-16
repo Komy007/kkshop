@@ -272,29 +272,46 @@ export default function SearchPage() {
                                     ) : (
                                         <div className="w-full h-full flex items-center justify-center text-4xl opacity-50">✨</div>
                                     )}
-                                    <div className="absolute top-2 left-2 flex flex-col gap-1 items-start z-10">
-                                        <span className="bg-[#E52528] text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm">특가</span>
-                                    </div>
+                                    {product.isHotSale && (
+                                        <div className="absolute top-2 left-2 z-10">
+                                            <span className="bg-[#E52528] text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm">SALE</span>
+                                        </div>
+                                    )}
+                                    {product.isNew && !product.isHotSale && (
+                                        <div className="absolute top-2 left-2 z-10">
+                                            <span className="bg-blue-500 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm">NEW</span>
+                                        </div>
+                                    )}
                                 </div>
 
-                                <div className="p-4 flex flex-col flex-1">
-                                    <p className="text-sm text-gray-800 leading-snug line-clamp-2 min-h-[40px] font-bold mb-3 group-hover:text-brand-primary transition-colors">
+                                <div className="p-3 flex flex-col flex-1">
+                                    <p className="text-sm text-gray-800 leading-snug line-clamp-2 min-h-[40px] font-bold mb-2 group-hover:text-brand-primary transition-colors">
                                         {product.name}
                                     </p>
                                     <div className="mt-auto">
                                         <div className="flex flex-col">
-                                            <span className="text-xs text-gray-400 line-through mb-0.5">
-                                                ${(product.priceUsd * 1.3).toFixed(2)}
-                                            </span>
-                                            <span className="text-lg font-extrabold text-[#E52528] leading-none">
-                                                ${product.priceUsd.toLocaleString()}
-                                            </span>
+                                            {product.isHotSale && product.hotSalePrice ? (
+                                                <>
+                                                    <span className="text-xs text-gray-400 line-through mb-0.5">
+                                                        ${Number(product.priceUsd).toFixed(2)}
+                                                    </span>
+                                                    <span className="text-lg font-extrabold text-[#E52528] leading-none">
+                                                        ${Number(product.hotSalePrice).toFixed(2)}
+                                                    </span>
+                                                </>
+                                            ) : (
+                                                <span className="text-lg font-extrabold text-gray-900 leading-none">
+                                                    ${Number(product.priceUsd).toFixed(2)}
+                                                </span>
+                                            )}
                                         </div>
-                                        <div className="flex items-center gap-1 mt-2">
-                                            <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400 drop-shadow-sm" />
-                                            <span className="text-xs font-bold text-gray-700">4.9</span>
-                                            <span className="text-xs text-gray-400">(128)</span>
-                                        </div>
+                                        {product.reviewCount > 0 && (
+                                            <div className="flex items-center gap-1 mt-1.5">
+                                                <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400 drop-shadow-sm" />
+                                                <span className="text-xs font-bold text-gray-700">{Number(product.reviewAvg).toFixed(1)}</span>
+                                                <span className="text-xs text-gray-400">({product.reviewCount})</span>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </Link>

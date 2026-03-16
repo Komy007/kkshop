@@ -90,8 +90,13 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: '주소를 입력해 주세요.' }, { status: 400 });
         }
 
-        if (password.length < 6) {
-            return NextResponse.json({ error: '비밀번호는 최소 6자리 이상이어야 합니다.' }, { status: 400 });
+        if (password.length < 8) {
+            return NextResponse.json({ error: '비밀번호는 최소 8자리 이상이어야 합니다.' }, { status: 400 });
+        }
+
+        // Password complexity: at least 1 letter and 1 number
+        if (!/[a-zA-Z]/.test(password) || !/[0-9]/.test(password)) {
+            return NextResponse.json({ error: '비밀번호는 영문자와 숫자를 모두 포함해야 합니다.' }, { status: 400 });
         }
 
         // --- 3. Duplicate Email Check ---

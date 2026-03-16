@@ -18,6 +18,17 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Missing required fields (email, password, role).' }, { status: 400 });
         }
 
+        // Prevent creating another SUPERADMIN (privilege escalation prevention)
+        const ALLOWED_ROLES = ['ADMIN', 'SUPPLIER'];
+        if (!ALLOWED_ROLES.includes(role)) {
+            return NextResponse.json({ error: 'Cannot create user with SUPERADMIN role via this endpoint.' }, { status: 403 });
+        }
+
+        // Password minimum length
+        if (password.length < 8) {
+            return NextResponse.json({ error: 'Password must be at least 8 characters.' }, { status: 400 });
+        }
+
         // Email normalization
         const normalizedEmail = email.toLowerCase().trim();
 

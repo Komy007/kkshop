@@ -305,6 +305,8 @@ export default function MyPage() {
     // Orders
     const [orders, setOrders] = useState<Order[]>([]);
     const [ordersLoading, setOrdersLoading] = useState(false);
+    const [cancellingOrderId, setCancellingOrderId] = useState<string | null>(null);
+    const [cancelConfirmId, setCancelConfirmId] = useState<string | null>(null);
 
     // Wishlist
     const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
@@ -380,6 +382,30 @@ export default function MyPage() {
             .catch(console.error)
             .finally(() => setOrdersLoading(false));
     }, [isLoggedIn, activeTab]);
+
+    // Cancel order handler
+    const handleCancelOrder = async (orderId: string) => {
+        setCancellingOrderId(orderId);
+        try {
+            const res = await fetch(`/api/user/orders/${orderId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'cancel' }),
+            });
+            const data = await res.json();
+            if (res.ok) {
+                // Update order status locally
+                setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'CANCELLED' } : o));
+                setCancelConfirmId(null);
+            } else {
+                alert(data.error || '주문 취소 중 오류가 발생했습니다.');
+            }
+        } catch (e) {
+            alert('주문 취소 중 오류가 발생했습니다.');
+        } finally {
+            setCancellingOrderId(null);
+        }
+    };
 
     // Fetch wishlist when tab active
     const fetchWishlist = useCallback(() => {
@@ -702,8 +728,8 @@ export default function MyPage() {
                                     orders.map((order) => {
                                         const dateStr = new Date(order.createdAt).toLocaleDateString();
                                         return (
+                                            <div key={order.id}>
                                             <Link
-                                                key={order.id}
                                                 href={`/orders/${order.id}`}
                                                 className="block p-5 rounded-2xl border border-gray-200 hover:border-gray-300 hover:shadow-md transition-all bg-white shadow-sm cursor-pointer group"
                                             >
@@ -737,6 +763,38 @@ export default function MyPage() {
                                                     </div>
                                                 </div>
                                             </Link>
+
+                                            {/* Cancel button — PENDING orders only */}
+                                            {order.status === 'PENDING' && (
+                                                <div className="mt-1.5">
+                                                    {cancelConfirmId === order.id ? (
+                                                        <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
+                                                            <span className="text-xs text-red-600 font-semibold flex-1">주문을 취소하시겠습니까?</span>
+                                                            <button
+                                                                onClick={() => handleCancelOrder(order.id)}
+                                                                disabled={cancellingOrderId === order.id}
+                                                                className="px-3 py-1 bg-red-500 text-white text-xs font-bold rounded-lg hover:bg-red-600 disabled:opacity-50"
+                                                            >
+                                                                {cancellingOrderId === order.id ? '취소 중...' : '확인'}
+                                                            </button>
+                                                            <button
+                                                                onClick={() => setCancelConfirmId(null)}
+                                                                className="px-3 py-1 bg-gray-200 text-gray-700 text-xs font-bold rounded-lg hover:bg-gray-300"
+                                                            >
+                                                                닫기
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <button
+                                                            onClick={(e) => { e.preventDefault(); setCancelConfirmId(order.id); }}
+                                                            className="w-full text-xs text-red-400 hover:text-red-600 font-semibold py-1.5 border border-red-100 hover:border-red-300 rounded-xl transition-colors hover:bg-red-50"
+                                                        >
+                                                            주문 취소
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            )}
+                                            </div>
                                         );
                                     })
                                 )}

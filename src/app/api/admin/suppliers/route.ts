@@ -46,11 +46,19 @@ export async function PATCH(req: NextRequest) {
         return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
     }
 
+    // Validate commissionRate is within 0–100%
+    if (commissionRate !== undefined) {
+        const rate = parseFloat(commissionRate);
+        if (isNaN(rate) || rate < 0 || rate > 100) {
+            return NextResponse.json({ error: '커미션 비율은 0~100% 사이여야 합니다.' }, { status: 400 });
+        }
+    }
+
     const supplier = await prisma.supplier.update({
         where: { id },
         data: {
             status,
-            ...(commissionRate !== undefined && { commissionRate }),
+            ...(commissionRate !== undefined && { commissionRate: parseFloat(commissionRate) }),
             ...(adminNote !== undefined && { adminNote }),
         },
         include: { user: { select: { email: true } } },
@@ -121,6 +129,14 @@ export async function POST(req: NextRequest) {
 
         if (password.length < 8) {
             return NextResponse.json({ error: '비밀번호는 최소 8자리 이상이어야 합니다.' }, { status: 400 });
+        }
+
+        // Validate commissionRate
+        if (commissionRate !== undefined && commissionRate !== '') {
+            const rate = parseFloat(commissionRate);
+            if (isNaN(rate) || rate < 0 || rate > 100) {
+                return NextResponse.json({ error: '커미션 비율은 0~100% 사이여야 합니다.' }, { status: 400 });
+            }
         }
 
         if (user) {

@@ -104,6 +104,22 @@ export async function DELETE(req: Request) {
             include: { images: { select: { url: true } } },
         });
 
+        // Block deletion if there are active (non-completed) orders referencing this product
+        const activeOrderCount = await prisma.orderItem.count({
+            where: {
+                productId: BigInt(id),
+                order: {
+                    status: { in: ['PENDING', 'CONFIRMED', 'SHIPPING'] },
+                },
+            },
+        });
+        if (activeOrderCount > 0) {
+            return NextResponse.json(
+                { error: `진행 중인 주문(${activeOrderCount}건)이 있어 삭제할 수 없습니다. 주문 완료 후 삭제해주세요.` },
+                { status: 409 }
+            );
+        }
+
         await prisma.product.delete({ where: { id: BigInt(id) } });
 
         // Delete all product images from GCS (non-blocking, won't fail the request)
@@ -150,6 +166,10 @@ export async function PATCH(req: Request) {
         }
         if (status !== undefined) data.status = status;
         if (approvalStatus !== undefined) {
+            const VALID_APPROVAL_STATUSES = ['PENDING', 'APPROVED', 'REJECTED'];
+            if (!VALID_APPROVAL_STATUSES.includes(approvalStatus)) {
+                return NextResponse.json({ error: 'Invalid approval status' }, { status: 400 });
+            }
             data.approvalStatus = approvalStatus;
             // Save rejection reason when rejecting; clear it when approving
             if (approvalStatus === 'REJECTED') {
@@ -210,6 +230,11 @@ export async function POST(req: Request) {
 
         if (!sku || !priceUsd || !name || !baseLang) {
             return NextResponse.json({ error: 'Missing required configuration fields.' }, { status: 400 });
+        }
+
+        // SKU length limit (max 50 chars)
+        if (sku.trim().length > 50) {
+            return NextResponse.json({ error: 'SKU must be 50 characters or less.' }, { status: 400 });
         }
 
         // 2. Build base translation row (always used)

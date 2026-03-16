@@ -96,6 +96,9 @@ export async function POST(req: Request) {
 
     if (!sku || !priceUsd || !nameKo) return NextResponse.json({ error: '필수 값 누락' }, { status: 400 });
 
+    // SKU length limit (max 50 chars)
+    if (sku.trim().length > 50) return NextResponse.json({ error: 'SKU는 50자 이하여야 합니다.' }, { status: 400 });
+
     // Check for duplicate SKU
     const existing = await prisma.product.findUnique({ where: { sku } });
     if (existing) return NextResponse.json({ error: 'SKU가 이미 존재합니다.' }, { status: 400 });

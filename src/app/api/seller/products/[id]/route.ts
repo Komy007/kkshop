@@ -27,7 +27,7 @@ export async function GET(
     });
 
     if (!product) return NextResponse.json({ error: 'Product not found' }, { status: 404 });
-    if (product.supplierId !== supplier.id) {
+    if (!product.supplierId || product.supplierId !== supplier.id) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -112,7 +112,7 @@ export async function PATCH(
     });
 
     if (!product) return NextResponse.json({ error: 'Product not found' }, { status: 404 });
-    if (product.supplierId !== supplier.id) {
+    if (!product.supplierId || product.supplierId !== supplier.id) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
