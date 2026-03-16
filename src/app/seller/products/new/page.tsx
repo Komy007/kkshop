@@ -8,6 +8,36 @@ interface Category { id: string; slug: string; nameKo: string; nameEn?: string; 
 
 const SIZE_PRESETS = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Free Size'];
 
+// ── 스타일 상수 (모듈 스코프) ─────────────────────────────────────────────
+const inp  = "w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500";
+const ta   = "w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 resize-none";
+const vInp = "px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500";
+
+// ── 헬퍼 컴포넌트 — 반드시 모듈 스코프에 정의해야 리렌더시 재마운트 방지 ──
+function Section({ title, sub, children }: { title: string; sub?: string; children: React.ReactNode }) {
+    return (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-4">
+            <h2 className="font-extrabold text-gray-900 text-base leading-tight">{title}</h2>
+            {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
+            <div className="mt-4">{children}</div>
+        </div>
+    );
+}
+
+function Field({ en, ko, required, children }: { en: string; ko: string; required?: boolean; children: React.ReactNode }) {
+    return (
+        <div>
+            <label className="block mb-1.5">
+                <span className="text-sm font-semibold text-gray-800">
+                    {en}{required && <span className="text-red-500 ml-0.5">*</span>}
+                </span>
+                <span className="text-[11px] text-gray-400 ml-1.5">{ko}</span>
+            </label>
+            {children}
+        </div>
+    );
+}
+
 export default function SellerProductNewPage() {
     const router  = useRouter();
     const fileRef = useRef<HTMLInputElement>(null);
@@ -193,31 +223,6 @@ export default function SellerProductNewPage() {
             <p className="text-xs text-gray-300 mt-3">Redirecting… · 이동 중…</p>
         </div>
     );
-
-    /* ── Section / Field helpers ── */
-    const Section = ({ title, sub, children }: { title: string; sub?: string; children: React.ReactNode }) => (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-4">
-            <h2 className="font-extrabold text-gray-900 text-base leading-tight">{title}</h2>
-            {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
-            <div className="mt-4">{children}</div>
-        </div>
-    );
-
-    const Field = ({ en, ko, required, children }: { en: string; ko: string; required?: boolean; children: React.ReactNode }) => (
-        <div>
-            <label className="block mb-1.5">
-                <span className="text-sm font-semibold text-gray-800">
-                    {en}{required && <span className="text-red-500 ml-0.5">*</span>}
-                </span>
-                <span className="text-[11px] text-gray-400 ml-1.5">{ko}</span>
-            </label>
-            {children}
-        </div>
-    );
-
-    const inp   = "w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500";
-    const ta    = "w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 resize-none";
-    const vInp  = "px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500";
 
     return (
         <div className="max-w-3xl mx-auto py-7 px-4">

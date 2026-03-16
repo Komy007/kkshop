@@ -42,10 +42,15 @@ export default function AdminDashboard() {
                 const [products, orders, customers, suppliers, inventory] = await Promise.all([
                     pRes.json(), (oRes as any).json(), uRes.json(), sRes.json(), invRes.json()
                 ]);
-                const p = Array.isArray(products) ? products : [];
+                // products API: { products, total, page, pageSize } 객체 형식
+                const p = Array.isArray(products) ? products : (products?.products ?? []);
+                // orders API: 배열 직접 반환
                 const o = Array.isArray(orders) ? orders : [];
-                const u = Array.isArray(customers) ? customers : [];
+                // customers API: { customers, total, page, pageSize } 객체 형식
+                const u = Array.isArray(customers) ? customers : (customers?.customers ?? []);
+                // suppliers API: 배열 직접 반환
                 const s = Array.isArray(suppliers) ? suppliers : [];
+                // inventory API: 배열 직접 반환
                 const inv = Array.isArray(inventory) ? inventory : [];
                 setStats({
                     totalProducts: p.length,

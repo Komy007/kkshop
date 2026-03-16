@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
     Tag, Loader2, RefreshCw, Edit3, Save, X,
-    Plus, ChevronDown, ChevronRight, FolderOpen, Folder,
+    Plus, ChevronDown, ChevronRight, FolderOpen, Folder, Trash2, AlertTriangle,
 } from 'lucide-react';
 import TaegukgiIcon from '@/components/TaegukgiIcon';
 
@@ -166,6 +166,11 @@ interface CategoryRowProps {
     addError: string;
     onAddSave: () => void;
     onAddCancel: () => void;
+    // Delete props
+    confirmDeleteId: string | null;
+    setConfirmDeleteId: (id: string | null) => void;
+    onDelete: (id: string) => void;
+    deleting: boolean;
 }
 
 function CategoryRow({
@@ -173,11 +178,15 @@ function CategoryRow({
     editing, setEditing, editForm, setEditForm, saving, onSave,
     addingParentId, onStartAdd, expanded, onToggleExpand,
     newForm, setNewForm, addError, onAddSave, onAddCancel,
+    confirmDeleteId, setConfirmDeleteId, onDelete, deleting,
 }: CategoryRowProps) {
     const isEdit      = editing === c.id;
     const hasChildren = (c.children?.length ?? 0) > 0;
     const isExp       = expanded.has(c.id);
     const isAddingHere = addingParentId === c.id;
+    const isConfirming = confirmDeleteId === c.id;
+    // 삭제 가능 조건: 시스템 카테고리 아님 + 연결 상품 없음 + 서브카테고리 없음
+    const canDelete   = !c.isSystem && (c.productCount ?? 0) === 0 && !hasChildren;
 
     return (
         <>
@@ -258,8 +267,10 @@ function CategoryRow({
 
                 {/* Actions */}
                 <td className="py-2.5 px-3 text-right">
-                    <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center justify-end gap-1">
+
                         {isEdit ? (
+                            /* ── 편집 저장/취소 ── */
                             <>
                                 <button onClick={() => onSave(c.id)} disabled={saving}
                                     className="p-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
@@ -270,22 +281,59 @@ function CategoryRow({
                                     <X className="w-3.5 h-3.5" />
                                 </button>
                             </>
+                        ) : isConfirming ? (
+                            /* ── 삭제 인라인 확인 ── */
+                            <div className="flex items-center gap-1.5 bg-red-50 border border-red-200 rounded-lg px-2 py-1">
+                                <AlertTriangle className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />
+                                <span className="text-xs text-red-600 font-semibold whitespace-nowrap">삭제?</span>
+                                <button
+                                    onClick={() => onDelete(c.id)}
+                                    disabled={deleting}
+                                    className="px-2 py-0.5 bg-red-500 text-white text-xs font-bold rounded hover:bg-red-600 disabled:opacity-50 flex items-center gap-1">
+                                    {deleting ? <Loader2 className="w-3 h-3 animate-spin" /> : '확인'}
+                                </button>
+                                <button
+                                    onClick={() => setConfirmDeleteId(null)}
+                                    className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs font-bold rounded hover:bg-gray-200">
+                                    취소
+                                </button>
+                            </div>
                         ) : (
                             <>
+                                {/* + 서브 추가 버튼: hover 시에만 표시 */}
                                 {!c.isSystem && depth === 0 && (
                                     <button
                                         onClick={() => onStartAdd(c.id)}
                                         title="Add sub-category · 서브카테고리 추가"
-                                        className="p-1.5 text-teal-500 hover:bg-teal-50 rounded-lg transition-colors">
+                                        className="p-1.5 text-teal-500 hover:bg-teal-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100">
                                         <Plus className="w-3.5 h-3.5" />
                                     </button>
                                 )}
-                                <button onClick={() => { setEditing(c.id); setEditForm({ nameKo: c.nameKo, nameEn: c.nameEn, nameKm: c.nameKm, nameZh: c.nameZh, sortOrder: c.sortOrder }); }}
-                                    className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                                {/* ✏️ 편집 버튼: hover 시에만 표시 */}
+                                <button
+                                    onClick={() => { setEditing(c.id); setEditForm({ nameKo: c.nameKo, nameEn: c.nameEn, nameKm: c.nameKm, nameZh: c.nameZh, sortOrder: c.sortOrder }); }}
+                                    className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100">
                                     <Edit3 className="w-3.5 h-3.5" />
+                                </button>
+                                {/* 🗑️ 삭제 버튼: 항상 표시 — 가능(빨강)/불가(회색+잠금 아이콘) */}
+                                <button
+                                    onClick={() => canDelete ? setConfirmDeleteId(c.id) : undefined}
+                                    title={
+                                        c.isSystem ? '🔒 시스템 카테고리는 삭제 불가' :
+                                        (c.productCount ?? 0) > 0 ? `🔒 상품 ${c.productCount}개 연결됨 — 상품 이동 후 삭제 가능` :
+                                        hasChildren ? '🔒 서브카테고리를 먼저 삭제하세요' :
+                                        '🗑️ 카테고리 삭제'
+                                    }
+                                    className={`p-1.5 rounded-lg transition-colors flex items-center gap-0.5 ${
+                                        canDelete
+                                            ? 'text-red-500 hover:text-red-700 hover:bg-red-50 cursor-pointer'
+                                            : 'text-gray-400 cursor-not-allowed opacity-50'
+                                    }`}>
+                                    <Trash2 className="w-3.5 h-3.5" />
                                 </button>
                             </>
                         )}
+
                     </div>
                 </td>
             </tr>
@@ -325,6 +373,10 @@ function CategoryRow({
                     addError={addError}
                     onAddSave={onAddSave}
                     onAddCancel={onAddCancel}
+                    confirmDeleteId={confirmDeleteId}
+                    setConfirmDeleteId={setConfirmDeleteId}
+                    onDelete={onDelete}
+                    deleting={deleting}
                 />
             ))}
         </>
@@ -346,6 +398,10 @@ export default function CategoriesPage() {
     const [addingParentId, setAddingParentId] = useState<string | null | undefined>(undefined);
     const [newForm, setNewForm] = useState<NewForm>({ ...EMPTY_FORM });
     const [addError, setAddError] = useState('');
+
+    // Delete state
+    const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+    const [deleting, setDeleting] = useState(false);
 
     // Expanded rows
     const [expanded, setExpanded] = useState<Set<string>>(new Set());
@@ -408,6 +464,20 @@ export default function CategoriesPage() {
         setEditing(null);
         fetchCats();
     }, [editForm, fetchCats]);
+
+    const handleDelete = useCallback(async (id: string) => {
+        setDeleting(true);
+        setError('');
+        const res = await fetch(`/api/admin/categories?id=${id}`, { method: 'DELETE' });
+        const data = await res.json();
+        setDeleting(false);
+        setConfirmDeleteId(null);
+        if (!res.ok) {
+            setError(data.errorKo || data.error || '삭제 실패');
+            return;
+        }
+        fetchCats();
+    }, [fetchCats]);
 
     const toggleExpand = useCallback((id: string) =>
         setExpanded(p => { const s = new Set(p); s.has(id) ? s.delete(id) : s.add(id); return s; }), []);
@@ -573,6 +643,10 @@ export default function CategoriesPage() {
                                     addError={addError}
                                     onAddSave={handleAdd}
                                     onAddCancel={handleAddCancel}
+                                    confirmDeleteId={confirmDeleteId}
+                                    setConfirmDeleteId={setConfirmDeleteId}
+                                    onDelete={handleDelete}
+                                    deleting={deleting}
                                 />
                             ))}
                         </tbody>

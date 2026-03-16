@@ -174,7 +174,7 @@ export default function SellerLayout({ children }: { children: React.ReactNode }
                     </div>
                     <div />
                 </header>
-                <main className="flex-1 overflow-y-auto">{children}</main>
+                <main className="flex-1 overflow-y-auto overflow-x-auto min-w-0">{children}</main>
             </div>
         </div>
     );

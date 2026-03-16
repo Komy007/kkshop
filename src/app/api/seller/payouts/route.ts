@@ -10,7 +10,9 @@ export async function GET(req: NextRequest) {
 
     const userId = session.user.id as string;
     const { searchParams } = new URL(req.url);
-    const period = parseInt(searchParams.get('period') ?? '30');
+    const ALLOWED_PERIODS = [7, 30, 90, 365];
+    const rawPeriod = parseInt(searchParams.get('period') ?? '30');
+    const period = ALLOWED_PERIODS.includes(rawPeriod) ? rawPeriod : 30;
 
     const since = new Date();
     since.setDate(since.getDate() - period);
