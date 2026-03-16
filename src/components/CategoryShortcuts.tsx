@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { useAppStore, useSafeAppStore } from '@/store/useAppStore';
+import { useSafeAppStore } from '@/store/useAppStore';
 
 const shortcutTranslations: Record<string, Record<string, string>> = {
     ko: {
@@ -14,7 +14,7 @@ const shortcutTranslations: Record<string, Record<string, string>> = {
         fnb: '한국식품',
         best: '베스트',
         newArrivals: '신상품',
-        sale: '할인',
+        sale: '특가세일',
         all: '전체보기',
     },
     en: {
@@ -24,7 +24,7 @@ const shortcutTranslations: Record<string, Record<string, string>> = {
         living: 'Living',
         health: 'Health',
         fnb: 'Korean F&B',
-        best: 'Bestseller',
+        best: 'Best',
         newArrivals: 'New',
         sale: 'Sale',
         all: 'View All',
@@ -50,7 +50,7 @@ const shortcutTranslations: Record<string, Record<string, string>> = {
         fnb: '韩国食品',
         best: '热销',
         newArrivals: '新品',
-        sale: '折扣',
+        sale: '特价',
         all: '全部',
     },
 };
@@ -59,20 +59,91 @@ interface Shortcut {
     key: string;
     emoji: string;
     href: string;
-    gradient: string;
+    bg: string;          // circle background color
+    shadow: string;      // drop shadow color
+    badge?: string;      // optional top badge text
+    badgeBg?: string;    // badge background color
 }
 
 const shortcuts: Shortcut[] = [
-    { key: 'skincare',   emoji: '🧴', href: '/category/skincare',  gradient: 'from-pink-500/20 to-purple-500/20' },
-    { key: 'makeup',     emoji: '💄', href: '/category/makeup',    gradient: 'from-rose-500/20 to-pink-500/20' },
-    { key: 'hairBody',   emoji: '🧖', href: '/category/hair-body', gradient: 'from-cyan-500/20 to-blue-500/20' },
-    { key: 'living',     emoji: '🏠', href: '/category/living',    gradient: 'from-green-500/20 to-emerald-500/20' },
-    { key: 'health',     emoji: '💊', href: '/category/health',    gradient: 'from-amber-500/20 to-orange-500/20' },
-    { key: 'fnb',        emoji: '🍜', href: '/category/fnb',       gradient: 'from-orange-400/20 to-red-400/20' },
-    { key: 'best',       emoji: '👑', href: '/category/best',      gradient: 'from-yellow-500/20 to-amber-500/20' },
-    { key: 'newArrivals',emoji: '✨', href: '/category/new',       gradient: 'from-violet-500/20 to-indigo-500/20' },
-    { key: 'sale',       emoji: '🔥', href: '/category/sale',      gradient: 'from-red-500/20 to-orange-500/20' },
-    { key: 'all',        emoji: '📦', href: '/category/all',       gradient: 'from-gray-500/20 to-slate-500/20' },
+    {
+        key: 'skincare',
+        emoji: '🧴',
+        href: '/category/skincare',
+        bg: 'bg-[#FFD6E7]',
+        shadow: 'shadow-pink-300',
+    },
+    {
+        key: 'makeup',
+        emoji: '💄',
+        href: '/category/makeup',
+        bg: 'bg-[#FFAFC5]',
+        shadow: 'shadow-rose-300',
+    },
+    {
+        key: 'hairBody',
+        emoji: '🧖',
+        href: '/category/hair-body',
+        bg: 'bg-[#B8E8FF]',
+        shadow: 'shadow-sky-300',
+    },
+    {
+        key: 'living',
+        emoji: '🏡',
+        href: '/category/living',
+        bg: 'bg-[#B8F0D8]',
+        shadow: 'shadow-emerald-300',
+    },
+    {
+        key: 'health',
+        emoji: '💊',
+        href: '/category/health',
+        bg: 'bg-[#FFE4A0]',
+        shadow: 'shadow-amber-300',
+    },
+    {
+        key: 'fnb',
+        emoji: '🍜',
+        href: '/category/fnb',
+        bg: 'bg-[#FFCBA4]',
+        shadow: 'shadow-orange-300',
+        badge: 'KOREA',
+        badgeBg: 'bg-[#E52528]',
+    },
+    {
+        key: 'best',
+        emoji: '👑',
+        href: '/category/best',
+        bg: 'bg-[#FFE566]',
+        shadow: 'shadow-yellow-300',
+        badge: 'BEST',
+        badgeBg: 'bg-[#FF6B00]',
+    },
+    {
+        key: 'newArrivals',
+        emoji: '✨',
+        href: '/category/new',
+        bg: 'bg-[#DDD4FF]',
+        shadow: 'shadow-violet-300',
+        badge: 'NEW',
+        badgeBg: 'bg-[#7C3AED]',
+    },
+    {
+        key: 'sale',
+        emoji: '🔥',
+        href: '/category/sale',
+        bg: 'bg-[#FFBABA]',
+        shadow: 'shadow-red-300',
+        badge: 'SALE',
+        badgeBg: 'bg-[#E52528]',
+    },
+    {
+        key: 'all',
+        emoji: '📦',
+        href: '/search',
+        bg: 'bg-[#D4E4FF]',
+        shadow: 'shadow-blue-300',
+    },
 ];
 
 export default function CategoryShortcuts() {
@@ -81,18 +152,57 @@ export default function CategoryShortcuts() {
     const t = shortcutTranslations[language] ?? shortcutTranslations.en;
 
     return (
-        <section className="py-3 px-3" aria-label="Category shortcuts">
-            <div className="grid grid-cols-5 sm:grid-cols-10 gap-y-3 gap-x-2">
+        <section className="py-4 px-3 bg-white" aria-label="Category shortcuts">
+            <div className="grid grid-cols-5 gap-y-4 gap-x-1">
                 {shortcuts.map((item) => (
                     <Link
                         key={item.key}
                         href={item.href}
-                        className="group flex flex-col items-center gap-1.5 min-w-[44px]"
+                        className="group flex flex-col items-center gap-2"
                     >
-                        <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br ${item.gradient} border border-gray-200 flex items-center justify-center text-xl sm:text-2xl group-hover:scale-110 group-hover:border-brand-primary transition-all duration-200 active:scale-95 bg-white shadow-sm`}>
-                            {item.emoji}
+                        {/* Icon circle */}
+                        <div className="relative">
+                            <div
+                                className={`
+                                    w-[56px] h-[56px] sm:w-[64px] sm:h-[64px]
+                                    rounded-[20px] sm:rounded-[24px]
+                                    ${item.bg}
+                                    shadow-md ${item.shadow}
+                                    flex items-center justify-center
+                                    group-hover:scale-110 group-active:scale-95
+                                    transition-transform duration-200
+                                `}
+                                style={{
+                                    boxShadow: `0 6px 16px -4px var(--tw-shadow-color, rgba(0,0,0,0.15))`,
+                                }}
+                            >
+                                <span
+                                    className="text-[28px] sm:text-[32px] leading-none select-none"
+                                    style={{ filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.18))' }}
+                                >
+                                    {item.emoji}
+                                </span>
+                            </div>
+
+                            {/* Badge */}
+                            {item.badge && (
+                                <span
+                                    className={`
+                                        absolute -bottom-1 left-1/2 -translate-x-1/2
+                                        ${item.badgeBg} text-white
+                                        text-[9px] font-black tracking-wider
+                                        px-1.5 py-0.5 rounded-full
+                                        leading-none whitespace-nowrap
+                                        shadow-sm
+                                    `}
+                                >
+                                    {item.badge}
+                                </span>
+                            )}
                         </div>
-                        <span className="text-[11px] sm:text-[13px] font-bold text-gray-900 group-hover:text-brand-primary transition-colors text-center leading-tight line-clamp-1">
+
+                        {/* Label */}
+                        <span className="text-[11px] sm:text-[12px] font-bold text-gray-800 group-hover:text-brand-primary transition-colors text-center leading-tight line-clamp-1 w-full px-0.5">
                             {t?.[item.key] ?? item.key}
                         </span>
                     </Link>
