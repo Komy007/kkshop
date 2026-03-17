@@ -38,6 +38,8 @@ export default function AdminProductsPage() {
     const [approvingId,    setApprovingId]    = useState<string | null>(null); // row open for approve/reject
     const [rejectReason,   setRejectReason]   = useState('');
     const [actionLoading,  setActionLoading]  = useState<string | null>(null);
+    const [approveBadgeAuthentic,      setApproveBadgeAuthentic]      = useState(false);
+    const [approveBadgeKoreanCertified, setApproveBadgeKoreanCertified] = useState(false);
     const [approvalFilter, setApprovalFilter] = useState('all'); // 'all' | 'PENDING'
     const searchTimer = useRef<NodeJS.Timeout | null>(null);
 
@@ -188,10 +190,18 @@ export default function AdminProductsPage() {
         await fetch('/api/admin/products', {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id, approvalStatus: 'APPROVED', status: 'ACTIVE' }),
+            body: JSON.stringify({
+                id,
+                approvalStatus: 'APPROVED',
+                status: 'ACTIVE',
+                badgeAuthentic: approveBadgeAuthentic,
+                badgeKoreanCertified: approveBadgeKoreanCertified,
+            }),
         });
         setActionLoading(null);
         setApprovingId(null);
+        setApproveBadgeAuthentic(false);
+        setApproveBadgeKoreanCertified(false);
         fetchProducts(page, search, activeSlug, approvalFilter);
     };
 
@@ -423,6 +433,17 @@ export default function AdminProductsPage() {
                                                                     <p className="text-xs font-bold text-amber-800 mb-1.5">
                                                                         🔔 Review Decision · 검수 결정 — <span className="font-normal opacity-80">{koName}</span>
                                                                     </p>
+                                                                    {/* Trust badge selection */}
+                                                                    <div className="flex flex-wrap gap-2 mb-2">
+                                                                        <label className={`flex items-center gap-1.5 cursor-pointer px-2.5 py-1.5 rounded-lg border text-xs font-semibold transition-all ${approveBadgeAuthentic ? 'border-pink-400 bg-pink-50 text-pink-700' : 'border-gray-200 bg-white text-gray-600 hover:border-pink-300'}`}>
+                                                                            <input type="checkbox" checked={approveBadgeAuthentic} onChange={e => setApproveBadgeAuthentic(e.target.checked)} className="w-3.5 h-3.5 rounded text-pink-500 border-gray-300" />
+                                                                            🛡 Authentic Cosmetics
+                                                                        </label>
+                                                                        <label className={`flex items-center gap-1.5 cursor-pointer px-2.5 py-1.5 rounded-lg border text-xs font-semibold transition-all ${approveBadgeKoreanCertified ? 'border-teal-400 bg-teal-50 text-teal-700' : 'border-gray-200 bg-white text-gray-600 hover:border-teal-300'}`}>
+                                                                            <input type="checkbox" checked={approveBadgeKoreanCertified} onChange={e => setApproveBadgeKoreanCertified(e.target.checked)} className="w-3.5 h-3.5 rounded text-teal-500 border-gray-300" />
+                                                                            🏅 Korean Certified
+                                                                        </label>
+                                                                    </div>
                                                                     <input
                                                                         value={rejectReason}
                                                                         onChange={e => setRejectReason(e.target.value)}

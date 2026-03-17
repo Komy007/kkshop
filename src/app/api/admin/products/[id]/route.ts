@@ -44,6 +44,8 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
             status: product.status,
             approvalStatus: product.approvalStatus,
             rejectionReason: product.rejectionReason ?? null,
+            badgeAuthentic: product.badgeAuthentic,
+            badgeKoreanCertified: product.badgeKoreanCertified,
             imageUrl: product.imageUrl ?? null,
             isNew: product.isNew,
             isHotSale: product.isHotSale,
@@ -132,6 +134,7 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
         const {
             sku, priceUsd, costPrice, stockAlertQty, stockQty, categoryId, supplierId,
             status, approvalStatus, isNew, isHotSale, hotSalePrice,
+            badgeAuthentic, badgeKoreanCertified,
             brandName, volume, skinType, origin, expiryMonths, certifications,
             baseLang, name, shortDesc, detailDesc, ingredients, howToUse, benefits, seoKeywords,
             retranslate = false,
@@ -176,6 +179,8 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
         if (origin !== undefined) productData.origin = origin || null;
         if (expiryMonths !== undefined) productData.expiryMonths = expiryMonths ? parseInt(expiryMonths) : null;
         if (certifications !== undefined) productData.certifications = certifications || null;
+        if (badgeAuthentic !== undefined) productData.badgeAuthentic = Boolean(badgeAuthentic);
+        if (badgeKoreanCertified !== undefined) productData.badgeKoreanCertified = Boolean(badgeKoreanCertified);
 
         // Handle translations
         let translationsToUpsert: any[] = [];

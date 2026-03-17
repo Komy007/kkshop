@@ -70,6 +70,7 @@ export default function EditProductPage() {
         categoryId: '', supplierId: '', status: 'ACTIVE', approvalStatus: 'APPROVED',
         rejectionReason: '',
         isNew: false, isHotSale: false, hotSalePrice: '',
+        badgeAuthentic: false, badgeKoreanCertified: false,
         brandName: '', volume: '', skinType: '', origin: '',
         expiryMonths: '', certifications: '',
         baseLang: 'ko',
@@ -111,6 +112,8 @@ export default function EditProductPage() {
                     isNew: p.isNew ?? false,
                     isHotSale: p.isHotSale ?? false,
                     hotSalePrice: p.hotSalePrice ?? '',
+                    badgeAuthentic: p.badgeAuthentic ?? false,
+                    badgeKoreanCertified: p.badgeKoreanCertified ?? false,
                     brandName: p.brandName ?? '',
                     volume: p.volume ?? '',
                     skinType: p.skinType ?? '',
@@ -515,6 +518,24 @@ export default function EditProductPage() {
                                 </div>
                             </div>
                         )}
+                    {/* Trust Badges */}
+                    <div className="md:col-span-2">
+                        <label className="block text-xs font-medium text-gray-600 mb-2">
+                            Trust Badges · 신뢰 뱃지 <span className="text-gray-400 font-normal">(상품 페이지에 표시)</span>
+                        </label>
+                        <div className="flex flex-wrap gap-3">
+                            <label className={`flex items-center gap-2 cursor-pointer px-3 py-2 rounded-xl border-2 transition-all select-none ${form.badgeAuthentic ? 'border-pink-400 bg-pink-50' : 'border-gray-200 hover:border-pink-200'}`}>
+                                <input type="checkbox" name="badgeAuthentic" checked={form.badgeAuthentic} onChange={handleChange} className="w-4 h-4 rounded text-pink-500 focus:ring-pink-400 border-gray-300" />
+                                <span className="text-sm font-semibold text-gray-700">🛡 100% Authentic Korean Cosmetics</span>
+                                <span className="text-[10px] text-gray-400">화장품 전용</span>
+                            </label>
+                            <label className={`flex items-center gap-2 cursor-pointer px-3 py-2 rounded-xl border-2 transition-all select-none ${form.badgeKoreanCertified ? 'border-teal-400 bg-teal-50' : 'border-gray-200 hover:border-teal-200'}`}>
+                                <input type="checkbox" name="badgeKoreanCertified" checked={form.badgeKoreanCertified} onChange={handleChange} className="w-4 h-4 rounded text-teal-500 focus:ring-teal-400 border-gray-300" />
+                                <span className="text-sm font-semibold text-gray-700">🏅 Korean Certified</span>
+                                <span className="text-[10px] text-gray-400">일반 한국 상품 가능</span>
+                            </label>
+                        </div>
+                    </div>
                     </div>
                 </div>
 
