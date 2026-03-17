@@ -3,9 +3,15 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/api';
 
-// GET /api/products/flash-sale - Return currently active flash sales (public)
-export async function GET() {
+// GET /api/products/flash-sale?lang=en - Return currently active flash sales (public)
+export async function GET(req: Request) {
   try {
+    const { searchParams } = new URL(req.url);
+    const rawLang = searchParams.get('lang') ?? 'en';
+    const lang = (['en', 'ko', 'km', 'zh'] as const).includes(rawLang as 'en')
+      ? rawLang
+      : 'en';
+
     const now = new Date();
 
     const flashSales = await prisma.flashSale.findMany({
@@ -22,7 +28,7 @@ export async function GET() {
             stockQty: true,
             imageUrl: true,
             translations: {
-              where: { langCode: 'en' },
+              where: { langCode: lang },
               take: 1,
               select: { name: true },
             },

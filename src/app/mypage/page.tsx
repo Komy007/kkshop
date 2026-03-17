@@ -307,6 +307,10 @@ export default function MyPage() {
     const [ordersLoading, setOrdersLoading] = useState(false);
     const [cancellingOrderId, setCancellingOrderId] = useState<string | null>(null);
     const [cancelConfirmId, setCancelConfirmId] = useState<string | null>(null);
+    // Return request
+    const [returnConfirmId, setReturnConfirmId] = useState<string | null>(null);
+    const [returnReason, setReturnReason] = useState('');
+    const [returningOrderId, setReturningOrderId] = useState<string | null>(null);
 
     // Wishlist
     const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
@@ -404,6 +408,34 @@ export default function MyPage() {
             alert('주문 취소 중 오류가 발생했습니다.');
         } finally {
             setCancellingOrderId(null);
+        }
+    };
+
+    const handleReturnRequest = async (orderId: string) => {
+        if (returnReason.trim().length < 10) {
+            alert('반품 사유를 10자 이상 입력해 주세요.');
+            return;
+        }
+        setReturningOrderId(orderId);
+        try {
+            const res = await fetch(`/api/orders/${orderId}/return`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reason: returnReason.trim() }),
+            });
+            const data = await res.json();
+            if (res.ok) {
+                setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'RETURN_REQUESTED' } : o));
+                setReturnConfirmId(null);
+                setReturnReason('');
+                alert('반품 요청이 접수되었습니다. 1~3 영업일 내에 처리됩니다.');
+            } else {
+                alert(data.error || '반품 요청 중 오류가 발생했습니다.');
+            }
+        } catch {
+            alert('반품 요청 중 오류가 발생했습니다.');
+        } finally {
+            setReturningOrderId(null);
         }
     };
 
@@ -556,21 +588,23 @@ export default function MyPage() {
     };
 
     const statusColors: Record<string, string> = {
-        PENDING: 'bg-amber-50 text-amber-600 border-amber-200',
-        CONFIRMED: 'bg-cyan-50 text-cyan-600 border-cyan-200',
-        SHIPPING: 'bg-brand-primary/10 text-brand-primary border-brand-primary/20',
-        DELIVERED: 'bg-green-50 text-green-600 border-green-200',
-        COMPLETED: 'bg-emerald-50 text-emerald-600 border-emerald-200',
-        CANCELLED: 'bg-red-50 text-red-600 border-red-200',
+        PENDING:          'bg-amber-50 text-amber-600 border-amber-200',
+        CONFIRMED:        'bg-cyan-50 text-cyan-600 border-cyan-200',
+        SHIPPING:         'bg-brand-primary/10 text-brand-primary border-brand-primary/20',
+        DELIVERED:        'bg-green-50 text-green-600 border-green-200',
+        COMPLETED:        'bg-emerald-50 text-emerald-600 border-emerald-200',
+        CANCELLED:        'bg-red-50 text-red-600 border-red-200',
+        RETURN_REQUESTED: 'bg-orange-50 text-orange-600 border-orange-200',
     };
 
     const statusLabels: Record<string, string> = {
-        PENDING: t.mypage.orderStatus.pending,
-        CONFIRMED: t.mypage.orderStatus.confirmed,
-        SHIPPING: t.mypage.orderStatus.shipping,
-        DELIVERED: t.mypage.orderStatus.delivered,
-        COMPLETED: t.mypage.orderStatus.completed,
-        CANCELLED: t.mypage.orderStatus.cancelled,
+        PENDING:          t.mypage.orderStatus.pending,
+        CONFIRMED:        t.mypage.orderStatus.confirmed,
+        SHIPPING:         t.mypage.orderStatus.shipping,
+        DELIVERED:        t.mypage.orderStatus.delivered,
+        COMPLETED:        t.mypage.orderStatus.completed,
+        CANCELLED:        t.mypage.orderStatus.cancelled,
+        RETURN_REQUESTED: '반품 요청 중',
     };
 
     const tabs: { key: TabKey; icon: React.ElementType; label: string }[] = [
@@ -792,6 +826,53 @@ export default function MyPage() {
                                                             주문 취소
                                                         </button>
                                                     )}
+                                                </div>
+                                            )}
+
+                                            {/* Return button — DELIVERED orders only */}
+                                            {order.status === 'DELIVERED' && (
+                                                <div className="mt-1.5">
+                                                    {returnConfirmId === order.id ? (
+                                                        <div className="bg-orange-50 border border-orange-200 rounded-xl px-3 py-3 space-y-2">
+                                                            <p className="text-xs text-orange-700 font-semibold">반품 사유를 입력해 주세요 (최소 10자)</p>
+                                                            <textarea
+                                                                value={returnReason}
+                                                                onChange={(e) => setReturnReason(e.target.value)}
+                                                                placeholder="반품 사유를 상세히 입력해 주세요..."
+                                                                rows={3}
+                                                                className="w-full text-xs border border-orange-200 rounded-lg p-2 focus:outline-none focus:ring-1 focus:ring-orange-400 resize-none"
+                                                            />
+                                                            <div className="flex gap-2">
+                                                                <button
+                                                                    onClick={() => handleReturnRequest(order.id)}
+                                                                    disabled={returningOrderId === order.id || returnReason.trim().length < 10}
+                                                                    className="flex-1 px-3 py-1.5 bg-orange-500 text-white text-xs font-bold rounded-lg hover:bg-orange-600 disabled:opacity-50"
+                                                                >
+                                                                    {returningOrderId === order.id ? '처리 중...' : '반품 신청'}
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => { setReturnConfirmId(null); setReturnReason(''); }}
+                                                                    className="px-3 py-1.5 bg-gray-200 text-gray-700 text-xs font-bold rounded-lg hover:bg-gray-300"
+                                                                >
+                                                                    닫기
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <button
+                                                            onClick={(e) => { e.preventDefault(); setReturnConfirmId(order.id); setReturnReason(''); }}
+                                                            className="w-full text-xs text-orange-400 hover:text-orange-600 font-semibold py-1.5 border border-orange-100 hover:border-orange-300 rounded-xl transition-colors hover:bg-orange-50"
+                                                        >
+                                                            반품 요청
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            {/* Return in progress badge */}
+                                            {order.status === 'RETURN_REQUESTED' && (
+                                                <div className="mt-1.5 text-center text-xs text-orange-500 font-semibold py-1.5 border border-orange-100 rounded-xl bg-orange-50">
+                                                    ⏳ 반품 처리 중 (1~3 영업일 소요)
                                                 </div>
                                             )}
                                             </div>

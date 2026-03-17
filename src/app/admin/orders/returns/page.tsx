@@ -19,19 +19,25 @@ interface ReturnOrder {
         priceUsd: number;
         product: { nameEn: string; nameKo: string; imageUrl: string | null };
     }>;
-    refundReason?: string;
+    returnRequest?: {
+        reason: string;
+        status: string;
+        createdAt: string;
+    } | null;
 }
 
 const STATUS_COLORS: Record<string, string> = {
-    CANCELLED: 'bg-red-100 text-red-700',
-    REFUNDED:  'bg-purple-100 text-purple-700',
-    DELIVERED: 'bg-green-100 text-green-700',
+    CANCELLED:        'bg-red-100 text-red-700',
+    REFUNDED:         'bg-purple-100 text-purple-700',
+    DELIVERED:        'bg-green-100 text-green-700',
+    RETURN_REQUESTED: 'bg-orange-100 text-orange-700',
 };
 
 const STATUS_LABELS: Record<string, string> = {
-    CANCELLED: 'Cancelled',
-    REFUNDED:  'Refunded',
-    DELIVERED: 'Delivered (Return Requested)',
+    CANCELLED:        'Cancelled',
+    REFUNDED:         'Refunded',
+    DELIVERED:        'Delivered',
+    RETURN_REQUESTED: 'Return Requested',
 };
 
 export default function ReturnsPage() {
@@ -103,10 +109,10 @@ export default function ReturnsPage() {
             {/* Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[
-                    { label: 'Total Returns',    value: total,                                     color: 'text-slate-700' },
-                    { label: 'Refunded',         value: orders.filter(o => o.status === 'REFUNDED').length,  color: 'text-purple-600' },
-                    { label: 'Cancelled',        value: orders.filter(o => o.status === 'CANCELLED').length, color: 'text-red-600' },
-                    { label: 'Refund Amount',    value: `$${orders.filter(o => o.status === 'REFUNDED').reduce((s, o) => s + o.totalUsd, 0).toFixed(2)}`, color: 'text-green-600' },
+                    { label: 'Total Returns',      value: total,                                                color: 'text-slate-700' },
+                    { label: 'Return Requested',   value: orders.filter(o => o.status === 'RETURN_REQUESTED').length, color: 'text-orange-600' },
+                    { label: 'Refunded',           value: orders.filter(o => o.status === 'REFUNDED').length,   color: 'text-purple-600' },
+                    { label: 'Refund Amount',      value: `$${orders.filter(o => o.status === 'REFUNDED').reduce((s, o) => s + o.totalUsd, 0).toFixed(2)}`, color: 'text-green-600' },
                 ].map(stat => (
                     <div key={stat.label} className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
                         <div className={`text-2xl font-bold ${stat.color}`}>{stat.value}</div>
@@ -127,8 +133,8 @@ export default function ReturnsPage() {
                         className="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                 </div>
-                <div className="flex gap-2">
-                    {['ALL', 'CANCELLED', 'REFUNDED'].map(s => (
+                <div className="flex gap-2 flex-wrap">
+                    {['ALL', 'RETURN_REQUESTED', 'REFUNDED', 'CANCELLED'].map(s => (
                         <button
                             key={s}
                             onClick={() => { setFilterStatus(s); setPage(1); }}
@@ -206,6 +212,19 @@ export default function ReturnsPage() {
                                                         <div><span className="text-slate-500">Address:</span> {order.address}</div>
                                                     </div>
                                                 </div>
+
+                                                {/* 반품 사유 */}
+                                                {order.returnRequest?.reason && (
+                                                    <div>
+                                                        <h3 className="text-xs font-bold text-slate-500 uppercase mb-2">Return Reason</h3>
+                                                        <div className="bg-orange-50 border border-orange-200 rounded-xl p-3 text-sm text-orange-800">
+                                                            <p>{order.returnRequest.reason}</p>
+                                                            <p className="text-xs text-orange-500 mt-1">
+                                                                요청일: {new Date(order.returnRequest.createdAt).toLocaleDateString('ko-KR')}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                )}
 
                                                 {order.status !== 'REFUNDED' && (
                                                     <div>
