@@ -333,9 +333,12 @@ export default function SellerProductNewPage() {
                         <Field en="Initial Stock Qty" ko="초기 재고수량">
                             <input type="number" value={form.stockQty} onChange={e => set('stockQty', e.target.value)} className={inp} />
                         </Field>
-                        <Field en="Volume / Weight" ko="용량/중량">
+                        <Field en="Volume / Weight / Unit" ko="용량/중량/단위">
                             <input value={form.volume} onChange={e => set('volume', e.target.value)}
-                                placeholder="e.g. 150ml" className={inp} />
+                                placeholder="e.g. 150ml  |  1 pack = 5 bags (120g each)  |  500g" className={inp} />
+                            <p className="text-[10px] text-gray-400 mt-1">
+                                For bundled products describe contents: <em>1 box = 10 packs (each 30g)</em> · 묶음 상품은 구성 단위 기재
+                            </p>
                         </Field>
                         <Field en="Country of Origin" ko="원산지">
                             <input value={form.origin} onChange={e => set('origin', e.target.value)}
@@ -348,8 +351,37 @@ export default function SellerProductNewPage() {
                     </div>
                 </Section>
 
-                {/* ── Quantity Discount Options ── */}
-                <Section title="🎁 Quantity Discount Options" sub="단위별 할인 옵션 — optional · 선택사항">
+                {/* ── Bulk Pricing Tiers ── */}
+                <Section title="🎁 Bulk Pricing Tiers" sub="수량별 할인 단계 — optional · 선택사항">
+                    {/* How it works hint */}
+                    <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-700 flex items-start gap-2">
+                        <Info className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+                        <div>
+                            <strong>How tiers work:</strong> Buyers who purchase the minimum quantity in a tier automatically get that discount.
+                            Example: Buy 3+ = 10% off, Buy 10+ = 20% off + Free Shipping.
+                            <span className="block opacity-70 mt-0.5">구매 수량이 최소수량 이상이면 자동으로 해당 할인이 적용됩니다.</span>
+                        </div>
+                    </div>
+                    {/* Quick preset buttons */}
+                    <div className="mb-3 flex flex-wrap gap-2 items-center">
+                        <span className="text-xs font-semibold text-gray-500">Quick presets:</span>
+                        {[
+                            { label: 'Buy 3+ / 5% off', min: '3', max: '', pct: '5', ship: false },
+                            { label: 'Buy 5+ / 10% off', min: '5', max: '', pct: '10', ship: false },
+                            { label: 'Buy 10+ / 15% off', min: '10', max: '', pct: '15', ship: false },
+                            { label: 'Buy 20+ / 20% + Free Ship', min: '20', max: '', pct: '20', ship: true },
+                        ].map(p => (
+                            <button key={p.label} type="button"
+                                onClick={() => setOptions(prev => {
+                                    const exists = prev.some(o => o.minQty === p.min);
+                                    if (exists) return prev;
+                                    return [...prev, { minQty: p.min, maxQty: p.max, discountPct: p.pct, freeShipping: p.ship, labelKo: '' }];
+                                })}
+                                className="px-2.5 py-1 rounded-lg text-[11px] font-semibold border bg-white text-gray-600 border-gray-200 hover:border-teal-400 hover:text-teal-700 transition-all">
+                                {p.label}
+                            </button>
+                        ))}
+                    </div>
                     <div className="space-y-4">
                         {options.map((opt, i) => (
                             <div key={i} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_auto_2fr_auto] gap-3 items-end bg-teal-50/50 p-4 rounded-xl border border-teal-100 relative">
@@ -389,9 +421,15 @@ export default function SellerProductNewPage() {
                                 )}
                             </div>
                         ))}
-                        <button type="button" onClick={() => setOptions([...options, { minQty: '2', maxQty: '', discountPct: '10', freeShipping: false, labelKo: '' }])}
-                            className="text-sm text-teal-600 font-bold flex items-center gap-1 hover:text-teal-700 bg-teal-50 px-3 py-2 rounded-lg transition-colors border border-teal-100">
-                            + Add Quantity Option · 수량별 옵션 추가
+                        <button type="button" onClick={() => {
+                            const lastMin = parseInt(options[options.length - 1]?.minQty || '1', 10);
+                            const nextMin = String(lastMin + 5);
+                            const lastPct = parseFloat(options[options.length - 1]?.discountPct || '0');
+                            const nextPct = String(Math.min(lastPct + 5, 50));
+                            setOptions([...options, { minQty: nextMin, maxQty: '', discountPct: nextPct, freeShipping: false, labelKo: '' }]);
+                        }}
+                            className="text-sm text-teal-600 font-bold flex items-center gap-1.5 hover:text-teal-700 bg-teal-50 px-3 py-2 rounded-lg transition-colors border border-teal-100">
+                            <Plus className="w-4 h-4" /> Add Tier · 할인 단계 추가
                         </button>
                     </div>
                 </Section>

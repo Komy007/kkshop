@@ -50,6 +50,14 @@ const pdpTranslations: Record<string, any> = {
         },
         wishlistAdd: '찜하기',
         wishlistAdded: '찜 완료',
+        option: {
+            sectionTitle: '수량별 할인 혜택',
+            minOnly: (n: number) => `최소 ${n}개 이상`,
+            minMax: (min: number, max: number) => `${min}개 ~ 최대 ${max}개`,
+            off: (pct: number) => `${pct}% 할인`,
+            freeShip: '무료배송',
+            defaultLabel: (n: number) => `${n}개 이상 구매`,
+        },
     },
     en: {
         tabs: { desc: 'Description', ingredients: 'Ingredients', reviews: 'Reviews', qa: 'Q&A' },
@@ -92,6 +100,14 @@ const pdpTranslations: Record<string, any> = {
         },
         wishlistAdd: 'Wishlist',
         wishlistAdded: 'Wishlisted',
+        option: {
+            sectionTitle: 'Bulk Discount',
+            minOnly: (n: number) => `Buy ${n}+ units`,
+            minMax: (min: number, max: number) => `${min} to ${max} units`,
+            off: (pct: number) => `${pct}% off`,
+            freeShip: 'Free Shipping',
+            defaultLabel: (n: number) => `Buy ${n}+`,
+        },
     },
     km: {
         tabs: { desc: 'ការពិពណ៌នា', ingredients: 'សមាសធាតុ', reviews: 'មតិអតិថិជន', qa: 'Q&A' },
@@ -134,6 +150,14 @@ const pdpTranslations: Record<string, any> = {
         },
         wishlistAdd: 'ចូលចិត្ត',
         wishlistAdded: 'បានចូលចិត្ត',
+        option: {
+            sectionTitle: 'បញ្ចុះតម្លៃតាមបរិមាណ',
+            minOnly: (n: number) => `យ៉ាងតិច ${n} ដុំ`,
+            minMax: (min: number, max: number) => `${min} ដល់ ${max} ដុំ`,
+            off: (pct: number) => `បញ្ចុះ ${pct}%`,
+            freeShip: 'ដឹកដោយឥតគិតថ្លៃ',
+            defaultLabel: (n: number) => `ទិញ ${n}+`,
+        },
     },
     zh: {
         tabs: { desc: '详细描述', ingredients: '成分信息', reviews: '用户评价', qa: 'Q&A' },
@@ -176,6 +200,14 @@ const pdpTranslations: Record<string, any> = {
         },
         wishlistAdd: '收藏',
         wishlistAdded: '已收藏',
+        option: {
+            sectionTitle: '批量折扣',
+            minOnly: (n: number) => `最少 ${n} 件`,
+            minMax: (min: number, max: number) => `${min} 至 ${max} 件`,
+            off: (pct: number) => `${pct}% 折扣`,
+            freeShip: '免运费',
+            defaultLabel: (n: number) => `购买 ${n}+`,
+        },
     },
 };
 
@@ -864,7 +896,7 @@ export default function ProductDetailClient() {
                         {/* Product Options */}
                         {(product as any).options && (product as any).options.length > 0 && (
                             <div className="mt-2 p-4 bg-gray-50 rounded-xl border border-gray-200">
-                                <span className="block text-sm font-bold text-gray-700 mb-2">🎈 수량별 할인 혜택</span>
+                                <span className="block text-sm font-bold text-gray-700 mb-2">🎈 {t.option.sectionTitle}</span>
                                 <div className="space-y-2">
                                     {(product as any).options.map((opt: any) => (
                                         <label key={opt.id} className={`flex items-center justify-between p-3 rounded-lg border-2 cursor-pointer transition-all ${selectedOptionId === opt.id ? 'border-brand-primary bg-blue-50/50' : 'border-transparent bg-white hover:border-gray-200'}`}>
@@ -875,19 +907,19 @@ export default function ProductDetailClient() {
                                                 }} className="w-4 h-4 text-brand-primary focus:ring-brand-primary" />
                                                 <div>
                                                     <div className="font-semibold text-gray-900 text-sm">
-                                                        {opt.label || `${opt.minQty}개 단위 구매`}
+                                                        {opt.label || t.option.defaultLabel(opt.minQty)}
                                                     </div>
                                                     <div className="text-xs text-gray-500 mt-0.5">
-                                                        최소 {opt.minQty}개 {opt.maxQty ? `~ 최대 ${opt.maxQty}개` : '이상'}
+                                                        {opt.maxQty ? t.option.minMax(opt.minQty, opt.maxQty) : t.option.minOnly(opt.minQty)}
                                                     </div>
                                                 </div>
                                             </div>
                                             <div className="text-right">
                                                 {opt.discountPct > 0 && (
-                                                    <span className="block text-red-500 font-bold text-sm">{opt.discountPct}% 할인</span>
+                                                    <span className="block text-red-500 font-bold text-sm">{t.option.off(opt.discountPct)}</span>
                                                 )}
                                                 {opt.freeShipping && (
-                                                    <span className="block text-brand-primary font-semibold text-xs mt-0.5">무료배송</span>
+                                                    <span className="block text-brand-primary font-semibold text-xs mt-0.5">{t.option.freeShip}</span>
                                                 )}
                                             </div>
                                         </label>

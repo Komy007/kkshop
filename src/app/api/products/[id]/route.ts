@@ -41,7 +41,10 @@ export async function GET(
                 maxQty: o.maxQty,
                 discountPct: Number(o.discountPct),
                 freeShipping: o.freeShipping,
-                label: lang === 'ko' ? o.labelKo : (o.labelEn || o.labelKo)
+                label: lang === 'ko' ? (o.labelKo || o.labelEn || null)
+                     : lang === 'km' ? (o.labelKm || o.labelEn || o.labelKo || null)
+                     : lang === 'zh' ? (o.labelZh || o.labelEn || o.labelKo || null)
+                     : (o.labelEn || o.labelKo || null)
             }));
         };
 
