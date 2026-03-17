@@ -87,17 +87,39 @@ jobs:
             --sort-by='~TIMESTAMP' \
             --limit=999 2>/dev/null | tail -n +6)
           if [ -n "$DIGESTS" ]; then
-            echo "Deleting old images..."
-            for DIGEST in $DIGESTS; do
-              gcloud container images delete "${{ env.IMAGE }}@${DIGEST}" \
+            echo "Deleting old GCR images..."
+            while IFS= read -r DIGEST; do
+              D=$(echo "$DIGEST" | tr -d '\r\n ')
+              [ -n "$D" ] && gcloud container images delete "${{ env.IMAGE }}@${D}" \
                 --force-delete-tags --quiet 2>/dev/null || true
-            done
-            echo "Cleanup done."
+            done <<< "$DIGESTS"
+            echo "GCR cleanup done."
           else
             echo "No old images to clean up."
           fi
 
-      # ── 9. Show deployment URL ────────────────────────────────────────────
+      # ── 9. Clean up old Cloud Run revisions (keep latest 5) ──────────────
+      - name: Clean up old Cloud Run revisions
+        run: |
+          REVISIONS=$(gcloud run revisions list \
+            --service=${{ env.SERVICE_NAME }} \
+            --region=${{ env.REGION }} \
+            --format='get(name)' \
+            --sort-by='~createTime' \
+            --limit=999 2>/dev/null | tail -n +6)
+          if [ -n "$REVISIONS" ]; then
+            echo "Deleting old revisions..."
+            while IFS= read -r REV; do
+              R=$(echo "$REV" | tr -d '\r\n ')
+              [ -n "$R" ] && gcloud run revisions delete "$R" \
+                --region=${{ env.REGION }} --quiet 2>/dev/null || true
+            done <<< "$REVISIONS"
+            echo "Revision cleanup done."
+          else
+            echo "No old revisions to clean up."
+          fi
+
+      # ── 11. Show deployment URL ───────────────────────────────────────────
       - name: Deployment complete
         run: |
           URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} \
