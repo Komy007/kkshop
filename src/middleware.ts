@@ -11,9 +11,18 @@ export default middleware((req: any) => {
     const isApiAuthRoute = nextUrl.pathname.startsWith('/api/auth')
     const isAdminRoute = nextUrl.pathname.startsWith('/admin')
     const isSellerRoute = nextUrl.pathname.startsWith('/seller')
+    const isSupplierOldRoute = nextUrl.pathname.startsWith('/supplier')
     const isAdminLoginRoute = nextUrl.pathname === '/admin/login'
 
     if (isApiAuthRoute) return
+
+    // Redirect all legacy /supplier/* paths to the canonical /seller/* equivalent
+    if (isSupplierOldRoute) {
+        const newPath = nextUrl.pathname.replace(/^\/supplier(\/register)?.*/, (_, reg) =>
+            reg ? '/seller/register' : '/seller'
+        );
+        return Response.redirect(new URL(newPath, nextUrl));
+    }
 
     const is2FAVerifyRoute = nextUrl.pathname === '/admin/2fa-verify';
 
@@ -53,7 +62,9 @@ export default middleware((req: any) => {
         const role = req.auth?.user?.role;
 
         // 1. Block regular users FROM ANY admin/seller routes
+        //    Exception: /seller/register is open so any user can apply to become a seller
         if (role === 'USER' || !role) {
+            if (nextUrl.pathname === '/seller/register') return;
             return Response.redirect(new URL('/', nextUrl));
         }
 
