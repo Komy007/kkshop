@@ -112,6 +112,7 @@ model Product {
   @@index([isNew])
   @@index([approvalStatus])
   @@index([isHotSale])
+  @@index([status, categoryId])   // 카테고리별 활성 상품 조회 최적화
   @@map("products")
 }
 
@@ -332,12 +333,14 @@ model User {
   savedAddresses   UserAddress[]
   questionsAsked   ProductQA[]
   referralRewards      ReferralReward[]
-  passwordResetTokens   PasswordResetToken[]
-  emailVerifyTokens     EmailVerificationToken[]
+  passwordResetTokens  PasswordResetToken[]
+  emailVerifyTokens    EmailVerificationToken[]
+  returnRequests       ReturnRequest[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  @@index([role])
   @@map("users")
 }
 
@@ -443,18 +446,24 @@ model Order {
   couponId        String?  @map("coupon_id")
   notes           String?  @db.VarChar(500)
   status          String   @default("PENDING") @db.VarChar(50)
-  // PENDING | CONFIRMED | SHIPPING | DELIVERED | CANCELLED | REFUNDED
+  // PENDING | CONFIRMED | SHIPPING | DELIVERED | CANCELLED | REFUNDED | RETURN_REQUESTED
+  paymentMethod   String?  @default("COD") @map("payment_method") @db.VarChar(50)
+  // COD | ABA | KHQR | WING | BAKONG (Phase 7)
+  paymentStatus   String   @default("PENDING") @map("payment_status") @db.VarChar(20)
+  // PENDING | PAID | FAILED | REFUNDED
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  items    OrderItem[]
-  shipment OrderShipment?
-  user     User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
-  coupon   Coupon?        @relation(fields: [couponId], references: [id], onDelete: SetNull)
+  items         OrderItem[]
+  shipment      OrderShipment?
+  returnRequest ReturnRequest?
+  user          User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  coupon        Coupon?        @relation(fields: [couponId], references: [id], onDelete: SetNull)
 
   @@index([userId])
   @@index([status])
+  @@index([paymentStatus])
   @@map("orders")
 }
 
@@ -516,6 +525,32 @@ model OrderShipment {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("order_shipments")
+}
+
+// ---------------------------------------------------------------------------
+// Return / Refund Requests (반품 / 환불 요청)
+// ---------------------------------------------------------------------------
+
+model ReturnRequest {
+  id          String    @id @default(cuid())
+  orderId     String    @unique @map("order_id")
+  userId      String    @map("user_id")
+  reason      String    @db.VarChar(500)          // 고객이 입력한 반품 사유
+  status      String    @default("PENDING") @map("status") @db.VarChar(20)
+  // PENDING | APPROVED | REJECTED
+  adminNote   String?   @map("admin_note") @db.VarChar(500)   // 관리자 메모
+  processedBy String?   @map("processed_by") @db.VarChar(255) // 처리 관리자 이메일
+  processedAt DateTime? @map("processed_at")
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([status])
+  @@index([userId])
+  @@map("return_requests")
 }
 
 // ---------------------------------------------------------------------------

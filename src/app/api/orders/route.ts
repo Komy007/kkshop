@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/api';
 import { auth } from '@/auth';
 import { sendEmail, sendLowStockAlert } from '@/lib/mail';
+import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
+import { CreateOrderSchema } from '@/lib/validators';
 
 /** HTML-escape user input to prevent XSS in email templates */
 function escHtml(s: string | null | undefined): string {
@@ -10,21 +12,33 @@ function escHtml(s: string | null | undefined): string {
 }
 
 export async function POST(request: Request) {
+    // --- Rate Limiting (IP당 분당 10회) ---
+    const ip = getClientIp(request);
+    const rl = checkRateLimit(ip, 'orders', 10, 60_000);
+    if (!rl.allowed) {
+        return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 });
+    }
+
     const session = await auth();
-    // Allow guest checkout or require login based on business rule.
-    // Assuming checkout requires login for Points & Coupons to work properly.
     if (!session?.user) {
         return NextResponse.json({ error: 'Login required for checkout' }, { status: 401 });
     }
 
     try {
         const body = await request.json();
+
+        // --- Zod 입력 검증 ---
+        const parsed = CreateOrderSchema.safeParse(body);
+        if (!parsed.success) {
+            const msg = parsed.error.errors[0]?.message ?? '주문 정보가 올바르지 않습니다.';
+            return NextResponse.json({ error: msg }, { status: 400 });
+        }
         const {
-            items, // { productId, optionId, variantId?, quantity, priceUsd }[]
+            items,
             customerName, customerPhone, customerEmail,
             province, address, detailAddress, notes,
-            couponCode, pointsUsed
-        } = body;
+            couponCode, pointsUsed,
+        } = parsed.data;
 
         const userId = session.user.id;
 
@@ -211,6 +225,8 @@ export async function POST(request: Request) {
                     totalUsd,
                     couponId: appliedCouponId,
                     status: 'PENDING',
+                    paymentMethod: 'COD',    // Phase 7에서 ABA/KHQR로 교체
+                    paymentStatus: 'PENDING',
                     items: {
                         create: items.map((i: any) => ({
                             productId: BigInt(i.productId),

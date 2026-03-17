@@ -61,6 +61,14 @@ export const metadata: Metadata = {
         follow: true,
         googleBot: { index: true, follow: true, 'max-video-preview': -1, 'max-image-preview': 'large', 'max-snippet': -1 },
     },
+    // PWA 메타데이터
+    manifest: '/manifest.json',
+    appleWebApp: {
+        capable: true,
+        statusBarStyle: 'default',
+        title: 'KKShop',
+    },
+    themeColor: '#E91E8C',
 };
 
 export default function RootLayout({

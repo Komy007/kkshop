@@ -3,36 +3,8 @@ import { prisma } from '@/lib/api';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { sendVerificationEmail } from '@/lib/mail';
-
-// In-memory rate limiting (auto-cleanup every 10 minutes to prevent memory leak)
-const rateLimitCache = new Map<string, { count: number; timestamp: number }>();
-const MAX_REQUESTS_PER_MINUTE = 5;
-const RATE_LIMIT_WINDOW_MS = 60 * 1000;
-
-// Cleanup stale entries every 10 minutes
-if (typeof setInterval !== 'undefined') {
-    setInterval(() => {
-        const now = Date.now();
-        for (const [key, val] of rateLimitCache.entries()) {
-            if (now - val.timestamp > RATE_LIMIT_WINDOW_MS * 2) {
-                rateLimitCache.delete(key);
-            }
-        }
-    }, 10 * 60 * 1000);
-}
-
-function getClientIp(req: Request): string {
-    // Trust Cloud Run's forwarded IP (first IP is real client)
-    const forwarded = req.headers.get('x-forwarded-for');
-    if (forwarded) {
-        const firstIp = forwarded.split(',')[0].trim();
-        // Basic IP validation to prevent spoofing with crafted values
-        if (/^[\d.]+$/.test(firstIp) || /^[a-f0-9:]+$/i.test(firstIp)) {
-            return firstIp;
-        }
-    }
-    return req.headers.get('x-real-ip') || 'unknown';
-}
+import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
+import { RegisterSchema } from '@/lib/validators';
 
 /**
  * Generates a unique 8-character referral code for a new user.
@@ -60,44 +32,24 @@ async function generateUniqueReferralCode(): Promise<string> {
 
 export async function POST(req: Request) {
     try {
-        // --- 1. Rate Limiting Protection ---
+        // --- 1. Rate Limiting (공통 유틸 사용 — 분당 5회) ---
         const ip = getClientIp(req);
-        const now = Date.now();
-
-        const clientData = rateLimitCache.get(ip);
-        if (clientData) {
-            if (now - clientData.timestamp < RATE_LIMIT_WINDOW_MS) {
-                if (clientData.count >= MAX_REQUESTS_PER_MINUTE) {
-                    return NextResponse.json({ error: '너무 많은 요청이 발생했습니다. 잠시 후 다시 시도해주세요.' }, { status: 429 });
-                }
-                clientData.count++;
-            } else {
-                rateLimitCache.set(ip, { count: 1, timestamp: now });
-            }
-        } else {
-            rateLimitCache.set(ip, { count: 1, timestamp: now });
+        const rl = checkRateLimit(ip, 'register', 5, 60_000);
+        if (!rl.allowed) {
+            return NextResponse.json(
+                { error: '너무 많은 요청이 발생했습니다. 잠시 후 다시 시도해주세요.' },
+                { status: 429 },
+            );
         }
 
-        // --- 2. Input Validation ---
+        // --- 2. Zod 입력 검증 ---
         const body = await req.json();
-        const { name, email, password, phone, address, detailAddress, postalCode, referralCode } = body;
-
-        if (!email || !password || !name || !phone) {
-            return NextResponse.json({ error: '이름, 이메일, 비밀번호, 전화번호는 필수 항목입니다.' }, { status: 400 });
+        const parsed = RegisterSchema.safeParse(body);
+        if (!parsed.success) {
+            const msg = parsed.error.errors[0]?.message ?? '입력값이 올바르지 않습니다.';
+            return NextResponse.json({ error: msg }, { status: 400 });
         }
-
-        if (!address) {
-            return NextResponse.json({ error: '주소를 입력해 주세요.' }, { status: 400 });
-        }
-
-        if (password.length < 8) {
-            return NextResponse.json({ error: '비밀번호는 최소 8자리 이상이어야 합니다.' }, { status: 400 });
-        }
-
-        // Password complexity: at least 1 letter and 1 number
-        if (!/[a-zA-Z]/.test(password) || !/[0-9]/.test(password)) {
-            return NextResponse.json({ error: '비밀번호는 영문자와 숫자를 모두 포함해야 합니다.' }, { status: 400 });
-        }
+        const { name, email, password, phone, address, detailAddress, postalCode, referralCode } = parsed.data;
 
         // --- 3. Duplicate Email Check ---
         const existingUser = await prisma.user.findUnique({

@@ -1,4 +1,48 @@
 import type { NextConfig } from 'next';
+import withPWAInit from '@ducanh2912/next-pwa';
+
+const withPWA = withPWAInit({
+    dest: 'public',
+    cacheOnFrontEndNav: true,
+    aggressiveFrontEndNavCaching: true,
+    reloadOnOnline: true,
+    disable: process.env.NODE_ENV === 'development',
+    workboxOptions: {
+        disableDevLogs: true,
+        runtimeCaching: [
+            {
+                // GCS 상품 이미지 캐싱 (30일)
+                urlPattern: /^https:\/\/storage\.googleapis\.com\/.*/i,
+                handler: 'CacheFirst',
+                options: {
+                    cacheName: 'gcs-images',
+                    expiration: { maxEntries: 500, maxAgeSeconds: 60 * 60 * 24 * 30 },
+                    cacheableResponse: { statuses: [0, 200] },
+                },
+            },
+            {
+                // 상품 목록 API — NetworkFirst (5분 캐시)
+                urlPattern: /^\/api\/products(\/|$)/i,
+                handler: 'NetworkFirst',
+                options: {
+                    cacheName: 'api-products',
+                    expiration: { maxEntries: 100, maxAgeSeconds: 60 * 5 },
+                    cacheableResponse: { statuses: [0, 200] },
+                },
+            },
+            {
+                // 카테고리 API — StaleWhileRevalidate (1시간)
+                urlPattern: /^\/api\/categories$/i,
+                handler: 'StaleWhileRevalidate',
+                options: {
+                    cacheName: 'api-categories',
+                    expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 },
+                    cacheableResponse: { statuses: [0, 200] },
+                },
+            },
+        ],
+    },
+});
 
 const ContentSecurityPolicy = `
   default-src 'self';
@@ -52,4 +96,4 @@ const nextConfig: NextConfig = {
     },
 };
 
-export default nextConfig;
+export default withPWA(nextConfig);
