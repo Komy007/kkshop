@@ -3,9 +3,10 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Grid3X3, Search, ShoppingCart, User } from 'lucide-react';
+import { Home, Grid3X3, Search, ShoppingCart, User, Store } from 'lucide-react';
 import { useAppStore, useSafeAppStore } from '@/store/useAppStore';
 import { useCartStore, selectTotalItems } from '@/store/useCartStore';
+import { useSession } from 'next-auth/react';
 
 type TabKey = 'home' | 'category' | 'search' | 'cart' | 'mypage';
 
@@ -37,6 +38,8 @@ export default function BottomTabBar() {
     const totalItems = useCartStore(selectTotalItems);
     const openDrawer = useCartStore((s) => s.openDrawer);
     const t = tabTranslations[language] ?? tabTranslations.en;
+    const sessionResult = useSession();
+    const role = (sessionResult?.data?.user as any)?.role;
 
     const isActive = (href: string) => {
         if (href === '/') return pathname === '/';
@@ -85,6 +88,21 @@ export default function BottomTabBar() {
                             >
                                 {content}
                             </button>
+                        );
+                    }
+
+                    // For SUPPLIER role: replace "My" tab with "Seller" dashboard link
+                    if (tab.key === 'mypage' && role === 'SUPPLIER') {
+                        const sellerActive = pathname.startsWith('/seller');
+                        return (
+                            <Link key={tab.key} href="/seller" aria-label="Seller Dashboard">
+                                <div className={`flex flex-col items-center justify-center gap-0.5 min-w-[44px] min-h-[44px] rounded-xl transition-colors duration-200 ${sellerActive ? 'text-blue-600' : 'text-gray-600 hover:text-gray-900'}`}>
+                                    <Store className="w-5 h-5" strokeWidth={sellerActive ? 2.5 : 2} />
+                                    <span className="text-[11px] font-bold leading-tight tracking-tight">
+                                        {language === 'ko' ? '셀러' : language === 'km' ? 'ហាង' : language === 'zh' ? '卖家' : 'Seller'}
+                                    </span>
+                                </div>
+                            </Link>
                         );
                     }
 

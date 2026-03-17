@@ -118,11 +118,13 @@ export default function SearchPage() {
         async function fetchAll() {
             setIsLoading(true);
             try {
-                const res = await fetch(`/api/products?lang=${language}`);
+                const res = await fetch(`/api/products?lang=${language}&limit=200`);
                 if (res.ok) {
-                    const data: TranslatedProduct[] = await res.json();
-                    setAllProducts(data);
-                    setDisplayed(data); // show all by default
+                    const json = await res.json();
+                    // API returns { products: TranslatedProduct[], total: number }
+                    const list: TranslatedProduct[] = Array.isArray(json) ? json : (json.products ?? []);
+                    setAllProducts(list);
+                    setDisplayed(list);
                 }
             } catch (e) {
                 console.error('Failed to prefetch products', e);

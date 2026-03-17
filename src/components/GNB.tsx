@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import TaegukgiIcon from "@/components/TaegukgiIcon";
 import Link from "next/link";
-import { Globe, User, ShoppingCart, Menu, X, LogOut, Settings, Heart } from "lucide-react";
+import { Globe, User, ShoppingCart, Menu, X, LogOut, Settings, Heart, Store } from "lucide-react";
 import { useSafeMarketStore, rehydrateLanguageStore } from "@/store/useAppStore";
 import { useCartStore, selectTotalItems } from "@/store/useCartStore";
 import { useSession, signOut } from "next-auth/react";
@@ -181,11 +181,24 @@ export default function GNB() {
                                         <div className="px-4 py-3 border-b border-gray-100 bg-gray-50/50">
                                             <p className="text-xs font-bold text-gray-500 uppercase">Account</p>
                                             <p className="text-sm font-bold text-gray-900 truncate">{session.user?.email}</p>
+                                            {(session.user as any)?.role === 'SUPPLIER' && (
+                                                <span className="inline-flex items-center gap-1 mt-1 text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+                                                    <Store className="w-2.5 h-2.5" /> SELLER
+                                                </span>
+                                            )}
                                         </div>
-                                        <Link href="/mypage" onClick={() => setUserMenuOpen(false)}
-                                            className="px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 flex items-center gap-2">
-                                            <User className="w-4 h-4" /> My Page
-                                        </Link>
+                                        {(session.user as any)?.role === 'SUPPLIER' && (
+                                            <Link href="/seller" onClick={() => setUserMenuOpen(false)}
+                                                className="px-4 py-2.5 text-sm font-bold text-blue-600 hover:bg-blue-50 flex items-center gap-2 border-b border-blue-50">
+                                                <Store className="w-4 h-4" /> Seller Dashboard
+                                            </Link>
+                                        )}
+                                        {(session.user as any)?.role !== 'SUPPLIER' && (
+                                            <Link href="/mypage" onClick={() => setUserMenuOpen(false)}
+                                                className="px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                                                <User className="w-4 h-4" /> My Page
+                                            </Link>
+                                        )}
                                         <button
                                             onClick={() => {
                                                 setUserMenuOpen(false);
