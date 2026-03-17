@@ -86,7 +86,7 @@ export default function AdminDashboard() {
                     <BarChart3 className="w-5 h-5 text-blue-600" />
                     <h1 className="text-xl font-bold text-gray-900">Admin Dashboard</h1>
                 </div>
-                <p className="text-sm text-gray-500">Manage products, orders, members, and suppliers in one place.</p>
+                <p className="text-sm text-gray-500">Manage products, orders, members, and sellers in one place.</p>
             </div>
 
             {/* ── Key Stats ── */}
@@ -135,7 +135,7 @@ export default function AdminDashboard() {
                         <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-teal-500 transition-colors" />
                     </div>
                     <div className="text-2xl font-bold text-gray-900">{val(stats?.totalSuppliers)}</div>
-                    <div className="text-sm font-medium text-gray-600 mt-0.5">Suppliers</div>
+                    <div className="text-sm font-medium text-gray-600 mt-0.5">Sellers</div>
                     <div className="text-xs text-gray-400 mt-0.5">
                         {stats?.pendingSuppliers ? (
                             <span className="text-amber-500 font-semibold">{stats.pendingSuppliers} pending approval</span>
@@ -174,8 +174,8 @@ export default function AdminDashboard() {
                 <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-3 flex items-start gap-3">
                     <AlertCircle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
                     <div>
-                        <p className="text-sm font-bold text-amber-800">{stats.pendingSuppliers} supplier(s) awaiting approval</p>
-                        <p className="text-xs text-amber-600 mt-0.5">Review and approve supplier applications to allow them to list products.</p>
+                        <p className="text-sm font-bold text-amber-800">{stats.pendingSuppliers} seller(s) awaiting approval</p>
+                        <p className="text-xs text-amber-600 mt-0.5">Review and approve seller applications to allow them to list products.</p>
                         <Link href="/admin/suppliers" className="text-xs font-bold text-amber-700 underline mt-1 inline-block">Review now →</Link>
                     </div>
                 </div>
@@ -260,8 +260,8 @@ export default function AdminDashboard() {
                         href: '/admin/suppliers',
                         icon: <Store className="w-5 h-5 text-teal-600" />,
                         color: 'bg-teal-50',
-                        label: 'Supplier Management',
-                        desc: 'Approve suppliers, adjust commission rates',
+                        label: 'Seller Management',
+                        desc: 'Approve sellers, adjust commission rates',
                     },
                     {
                         href: '/admin/orders/returns',

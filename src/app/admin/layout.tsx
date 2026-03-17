@@ -125,11 +125,11 @@ const ADMIN_NAV: readonly NavItem[] = [
     },
     {
         key: 'suppliers',
-        labelKo: '공급자 관리', labelEn: 'Suppliers',
+        labelKo: '셀러 관리', labelEn: 'Sellers',
         icon: Store,
         roles: ['SUPERADMIN'],
         children: [
-            { labelKo: '공급자 목록',   labelEn: 'Supplier List',        href: '/admin/suppliers',            roles: ['SUPERADMIN'] },
+            { labelKo: '셀러 목록',   labelEn: 'Seller List',        href: '/admin/suppliers',            roles: ['SUPERADMIN'] },
             { labelKo: '수수료 설정',   labelEn: 'Commission Settings',  href: '/admin/suppliers/commission', roles: ['SUPERADMIN'] },
             { labelKo: '정산 / 페이아웃', labelEn: 'Payouts',            href: '/admin/suppliers/payouts',    roles: ['SUPERADMIN'] },
         ],

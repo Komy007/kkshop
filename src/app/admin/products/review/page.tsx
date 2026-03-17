@@ -26,7 +26,7 @@ export default function AdminPendingProductsPage() {
         setLoading(true);
         const res = await fetch('/api/admin/products?approvalStatus=' + filter);
         const data = await res.json();
-        setProducts(Array.isArray(data) ? data : []);
+        setProducts(Array.isArray(data) ? data : (data?.products ?? []));
         setLoading(false);
     }, [filter]);
 
@@ -67,9 +67,9 @@ export default function AdminPendingProductsPage() {
             <div className="flex items-center justify-between mb-5">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                        <Clock className="w-6 h-6 text-yellow-500" /> 상품 검수 관리
+                        <Clock className="w-6 h-6 text-yellow-500" /> Review Products · 상품 검수 관리
                     </h1>
-                    <p className="text-sm text-gray-500 mt-0.5">판매자가 등록한 상품을 검토하고 승인/반려합니다</p>
+                    <p className="text-sm text-gray-500 mt-0.5">Review and approve seller products · 판매자가 등록한 상품을 검토하고 승인/반려합니다</p>
                 </div>
                 <button onClick={fetch_} className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg"><RefreshCw className="w-5 h-5" /></button>
             </div>
@@ -77,9 +77,9 @@ export default function AdminPendingProductsPage() {
             {/* Tabs */}
             <div className="flex gap-2 mb-4">
                 {([
-                    { key: 'PENDING', label: '🟡 검수 대기', color: 'text-yellow-700 bg-yellow-50 border-yellow-300' },
-                    { key: 'APPROVED', label: '🟢 승인됨', color: 'text-green-700 bg-green-50 border-green-300' },
-                    { key: 'REJECTED', label: '🔴 반려됨', color: 'text-red-700 bg-red-50 border-red-300' },
+                    { key: 'PENDING', label: '🟡 Under Review · 검수 대기', color: 'text-yellow-700 bg-yellow-50 border-yellow-300' },
+                    { key: 'APPROVED', label: '🟢 Approved · 승인됨', color: 'text-green-700 bg-green-50 border-green-300' },
+                    { key: 'REJECTED', label: '🔴 Rejected · 반려됨', color: 'text-red-700 bg-red-50 border-red-300' },
                 ] as const).map(t => (
                     <button key={t.key} onClick={() => setFilter(t.key)}
                         className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${filter === t.key ? t.color : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'}`}>
@@ -92,7 +92,7 @@ export default function AdminPendingProductsPage() {
             <div className="relative mb-4">
                 <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
                 <input value={search} onChange={e => setSearch(e.target.value)}
-                    placeholder="상품명, SKU, 공급업체 검색..."
+                    placeholder="Product name, SKU, Seller · 상품명 또는 SKU 검색..."
                     className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400 bg-white shadow-sm" />
             </div>
 
@@ -101,7 +101,7 @@ export default function AdminPendingProductsPage() {
             ) : filtered.length === 0 ? (
                 <div className="text-center py-16 bg-white rounded-xl border">
                     <CheckCircle className="w-12 h-12 text-gray-200 mx-auto mb-3" />
-                    <p className="text-gray-500">{filter === 'PENDING' ? '🎉 검수 대기 상품이 없습니다!' : '해당 상품이 없습니다.'}</p>
+                    <p className="text-gray-500">{filter === 'PENDING' ? '🎉 No products under review! · 검수 대기 상품이 없습니다!' : 'No products found · 해당 상품이 없습니다.'}</p>
                 </div>
             ) : (
                 <div className="space-y-3">
@@ -117,26 +117,26 @@ export default function AdminPendingProductsPage() {
                                 <div className="flex-1 min-w-0">
                                     <div className="font-semibold text-gray-900">{name}</div>
                                     <div className="text-xs text-gray-400">{p.sku} · ${Number(p.priceUsd).toFixed(2)}</div>
-                                    <div className="text-xs text-blue-600 mt-0.5">공급업체: {p.supplier?.companyName || '-'}</div>
-                                    <div className="text-xs text-gray-400">등록일: {new Date(p.createdAt).toLocaleDateString('ko-KR')}</div>
+                                    <div className="text-xs text-blue-600 mt-0.5">Seller · 셀러: {p.supplier?.companyName || '-'}</div>
+                                    <div className="text-xs text-gray-400">Registered · 등록일: {new Date(p.createdAt).toLocaleDateString('ko-KR')}</div>
                                 </div>
                                 {filter === 'PENDING' && (
                                     <div className="flex flex-col gap-2 flex-shrink-0">
                                         <button onClick={() => approve(p.id)} disabled={isProcessing}
                                             className="flex items-center gap-1.5 px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-lg hover:bg-green-700 disabled:opacity-50">
                                             {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
-                                            승인
+                                            Approve · 승인
                                         </button>
                                         <button onClick={() => reject(p.id)} disabled={isProcessing}
                                             className="flex items-center gap-1.5 px-4 py-2 bg-red-50 text-red-600 text-sm font-semibold rounded-lg hover:bg-red-100 disabled:opacity-50 border border-red-200">
                                             <XCircle className="w-4 h-4" />
-                                            반려
+                                            Reject · 반려
                                         </button>
                                     </div>
                                 )}
                                 {filter !== 'PENDING' && (
                                     <span className={`px-3 py-1.5 rounded-full text-xs font-semibold flex-shrink-0 ${filter === 'APPROVED' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
-                                        {filter === 'APPROVED' ? '✅ 승인됨' : '❌ 반려됨'}
+                                        {filter === 'APPROVED' ? '✅ Approved · 승인됨' : '❌ Rejected · 반려됨'}
                                     </span>
                                 )}
                             </div>
