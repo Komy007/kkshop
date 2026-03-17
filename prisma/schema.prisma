@@ -85,7 +85,10 @@ model Product {
   costPrice        Decimal? @map("cost_price") @db.Decimal(10, 2)
   stockAlertQty    Int      @default(10) @map("stock_alert_qty")
   // Approval workflow
-  rejectionReason  String?  @map("rejection_reason") @db.VarChar(500)
+  rejectionReason     String?  @map("rejection_reason") @db.VarChar(500)
+  // Trust badges — assigned by admin at approval time
+  badgeAuthentic      Boolean  @default(false) @map("badge_authentic")
+  badgeKoreanCertified Boolean @default(false) @map("badge_korean_certified")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

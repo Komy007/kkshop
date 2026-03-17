@@ -93,6 +93,8 @@ export async function GET(
 
             isHotSale: product.isHotSale,
             hotSalePrice: product.hotSalePrice ? Number(product.hotSalePrice) : null,
+            badgeAuthentic: product.badgeAuthentic,
+            badgeKoreanCertified: product.badgeKoreanCertified,
             volume: product.volume,
             skinType: product.skinType,
             origin: product.origin,

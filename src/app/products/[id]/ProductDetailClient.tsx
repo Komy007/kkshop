@@ -254,6 +254,8 @@ interface ProductDetail {
     certifications?: string | null;
     brandName?: string | null;
     supplier?: { companyName: string } | null;
+    badgeAuthentic?: boolean;
+    badgeKoreanCertified?: boolean;
 }
 
 export default function ProductDetailClient() {
@@ -702,8 +704,14 @@ export default function ProductDetailClient() {
                     {/* RIGHT: Product Info (F-pattern: top-heavy reading) */}
                     <div className="flex flex-col gap-6">
 
-                        {/* Trust Badges — top of info for credibility */}
-                        <TrustBadges variant="compact" />
+                        {/* Trust Badges — admin이 승인 시 선택한 뱃지만 표시 */}
+                        {(product.badgeAuthentic || product.badgeKoreanCertified) && (
+                            <TrustBadges
+                                variant="compact"
+                                showAuthentic={product.badgeAuthentic}
+                                showKoreanCertified={product.badgeKoreanCertified}
+                            />
+                        )}
 
                         {/* Product Name & Brand */}
                         <div>

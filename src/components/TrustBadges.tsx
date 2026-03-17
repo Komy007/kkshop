@@ -63,17 +63,26 @@ function SecureIcon() {
 interface TrustBadgesProps {
     variant?: 'horizontal' | 'vertical' | 'compact';
     className?: string;
+    showAuthentic?: boolean;
+    showKoreanCertified?: boolean;
 }
 
-export default function TrustBadges({ variant = 'horizontal', className = '' }: TrustBadgesProps) {
+export default function TrustBadges({ variant = 'horizontal', className = '', showAuthentic, showKoreanCertified }: TrustBadgesProps) {
     const store = useSafeAppStore();
     const { language } = store || { language: 'en' };
     const t = trustTranslations[language] || trustTranslations.en;
 
-    const badges = [
-        { icon: AuthenticIcon, label: t.authentic, color: "from-vivid-pink to-brand-secondary" },
-        { icon: MohIcon, label: t.koreanCertified, color: "from-vivid-cyan to-brand-accent" },
+    // props가 명시되지 않으면 기존 동작(둘 다 표시) 유지
+    const displayAuthentic = showAuthentic === undefined ? true : showAuthentic;
+    const displayKorean    = showKoreanCertified === undefined ? true : showKoreanCertified;
+
+    const allBadges = [
+        { key: 'authentic', show: displayAuthentic,  icon: AuthenticIcon, label: t.authentic,       color: "from-vivid-pink to-brand-secondary" },
+        { key: 'korean',    show: displayKorean,      icon: MohIcon,       label: t.koreanCertified, color: "from-vivid-cyan to-brand-accent" },
     ];
+    const badges = allBadges.filter(b => b.show);
+
+    if (badges.length === 0) return null;
 
     if (variant === 'compact') {
         return (
