@@ -56,7 +56,7 @@ export async function GET(req: Request) {
                     images: { orderBy: { sortOrder: 'asc' }, take: 1 },
                     _count: { select: { images: true } },
                 },
-                orderBy: [{ approvalStatus: 'asc' }, { isNew: 'desc' }, { createdAt: 'desc' }],
+                orderBy: [{ approvalStatus: 'asc' }, { displayPriority: 'desc' }, { isNew: 'desc' }, { createdAt: 'desc' }],
                 skip: (page - 1) * PAGE_SIZE,
                 take: PAGE_SIZE,
             }),

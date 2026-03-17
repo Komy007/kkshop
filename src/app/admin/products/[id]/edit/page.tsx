@@ -71,6 +71,7 @@ export default function EditProductPage() {
         rejectionReason: '',
         isNew: false, isHotSale: false, hotSalePrice: '',
         badgeAuthentic: false, badgeKoreanCertified: false,
+        displayPriority: 0,
         brandName: '', volume: '', skinType: '', origin: '',
         expiryMonths: '', certifications: '',
         baseLang: 'ko',
@@ -114,6 +115,7 @@ export default function EditProductPage() {
                     hotSalePrice: p.hotSalePrice ?? '',
                     badgeAuthentic: p.badgeAuthentic ?? false,
                     badgeKoreanCertified: p.badgeKoreanCertified ?? false,
+                    displayPriority: p.displayPriority ?? 0,
                     brandName: p.brandName ?? '',
                     volume: p.volume ?? '',
                     skinType: p.skinType ?? '',
@@ -166,7 +168,11 @@ export default function EditProductPage() {
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const target = e.target;
-        const value = target.type === 'checkbox' ? (target as HTMLInputElement).checked : target.value;
+        const value = target.type === 'checkbox'
+            ? (target as HTMLInputElement).checked
+            : target.type === 'number' && target.name === 'displayPriority'
+                ? Math.max(0, Math.min(999, parseInt(target.value) || 0))
+                : target.value;
         setForm(prev => ({ ...prev, [target.name]: value }));
     };
 
@@ -534,6 +540,30 @@ export default function EditProductPage() {
                                 <span className="text-sm font-semibold text-gray-700">🏅 Korean Certified</span>
                                 <span className="text-[10px] text-gray-400">일반 한국 상품 가능</span>
                             </label>
+                        </div>
+                    </div>
+
+                    {/* Display Priority */}
+                    <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">
+                            🔝 노출 우선순위 <span className="text-gray-400 font-normal">(높을수록 홈/섹션 맨 앞 노출)</span>
+                        </label>
+                        <div className="flex items-center gap-2">
+                            <input
+                                type="number" name="displayPriority" min="0" max="999"
+                                value={form.displayPriority} onChange={handleChange}
+                                className="w-28 border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                            />
+                            <span className="text-xs text-gray-400">0 = 일반 · 10 이상 = 상위 노출 · 최대 999</span>
+                        </div>
+                        <div className="mt-1 flex gap-2">
+                            {[0, 10, 50, 100].map(v => (
+                                <button key={v} type="button"
+                                    onClick={() => setForm(f => ({ ...f, displayPriority: v }))}
+                                    className={`px-2 py-0.5 text-xs rounded-full border transition-colors ${form.displayPriority === v ? 'bg-blue-500 text-white border-blue-500' : 'border-gray-300 text-gray-500 hover:border-blue-300'}`}>
+                                    {v === 0 ? '일반(0)' : v === 10 ? '약(10)' : v === 50 ? '중(50)' : '강(100)'}
+                                </button>
+                            ))}
                         </div>
                     </div>
                     </div>

@@ -25,6 +25,7 @@ export interface TranslatedProduct {
     hotSalePrice?: number | null;
     reviewAvg: number;
     reviewCount: number;
+    displayPriority: number;
     brandName?: string | null;
     volume?: string | null;
     skinType?: string | null;
@@ -77,6 +78,7 @@ function serializeProduct(product: any, langCode: string): TranslatedProduct {
         hotSalePrice: product.hotSalePrice ? Number(product.hotSalePrice) : null,
         reviewAvg: Number(product.reviewAvg ?? 0),
         reviewCount: product.reviewCount ?? 0,
+        displayPriority: product.displayPriority ?? 0,
         brandName: product.brandName ?? null,
         volume: product.volume ?? null,
         skinType: product.skinType ?? null,
@@ -124,7 +126,7 @@ export async function getProductsByLanguage(
                     category: { select: { slug: true } },
                     images: { orderBy: { sortOrder: 'asc' }, take: 1 },
                 },
-                orderBy: [{ isNew: 'desc' }, { createdAt: 'desc' }],
+                orderBy: [{ displayPriority: 'desc' }, { isNew: 'desc' }, { createdAt: 'desc' }],
                 take: Math.min(limit, 100), // 최대 100개 제한
                 skip,
             }),
@@ -150,13 +152,13 @@ export async function getProductsForSection(
 
         if (filter === 'hot') {
             where.isHotSale = true;
-            orderBy = [{ reviewCount: 'desc' }, { createdAt: 'desc' }];
+            orderBy = [{ displayPriority: 'desc' }, { reviewCount: 'desc' }, { createdAt: 'desc' }];
         } else if (filter === 'new') {
             // Show all recent products by date — no isNew flag required
             // isNew flag is only used for badge display, not filtering
-            orderBy = [{ createdAt: 'desc' }];
+            orderBy = [{ displayPriority: 'desc' }, { createdAt: 'desc' }];
         } else if (filter === 'popular') {
-            orderBy = [{ reviewAvg: 'desc' }, { reviewCount: 'desc' }, { createdAt: 'desc' }];
+            orderBy = [{ displayPriority: 'desc' }, { reviewAvg: 'desc' }, { reviewCount: 'desc' }, { createdAt: 'desc' }];
         }
 
         const products = await prisma.product.findMany({

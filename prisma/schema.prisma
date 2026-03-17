@@ -89,6 +89,8 @@ model Product {
   // Trust badges — assigned by admin at approval time
   badgeAuthentic      Boolean  @default(false) @map("badge_authentic")
   badgeKoreanCertified Boolean @default(false) @map("badge_korean_certified")
+  // Display priority — admin sets higher number to push product to top of sections (0 = normal)
+  displayPriority     Int      @default(0) @map("display_priority")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

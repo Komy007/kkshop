@@ -15,6 +15,7 @@ interface Product {
     stockAlertQty?: number; status: string; approvalStatus: string;
     imageUrl?: string; brandName?: string; isNew: boolean;
     supplierId?: string | null; createdAt: string;
+    displayPriority?: number;
     translations: { langCode: string; name: string }[];
     _count: { images: number };
     category?: { id: string; slug: string; nameKo: string } | null;
@@ -40,6 +41,8 @@ export default function AdminProductsPage() {
     const [actionLoading,  setActionLoading]  = useState<string | null>(null);
     const [approveBadgeAuthentic,      setApproveBadgeAuthentic]      = useState(false);
     const [approveBadgeKoreanCertified, setApproveBadgeKoreanCertified] = useState(false);
+    const [priorityEditing, setPriorityEditing] = useState<string | null>(null); // product id
+    const [priorityValue,   setPriorityValue]   = useState(0);
     const [approvalFilter, setApprovalFilter] = useState('all'); // 'all' | 'PENDING'
     const searchTimer = useRef<NodeJS.Timeout | null>(null);
 
@@ -184,6 +187,18 @@ export default function AdminProductsPage() {
 
     const toggleStatus = (p: Product) => patch(p.id, { status: p.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE' });
     const toggleIsNew  = (p: Product) => patch(p.id, { isNew: !p.isNew });
+
+    const handleSetPriority = async (id: string, priority: number) => {
+        setActionLoading(id + '_priority');
+        await fetch(`/api/admin/products/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ displayPriority: priority }),
+        });
+        setActionLoading(null);
+        setPriorityEditing(null);
+        fetchProducts(page, search, activeSlug, approvalFilter);
+    };
 
     const handleApprove = async (id: string) => {
         setActionLoading(id + '_approve');
@@ -389,6 +404,13 @@ export default function AdminProductsPage() {
                                                     </td>
                                                     <td className="py-3 px-4 text-right">
                                                         <div className="flex items-center justify-end gap-1">
+                                                            {/* Priority badge */}
+                                                            <button
+                                                                onClick={() => { setPriorityEditing(p.id); setPriorityValue(p.displayPriority ?? 0); }}
+                                                                className={`px-2 py-1 rounded-full text-xs font-bold transition-colors ${(p.displayPriority ?? 0) > 0 ? 'bg-orange-100 text-orange-700 hover:bg-orange-200' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'}`}
+                                                                title="노출 우선순위 설정">
+                                                                🔝{(p.displayPriority ?? 0) > 0 ? p.displayPriority : '—'}
+                                                            </button>
                                                             <button onClick={() => handleEdit(p.id)} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title={t.admin.products.actions.edit}>
                                                                 <Edit3 className="w-4 h-4" />
                                                             </button>
@@ -402,6 +424,35 @@ export default function AdminProductsPage() {
                                                         </div>
                                                     </td>
                                                 </tr>
+                                                {/* Priority quick-set row */}
+                                                {priorityEditing === p.id && (
+                                                    <tr className="bg-orange-50 border-t border-orange-100">
+                                                        <td colSpan={9} className="px-4 py-3">
+                                                            <div className="flex flex-wrap items-center gap-3">
+                                                                <span className="text-xs font-bold text-orange-800">🔝 노출 우선순위 설정 — <span className="font-normal">{koName}</span></span>
+                                                                <div className="flex gap-1">
+                                                                    {[0, 10, 30, 50, 100].map(v => (
+                                                                        <button key={v} type="button"
+                                                                            onClick={() => setPriorityValue(v)}
+                                                                            className={`px-2.5 py-1 text-xs rounded-full border font-semibold transition-colors ${priorityValue === v ? 'bg-orange-500 text-white border-orange-500' : 'border-gray-300 text-gray-600 hover:border-orange-400 bg-white'}`}>
+                                                                            {v === 0 ? '일반(0)' : v === 10 ? '약(10)' : v === 30 ? '중(30)' : v === 50 ? '강(50)' : '최강(100)'}
+                                                                        </button>
+                                                                    ))}
+                                                                </div>
+                                                                <input type="number" min="0" max="999" value={priorityValue}
+                                                                    onChange={e => setPriorityValue(Math.max(0, Math.min(999, parseInt(e.target.value) || 0)))}
+                                                                    className="w-20 border border-orange-200 rounded-lg py-1 px-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white" />
+                                                                <button onClick={() => handleSetPriority(p.id, priorityValue)}
+                                                                    disabled={actionLoading === p.id + '_priority'}
+                                                                    className="px-3 py-1.5 bg-orange-500 text-white text-xs font-bold rounded-lg hover:bg-orange-600 disabled:opacity-50 flex items-center gap-1">
+                                                                    {actionLoading === p.id + '_priority' ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
+                                                                    저장
+                                                                </button>
+                                                                <button onClick={() => setPriorityEditing(null)} className="px-3 py-1.5 bg-gray-200 text-gray-700 text-xs rounded-lg hover:bg-gray-300">취소</button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                )}
                                                 {/* Category move row */}
                                                 {movingId === p.id && (
                                                     <tr className="bg-blue-50">
