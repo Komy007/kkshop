@@ -22,17 +22,16 @@ export default function SellerDashboard() {
 
     useEffect(() => {
         Promise.all([
-            fetch('/api/seller/products').then(r => r.json()),
-            fetch('/api/seller/orders').then(r => r.json()),
+            fetch('/api/seller/stats').then(r => r.json()),
             fetch('/api/seller/profile').then(r => r.json()),
-        ]).then(([products, orders, prof]) => {
-            const p = Array.isArray(products) ? products : [];
+        ]).then(([statsData, prof]) => {
+            // /api/seller/stats returns exact DB counts — no pagination issues
             setStats({
-                totalProducts:    p.length,
-                pendingProducts:  p.filter((x: any) => x.approvalStatus === 'PENDING').length,
-                approvedProducts: p.filter((x: any) => x.approvalStatus === 'APPROVED').length,
-                rejectedProducts: p.filter((x: any) => x.approvalStatus === 'REJECTED').length,
-                totalOrders:      Array.isArray(orders) ? orders.length : 0,
+                totalProducts:    statsData.totalProducts    ?? 0,
+                pendingProducts:  statsData.pendingProducts  ?? 0,
+                approvedProducts: statsData.approvedProducts ?? 0,
+                rejectedProducts: statsData.rejectedProducts ?? 0,
+                totalOrders:      statsData.totalOrders      ?? 0,
             });
             setProfile(prof);
             setLoading(false);
