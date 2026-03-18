@@ -22,6 +22,7 @@ export interface TranslatedProduct {
     imageUrl?: string | null;
     isNew: boolean;
     isHotSale: boolean;
+    isTodayPick: boolean;
     hotSalePrice?: number | null;
     reviewAvg: number;
     reviewCount: number;
@@ -75,6 +76,7 @@ function serializeProduct(product: any, langCode: string): TranslatedProduct {
         imageUrl: product.images?.[0]?.url || product.imageUrl || null,
         isNew: product.isNew ?? false,
         isHotSale: product.isHotSale ?? false,
+        isTodayPick: product.isTodayPick ?? false,
         hotSalePrice: product.hotSalePrice ? Number(product.hotSalePrice) : null,
         reviewAvg: Number(product.reviewAvg ?? 0),
         reviewCount: product.reviewCount ?? 0,
@@ -143,19 +145,20 @@ export async function getProductsByLanguage(
 // ── Fetch small set for homepage sections ─────────────────────────────────
 export async function getProductsForSection(
     langCode: string,
-    filter: 'hot' | 'new' | 'popular',
+    filter: 'hot' | 'new' | 'popular' | 'todaypick',
     limit: number = 8,
 ): Promise<TranslatedProduct[]> {
     try {
         const where: any = { status: 'ACTIVE', approvalStatus: 'APPROVED' };
         let orderBy: any[] = [{ createdAt: 'desc' }];
 
-        if (filter === 'hot') {
+        if (filter === 'todaypick') {
+            where.isTodayPick = true;
+            orderBy = [{ displayPriority: 'desc' }, { createdAt: 'desc' }];
+        } else if (filter === 'hot') {
             where.isHotSale = true;
             orderBy = [{ displayPriority: 'desc' }, { reviewCount: 'desc' }, { createdAt: 'desc' }];
         } else if (filter === 'new') {
-            // Show all recent products by date — no isNew flag required
-            // isNew flag is only used for badge display, not filtering
             orderBy = [{ displayPriority: 'desc' }, { createdAt: 'desc' }];
         } else if (filter === 'popular') {
             orderBy = [{ displayPriority: 'desc' }, { reviewAvg: 'desc' }, { reviewCount: 'desc' }, { createdAt: 'desc' }];

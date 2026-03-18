@@ -13,7 +13,7 @@ interface Category { id: string; slug: string; nameKo: string; isSystem: boolean
 interface Product {
     id: string; sku: string; priceUsd: string; costPrice?: string | null; stockQty: number;
     stockAlertQty?: number; status: string; approvalStatus: string;
-    imageUrl?: string; brandName?: string; isNew: boolean;
+    imageUrl?: string; brandName?: string; isNew: boolean; isTodayPick?: boolean;
     supplierId?: string | null; createdAt: string;
     displayPriority?: number;
     translations: { langCode: string; name: string }[];
@@ -185,8 +185,9 @@ export default function AdminProductsPage() {
         fetchProducts(page, search, activeSlug);
     };
 
-    const toggleStatus = (p: Product) => patch(p.id, { status: p.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE' });
-    const toggleIsNew  = (p: Product) => patch(p.id, { isNew: !p.isNew });
+    const toggleStatus    = (p: Product) => patch(p.id, { status: p.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE' });
+    const toggleIsNew     = (p: Product) => patch(p.id, { isNew: !p.isNew });
+    const toggleTodayPick = (p: Product) => patch(p.id, { isTodayPick: !p.isTodayPick });
 
     const handleSetPriority = async (id: string, priority: number) => {
         setActionLoading(id + '_priority');
@@ -396,11 +397,18 @@ export default function AdminProductsPage() {
                                                         )}
                                                     </td>
                                                     <td className="py-3 px-4">
-                                                        <button onClick={() => toggleIsNew(p)}
-                                                            className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold transition-all ${p.isNew ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
-                                                            <Sparkles className="w-3 h-3" />
-                                                            {p.isNew ? 'NEW' : t.admin.edit.fields.isNew}
-                                                        </button>
+                                                        <div className="flex flex-col gap-1">
+                                                            <button onClick={() => toggleIsNew(p)}
+                                                                className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold transition-all ${p.isNew ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
+                                                                <Sparkles className="w-3 h-3" />
+                                                                {p.isNew ? 'NEW' : t.admin.edit.fields.isNew}
+                                                            </button>
+                                                            <button onClick={() => toggleTodayPick(p)}
+                                                                className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold transition-all ${p.isTodayPick ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'}`}
+                                                                title="Today's Pick 홈 노출 토글">
+                                                                ⭐ {p.isTodayPick ? "Today's Pick" : 'Pick'}
+                                                            </button>
+                                                        </div>
                                                     </td>
                                                     <td className="py-3 px-4 text-right">
                                                         <div className="flex items-center justify-end gap-1">

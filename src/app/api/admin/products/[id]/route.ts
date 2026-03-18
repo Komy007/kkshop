@@ -46,6 +46,7 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
             rejectionReason: product.rejectionReason ?? null,
             badgeAuthentic: product.badgeAuthentic,
             badgeKoreanCertified: product.badgeKoreanCertified,
+            isTodayPick: product.isTodayPick,
             displayPriority: product.displayPriority,
             imageUrl: product.imageUrl ?? null,
             isNew: product.isNew,
@@ -135,7 +136,7 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
         const {
             sku, priceUsd, costPrice, stockAlertQty, stockQty, categoryId, supplierId,
             status, approvalStatus, isNew, isHotSale, hotSalePrice,
-            badgeAuthentic, badgeKoreanCertified, displayPriority,
+            badgeAuthentic, badgeKoreanCertified, isTodayPick, displayPriority,
             brandName, volume, skinType, origin, expiryMonths, certifications,
             baseLang, name, shortDesc, detailDesc, ingredients, howToUse, benefits, seoKeywords,
             retranslate = false,
@@ -182,6 +183,7 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
         if (certifications !== undefined) productData.certifications = certifications || null;
         if (badgeAuthentic !== undefined) productData.badgeAuthentic = Boolean(badgeAuthentic);
         if (badgeKoreanCertified !== undefined) productData.badgeKoreanCertified = Boolean(badgeKoreanCertified);
+        if (isTodayPick !== undefined) productData.isTodayPick = Boolean(isTodayPick);
         if (displayPriority !== undefined) productData.displayPriority = Math.max(0, Math.min(999, parseInt(displayPriority) || 0));
 
         // Handle translations

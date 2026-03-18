@@ -71,6 +71,7 @@ export default function EditProductPage() {
         rejectionReason: '',
         isNew: false, isHotSale: false, hotSalePrice: '',
         badgeAuthentic: false, badgeKoreanCertified: false,
+        isTodayPick: false,
         displayPriority: 0,
         brandName: '', volume: '', skinType: '', origin: '',
         expiryMonths: '', certifications: '',
@@ -115,6 +116,7 @@ export default function EditProductPage() {
                     hotSalePrice: p.hotSalePrice ?? '',
                     badgeAuthentic: p.badgeAuthentic ?? false,
                     badgeKoreanCertified: p.badgeKoreanCertified ?? false,
+                    isTodayPick: p.isTodayPick ?? false,
                     displayPriority: p.displayPriority ?? 0,
                     brandName: p.brandName ?? '',
                     volume: p.volume ?? '',
@@ -539,6 +541,11 @@ export default function EditProductPage() {
                                 <input type="checkbox" name="badgeKoreanCertified" checked={form.badgeKoreanCertified} onChange={handleChange} className="w-4 h-4 rounded text-teal-500 focus:ring-teal-400 border-gray-300" />
                                 <span className="text-sm font-semibold text-gray-700">🏅 Korean Certified</span>
                                 <span className="text-[10px] text-gray-400">일반 한국 상품 가능</span>
+                            </label>
+                            <label className={`flex items-center gap-2 cursor-pointer px-3 py-2 rounded-xl border-2 transition-all select-none ${form.isTodayPick ? 'border-yellow-400 bg-yellow-50' : 'border-gray-200 hover:border-yellow-200'}`}>
+                                <input type="checkbox" name="isTodayPick" checked={form.isTodayPick} onChange={handleChange} className="w-4 h-4 rounded text-yellow-500 focus:ring-yellow-400 border-gray-300" />
+                                <span className="text-sm font-semibold text-gray-700">⭐ Today&apos;s Pick</span>
+                                <span className="text-[10px] text-gray-400">홈 Today&apos;s Picks 섹션 고정</span>
                             </label>
                         </div>
                     </div>

@@ -47,6 +47,7 @@ const curationTranslations: Record<string, Record<string, string>> = {
 
 interface CurationSectionProps {
     products: TranslatedProduct[];
+    todayPicks?: TranslatedProduct[]; // admin-curated Today's Picks (isTodayPick=true); falls back to slice if empty
 }
 
 interface SectionProps {
@@ -87,14 +88,15 @@ function Section({ icon: Icon, iconColor, title, subtitle, viewAllText, children
     );
 }
 
-export default function CurationSection({ products }: CurationSectionProps) {
+export default function CurationSection({ products, todayPicks: curatedPicks = [] }: CurationSectionProps) {
     const store = useSafeAppStore();
     const { language } = store || { language: 'en' };
     const t = curationTranslations[language] ?? curationTranslations.en;
 
-    // Split products into 3 sections (Cold Start fallback: use all products shuffled)
-    const todayPicks = products.slice(0, 4);
-    const categoryBest = products.slice(2, 6);
+    // Today's Picks: use admin-curated list if available, else fall back to top 4 popular
+    const todayPicks = curatedPicks.length > 0 ? curatedPicks : products.slice(0, 4);
+    // Category Best & Also Viewed: always from popular list (independent of Today's Picks)
+    const categoryBest = products.slice(0, 4);
     const alsoViewed = products.slice(4, 8);
 
     const renderCard = (product: TranslatedProduct) => (

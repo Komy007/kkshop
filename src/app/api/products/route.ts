@@ -7,13 +7,13 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const lang = searchParams.get('lang') || 'ko';
     const category = searchParams.get('category');
-    const section = searchParams.get('section'); // hot | new | popular
+    const section = searchParams.get('section'); // hot | new | popular | todaypick
     const limit = Math.min(parseInt(searchParams.get('limit') || '48'), 100);
     const skip = Math.max(parseInt(searchParams.get('skip') || '0'), 0);
 
     try {
         // Section-specific fetch (homepage) — returns small curated list
-        if (section === 'hot' || section === 'new' || section === 'popular') {
+        if (section === 'hot' || section === 'new' || section === 'popular' || section === 'todaypick') {
             const products = await getProductsForSection(lang, section, limit || 8);
             return NextResponse.json({ products, total: products.length });
         }

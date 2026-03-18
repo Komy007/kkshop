@@ -346,6 +346,7 @@ export default function Home() {
     const [showHot, setShowHot] = useState<TranslatedProduct[]>([]);
     const [showNew, setShowNew] = useState<TranslatedProduct[]>([]);
     const [showPopular, setShowPopular] = useState<TranslatedProduct[]>([]);
+    const [showTodayPick, setShowTodayPick] = useState<TranslatedProduct[]>([]);
     const [trustBadges, setTrustBadges] = useState<string[]>([]);
     const [topBanner, setTopBanner] = useState<any>(null);
 
@@ -359,10 +360,12 @@ export default function Home() {
             fetch(`${base}&section=hot`).then(r => r.ok ? r.json() : { products: [] }),
             fetch(`${base}&section=new`).then(r => r.ok ? r.json() : { products: [] }),
             fetch(`${base}&section=popular`).then(r => r.ok ? r.json() : { products: [] }),
-        ]).then(([hot, newArr, pop]) => {
+            fetch(`${base}&section=todaypick`).then(r => r.ok ? r.json() : { products: [] }),
+        ]).then(([hot, newArr, pop, todaypick]) => {
             setShowHot(hot.products ?? []);
             setShowNew(newArr.products ?? []);
             setShowPopular(pop.products ?? []);
+            setShowTodayPick(todaypick.products ?? []);
         }).catch(() => {});
     }, [language, mounted]);
 
@@ -437,7 +440,7 @@ export default function Home() {
                             </div>
                             <p className="text-[14px] text-black font-extrabold">Premium{t.curationTitle}</p>
                         </div>
-                        <CurationSection products={showPopular} />
+                        <CurationSection products={showPopular} todayPicks={showTodayPick} />
                     </div>
                 )}
 
