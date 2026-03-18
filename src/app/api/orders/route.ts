@@ -250,9 +250,9 @@ export async function POST(request: Request) {
                 }
             });
 
-            // 3. Deduct Points if used (use effectivePts — already capped to max useful)
+            // 3. Deduct Points if used (update 반환값으로 balanceAfter 계산 — stale read 방지)
             if (effectivePts > 0) {
-                await tx.user.update({
+                const afterDeduct = await tx.user.update({
                     where: { id: userId },
                     data: { pointBalance: { decrement: effectivePts } }
                 });
@@ -261,7 +261,7 @@ export async function POST(request: Request) {
                         userId,
                         amount: -effectivePts,
                         reason: `주문 결제 사용 (Order #${newOrder.id})`,
-                        balanceAfter: user.pointBalance - effectivePts,
+                        balanceAfter: afterDeduct.pointBalance,
                         orderId: newOrder.id
                     }
                 });

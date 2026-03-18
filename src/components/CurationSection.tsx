@@ -112,6 +112,8 @@ export default function CurationSection({ products, todayPicks: curatedPicks = [
                     shortDesc: product.shortDesc || '',
                     rating: product.reviewAvg,
                     reviewCount: product.reviewCount,
+                    badgeAuthentic: product.badgeAuthentic,
+                    badgeKoreanCertified: product.badgeKoreanCertified,
                 }}
             />
         </div>

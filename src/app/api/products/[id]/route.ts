@@ -11,6 +11,10 @@ export async function GET(
     const lang = searchParams.get('lang') || 'ko';
     const { id: productId } = await context.params;
 
+    if (!/^\d+$/.test(productId)) {
+        return NextResponse.json({ error: 'Invalid product ID' }, { status: 400 });
+    }
+
     try {
         const product = await prisma.product.findUnique({
             where: { id: BigInt(productId) },

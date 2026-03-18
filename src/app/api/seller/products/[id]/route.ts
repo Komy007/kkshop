@@ -13,6 +13,10 @@ export async function GET(
     const session = await auth();
     if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+    if (!/^\d+$/.test(id)) {
+        return NextResponse.json({ error: 'Invalid product ID' }, { status: 400 });
+    }
+
     const supplier = await prisma.supplier.findUnique({ where: { userId: session.user.id } });
     if (!supplier) return NextResponse.json({ error: 'Supplier not found' }, { status: 404 });
 
@@ -102,6 +106,10 @@ export async function PATCH(
     const { id } = await context.params;
     const session = await auth();
     if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    if (!/^\d+$/.test(id)) {
+        return NextResponse.json({ error: 'Invalid product ID' }, { status: 400 });
+    }
 
     const supplier = await prisma.supplier.findUnique({ where: { userId: session.user.id } });
     if (!supplier) return NextResponse.json({ error: 'Supplier not found' }, { status: 404 });
@@ -250,6 +258,10 @@ export async function DELETE(
     const { id } = await context.params;
     const session = await auth();
     if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    if (!/^\d+$/.test(id)) {
+        return NextResponse.json({ error: 'Invalid product ID' }, { status: 400 });
+    }
 
     const supplier = await prisma.supplier.findUnique({ where: { userId: session.user.id } });
     if (!supplier) return NextResponse.json({ error: 'Supplier not found' }, { status: 404 });

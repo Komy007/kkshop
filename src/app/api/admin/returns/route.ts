@@ -95,98 +95,100 @@ export async function PATCH(req: NextRequest) {
 
     if (!order) return NextResponse.json({ error: 'Order not found' }, { status: 404 });
 
-    // 환불 처리 시 재고 복원 + 포인트 환원
-    if (status === 'REFUNDED') {
-        for (const item of order.items) {
-            const product = await prisma.product.findUnique({ where: { id: item.productId } });
-            const newStock = (product?.stockQty ?? 0) + item.quantity;
-            await prisma.product.update({
-                where: { id: item.productId },
-                data:  { stockQty: { increment: item.quantity } },
-            });
-            await prisma.stockLog.create({
-                data: {
-                    productId:    item.productId,
-                    changeQty:    item.quantity,
-                    balanceAfter: newStock,
-                    reason:       'RETURN',
-                    memo:         `Refund approved for order ${orderId}`,
-                    orderId,
-                    createdBy:    session!.user!.email ?? 'admin',
-                },
-            });
+    // 환불 처리: 전체를 하나의 트랜잭션으로 처리 (중간 실패 시 롤백)
+    await prisma.$transaction(async (tx) => {
+        if (status === 'REFUNDED') {
+            // ① 재고 복원 (update 반환값으로 balanceAfter 계산 — stale read 방지)
+            for (const item of order.items) {
+                const updated = await tx.product.update({
+                    where: { id: item.productId },
+                    data:  { stockQty: { increment: item.quantity } },
+                });
+                await tx.stockLog.create({
+                    data: {
+                        productId:    item.productId,
+                        changeQty:    item.quantity,
+                        balanceAfter: updated.stockQty,
+                        reason:       'RETURN',
+                        memo:         `Refund approved for order ${orderId}`,
+                        orderId,
+                        createdBy:    session!.user!.email ?? 'admin',
+                    },
+                });
+            }
+
+            if (order.userId) {
+                // ② 주문 완료 시 지급된 1% 리워드 포인트 회수 (원자적 decrement)
+                const rewardPoints = Math.floor(Number(order.totalUsd) * 0.01);
+                if (rewardPoints > 0) {
+                    await tx.user.update({
+                        where: { id: order.userId },
+                        data:  { pointBalance: { decrement: rewardPoints } },
+                    });
+                    // 0 미만으로 내려가면 0으로 클램프
+                    await tx.user.updateMany({
+                        where: { id: order.userId, pointBalance: { lt: 0 } },
+                        data:  { pointBalance: 0 },
+                    });
+                    const afterReclaim = await tx.user.findUnique({
+                        where: { id: order.userId }, select: { pointBalance: true },
+                    });
+                    await tx.userPoint.create({
+                        data: {
+                            userId:       order.userId,
+                            amount:       -rewardPoints,
+                            reason:       `환불 처리로 리워드 포인트 회수 (주문 #${orderId})`,
+                            balanceAfter: afterReclaim?.pointBalance ?? 0,
+                            orderId,
+                        },
+                    });
+                }
+
+                // ③ 주문 시 사용한 포인트 환원 (update 반환값으로 balanceAfter 계산)
+                if (order.pointsUsed > 0) {
+                    const afterRestore = await tx.user.update({
+                        where: { id: order.userId },
+                        data:  { pointBalance: { increment: order.pointsUsed } },
+                    });
+                    await tx.userPoint.create({
+                        data: {
+                            userId:       order.userId,
+                            amount:       order.pointsUsed,
+                            reason:       `환불 처리로 사용 포인트 환원 (주문 #${orderId})`,
+                            balanceAfter: afterRestore.pointBalance,
+                            orderId,
+                        },
+                    });
+                }
+            }
         }
 
-        // ① 주문 완료 시 지급된 1% 리워드 포인트 회수 (원자적 연산)
+        // ReturnRequest 상태 업데이트 (있는 경우)
         if (order.userId) {
-            const rewardPoints = Math.floor(Number(order.totalUsd) * 0.01);
-            if (rewardPoints > 0) {
-                // Atomic decrement (read-calculate-write 패턴 제거)
-                await prisma.user.update({
-                    where: { id: order.userId },
-                    data:  { pointBalance: { decrement: rewardPoints } },
-                });
-                // 0 미만으로 내려가면 0으로 클램프
-                await prisma.user.updateMany({
-                    where: { id: order.userId, pointBalance: { lt: 0 } },
-                    data:  { pointBalance: 0 },
-                });
-                const afterReclaim = await prisma.user.findUnique({
-                    where: { id: order.userId }, select: { pointBalance: true },
-                });
-                await prisma.userPoint.create({
+            const rr = await tx.returnRequest.findUnique({ where: { orderId } });
+            if (rr) {
+                await tx.returnRequest.update({
+                    where: { orderId },
                     data: {
-                        userId:       order.userId,
-                        amount:       -rewardPoints,
-                        reason:       `환불 처리로 리워드 포인트 회수 (주문 #${orderId})`,
-                        balanceAfter: afterReclaim?.pointBalance ?? 0,
-                        orderId,
-                    },
-                });
-            }
-
-            // ② 주문 시 사용한 포인트 환원 (원자적 increment, 반환값으로 balanceAfter 계산)
-            if (order.pointsUsed > 0) {
-                const afterRestore = await prisma.user.update({
-                    where: { id: order.userId },
-                    data:  { pointBalance: { increment: order.pointsUsed } },
-                });
-                await prisma.userPoint.create({
-                    data: {
-                        userId:       order.userId,
-                        amount:       order.pointsUsed,
-                        reason:       `환불 처리로 사용 포인트 환원 (주문 #${orderId})`,
-                        balanceAfter: afterRestore.pointBalance,
-                        orderId,
+                        status:      status === 'REFUNDED' ? 'APPROVED' : 'REJECTED',
+                        adminNote:   adminNote ?? null,
+                        processedBy: session!.user!.email ?? 'admin',
+                        processedAt: new Date(),
                     },
                 });
             }
         }
-    }
 
-    // ReturnRequest 상태 업데이트 (있는 경우)
-    if (order.userId) {
-        const rr = await prisma.returnRequest.findUnique({ where: { orderId } });
-        if (rr) {
-            await prisma.returnRequest.update({
-                where: { orderId },
-                data: {
-                    status:      status === 'REFUNDED' ? 'APPROVED' : 'REJECTED',
-                    adminNote:   adminNote ?? null,
-                    processedBy: session!.user!.email ?? 'admin',
-                    processedAt: new Date(),
-                },
-            });
-        }
-    }
-
-    const updated = await prisma.order.update({
-        where: { id: orderId },
-        data:  {
-            status,
-            ...(status === 'REFUNDED' ? { paymentStatus: 'REFUNDED' } : {}),
-        },
+        await tx.order.update({
+            where: { id: orderId },
+            data:  {
+                status,
+                ...(status === 'REFUNDED' ? { paymentStatus: 'REFUNDED' } : {}),
+            },
+        });
     });
+
+    const updated = await prisma.order.findUnique({ where: { id: orderId } });
 
     return NextResponse.json({ order: updated });
 }

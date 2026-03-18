@@ -27,6 +27,8 @@ export interface TranslatedProduct {
     reviewAvg: number;
     reviewCount: number;
     displayPriority: number;
+    badgeAuthentic: boolean;
+    badgeKoreanCertified: boolean;
     brandName?: string | null;
     volume?: string | null;
     skinType?: string | null;
@@ -81,6 +83,8 @@ function serializeProduct(product: any, langCode: string): TranslatedProduct {
         reviewAvg: Number(product.reviewAvg ?? 0),
         reviewCount: product.reviewCount ?? 0,
         displayPriority: product.displayPriority ?? 0,
+        badgeAuthentic: product.badgeAuthentic ?? false,
+        badgeKoreanCertified: product.badgeKoreanCertified ?? false,
         brandName: product.brandName ?? null,
         volume: product.volume ?? null,
         skinType: product.skinType ?? null,

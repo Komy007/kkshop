@@ -4,6 +4,7 @@ import GoogleProvider from "next-auth/providers/google"
 import { prisma } from "@/lib/api"
 import bcrypt from "bcryptjs"
 import authConfig from "./auth.config"
+import { twoFactorCache } from "@/lib/twoFactorCache"
 
 // Login rate limiting: max 10 attempts per IP per 15 minutes
 const loginAttempts = new Map<string, { count: number; firstAttempt: number }>();
@@ -186,9 +187,12 @@ const nextAuthEnv = NextAuth({
                         select: { phone: true }
                     });
                     if (dbUser?.phone) token.needsOnboarding = false;
-                    // twoFactorPending 해제는 verify API가 처리
+                    // twoFactorPending 해제 — 서버 사이드 nonce 검증 필수
+                    // 클라이언트가 직접 { twoFactorVerified: true } 를 보내도 nonce가 없으면 무시됨
                     if ((token as any).twoFactorVerified) {
-                        token.twoFactorPending = false;
+                        if (twoFactorCache.consume(token.sub as string)) {
+                            token.twoFactorPending = false;
+                        }
                         delete (token as any).twoFactorVerified;
                     }
                 } catch {}

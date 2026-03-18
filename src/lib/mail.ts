@@ -48,8 +48,10 @@ async function getTransporterAndFrom(): Promise<{
         },
     });
 
-    const fromAddress = config.fromName
-        ? `"${config.fromName}" <${config.fromEmail || config.user}>`
+    // 이메일 헤더 인젝션 방어 — CR/LF/인용부호 제거
+    const safeName = (config.fromName ?? '').replace(/[\r\n"\\]/g, '').trim();
+    const fromAddress = safeName
+        ? `"${safeName}" <${config.fromEmail || config.user}>`
         : (config.fromEmail || config.user);
 
     const adminEmail = config.fromEmail || config.user;
