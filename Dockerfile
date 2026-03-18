@@ -18,7 +18,8 @@ RUN mkdir -p public
 RUN npx prisma generate
 
 # Force clear any cached built files and Build Next.js
-RUN rm -rf .next && npm run build
+# NODE_OPTIONS: PWA Workbox build requires extra heap (prevents WorkerError OOM crash)
+RUN rm -rf .next && NODE_OPTIONS='--max-old-space-size=4096' npm run build
 
 # ---- Stage 3: Production runner ----
 FROM node:22-alpine AS runner
