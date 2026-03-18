@@ -266,6 +266,7 @@ export default function ProductDetailClient() {
 
     const [product, setProduct] = useState<ProductDetail | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [loadError, setLoadError] = useState<'not_found' | 'error' | null>(null);
     const [activeTab, setActiveTab] = useState<'desc' | 'ingredients' | 'reviews' | 'qa'>('desc');
     const [qty, setQty] = useState(1);
     const [selectedOptionId, setSelectedOptionId] = useState<string>('');
@@ -317,21 +318,27 @@ export default function ProductDetailClient() {
     useEffect(() => {
         async function loadProduct() {
             setIsLoading(true);
+            setLoadError(null);
             try {
                 const res = await fetch(`/api/products/${params.id}?lang=${language}`);
-                if (res.ok) {
+                if (res.status === 404) {
+                    setLoadError('not_found');
+                } else if (!res.ok) {
+                    setLoadError('error');
+                } else {
                     const data = await res.json();
-                    if (!data.error) {
+                    if (data.error) {
+                        setLoadError('not_found');
+                    } else {
                         setProduct(data);
-                        // Set initial gallery image
                         const firstImg = data.images?.[0]?.url || data.imageUrl || '';
                         setSelectedImageUrl(firstImg);
-                        // Reset variant selection on product load
                         setSelectedVariantId('');
                     }
                 }
             } catch (err) {
                 console.error('Error loading product:', err);
+                setLoadError('error');
             } finally {
                 setIsLoading(false);
             }
@@ -575,6 +582,23 @@ export default function ProductDetailClient() {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <div className="w-10 h-10 border-4 border-white/20 border-t-brand-primary rounded-full animate-spin" />
+            </div>
+        );
+    }
+
+    if (loadError === 'error') {
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center gap-4 text-gray-500 px-6 text-center">
+                <p className="text-2xl">⚠️</p>
+                <p className="text-base font-bold text-gray-700">Failed to load product</p>
+                <p className="text-sm text-gray-400">Please check your connection and try again.</p>
+                <button
+                    onClick={() => window.location.reload()}
+                    className="mt-2 px-5 py-2 bg-brand-primary text-white rounded-full text-sm font-bold hover:bg-brand-primary/90 transition-colors"
+                >
+                    Retry
+                </button>
+                <a href="/" className="text-brand-primary hover:underline text-sm">{t.back}</a>
             </div>
         );
     }

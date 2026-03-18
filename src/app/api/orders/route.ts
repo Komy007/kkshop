@@ -60,6 +60,7 @@ export async function POST(request: Request) {
         // Verify & Calculate Coupon
         let discountAmount = 0;
         let appliedCouponId = null;
+        let appliedCouponMaxUses: number | null = null;
 
         // Look up shipping fee from DB by province (server-side, tamper-proof)
         let shippingFee = 0;
@@ -100,6 +101,7 @@ export async function POST(request: Request) {
             }
 
             appliedCouponId = coupon.id;
+            appliedCouponMaxUses = coupon.maxUses ?? null;
 
             if (coupon.type === 'PERCENT') {
                 // Cap percent discount to subtotal, rounded to 2 decimal places
@@ -130,38 +132,42 @@ export async function POST(request: Request) {
                     // --- Variant stock path ---
                     const variant = await tx.productVariant.findUnique({
                         where: { id: BigInt(item.variantId) },
-                        select: { id: true, stockQty: true, sku: true, productId: true }
+                        select: { id: true, sku: true, productId: true }
                     });
                     if (!variant) {
                         throw new Error(`Variant ${item.variantId} not found`);
                     }
-                    if (variant.stockQty < qty) {
-                        throw new Error(`Insufficient stock for variant SKU ${variant.sku ?? item.variantId} (available: ${variant.stockQty})`);
-                    }
-                    // Deduct variant stock
-                    await tx.productVariant.update({
-                        where: { id: variant.id },
+                    // Atomic: decrement only if stockQty >= qty (race condition safe)
+                    const variantUpdate = await tx.productVariant.updateMany({
+                        where: { id: variant.id, stockQty: { gte: qty } },
                         data: { stockQty: { decrement: qty } }
                     });
-                    // Also deduct parent product stock
+                    if (variantUpdate.count === 0) {
+                        throw new Error(`Insufficient stock for variant SKU ${variant.sku ?? item.variantId}`);
+                    }
+                    // Also deduct parent product stock atomically
                     const product = await tx.product.findUnique({
                         where: { id: variant.productId },
-                        select: { id: true, stockQty: true, sku: true }
+                        select: { id: true, sku: true }
                     });
                     if (!product) {
                         throw new Error(`Product for variant ${item.variantId} not found`);
                     }
-                    if (product.stockQty < qty) {
-                        throw new Error(`Insufficient product stock for SKU ${product.sku} (available: ${product.stockQty})`);
-                    }
-                    const newProductStock = product.stockQty - qty;
-                    await tx.product.update({
-                        where: { id: product.id },
-                        data: {
-                            stockQty: newProductStock,
-                            ...(newProductStock === 0 ? { status: 'SOLDOUT' } : {}),
-                        }
+                    const productVarUpdate = await tx.product.updateMany({
+                        where: { id: product.id, stockQty: { gte: qty } },
+                        data: { stockQty: { decrement: qty } }
                     });
+                    if (productVarUpdate.count === 0) {
+                        throw new Error(`Insufficient product stock for SKU ${product.sku}`);
+                    }
+                    // Check and mark SOLDOUT if now 0
+                    const updatedVarProduct = await tx.product.findUnique({
+                        where: { id: product.id }, select: { stockQty: true }
+                    });
+                    if (updatedVarProduct?.stockQty === 0) {
+                        await tx.product.update({ where: { id: product.id }, data: { status: 'SOLDOUT' } });
+                    }
+                    const newProductStock = updatedVarProduct?.stockQty ?? 0;
                     await (tx as any).stockLog.create({
                         data: {
                             productId: product.id,
@@ -177,22 +183,27 @@ export async function POST(request: Request) {
                     // --- Product-level stock path (no variant) ---
                     const product = await tx.product.findUnique({
                         where: { id: BigInt(item.productId) },
-                        select: { id: true, stockQty: true, sku: true }
+                        select: { id: true, sku: true }
                     });
                     if (!product) {
                         throw new Error(`Product ${item.productId} not found`);
                     }
-                    if (product.stockQty < qty) {
-                        throw new Error(`Insufficient stock for SKU ${product.sku} (available: ${product.stockQty})`);
-                    }
-                    const newStock = product.stockQty - qty;
-                    await tx.product.update({
-                        where: { id: product.id },
-                        data: {
-                            stockQty: newStock,
-                            ...(newStock === 0 ? { status: 'SOLDOUT' } : {}),
-                        }
+                    // Atomic: decrement only if stockQty >= qty (race condition safe)
+                    const productUpdate = await tx.product.updateMany({
+                        where: { id: product.id, stockQty: { gte: qty } },
+                        data: { stockQty: { decrement: qty } }
                     });
+                    if (productUpdate.count === 0) {
+                        throw new Error(`Insufficient stock for SKU ${product.sku}`);
+                    }
+                    // Check and mark SOLDOUT if now 0
+                    const updatedProduct = await tx.product.findUnique({
+                        where: { id: product.id }, select: { stockQty: true }
+                    });
+                    if (updatedProduct?.stockQty === 0) {
+                        await tx.product.update({ where: { id: product.id }, data: { status: 'SOLDOUT' } });
+                    }
+                    const newStock = updatedProduct?.stockQty ?? 0;
                     await (tx as any).stockLog.create({
                         data: {
                             productId: product.id,
@@ -256,12 +267,21 @@ export async function POST(request: Request) {
                 });
             }
 
-            // 4. Mark Coupon as used
+            // 4. Mark Coupon as used (atomic: guard against concurrent reuse)
             if (appliedCouponId) {
-                await tx.coupon.update({
-                    where: { id: appliedCouponId },
-                    data: { usedCount: { increment: 1 } }
-                });
+                if (appliedCouponMaxUses !== null) {
+                    // Atomic increment only if still below the limit
+                    const couponUpdate = await tx.coupon.updateMany({
+                        where: { id: appliedCouponId, usedCount: { lt: appliedCouponMaxUses } },
+                        data: { usedCount: { increment: 1 } }
+                    });
+                    if (couponUpdate.count === 0) throw new Error('Coupon usage limit reached');
+                } else {
+                    await tx.coupon.update({
+                        where: { id: appliedCouponId },
+                        data: { usedCount: { increment: 1 } }
+                    });
+                }
                 await tx.userCoupon.create({
                     data: {
                         userId,

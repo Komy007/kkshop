@@ -202,6 +202,7 @@ export default function CheckoutPage() {
 
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
+    const [submitError, setSubmitError] = useState<string | null>(null);
     const [user, setUser] = useState<any>(null);
 
     const [provinces, setProvinces] = useState<Province[]>([]);
@@ -351,6 +352,7 @@ export default function CheckoutPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (cartItems.length === 0) return;
+        setSubmitError(null);
         setSubmitting(true);
         try {
             const res = await fetch('/api/orders', {
@@ -372,12 +374,12 @@ export default function CheckoutPage() {
                 clearCart();
                 router.push(`/mypage?success=true&orderId=${data.orderId}`);
             } else {
-                alert(data.error || 'Order failed. Please try again.');
+                setSubmitError(data.error || 'Order failed. Please try again.');
                 setSubmitting(false);
             }
         } catch (error) {
             console.error(error);
-            alert('An error occurred. Please try again.');
+            setSubmitError('An error occurred. Please try again.');
             setSubmitting(false);
         }
     };
@@ -679,6 +681,13 @@ export default function CheckoutPage() {
                                 <span className="text-sm font-bold text-gray-900">{t.total}</span>
                                 <span className="text-2xl font-black text-rose-600">{formatUsd(finalTotal)}</span>
                             </div>
+
+                            {submitError && (
+                                <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700 font-semibold">
+                                    <span className="shrink-0">⚠️</span>
+                                    <span>{submitError}</span>
+                                </div>
+                            )}
 
                             <button type="submit" disabled={submitting}
                                 className="w-full py-4 bg-brand-primary text-white font-black text-base rounded-xl hover:bg-brand-primary/90 transition-all shadow-md shadow-brand-primary/20 disabled:opacity-50 flex justify-center items-center gap-2">

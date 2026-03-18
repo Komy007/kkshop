@@ -146,7 +146,7 @@ export async function PATCH(req: Request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
         }
         const body = await req.json();
-        const { id, categoryId, isNew, isTodayPick, status, approvalStatus, rejectionReason, stockQty, priceUsd, isHotSale, hotSalePrice, costPrice, stockAlertQty, badgeAuthentic, badgeKoreanCertified } = body;
+        const { id, categoryId, isNew, isTodayPick, displayPriority, status, approvalStatus, rejectionReason, stockQty, priceUsd, isHotSale, hotSalePrice, costPrice, stockAlertQty, badgeAuthentic, badgeKoreanCertified } = body;
         if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
 
         const data: any = {};
@@ -187,6 +187,7 @@ export async function PATCH(req: Request) {
         if (badgeAuthentic !== undefined) data.badgeAuthentic = Boolean(badgeAuthentic);
         if (badgeKoreanCertified !== undefined) data.badgeKoreanCertified = Boolean(badgeKoreanCertified);
         if (isTodayPick !== undefined) data.isTodayPick = Boolean(isTodayPick);
+        if (displayPriority !== undefined) data.displayPriority = Math.max(0, Math.min(999, parseInt(displayPriority) || 0));
 
         await prisma.product.update({ where: { id: BigInt(id) }, data });
         return NextResponse.json({ success: true });

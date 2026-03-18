@@ -22,6 +22,8 @@ interface ProductData {
     rating?: number;
     reviewCount?: number;
     isBestSeller?: boolean;
+    badgeAuthentic?: boolean;
+    badgeKoreanCertified?: boolean;
 }
 
 const uiTranslations = {
@@ -55,11 +57,21 @@ export default function ProductCard({ product }: ProductCardProps) {
 
             {/* Badges */}
             <div className="absolute top-4 w-full px-4 flex justify-between items-start z-10 pointer-events-none">
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-1.5">
                     {product.isBestSeller && (
                         <span className="bg-white/90 backdrop-blur-md text-red-600 border border-gray-200 text-[11px] font-bold px-3 py-1.5 rounded-full shadow-sm inline-flex items-center uppercase tracking-wider">
                             <Star className="w-3.5 h-3.5 mr-1.5 fill-red-600" />
                             {'HOT DEAL'}
+                        </span>
+                    )}
+                    {product.badgeAuthentic && (
+                        <span className="bg-blue-600/90 backdrop-blur-md text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-sm inline-flex items-center">
+                            ✓ Authentic
+                        </span>
+                    )}
+                    {product.badgeKoreanCertified && (
+                        <span className="bg-rose-500/90 backdrop-blur-md text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-sm inline-flex items-center">
+                            🇰🇷 Korean Certified
                         </span>
                     )}
                 </div>

@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useCartStore, selectTotalPrice, selectTotalItems } from '@/store/useCartStore';
 import { useSafeAppStore } from '@/store/useAppStore';
-import { Trash2, Minus, Plus, ShoppingBag, ArrowRight, ChevronLeft } from 'lucide-react';
+import { Trash2, Minus, Plus, ShoppingBag, ArrowRight, ChevronLeft, AlertTriangle } from 'lucide-react';
 import Footer from '@/components/Footer';
 
 const cartT: Record<string, any> = {
@@ -73,6 +73,34 @@ export default function CartPage() {
     const { removeItem, updateQty } = useCartStore();
 
     const [removingId, setRemovingId] = useState<string | null>(null);
+    // stockWarnings: productId -> available qty (when cart qty exceeds stock)
+    const [stockWarnings, setStockWarnings] = useState<Record<string, number>>({});
+    const checkedRef = useRef<string>('');
+
+    useEffect(() => {
+        if (items.length === 0) { setStockWarnings({}); return; }
+        const key = items.map(i => `${i.productId}:${i.qty}`).join(',');
+        if (checkedRef.current === key) return;
+        checkedRef.current = key;
+
+        const uniqueIds = [...new Set(items.map(i => i.productId))];
+        Promise.all(uniqueIds.map(id =>
+            fetch(`/api/products/${id}`)
+                .then(r => r.ok ? r.json() : null)
+                .catch(() => null)
+        )).then(results => {
+            const warnings: Record<string, number> = {};
+            results.forEach((data, i) => {
+                if (!data) return;
+                const stockQty: number = data.product?.stockQty ?? data.stockQty ?? 0;
+                const cartItem = items.find(ci => ci.productId === uniqueIds[i]);
+                if (cartItem && cartItem.qty > stockQty) {
+                    warnings[uniqueIds[i]] = stockQty;
+                }
+            });
+            setStockWarnings(warnings);
+        });
+    }, [items]);
 
     const handleRemove = (productId: string, variantId?: string) => {
         const key = variantId ? `${productId}-${variantId}` : productId;
@@ -143,6 +171,18 @@ export default function CartPage() {
                                 </div>
                             )}
 
+                            {/* Stock warning banner */}
+                            {Object.keys(stockWarnings).length > 0 && (
+                                <div className="flex items-start gap-2 bg-orange-50 border border-orange-200 rounded-2xl px-4 py-3 text-sm text-orange-800">
+                                    <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0 text-orange-500" />
+                                    <span className="font-semibold">
+                                        {language === 'ko'
+                                            ? '일부 상품의 재고가 부족합니다. 수량을 조정해 주세요.'
+                                            : 'Some items have insufficient stock. Please adjust quantities.'}
+                                    </span>
+                                </div>
+                            )}
+
                             {/* Cart Items */}
                             <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden divide-y divide-gray-100">
                                 {items.map((item) => {
@@ -177,6 +217,15 @@ export default function CartPage() {
                                                 </p>
                                                 {item.qty > 1 && (
                                                     <p className="text-xs text-gray-400">{formatUsd(item.priceUsd)} each</p>
+                                                )}
+                                                {stockWarnings[item.productId] !== undefined && (
+                                                    <p className="text-xs text-orange-600 font-bold mt-0.5">
+                                                        {stockWarnings[item.productId] === 0
+                                                            ? (language === 'ko' ? '품절' : 'Out of stock')
+                                                            : (language === 'ko'
+                                                                ? `재고 ${stockWarnings[item.productId]}개 남음`
+                                                                : `Only ${stockWarnings[item.productId]} left`)}
+                                                    </p>
                                                 )}
 
                                                 {/* Qty Controls + Remove */}

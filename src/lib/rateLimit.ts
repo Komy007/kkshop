@@ -10,6 +10,7 @@ interface RateLimitEntry {
 }
 
 const store = new Map<string, RateLimitEntry>();
+const MAX_STORE_SIZE = 50_000; // DDoS OOM 방지 — 엔트리 상한
 
 // 5분마다 만료된 엔트리 정리 (메모리 누수 방지)
 const cleanup = setInterval(() => {
@@ -40,6 +41,11 @@ export function checkRateLimit(
     const entry = store.get(key);
 
     if (!entry || now > entry.resetAt) {
+        // 상한 초과 시 가장 오래된 엔트리 제거 (긴급 방어)
+        if (store.size >= MAX_STORE_SIZE) {
+            const firstKey = store.keys().next().value;
+            if (firstKey !== undefined) store.delete(firstKey);
+        }
         store.set(key, { count: 1, resetAt: now + windowMs });
         return { allowed: true, remaining: limit - 1, resetAt: now + windowMs };
     }
