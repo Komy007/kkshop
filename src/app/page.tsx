@@ -176,8 +176,8 @@ function FlashSaleSection({ t }: { t: any }) {
         <section className="mb-5">
             <div className="flex items-center justify-between mb-3 px-3">
                 <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 bg-yellow-400 rounded-md flex items-center justify-center">
-                        <Zap className="w-3 h-3 text-white fill-white" />
+                    <div className="icon-3d w-8 h-8 bg-gradient-to-br from-yellow-400 to-orange-500 animate-zap-pulse">
+                        <Zap className="w-4 h-4 text-white fill-white" />
                     </div>
                     <h3 className="text-[15px] font-extrabold text-black">⚡ {t.flashTitle}</h3>
                 </div>
@@ -448,7 +448,7 @@ export default function Home() {
                 <ProductGrid
                     products={showHot}
                     title={`🔥 ${t.hotSale}`}
-                    icon={<Flame className="w-4 h-4 text-[#FF4444]" />}
+                    icon={<span className="badge-3d bg-gradient-to-r from-red-500 to-orange-500 text-white"><Flame className="w-3.5 h-3.5" /></span>}
                     viewAllHref="/category/all"
                     t={t}
                 />
@@ -457,7 +457,7 @@ export default function Home() {
                 <ProductGrid
                     products={showNew}
                     title={`✨ ${t.newArrival}`}
-                    icon={<Sparkles className="w-4 h-4 text-blue-500" />}
+                    icon={<span className="badge-3d bg-gradient-to-r from-blue-500 to-cyan-500 text-white"><Sparkles className="w-3.5 h-3.5" /></span>}
                     viewAllHref="/category/new"
                     t={t}
                 />
@@ -466,7 +466,7 @@ export default function Home() {
                 <ProductGrid
                     products={showPopular}
                     title={`👑 ${t.popular}`}
-                    icon={<Crown className="w-4 h-4 text-amber-500" />}
+                    icon={<span className="badge-3d bg-gradient-to-r from-amber-500 to-yellow-500 text-white"><Crown className="w-3.5 h-3.5" /></span>}
                     viewAllHref="/category/all"
                     t={t}
                 />

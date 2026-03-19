@@ -419,6 +419,123 @@
   .animate-float-chat {
     animation: floatChat 3s ease-in-out infinite;
   }
+
+  /* ── 3D Glass Icon Container ── */
+  .icon-3d {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 16px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.1) 100%);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow:
+      0 4px 16px rgba(0,0,0,0.1),
+      0 1px 3px rgba(0,0,0,0.08),
+      inset 0 1px 0 rgba(255,255,255,0.6);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  .icon-3d::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 50%;
+    bottom: 50%;
+    background: linear-gradient(135deg, rgba(255,255,255,0.5) 0%, transparent 100%);
+    border-radius: 16px 4px 16px 4px;
+    pointer-events: none;
+  }
+  .icon-3d:hover {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow:
+      0 8px 25px rgba(0,0,0,0.15),
+      0 3px 6px rgba(0,0,0,0.1),
+      inset 0 1px 0 rgba(255,255,255,0.6);
+  }
+  .icon-3d:active {
+    transform: translateY(0) scale(0.97);
+  }
+
+  /* ── 3D Section Badge ── */
+  .badge-3d {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-weight: 800;
+    font-size: 13px;
+    box-shadow:
+      0 2px 8px rgba(0,0,0,0.15),
+      inset 0 1px 0 rgba(255,255,255,0.3);
+    position: relative;
+    overflow: hidden;
+  }
+  .badge-3d::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(
+      45deg,
+      transparent 40%,
+      rgba(255,255,255,0.3) 50%,
+      transparent 60%
+    );
+    animation: badge-shine 3s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  /* ── Floating for empty states ── */
+  .icon-float {
+    animation: icon-float 3s ease-in-out infinite;
+  }
+
+  /* ── Zap pulse for flash sale ── */
+  .animate-zap-pulse {
+    animation: zap-pulse 1.5s ease-in-out infinite;
+  }
+
+  /* ── Bounce-in for success feedback ── */
+  .animate-bounce-in {
+    animation: bounce-in 0.5s ease-out forwards;
+  }
+}
+
+@keyframes badge-shine {
+  0%, 100% { transform: translateX(-100%) rotate(45deg); }
+  50% { transform: translateX(100%) rotate(45deg); }
+}
+
+@keyframes icon-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes zap-pulse {
+  0%, 100% { opacity: 1; filter: drop-shadow(0 0 4px rgba(250,204,21,0.6)); }
+  50% { opacity: 0.7; filter: drop-shadow(0 0 12px rgba(250,204,21,0.9)); }
+}
+
+@keyframes bounce-in {
+  0% { transform: scale(0.3); opacity: 0; }
+  50% { transform: scale(1.1); }
+  70% { transform: scale(0.9); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes scale-in-3d {
+  0% { transform: scale(0); opacity: 0; }
+  60% { transform: scale(1.1); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes draw-check {
+  to { stroke-dashoffset: 0; }
 }
 
 @keyframes floatChat {

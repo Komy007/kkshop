@@ -164,21 +164,15 @@ export default function CategoryShortcuts() {
                         <div className="relative">
                             <div
                                 className={`
-                                    w-[56px] h-[56px] sm:w-[64px] sm:h-[64px]
-                                    rounded-[20px] sm:rounded-[24px]
+                                    w-[60px] h-[60px] sm:w-[68px] sm:h-[68px]
+                                    rounded-2xl
                                     ${item.bg}
-                                    shadow-md ${item.shadow}
+                                    icon-3d
                                     flex items-center justify-center
-                                    group-hover:scale-110 group-active:scale-95
-                                    transition-transform duration-200
                                 `}
-                                style={{
-                                    boxShadow: `0 6px 16px -4px var(--tw-shadow-color, rgba(0,0,0,0.15))`,
-                                }}
                             >
                                 <span
-                                    className="text-[28px] sm:text-[32px] leading-none select-none"
-                                    style={{ filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.18))' }}
+                                    className="text-[28px] sm:text-[32px] leading-none select-none drop-shadow-sm"
                                 >
                                     {item.emoji}
                                 </span>

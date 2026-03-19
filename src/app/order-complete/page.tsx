@@ -149,8 +149,24 @@ function OrderCompleteContent() {
 
                 {/* 성공 헤더 */}
                 <div className="bg-white rounded-2xl shadow-sm p-6 text-center">
-                    <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <CheckCircle2 className="w-9 h-9 text-green-500" />
+                    <div className="relative w-24 h-24 mx-auto mb-4">
+                        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-green-400 to-emerald-600 shadow-lg shadow-green-200/50"
+                            style={{ animation: 'scale-in-3d 0.5s ease-out forwards' }}
+                        />
+                        <svg className="relative w-24 h-24 p-6" viewBox="0 0 24 24" fill="none">
+                            <path
+                                d="M5 13l4 4L19 7"
+                                stroke="white"
+                                strokeWidth="3"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                style={{
+                                    strokeDasharray: 30,
+                                    strokeDashoffset: 30,
+                                    animation: 'draw-check 0.4s ease-out 0.4s forwards',
+                                }}
+                            />
+                        </svg>
                     </div>
                     <h1 className="text-2xl font-bold text-gray-900 mb-1">{tx.title}</h1>
                     <p className="text-gray-500 text-sm">{tx.subtitle}</p>

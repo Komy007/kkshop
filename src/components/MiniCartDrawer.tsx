@@ -110,8 +110,8 @@ export default function MiniCartDrawer() {
                 <div className="flex-1 overflow-y-auto px-6 py-4 bg-gray-50">
                     {items.length === 0 ? (
                         <div className="flex flex-col items-center justify-center h-full text-center gap-4">
-                            <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mb-2">
-                                <ShoppingBag className="w-10 h-10 text-gray-300" />
+                            <div className="w-24 h-24 rounded-2xl icon-3d icon-float bg-gradient-to-br from-gray-100 to-gray-200 mb-2">
+                                <ShoppingBag className="w-12 h-12 text-gray-400 drop-shadow-sm" />
                             </div>
                             <p className="text-gray-900 font-extrabold text-lg">{t.empty}</p>
                             <p className="text-gray-500 font-medium">{t.emptyDesc}</p>
