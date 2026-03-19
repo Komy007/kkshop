@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { useAppStore } from '@/store/useAppStore';
 
 type Lang = 'ko' | 'en' | 'km' | 'zh';
 
@@ -203,16 +204,15 @@ const content: Record<Lang, { title: string; lastUpdated: string; sections: Arra
 };
 
 export default function TermsPage() {
+  const { language, setLanguage } = useAppStore();
   const [lang, setLang] = useState<Lang>('en');
+
+  // GNB 언어 변경 시 실시간 동기화
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem('kkshop-lang');
-      if (raw) {
-        const l = JSON.parse(raw)?.state?.language;
-        if (['ko', 'en', 'km', 'zh'].includes(l)) setLang(l as Lang);
-      }
-    } catch {}
-  }, []);
+    if (['ko', 'en', 'km', 'zh'].includes(language)) {
+      setLang(language as Lang);
+    }
+  }, [language]);
   const c = content[lang];
 
   return (
@@ -223,7 +223,7 @@ export default function TermsPage() {
           {(['ko', 'en', 'km', 'zh'] as Lang[]).map((l) => (
             <button
               key={l}
-              onClick={() => setLang(l)}
+              onClick={() => { setLang(l); setLanguage(l); }}
               className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
                 lang === l
                   ? 'bg-blue-600 text-white'
