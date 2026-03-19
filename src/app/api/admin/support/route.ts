@@ -35,30 +35,29 @@ export async function GET(req: NextRequest) {
             orderBy: { createdAt: 'desc' },
             take: 50,
             include: {
-                product: { select: { imageUrl: true } },
-                user:    { select: { email: true, name: true } },
+                // translations를 include로 한 번에 가져와 N+1 쿼리 해소
+                product: {
+                    select: {
+                        imageUrl: true,
+                        translations: {
+                            where:  { langCode: 'en' },
+                            select: { name: true },
+                            take: 1,
+                        },
+                    },
+                },
+                user: { select: { email: true, name: true } },
             },
         }),
         prisma.productQA.count({ where }),
     ]);
 
-    // Fetch product names from translations
-    const enriched = await Promise.all(
-        (tickets as any[]).map(async (t: any) => {
-            let nameEn = '';
-            if (t.productId) {
-                const trans = await prisma.productTranslation.findFirst({
-                    where:  { productId: t.productId, langCode: 'en' },
-                    select: { name: true },
-                });
-                nameEn = (trans as any)?.name ?? '';
-            }
-            return {
-                ...t,
-                product: t.product ? { ...t.product, nameEn } : null,
-            };
-        })
-    );
+    const enriched = (tickets as any[]).map((t: any) => ({
+        ...t,
+        product: t.product
+            ? { imageUrl: t.product.imageUrl, nameEn: t.product.translations?.[0]?.name ?? '' }
+            : null,
+    }));
 
     return NextResponse.json({ tickets: enriched, total });
 }

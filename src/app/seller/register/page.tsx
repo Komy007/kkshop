@@ -16,6 +16,9 @@ export default function SellerRegisterPage() {
         phone: '',
         contactEmail: '',
         description: '',
+        ceoName: '',
+        businessNumber: '',
+        businessAddress: '',
     });
 
     const countries = ['Cambodia', 'Korea', 'China', 'Japan', 'Thailand', 'Vietnam', 'Singapore', 'USA', 'Others'];
@@ -32,7 +35,17 @@ export default function SellerRegisterPage() {
             const res = await fetch('/api/supplier/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(form),
+                body: JSON.stringify({
+                    companyName: form.companyName,
+                    brandName: form.brandName,
+                    country: form.country,
+                    phone: form.phone,
+                    contactEmail: form.contactEmail,
+                    description: form.description,
+                    ceoName: form.ceoName || undefined,
+                    businessNumber: form.businessNumber || undefined,
+                    businessAddress: form.businessAddress || undefined,
+                }),
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || '신청 실패');
@@ -137,6 +150,43 @@ export default function SellerRegisterPage() {
                                 <textarea name="description" rows={4} value={form.description} onChange={handleChange}
                                     className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none"
                                     placeholder="제품 카테고리, 타겟 고객, 브랜드 스토리 등을 자유롭게 소개해주세요" />
+                            </div>
+                        </div>
+
+                        {/* Business Information (Optional) */}
+                        <div className="border-t border-gray-100 pt-5">
+                            <h3 className="text-sm font-medium text-gray-500 mb-4">Business Information <span className="text-gray-400 font-normal">(Optional)</span></h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">CEO / Representative Name</label>
+                                    <input
+                                        type="text"
+                                        value={form.ceoName}
+                                        onChange={e => setForm(f => ({ ...f, ceoName: e.target.value }))}
+                                        className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                        placeholder="e.g. Kim Minsoo"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Business Registration Number</label>
+                                    <input
+                                        type="text"
+                                        value={form.businessNumber}
+                                        onChange={e => setForm(f => ({ ...f, businessNumber: e.target.value }))}
+                                        className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                        placeholder="e.g. 123-45-67890"
+                                    />
+                                </div>
+                                <div className="sm:col-span-2">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Business Address</label>
+                                    <input
+                                        type="text"
+                                        value={form.businessAddress}
+                                        onChange={e => setForm(f => ({ ...f, businessAddress: e.target.value }))}
+                                        className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                        placeholder="e.g. 123 Gangnam-daero, Seoul, Korea"
+                                    />
+                                </div>
                             </div>
                         </div>
 

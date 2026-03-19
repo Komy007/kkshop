@@ -4,7 +4,9 @@ import { auth } from '@/auth';
 
 export const dynamic = 'force-dynamic';
 
-// ── GET: inventory list (all products with stock info) ───────────────────────
+const PAGE_SIZE = 50;
+
+// ── GET: inventory list (with pagination + low stock filter) ────────────────
 export async function GET(req: Request) {
     try {
         const session = await auth();
@@ -14,17 +16,37 @@ export async function GET(req: Request) {
 
         const { searchParams } = new URL(req.url);
         const filter = searchParams.get('filter'); // 'low' = 저재고만
+        const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
 
-        const products = await prisma.product.findMany({
-            include: {
-                translations: {
-                    where: { langCode: 'ko' },
-                    select: { name: true },
+        // 저재고 필터: Prisma는 컬럼 간 비교 불가 → raw query로 ID 조회 후 필터링
+        let lowStockProductIds: bigint[] | null = null;
+        if (filter === 'low') {
+            const lowStockRows = await prisma.$queryRaw<Array<{ id: bigint }>>`
+                SELECT id FROM "Product"
+                WHERE "stockQty" > 0 AND "stockQty" <= "stockAlertQty"
+                ORDER BY "stockQty" ASC
+            `;
+            lowStockProductIds = lowStockRows.map(r => r.id);
+        }
+
+        const where = lowStockProductIds ? { id: { in: lowStockProductIds } } : {};
+
+        const [products, total] = await Promise.all([
+            prisma.product.findMany({
+                where,
+                include: {
+                    translations: {
+                        where: { langCode: 'ko' },
+                        select: { name: true },
+                    },
+                    category: { select: { nameKo: true } },
                 },
-                category: { select: { nameKo: true } },
-            },
-            orderBy: [{ stockQty: 'asc' }, { updatedAt: 'desc' }],
-        });
+                orderBy: [{ stockQty: 'asc' }, { updatedAt: 'desc' }],
+                skip: (page - 1) * PAGE_SIZE,
+                take: PAGE_SIZE,
+            }),
+            prisma.product.count({ where }),
+        ]);
 
         const mapped = products.map(p => ({
             id: p.id.toString(),
@@ -45,8 +67,13 @@ export async function GET(req: Request) {
             updatedAt: p.updatedAt,
         }));
 
-        const result = filter === 'low' ? mapped.filter(p => p.isLowStock) : mapped;
-        return NextResponse.json(result);
+        return NextResponse.json({
+            products: mapped,
+            total,
+            page,
+            pageSize: PAGE_SIZE,
+            totalPages: Math.ceil(total / PAGE_SIZE),
+        });
     } catch (error: any) {
         console.error('GET /api/admin/inventory error:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

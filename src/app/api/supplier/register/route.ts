@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { companyName, brandName, country, phone, contactEmail, description } = body;
+    const { companyName, brandName, country, phone, contactEmail, description, ceoName, businessNumber, businessAddress } = body;
 
     if (!companyName || !contactEmail) {
         return NextResponse.json({ error: '회사명과 이메일은 필수입니다' }, { status: 400 });
@@ -34,6 +34,9 @@ export async function POST(req: NextRequest) {
             phone: phone || null,
             contactEmail,
             description: description || null,
+            ceoName: ceoName || null,
+            businessNumber: businessNumber || null,
+            businessAddress: businessAddress || null,
             commissionRate: 30, // Default 30%
             status: 'PENDING',
         },

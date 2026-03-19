@@ -32,43 +32,27 @@ export default function AdminDashboard() {
     useEffect(() => {
         async function fetchStats() {
             try {
-                const [pRes, oRes, uRes, sRes, invRes] = await Promise.all([
-                    fetch('/api/admin/products'),
-                    fetch('/api/admin/orders').catch(() => ({ json: () => [] })),
-                    fetch('/api/admin/customers'),
-                    fetch('/api/admin/suppliers'),
-                    fetch('/api/admin/inventory'),
-                ]);
-                const [products, orders, customers, suppliers, inventory] = await Promise.all([
-                    pRes.json(), (oRes as any).json(), uRes.json(), sRes.json(), invRes.json()
-                ]);
-                // products API: { products, total, page, pageSize } 객체 형식
-                const p = Array.isArray(products) ? products : (products?.products ?? []);
-                // orders API: 배열 직접 반환
-                const o = Array.isArray(orders) ? orders : [];
-                // customers API: { customers, total, page, pageSize } 객체 형식
-                const u = Array.isArray(customers) ? customers : (customers?.customers ?? []);
-                // suppliers API: 배열 직접 반환
-                const s = Array.isArray(suppliers) ? suppliers : [];
-                // inventory API: 배열 직접 반환
-                const inv = Array.isArray(inventory) ? inventory : [];
+                // 전용 stats API — DB COUNT 기반으로 정확한 숫자 반환 (페이지 단위 .length 집계 버그 해소)
+                const res = await fetch('/api/admin/stats');
+                if (!res.ok) throw new Error('Stats fetch failed');
+                const data = await res.json();
                 setStats({
-                    totalProducts: p.length,
-                    activeProducts: p.filter((x: any) => x.status === 'ACTIVE').length,
-                    totalOrders: o.length,
-                    pendingOrders: o.filter((x: any) => x.status === 'PENDING').length,
-                    confirmedOrders: o.filter((x: any) => x.status === 'CONFIRMED').length,
-                    shippingOrders: o.filter((x: any) => x.status === 'SHIPPING').length,
-                    totalMembers: u.length,
-                    totalSuppliers: s.length,
-                    pendingSuppliers: s.filter((x: any) => x.status === 'PENDING').length,
-                    newProductsCount: p.filter((x: any) => x.isNew).length,
-                    hotSaleCount: p.filter((x: any) => x.isHotSale).length,
-                    lowStockCount: inv.filter((x: any) => x.isLowStock && x.stockQty > 0).length,
-                    soldOutCount: inv.filter((x: any) => x.stockQty === 0).length,
+                    totalProducts:    data.totalProducts    ?? 0,
+                    activeProducts:   data.activeProducts   ?? 0,
+                    totalOrders:      data.totalOrders      ?? 0,
+                    pendingOrders:    data.pendingOrders    ?? 0,
+                    confirmedOrders:  data.confirmedOrders  ?? 0,
+                    shippingOrders:   data.shippingOrders   ?? 0,
+                    totalMembers:     data.totalMembers     ?? 0,
+                    totalSuppliers:   data.totalSuppliers   ?? 0,
+                    pendingSuppliers: data.pendingSuppliers ?? 0,
+                    newProductsCount: data.newProductsCount ?? 0,
+                    hotSaleCount:     data.hotSaleCount     ?? 0,
+                    lowStockCount:    data.lowStockCount    ?? 0,
+                    soldOutCount:     data.soldOutCount     ?? 0,
                 });
             } catch (e) {
-                console.error('Dashboard fetch error:', e);
+                console.error('Dashboard stats fetch error:', e);
             } finally {
                 setLoading(false);
             }

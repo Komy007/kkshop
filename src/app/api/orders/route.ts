@@ -42,19 +42,67 @@ export async function POST(request: Request) {
 
         const userId = session.user.id;
 
-        // Verify User & Points
-        const user = await prisma.user.findUnique({ where: { id: userId } });
+        // Verify User & Points + DB에서 포인트 적립률 조회
+        const [user, pointsSetting] = await Promise.all([
+            prisma.user.findUnique({ where: { id: userId } }),
+            prisma.siteSetting.findUnique({ where: { key: 'points_rate' } }),
+        ]);
         if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
+
+        // points_rate: { earnRate: 0.01, ... } 형식 — 기본값 1%
+        const pointsConfig = (pointsSetting?.value as any) ?? {};
+        const earnRate: number = typeof pointsConfig.earnRate === 'number'
+            ? Math.min(Math.max(pointsConfig.earnRate, 0), 0.5) // 0~50% 범위 클램프
+            : 0.01;
 
         const pts = parseInt(pointsUsed) || 0;
         if (pts > user.pointBalance) {
             return NextResponse.json({ error: 'Not enough points' }, { status: 400 });
         }
 
-        // Calculate subtotal
+        // ── 서버측 가격 검증: DB 가격으로 강제 대체 (클라이언트 가격 조작 방지) ──
+        const uniqueProductIds = [...new Set(items.map(i => i.productId))];
+        const dbProducts = await prisma.product.findMany({
+            where: { id: { in: uniqueProductIds.map(pid => BigInt(pid)) } },
+            select: { id: true, priceUsd: true, hotSalePrice: true, isHotSale: true, status: true },
+        });
+        const productPriceMap = new Map(dbProducts.map(p => [p.id.toString(), p]));
+
+        // 바리에이션이 있는 아이템의 가격도 조회
+        const variantItemIds = items.filter(i => i.variantId).map(i => BigInt(i.variantId!));
+        const dbVariants = variantItemIds.length > 0
+            ? await prisma.productVariant.findMany({
+                where: { id: { in: variantItemIds } },
+                select: { id: true, priceUsd: true },
+            })
+            : [];
+        const variantPriceMap = new Map(dbVariants.map(v => [v.id.toString(), v]));
+
+        // 각 아이템에 대해 DB 가격으로 검증 및 서버 가격 적용
+        const verifiedItems: Array<typeof items[0] & { priceUsd: number }> = [];
         let subtotalUsd = 0;
         for (const item of items) {
-            subtotalUsd += Number(item.priceUsd) * Number(item.quantity);
+            const dbProduct = productPriceMap.get(item.productId);
+            if (!dbProduct) {
+                return NextResponse.json({ error: `상품을 찾을 수 없습니다 (ID: ${item.productId})` }, { status: 400 });
+            }
+            if (dbProduct.status !== 'ACTIVE') {
+                return NextResponse.json({ error: `현재 판매 중이 아닌 상품이 포함되어 있습니다.` }, { status: 400 });
+            }
+
+            // 서버측 단가 결정: 바리에이션 > 핫세일 > 정가 우선순위
+            let serverPrice: number;
+            if (item.variantId) {
+                const variant = variantPriceMap.get(item.variantId);
+                serverPrice = variant?.priceUsd ? Number(variant.priceUsd) : Number(dbProduct.priceUsd);
+            } else if (dbProduct.isHotSale && dbProduct.hotSalePrice) {
+                serverPrice = Number(dbProduct.hotSalePrice);
+            } else {
+                serverPrice = Number(dbProduct.priceUsd);
+            }
+
+            verifiedItems.push({ ...item, priceUsd: serverPrice });
+            subtotalUsd += serverPrice * Number(item.quantity);
         }
 
         // Verify & Calculate Coupon
@@ -124,8 +172,40 @@ export async function POST(request: Request) {
 
         // Transaction for Order Creation + Stock Decrement + Point Deduction + Coupon Update
         const order = await prisma.$transaction(async (tx) => {
-            // 1. Validate stock & decrement
-            for (const item of items) {
+            // 1. Create Order first (so we have orderId for StockLog audit trail)
+            const newOrder = await tx.order.create({
+                data: {
+                    userId,
+                    customerName,
+                    customerPhone,
+                    customerEmail,
+                    province: province ?? null,
+                    address,
+                    detailAddress,
+                    notes,
+                    subtotalUsd,
+                    shippingFee,
+                    discountAmount,
+                    pointsUsed: effectivePts,
+                    totalUsd,
+                    couponId: appliedCouponId,
+                    status: 'PENDING',
+                    paymentMethod: 'COD',    // Phase 7에서 ABA/KHQR로 교체
+                    paymentStatus: 'PENDING',
+                    items: {
+                        create: verifiedItems.map((i: any) => ({
+                            productId: BigInt(i.productId),
+                            optionId: i.optionId ? BigInt(i.optionId) : null,
+                            variantId: i.variantId ? BigInt(i.variantId) : null,
+                            quantity: Number(i.quantity),
+                            priceUsd: Number(i.priceUsd)
+                        }))
+                    }
+                }
+            });
+
+            // 2. Validate stock & decrement (orderId 연결 가능)
+            for (const item of verifiedItems) {
                 const qty = Number(item.quantity);
 
                 if (item.variantId) {
@@ -160,22 +240,20 @@ export async function POST(request: Request) {
                     if (productVarUpdate.count === 0) {
                         throw new Error(`Insufficient product stock for SKU ${product.sku}`);
                     }
-                    // Check and mark SOLDOUT if now 0
                     const updatedVarProduct = await tx.product.findUnique({
                         where: { id: product.id }, select: { stockQty: true }
                     });
                     if (updatedVarProduct?.stockQty === 0) {
                         await tx.product.update({ where: { id: product.id }, data: { status: 'SOLDOUT' } });
                     }
-                    const newProductStock = updatedVarProduct?.stockQty ?? 0;
                     await (tx as any).stockLog.create({
                         data: {
                             productId: product.id,
                             changeQty: -qty,
-                            balanceAfter: newProductStock,
+                            balanceAfter: updatedVarProduct?.stockQty ?? 0,
                             reason: 'SOLD',
                             memo: `Variant ID: ${variant.id}`,
-                            orderId: null,
+                            orderId: newOrder.id,
                             createdBy: session.user.email ?? null,
                         }
                     });
@@ -188,7 +266,6 @@ export async function POST(request: Request) {
                     if (!product) {
                         throw new Error(`Product ${item.productId} not found`);
                     }
-                    // Atomic: decrement only if stockQty >= qty (race condition safe)
                     const productUpdate = await tx.product.updateMany({
                         where: { id: product.id, stockQty: { gte: qty } },
                         data: { stockQty: { decrement: qty } }
@@ -196,59 +273,25 @@ export async function POST(request: Request) {
                     if (productUpdate.count === 0) {
                         throw new Error(`Insufficient stock for SKU ${product.sku}`);
                     }
-                    // Check and mark SOLDOUT if now 0
                     const updatedProduct = await tx.product.findUnique({
                         where: { id: product.id }, select: { stockQty: true }
                     });
                     if (updatedProduct?.stockQty === 0) {
                         await tx.product.update({ where: { id: product.id }, data: { status: 'SOLDOUT' } });
                     }
-                    const newStock = updatedProduct?.stockQty ?? 0;
                     await (tx as any).stockLog.create({
                         data: {
                             productId: product.id,
                             changeQty: -qty,
-                            balanceAfter: newStock,
+                            balanceAfter: updatedProduct?.stockQty ?? 0,
                             reason: 'SOLD',
                             memo: null,
-                            orderId: null,
+                            orderId: newOrder.id,
                             createdBy: session.user.email ?? null,
                         }
                     });
                 }
             }
-
-            // 2. Create Order
-            const newOrder = await tx.order.create({
-                data: {
-                    userId,
-                    customerName,
-                    customerPhone,
-                    customerEmail,
-                    province: province ?? null,
-                    address,
-                    detailAddress,
-                    notes,
-                    subtotalUsd,
-                    shippingFee,
-                    discountAmount,
-                    pointsUsed: effectivePts,
-                    totalUsd,
-                    couponId: appliedCouponId,
-                    status: 'PENDING',
-                    paymentMethod: 'COD',    // Phase 7에서 ABA/KHQR로 교체
-                    paymentStatus: 'PENDING',
-                    items: {
-                        create: items.map((i: any) => ({
-                            productId: BigInt(i.productId),
-                            optionId: i.optionId ? BigInt(i.optionId) : null,
-                            variantId: i.variantId ? BigInt(i.variantId) : null,
-                            quantity: Number(i.quantity),
-                            priceUsd: Number(i.priceUsd)
-                        }))
-                    }
-                }
-            });
 
             // 3. Deduct Points if used (update 반환값으로 balanceAfter 계산 — stale read 방지)
             if (effectivePts > 0) {
@@ -292,8 +335,8 @@ export async function POST(request: Request) {
                 });
             }
 
-            // 5. Reward new points (1% of final payment amount)
-            const rewardPoints = Math.floor(totalUsd * 0.01);
+            // 5. Reward new points (DB 설정 적립률 적용 — 기본 1%)
+            const rewardPoints = Math.floor(totalUsd * earnRate);
             if (rewardPoints > 0) {
                 const updatedUser = await tx.user.update({
                     where: { id: userId },
@@ -315,7 +358,7 @@ export async function POST(request: Request) {
 
         // ── Post-transaction: check for low stock and send alert ──
         try {
-            const orderedProductIds = items.map((i: any) => BigInt(i.productId));
+            const orderedProductIds = verifiedItems.map((i: any) => BigInt(i.productId));
             const productsToCheck = await prisma.product.findMany({
                 where: { id: { in: orderedProductIds } },
                 select: {

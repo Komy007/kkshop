@@ -217,6 +217,9 @@ export default function NewProductPage() {
                 <div className="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-100">
                     <Sec icon={<Star className="w-5 h-5 text-yellow-500" />} title={n.options.title} desc={n.options.desc} />
                     <div className="p-5 space-y-4">
+                        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-800">
+                            ⚠️ Bulk quantity discounts are currently under development and will not be applied at checkout.
+                        </div>
                         {options.map((opt, i) => (
                             <div key={i} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_auto_2fr_auto] gap-3 items-end bg-gray-50 p-3 rounded-lg border border-gray-200">
                                 <div>

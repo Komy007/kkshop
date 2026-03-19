@@ -372,7 +372,7 @@ export default function CheckoutPage() {
             const data = await res.json();
             if (res.ok) {
                 clearCart();
-                router.push(`/mypage?success=true&orderId=${data.orderId}`);
+                router.push(`/order-complete?orderId=${data.orderId}`);
             } else {
                 setSubmitError(data.error || 'Order failed. Please try again.');
                 setSubmitting(false);

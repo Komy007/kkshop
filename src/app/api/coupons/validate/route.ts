@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/api';
+import { auth } from '@/auth';
 
 // Simple in-memory rate limiter: 10 attempts per IP per minute
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
@@ -67,6 +68,25 @@ export async function POST(request: Request) {
 
         if (coupon.maxUses && coupon.usedCount >= coupon.maxUses) {
             return NextResponse.json({ error: '선착순 사용이 마감되었습니다.' }, { status: 400 });
+        }
+
+        // 로그인 사용자라면 이미 사용한 쿠폰인지 체크 (UX: 주문 제출 전에 미리 알림)
+        const session = await auth();
+        if (session?.user?.id) {
+            const alreadyUsed = await prisma.userCoupon.findUnique({
+                where: {
+                    userId_couponId: {
+                        userId: session.user.id,
+                        couponId: coupon.id,
+                    },
+                },
+            });
+            if (alreadyUsed) {
+                return NextResponse.json(
+                    { error: 'You have already used this coupon.' },
+                    { status: 400 }
+                );
+            }
         }
 
         return NextResponse.json({

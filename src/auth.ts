@@ -10,6 +10,7 @@ import { twoFactorCache } from "@/lib/twoFactorCache"
 const loginAttempts = new Map<string, { count: number; firstAttempt: number }>();
 const LOGIN_MAX = 10;
 const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+const LOGIN_MAP_MAX_SIZE = 50_000; // OOM 방지 — DDoS 시 무제한 증가 차단
 
 setInterval(() => {
     const now = Date.now();
@@ -22,6 +23,11 @@ function checkLoginRateLimit(ip: string): boolean {
     const now = Date.now();
     const entry = loginAttempts.get(ip);
     if (!entry || now - entry.firstAttempt > LOGIN_WINDOW_MS) {
+        // 크기 상한 초과 시 가장 오래된 엔트리 제거
+        if (loginAttempts.size >= LOGIN_MAP_MAX_SIZE) {
+            const firstKey = loginAttempts.keys().next().value;
+            if (firstKey !== undefined) loginAttempts.delete(firstKey);
+        }
         loginAttempts.set(ip, { count: 1, firstAttempt: now });
         return true;
     }
@@ -70,7 +76,20 @@ const nextAuthEnv = NextAuth({
                 const email = (credentials.email as string).toLowerCase().trim();
 
                 const user = await prisma.user.findUnique({
-                    where: { email }
+                    where: { email },
+                    select: {
+                        id: true,
+                        email: true,
+                        name: true,
+                        image: true,
+                        hashedPassword: true,
+                        role: true,
+                        preferredLanguage: true,
+                        phone: true,
+                        emailVerified: true,
+                        twoFactorEnabled: true,
+                        twoFactorSecret: true,
+                    },
                 })
 
                 // hashedPassword is null for OAuth-only accounts — skip them
@@ -82,24 +101,17 @@ const nextAuthEnv = NextAuth({
                 )
 
                 if (passwordsMatch) {
+                    // 이메일 인증 완료 여부 확인 — 미인증 시 로그인 차단
+                    if (!user.emailVerified) {
+                        throw new Error('Please verify your email before logging in.');
+                    }
                     return user
                 }
                 return null
             }
         }),
-        // 2FA 확인용 가상 Provider (토큰 업데이트 트리거용)
-        CredentialsProvider({
-            id: '2fa-verify',
-            name: '2FA Verify',
-            credentials: { userId: { type: 'text' } },
-            async authorize(credentials) {
-                if (!credentials?.userId) return null;
-                const user = await prisma.user.findUnique({
-                    where: { id: credentials.userId as string }
-                });
-                return user ?? null;
-            }
-        })
+        // 2FA 검증은 /api/admin/2fa/verify API + session.update() 경로로 처리
+        // (별도 CredentialsProvider 불필요 — userId만으로 로그인 가능한 보안 취약점이었으므로 제거)
     ],
     callbacks: {
         ...authConfig.callbacks,
@@ -137,7 +149,7 @@ const nextAuthEnv = NextAuth({
             }
             return true;
         },
-        async jwt({ token, user, account }: any) {
+        async jwt({ token, user, account, trigger, session: updateData }: any) {
             if (user) {
                 token.sub = user.id;
                 token.role = (user as any).role || "USER";
@@ -180,7 +192,7 @@ const nextAuthEnv = NextAuth({
                 }
             }
             // On session update (clear 2FA pending or re-check phone)
-            if ((token as any).trigger === 'update' && token.sub) {
+            if (trigger === 'update' && token.sub) {
                 try {
                     const dbUser = await prisma.user.findUnique({
                         where: { id: token.sub as string },
@@ -189,11 +201,10 @@ const nextAuthEnv = NextAuth({
                     if (dbUser?.phone) token.needsOnboarding = false;
                     // twoFactorPending 해제 — 서버 사이드 nonce 검증 필수
                     // 클라이언트가 직접 { twoFactorVerified: true } 를 보내도 nonce가 없으면 무시됨
-                    if ((token as any).twoFactorVerified) {
+                    if (updateData?.twoFactorVerified) {
                         if (twoFactorCache.consume(token.sub as string)) {
                             token.twoFactorPending = false;
                         }
-                        delete (token as any).twoFactorVerified;
                     }
                 } catch {}
             }

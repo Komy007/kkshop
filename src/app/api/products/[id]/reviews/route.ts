@@ -103,6 +103,31 @@ export async function POST(
             return NextResponse.json({ error: 'Review content is required' }, { status: 400 });
         }
 
+        // 구매 검증: orderId가 있으면 실제 구매 여부 + 본인 주문 확인
+        if (orderId) {
+            const orderItem = await prisma.orderItem.findFirst({
+                where: {
+                    orderId,
+                    productId,
+                    order: {
+                        userId,
+                        status: { in: ['DELIVERED', 'CONFIRMED', 'SHIPPING'] },
+                    },
+                },
+            });
+            if (!orderItem) {
+                return NextResponse.json({ error: '해당 주문에서 구매한 상품이 아닙니다.' }, { status: 403 });
+            }
+        }
+
+        // 중복 리뷰 방지 (같은 상품에 이미 리뷰가 있으면 차단)
+        const existingReview = await prisma.productReview.findFirst({
+            where: { productId, userId, status: { not: 'REJECTED' } },
+        });
+        if (existingReview) {
+            return NextResponse.json({ error: '이미 리뷰를 작성한 상품입니다.' }, { status: 409 });
+        }
+
         // Auto-translate to other languages
         const enContent = await translate(content, 'en');
         const zhContent = await translate(content, 'zh-CN');

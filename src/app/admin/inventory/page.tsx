@@ -160,7 +160,7 @@ export default function InventoryPage() {
         setLoading(true);
         const res = await fetch('/api/admin/inventory');
         const data = await res.json();
-        setItems(Array.isArray(data) ? data : []);
+        setItems(Array.isArray(data.products) ? data.products : Array.isArray(data) ? data : []);
         setLoading(false);
     }, []);
 

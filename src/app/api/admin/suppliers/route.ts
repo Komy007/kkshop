@@ -54,31 +54,44 @@ export async function PATCH(req: NextRequest) {
         }
     }
 
-    const supplier = await prisma.supplier.update({
-        where: { id },
-        data: {
-            status,
-            ...(commissionRate !== undefined && { commissionRate: parseFloat(commissionRate) }),
-            ...(adminNote !== undefined && { adminNote }),
-        },
-        include: { user: { select: { email: true } } },
+    // 트랜잭션으로 공급자 상태 + 사용자 역할 원자적 업데이트
+    const supplier = await prisma.$transaction(async (tx) => {
+        const updated = await tx.supplier.update({
+            where: { id },
+            data: {
+                status,
+                ...(commissionRate !== undefined && { commissionRate: parseFloat(commissionRate) }),
+                ...(adminNote !== undefined && { adminNote }),
+            },
+            include: { user: { select: { email: true } } },
+        });
+
+        // If approved, update the user's role to SUPPLIER
+        if (status === 'APPROVED') {
+            await tx.user.update({
+                where: { id: updated.userId },
+                data: { role: 'SUPPLIER' },
+            });
+        }
+
+        // If rejected/suspended, downgrade role back to USER and deactivate all their products
+        if (status === 'REJECTED' || status === 'SUSPENDED') {
+            await tx.user.update({
+                where: { id: updated.userId },
+                data: { role: 'USER' },
+            });
+            // 해당 Supplier의 ACTIVE 상품 전부 INACTIVE로 전환 (고객 노출 차단)
+            await tx.product.updateMany({
+                where: {
+                    supplierId: updated.id,
+                    status: 'ACTIVE',
+                },
+                data: { status: 'INACTIVE' },
+            });
+        }
+
+        return updated;
     });
-
-    // If approved, update the user's role to SUPPLIER
-    if (status === 'APPROVED') {
-        await prisma.user.update({
-            where: { id: supplier.userId },
-            data: { role: 'SUPPLIER' },
-        });
-    }
-
-    // If rejected/suspended, downgrade role back to USER
-    if (status === 'REJECTED' || status === 'SUSPENDED') {
-        await prisma.user.update({
-            where: { id: supplier.userId },
-            data: { role: 'USER' },
-        });
-    }
 
     // 감사 로그
     const actionMap: Record<string, any> = { APPROVED: 'APPROVE_SUPPLIER', REJECTED: 'REJECT_SUPPLIER', SUSPENDED: 'SUSPEND_SUPPLIER' };

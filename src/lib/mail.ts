@@ -1,6 +1,12 @@
 import nodemailer from 'nodemailer';
 import { prisma } from '@/lib/api';
 
+/** HTML-escape user input to prevent XSS in email templates */
+function escHtml(s: string | null | undefined): string {
+    if (!s) return '';
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;');
+}
+
 export interface EmailOptions {
     to: string;
     subject: string;
@@ -89,8 +95,8 @@ export async function sendLowStockAlert(
         const stockLabel = isCritical ? 'OUT OF STOCK' : p.stockQty.toString();
         return `
             <tr>
-                <td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;font-family:monospace;font-size:13px;color:#374151;">${p.sku}</td>
-                <td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;font-size:13px;color:#111827;">${p.name}</td>
+                <td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;font-family:monospace;font-size:13px;color:#374151;">${escHtml(p.sku)}</td>
+                <td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;font-size:13px;color:#111827;">${escHtml(p.name)}</td>
                 <td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;text-align:center;">
                     <span style="background:${stockColor}1a;color:${stockColor};font-weight:700;font-size:13px;padding:3px 10px;border-radius:999px;border:1px solid ${stockColor}40;">
                         ${stockLabel}
@@ -305,6 +311,7 @@ export async function sendVerificationEmail(to: string, name: string, verifyUrl:
 
 export async function sendSupplierReceivedEmail(to: string, companyName: string) {
     const { transporter, fromAddress, adminEmail } = await getTransporterAndFrom();
+    const safeCompany = escHtml(companyName);
     const supplierHtml = `
 <!DOCTYPE html>
 <html lang="en">
@@ -316,7 +323,7 @@ export async function sendSupplierReceivedEmail(to: string, companyName: string)
       <p style="margin:6px 0 0;color:rgba(255,255,255,0.8);font-size:13px;">KKShop Seller Program</p>
     </div>
     <div style="padding:28px 32px;">
-      <p style="margin:0 0 16px;font-size:15px;color:#374151;">Hello <strong>${companyName}</strong>,</p>
+      <p style="margin:0 0 16px;font-size:15px;color:#374151;">Hello <strong>${safeCompany}</strong>,</p>
       <p style="margin:0 0 16px;font-size:14px;color:#555;line-height:1.6;">
         We have received your supplier application on KKShop. Our team will review your application and get back to you within <strong>1-3 business days</strong>.
       </p>
@@ -337,7 +344,7 @@ export async function sendSupplierReceivedEmail(to: string, companyName: string)
         <h2 style="margin:0;color:#fff;font-size:18px;">New Supplier Application</h2>
       </div>
       <div style="padding:24px 28px;background:#fff;border:1px solid #e5e7eb;">
-        <p style="margin:0 0 8px;"><strong>Company:</strong> ${companyName}</p>
+        <p style="margin:0 0 8px;"><strong>Company:</strong> ${safeCompany}</p>
         <p style="margin:0 0 8px;"><strong>Contact Email:</strong> ${to}</p>
         <p style="margin:0 0 20px;"><strong>Applied at:</strong> ${new Date().toLocaleString('en-US', { timeZone: 'Asia/Phnom_Penh' })} (Phnom Penh)</p>
         <a href="https://kkshop.cc/admin/suppliers" style="display:inline-block;background:#6366f1;color:#fff;padding:11px 24px;border-radius:6px;text-decoration:none;font-weight:700;font-size:14px;">
@@ -432,6 +439,8 @@ export async function sendOrderStatusEmail(
 export async function sendSupplierStatusEmail(to: string, companyName: string, newStatus: 'APPROVED' | 'REJECTED' | 'SUSPENDED', adminNote?: string | null) {
     const { transporter, fromAddress } = await getTransporterAndFrom();
     const baseUrl = process.env.NEXTAUTH_URL || 'https://kkshop.cc';
+    const safeCompany = escHtml(companyName);
+    const safeAdminNote = escHtml(adminNote);
 
     const isApproved = newStatus === 'APPROVED';
     const headerBg = isApproved ? 'linear-gradient(135deg,#16a34a,#15803d)' : 'linear-gradient(135deg,#dc2626,#b91c1c)';
@@ -453,11 +462,11 @@ export async function sendSupplierStatusEmail(to: string, companyName: string, n
       <p style="margin:6px 0 0;color:rgba(255,255,255,0.8);font-size:14px;">${statusLabel}</p>
     </div>
     <div style="padding:28px 32px;">
-      <p style="margin:0 0 16px;font-size:15px;color:#374151;">Hello <strong>${companyName}</strong>,</p>
+      <p style="margin:0 0 16px;font-size:15px;color:#374151;">Hello <strong>${safeCompany}</strong>,</p>
       <p style="margin:0 0 16px;font-size:14px;color:#555;line-height:1.6;">${bodyText}</p>
-      ${adminNote ? `<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:14px 18px;margin-bottom:20px;">
+      ${safeAdminNote ? `<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:14px 18px;margin-bottom:20px;">
         <p style="margin:0 0 4px;font-size:11px;color:#92400e;font-weight:700;text-transform:uppercase;">Admin Note</p>
-        <p style="margin:0;font-size:13px;color:#78350f;">${adminNote}</p>
+        <p style="margin:0;font-size:13px;color:#78350f;">${safeAdminNote}</p>
       </div>` : ''}
       ${isApproved ? `<div style="text-align:center;margin-top:24px;">
         <a href="${baseUrl}/seller" style="display:inline-block;background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;padding:13px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:15px;">

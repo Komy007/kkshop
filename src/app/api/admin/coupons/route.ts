@@ -54,6 +54,29 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
+        // 쿠폰 타입 화이트리스트 검증
+        const VALID_COUPON_TYPES = ['PERCENT', 'FIXED', 'FREE_SHIPPING'];
+        if (!VALID_COUPON_TYPES.includes(type)) {
+            return NextResponse.json({ error: `Invalid coupon type. Must be: ${VALID_COUPON_TYPES.join(', ')}` }, { status: 400 });
+        }
+
+        // 할인 값 범위 검증
+        const parsedDiscount = parseFloat(discountValue);
+        if (isNaN(parsedDiscount) || parsedDiscount < 0) {
+            return NextResponse.json({ error: 'Discount value must be a positive number' }, { status: 400 });
+        }
+        if (type === 'PERCENT' && parsedDiscount > 100) {
+            return NextResponse.json({ error: 'Percent discount cannot exceed 100%' }, { status: 400 });
+        }
+        if (type === 'FIXED' && parsedDiscount <= 0) {
+            return NextResponse.json({ error: 'Fixed discount must be greater than 0' }, { status: 400 });
+        }
+
+        // 기간 유효성 검증
+        if (new Date(startAt) >= new Date(expireAt)) {
+            return NextResponse.json({ error: 'Start date must be before expiration date' }, { status: 400 });
+        }
+
         // Check for duplicate code
         const existing = await prisma.coupon.findUnique({ where: { code } });
         if (existing) {

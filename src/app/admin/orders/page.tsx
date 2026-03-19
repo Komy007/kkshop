@@ -4,6 +4,8 @@ import { ShoppingBag, Truck, ChevronLeft, ChevronRight } from 'lucide-react';
 import OrderShipmentModal from '@/components/admin/OrderShipmentModal';
 import { revalidatePath } from 'next/cache';
 import { sendOrderStatusEmail } from '@/lib/mail';
+import { logAudit } from '@/lib/audit';
+import { auth } from '@/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,6 +20,10 @@ const ALLOWED_TRANSITIONS: Record<string, string[]> = {
 
 async function updateOrderStatus(orderId: string, newStatus: string) {
     'use server';
+    // Server Action — 세션은 next/headers 쿠키로 읽음
+    const session = await auth();
+    // ★ RBAC 체크: ADMIN/SUPERADMIN만 허용 (미들웨어 우회 방지)
+    if (!session?.user || !['ADMIN', 'SUPERADMIN'].includes((session.user as any).role)) return;
     // Validate state machine transition
     const current = await prisma.order.findUnique({
         where: { id: orderId },
@@ -27,45 +33,57 @@ async function updateOrderStatus(orderId: string, newStatus: string) {
     const allowed = ALLOWED_TRANSITIONS[current.status] ?? [];
     if (!allowed.includes(newStatus)) return; // silently reject invalid transitions
 
-    // When cancelling an order, restore stock for each item
+    // When cancelling an order, restore stock for each item — $transaction으로 원자적 처리
     if (newStatus === 'CANCELLED') {
         const order = await prisma.order.findUnique({
             where: { id: orderId },
             include: { items: true },
         });
         if (order && order.status !== 'CANCELLED') {
-            for (const item of order.items) {
-                const product = await prisma.product.findUnique({
-                    where: { id: item.productId },
-                    select: { stockQty: true, status: true },
+            await prisma.$transaction(async (tx) => {
+                for (const item of order.items) {
+                    const product = await tx.product.findUnique({
+                        where: { id: item.productId },
+                        select: { stockQty: true, status: true },
+                    });
+                    if (!product) continue;
+                    const newStock = product.stockQty + item.quantity;
+                    await tx.product.update({
+                        where: { id: item.productId },
+                        data: {
+                            stockQty: newStock,
+                            ...(product.status === 'SOLDOUT' && newStock > 0 ? { status: 'ACTIVE' } : {}),
+                        },
+                    });
+                    await (tx as any).stockLog.create({
+                        data: {
+                            productId: item.productId,
+                            changeQty: item.quantity,
+                            balanceAfter: newStock,
+                            reason: 'RETURN',
+                            memo: `주문 취소 복구 (Order #${orderId.slice(0, 8)})`,
+                            orderId,
+                            createdBy: 'admin',
+                        },
+                    });
+                }
+                // 재고 복원 + 주문 상태 업데이트를 동일 트랜잭션 내에서 처리
+                await tx.order.update({
+                    where: { id: orderId },
+                    data: { status: newStatus },
                 });
-                if (!product) continue;
-                const newStock = product.stockQty + item.quantity;
-                await prisma.product.update({
-                    where: { id: item.productId },
-                    data: {
-                        stockQty: newStock,
-                        ...(product.status === 'SOLDOUT' && newStock > 0 ? { status: 'ACTIVE' } : {}),
-                    },
-                });
-                await (prisma as any).stockLog.create({
-                    data: {
-                        productId: item.productId,
-                        changeQty: item.quantity,
-                        balanceAfter: newStock,
-                        reason: 'RETURN',
-                        memo: `주문 취소 복구 (Order #${orderId.slice(0, 8)})`,
-                        orderId,
-                        createdBy: 'admin',
-                    },
-                });
-            }
+            });
+        } else {
+            // race condition: 동시 요청에 의해 이미 취소됨 — 재처리 불필요
+            return;
         }
+    } else {
+        // CONFIRMED, SHIPPING, DELIVERED 등 취소 이외의 상태 변경
+        await prisma.order.update({
+            where: { id: orderId },
+            data: { status: newStatus },
+        });
     }
-    await prisma.order.update({
-        where: { id: orderId },
-        data: { status: newStatus },
-    });
 
     // Send customer notification email (non-blocking)
     if (current.customerEmail && ['CONFIRMED', 'SHIPPING', 'DELIVERED', 'CANCELLED'].includes(newStatus)) {
@@ -79,6 +97,19 @@ async function updateOrderStatus(orderId: string, newStatus: string) {
                 trackingUrl: current.shipment.trackingUrl,
             } : undefined
         ).catch((e) => console.error('Order status email failed:', e));
+    }
+
+    // 감사 로그 기록 (non-blocking)
+    if (session?.user?.id) {
+        logAudit({
+            userId: session.user.id,
+            userEmail: session.user.email ?? 'admin',
+            userRole: (session.user as any).role ?? 'ADMIN',
+            action: newStatus === 'CANCELLED' ? 'CANCEL_ORDER' : 'UPDATE_ORDER_STATUS',
+            resource: 'Order',
+            resourceId: orderId,
+            details: { from: current.status, to: newStatus },
+        }).catch((e) => console.error('Audit log failed:', e));
     }
 
     revalidatePath('/admin/orders');

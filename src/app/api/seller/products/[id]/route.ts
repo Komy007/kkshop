@@ -160,8 +160,12 @@ export async function PATCH(
             });
         }
 
-        // Delete removed images
+        // Delete removed images (BigInt 변환 전 숫자 검증)
         if (deleteImageIds.length > 0) {
+            const invalidImgId = deleteImageIds.find((imgId: string) => !/^\d+$/.test(String(imgId)));
+            if (invalidImgId) {
+                throw new Error(`Invalid image ID: ${invalidImgId}`);
+            }
             await tx.productImage.deleteMany({
                 where: {
                     id: { in: deleteImageIds.map((imgId: string) => BigInt(imgId)) },

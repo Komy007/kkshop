@@ -95,6 +95,15 @@ export async function PATCH(req: NextRequest) {
 
     if (!order) return NextResponse.json({ error: 'Order not found' }, { status: 404 });
 
+    // 멱등성 보장 — 이미 같은 상태이면 중복 처리 방지
+    if (order.status === status) {
+        return NextResponse.json({ error: '이미 처리된 주문입니다. Already processed.' }, { status: 409 });
+    }
+    // 완료된 주문(REFUNDED/CANCELLED)은 재변경 불가
+    if (['REFUNDED', 'CANCELLED'].includes(order.status)) {
+        return NextResponse.json({ error: '완료된 주문은 변경할 수 없습니다. Order is finalized.' }, { status: 409 });
+    }
+
     // 환불 처리: 전체를 하나의 트랜잭션으로 처리 (중간 실패 시 롤백)
     await prisma.$transaction(async (tx) => {
         if (status === 'REFUNDED') {

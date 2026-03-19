@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/api';
 import { auth } from '@/auth';
 
+const PAGE_SIZE = 30;
+
 export async function GET(request: Request) {
     const session = await auth();
 
@@ -12,36 +14,42 @@ export async function GET(request: Request) {
     try {
         const { searchParams } = new URL(request.url);
         const status = searchParams.get('status'); // PENDING | APPROVED | REJECTED
+        const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
 
-        const reviews = await prisma.productReview.findMany({
-            where: status ? { status } : {}, // If no status, show ALL for admin (including PENDING)
-            include: {
-                product: {
-                    select: {
-                        id: true,
-                        sku: true,
-                        translations: {
-                            where: { langCode: 'ko' },
-                            take: 1,
-                            select: { name: true } // Changed from original to select name
+        const where = status ? { status } : {};
+
+        const [reviews, total] = await Promise.all([
+            prisma.productReview.findMany({
+                where,
+                include: {
+                    product: {
+                        select: {
+                            id: true,
+                            sku: true,
+                            translations: {
+                                where: { langCode: 'ko' },
+                                take: 1,
+                                select: { name: true }
+                            }
                         }
+                    },
+                    user: {
+                        select: {
+                            name: true,
+                            email: true
+                        }
+                    },
+                    translations: {
+                        where: { langCode: 'ko' },
+                        take: 1
                     }
                 },
-                user: {
-                    select: {
-                        name: true,
-                        email: true
-                    }
-                },
-                translations: {
-                    where: { langCode: 'ko' },
-                    take: 1
-                }
-            },
-            orderBy: {
-                createdAt: 'desc'
-            }
-        });
+                orderBy: { createdAt: 'desc' },
+                skip: (page - 1) * PAGE_SIZE,
+                take: PAGE_SIZE,
+            }),
+            prisma.productReview.count({ where }),
+        ]);
 
         // Format for admin consumption
         const formattedReviews = reviews.map(r => ({
@@ -58,7 +66,13 @@ export async function GET(request: Request) {
             createdAt: r.createdAt.toISOString()
         }));
 
-        return NextResponse.json(formattedReviews);
+        return NextResponse.json({
+            reviews: formattedReviews,
+            total,
+            page,
+            pageSize: PAGE_SIZE,
+            totalPages: Math.ceil(total / PAGE_SIZE),
+        });
     } catch (error) {
         console.error('Failed to fetch admin reviews:', error);
         return NextResponse.json({ error: 'Failed to fetch reviews' }, { status: 500 });

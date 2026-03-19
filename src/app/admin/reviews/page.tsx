@@ -33,7 +33,7 @@ export default function AdminReviewsPage() {
         try {
             const res = await fetch('/api/admin/reviews');
             const data = await res.json();
-            setReviews(Array.isArray(data) ? data : []);
+            setReviews(Array.isArray(data.reviews) ? data.reviews : Array.isArray(data) ? data : []);
         } catch (error) {
             console.error('Failed to fetch reviews', error);
         } finally {

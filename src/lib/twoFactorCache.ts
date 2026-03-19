@@ -11,6 +11,17 @@
 const store = new Map<string, number>(); // userId -> expiresAt (ms)
 const TTL_MS = 5 * 60_000; // 5분
 
+// 5분마다 만료된 엔트리 정리 (메모리 누수 방지)
+const cleanup = setInterval(() => {
+    const now = Date.now();
+    for (const [key, expiresAt] of store.entries()) {
+        if (now > expiresAt) store.delete(key);
+    }
+}, 5 * 60_000);
+
+// 테스트 환경에서 타이머가 프로세스를 붙잡지 않도록
+if (cleanup.unref) cleanup.unref();
+
 export const twoFactorCache = {
     /** 2FA 코드 검증 성공 후 userId 등록 */
     set(userId: string): void {
