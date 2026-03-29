@@ -237,6 +237,14 @@ export interface Translations {
         sec4Badge: string;
         sec4Title: string;
         sec4Desc: string;
+        // Seller Marketplace Section
+        sellerTitle: string;
+        sellerDesc: string;
+        sellerCard1Title: string; sellerCard1Desc: string;
+        sellerCard2Title: string; sellerCard2Desc: string;
+        sellerCard3Title: string; sellerCard3Desc: string;
+        sellerCard4Title: string; sellerCard4Desc: string;
+        sellerCta: string;
         contactTitle: string;
         contactDesc: string;
     };

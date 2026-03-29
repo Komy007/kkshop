@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Mail, Phone, MessageCircle, ShieldCheck, Sparkles, MapPin, Store, Check } from 'lucide-react';
+import { ArrowLeft, Mail, Phone, MessageCircle, ShieldCheck, Sparkles, MapPin, Store, Check, Handshake, FileCheck } from 'lucide-react';
 import TaegukgiIcon from '@/components/TaegukgiIcon';
 import { useTranslations } from '@/i18n/useTranslations';
 
@@ -158,6 +158,43 @@ export default function AboutPage() {
                                 ))}
                             </div>
                         </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* ── Section: Seller Marketplace ── */}
+            <section className="py-20 px-6 bg-gray-950">
+                <div className="max-w-3xl mx-auto">
+                    <div className="flex flex-col items-center text-center mb-10">
+                        <div className="w-14 h-14 rounded-2xl bg-purple-500/20 flex items-center justify-center mb-4">
+                            <Handshake className="w-7 h-7 text-purple-400" />
+                        </div>
+                        <h2 className="text-2xl sm:text-4xl font-bold mb-4">{t.sellerTitle}</h2>
+                        <p className="text-gray-400 text-base sm:text-lg leading-relaxed max-w-xl">{t.sellerDesc}</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+                        {[
+                            { emoji: <><TaegukgiIcon className="w-10 h-[27px]" /></>, title: t.sellerCard1Title, desc: t.sellerCard1Desc },
+                            { emoji: <span className="text-3xl">✅</span>, title: t.sellerCard2Title, desc: t.sellerCard2Desc },
+                            { emoji: <span className="text-3xl">🏪</span>, title: t.sellerCard3Title, desc: t.sellerCard3Desc },
+                            { emoji: <FileCheck className="w-8 h-8 text-amber-400" />, title: t.sellerCard4Title, desc: t.sellerCard4Desc },
+                        ].map(item => (
+                            <div key={item.title} className="glass-card rounded-2xl p-6 flex flex-col gap-3">
+                                <span>{item.emoji}</span>
+                                <div>
+                                    <h3 className="font-bold text-white text-base mb-1">{item.title}</h3>
+                                    <p className="text-gray-400 text-sm leading-relaxed">{item.desc}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="text-center">
+                        <Link href="/seller/register" className="inline-flex items-center gap-2 px-8 py-3.5 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-bold rounded-full transition-all shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 active:scale-[0.97]">
+                            <Store className="w-5 h-5" />
+                            {t.sellerCta}
+                        </Link>
                     </div>
                 </div>
             </section>
