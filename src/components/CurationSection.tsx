@@ -93,10 +93,17 @@ export default function CurationSection({ products, todayPicks: curatedPicks = [
     const { language } = store || { language: 'en' };
     const t = curationTranslations[language] ?? curationTranslations.en;
 
-    // Today's Picks: use admin-curated list if available, else fall back to top 4 popular
-    const todayPicks = curatedPicks.length > 0 ? curatedPicks : products.slice(0, 4);
-    // Category Best & Also Viewed: always from popular list (independent of Today's Picks)
+    // Category Best: always top 4 (1위~4위)
     const categoryBest = products.slice(0, 4);
+    const categoryBestIds = new Set(categoryBest.map(p => p.id));
+
+    // Today's Picks:
+    // - admin 큐레이션이 있으면 → categoryBest와 겹치는 상품 제외 후 최대 4개
+    // - 폴백이면 → 3위부터 시작(slice(2,6))하여 Category Best(1위~4위)와 중복 최소화
+    const todayPicks = curatedPicks.length > 0
+        ? curatedPicks.filter(p => !categoryBestIds.has(p.id)).slice(0, 4)
+        : products.slice(2, 6);
+
     const alsoViewed = products.slice(4, 8);
 
     const renderCard = (product: TranslatedProduct) => (
