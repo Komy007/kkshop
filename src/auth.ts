@@ -115,11 +115,16 @@ const nextAuthEnv = NextAuth({
     ],
     callbacks: {
         ...authConfig.callbacks,
-        async signIn({ user, account }) {
+        async signIn({ user, account, profile }) {
             // For OAuth providers, ensure the user exists in our DB
             // NextAuth v5 handles Account linking automatically via the Account model
             // but we need to make sure the user record has the right role set
-            if (account?.provider === 'google' && user?.email) {
+            if (account?.provider === 'google') {
+                // Reject Google accounts with unverified emails
+                if (!(profile as any)?.email_verified) {
+                    return false;
+                }
+                if (!user?.email) return false;
                 try {
                     const existingUser = await prisma.user.findUnique({
                         where: { email: user.email.toLowerCase() }

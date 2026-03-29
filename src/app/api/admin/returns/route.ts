@@ -113,6 +113,13 @@ export async function PATCH(req: NextRequest) {
                     where: { id: item.productId },
                     data:  { stockQty: { increment: item.quantity } },
                 });
+                // Restore variant stock if the order item had a variant
+                if ((item as any).variantId) {
+                    await tx.productVariant.update({
+                        where: { id: (item as any).variantId },
+                        data:  { stockQty: { increment: item.quantity } },
+                    });
+                }
                 await tx.stockLog.create({
                     data: {
                         productId:    item.productId,

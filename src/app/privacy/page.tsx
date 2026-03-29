@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { useAppStore } from '@/store/useAppStore';
+import { useSafeAppStore } from '@/store/useAppStore';
 
 type Lang = 'ko' | 'en' | 'km' | 'zh';
 
@@ -216,8 +216,12 @@ const content: Record<Lang, { title: string; lastUpdated: string; sections: Arra
 };
 
 export default function PrivacyPage() {
-  const { language, setLanguage } = useAppStore();
+  const store = useSafeAppStore();
+  const { language, setLanguage } = store || { language: 'en', setLanguage: (_l: string) => {} };
   const [lang, setLang] = useState<Lang>('en');
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
 
   // GNB 언어 변경 시 실시간 동기화
   useEffect(() => {
@@ -226,6 +230,8 @@ export default function PrivacyPage() {
     }
   }, [language]);
   const c = content[lang];
+
+  if (!mounted) return null;
 
   return (
     <div className="min-h-screen bg-gray-50">

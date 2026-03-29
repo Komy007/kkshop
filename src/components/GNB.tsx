@@ -270,7 +270,7 @@ export default function GNB() {
                                 }`}
                         >
                             <div className="px-3 pb-2 mb-2 border-b border-gray-100 flex items-center justify-between">
-                                <span className="text-xs font-bold text-gray-500">언어 선택</span>
+                                <span className="text-xs font-bold text-gray-500">{language === 'ko' ? '언어 선택' : language === 'km' ? 'ជ្រើសរើសភាសា' : language === 'zh' ? '选择语言' : 'Language'}</span>
                             </div>
 
                             {LANGUAGES.map((lang) => (

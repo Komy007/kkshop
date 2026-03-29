@@ -3,6 +3,7 @@ import { prisma } from '@/lib/api';
 import { auth } from '@/auth';
 import { Translate } from '@google-cloud/translate/build/src/v2';
 import { deleteGCSFiles } from '@/lib/gcs';
+import { logAudit, getIpFromRequest } from '@/lib/audit';
 
 export const dynamic = 'force-dynamic';
 
@@ -168,9 +169,14 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
         if (isHotSale !== undefined) productData.isHotSale = Boolean(isHotSale);
         if (hotSalePrice !== undefined) {
             const parsedHot = hotSalePrice ? parseFloat(hotSalePrice) : null;
-            const parsedRegular = priceUsd !== undefined ? parseFloat(priceUsd) : null;
+            // Use submitted priceUsd if available, otherwise fetch current DB price
+            let regularPrice: number | null = priceUsd !== undefined ? parseFloat(priceUsd) : null;
+            if (parsedHot !== null && regularPrice === null) {
+                const existing = await prisma.product.findUnique({ where: { id: BigInt(id) }, select: { priceUsd: true } });
+                regularPrice = existing ? Number(existing.priceUsd) : null;
+            }
             // Hot sale price must be strictly less than regular price
-            if (parsedHot !== null && parsedRegular !== null && parsedHot >= parsedRegular) {
+            if (parsedHot !== null && regularPrice !== null && parsedHot >= regularPrice) {
                 return NextResponse.json({ error: 'Hot sale price must be lower than the regular price.' }, { status: 400 });
             }
             productData.hotSalePrice = parsedHot;
@@ -336,6 +342,18 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
                     })),
                 });
             }
+        });
+
+        // Audit log for product modification
+        logAudit({
+            userId: session.user.id!,
+            userEmail: session.user.email || '',
+            userRole: session.user.role || '',
+            action: 'UPDATE_PRODUCT',
+            resource: 'products',
+            resourceId: id,
+            details: { sku, status, approvalStatus, priceUsd, isHotSale, hotSalePrice },
+            ipAddress: getIpFromRequest(req),
         });
 
         return NextResponse.json({ success: true });

@@ -22,16 +22,10 @@ export async function GET() {
         return NextResponse.json({ enabled: true });
     }
 
-    // 새 secret 생성 (아직 DB에 저장 안 함 — 확인 후 저장)
+    // Generate new secret — return to client only, NOT stored in DB until verified
     const secret = authenticator.generateSecret();
     const otpauth = authenticator.keyuri(user.email || 'admin', 'KKShop Admin', secret);
     const qrDataUrl = await QRCode.toDataURL(otpauth);
-
-    // 임시로 DB에 저장 (미확인 상태)
-    await prisma.user.update({
-        where: { id: session.user.id },
-        data: { twoFactorSecret: secret, twoFactorEnabled: false },
-    });
 
     return NextResponse.json({ enabled: false, secret, qrDataUrl });
 }
@@ -43,21 +37,17 @@ export async function POST(req: Request) {
     const role = session.user.role;
     if (role !== 'ADMIN' && role !== 'SUPERADMIN') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-    const { code } = await req.json();
-    if (!code) return NextResponse.json({ error: 'Code is required' }, { status: 400 });
+    const { code, secret } = await req.json();
+    if (!code || !secret) return NextResponse.json({ error: 'Code and secret are required' }, { status: 400 });
 
-    const user = await prisma.user.findUnique({
-        where: { id: session.user.id },
-        select: { twoFactorSecret: true, email: true },
-    });
-    if (!user?.twoFactorSecret) return NextResponse.json({ error: '먼저 2FA 설정을 시작하세요.' }, { status: 400 });
-
-    const isValid = authenticator.verify({ token: code, secret: user.twoFactorSecret });
+    // Validate the TOTP code against the client-provided secret before storing
+    const isValid = authenticator.verify({ token: code, secret });
     if (!isValid) return NextResponse.json({ error: '인증 코드가 올바르지 않습니다.' }, { status: 400 });
 
+    // Only store secret and enable 2FA after successful verification
     await prisma.user.update({
         where: { id: session.user.id },
-        data: { twoFactorEnabled: true },
+        data: { twoFactorSecret: secret, twoFactorEnabled: true },
     });
 
     await logAudit({

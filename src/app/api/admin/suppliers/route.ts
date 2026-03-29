@@ -80,11 +80,11 @@ export async function PATCH(req: NextRequest) {
                 where: { id: updated.userId },
                 data: { role: 'USER' },
             });
-            // 해당 Supplier의 ACTIVE 상품 전부 INACTIVE로 전환 (고객 노출 차단)
+            // 해당 Supplier의 ACTIVE/PENDING 상품 전부 INACTIVE로 전환 (고객 노출 및 승인 대기열 차단)
             await tx.product.updateMany({
                 where: {
                     supplierId: updated.id,
-                    status: 'ACTIVE',
+                    status: { in: ['ACTIVE', 'PENDING'] },
                 },
                 data: { status: 'INACTIVE' },
             });

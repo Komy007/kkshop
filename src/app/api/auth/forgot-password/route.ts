@@ -8,7 +8,8 @@ const rateLimitCache = new Map<string, { count: number; timestamp: number }>();
 
 export async function POST(req: Request) {
     try {
-        const ip = req.headers.get('x-forwarded-for') || 'unknown';
+        const forwarded = req.headers.get('x-forwarded-for');
+        const ip = forwarded ? forwarded.split(',')[0].trim() : (req.headers.get('x-real-ip') || 'unknown');
         const now = Date.now();
         const windowMs = 10 * 60 * 1000;
 

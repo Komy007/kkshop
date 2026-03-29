@@ -89,9 +89,20 @@ export async function POST(request: Request) {
             }
         }
 
+        // Calculate actual discount, capped to subtotal to prevent negative totals
+        const sub = Number(subtotal) || 0;
+        let discount = Number(coupon.discountValue);
+        if (coupon.type === 'PERCENT') {
+            discount = Math.round(Math.min(sub * (discount / 100), sub) * 100) / 100;
+        } else if (coupon.type === 'FIXED') {
+            discount = Math.min(Math.round(discount * 100) / 100, sub);
+        } else if (coupon.type === 'FREE_SHIPPING') {
+            discount = 0; // shipping handled separately
+        }
+
         return NextResponse.json({
             ok: true,
-            discount: Number(coupon.discountValue),
+            discount,
             type: coupon.type
         });
 

@@ -11,6 +11,21 @@ const bucket = storage.bucket(GCS_BUCKET);
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/jpg'];
 const MAX_SIZE_MB = 10;
 
+// Magic byte signatures for real image validation
+const MAGIC_BYTES: Record<string, number[][]> = {
+    'image/jpeg': [[0xFF, 0xD8, 0xFF]],
+    'image/jpg': [[0xFF, 0xD8, 0xFF]],
+    'image/png': [[0x89, 0x50, 0x4E, 0x47]],
+    'image/gif': [[0x47, 0x49, 0x46, 0x38]],
+    'image/webp': [[0x52, 0x49, 0x46, 0x46]], // RIFF header
+};
+
+function isValidMagicBytes(buffer: Buffer, mimeType: string): boolean {
+    const signatures = MAGIC_BYTES[mimeType];
+    if (!signatures) return false;
+    return signatures.some(sig => sig.every((byte, i) => buffer[i] === byte));
+}
+
 export async function POST(request: NextRequest) {
     try {
         // ── Auth Guard: ADMIN / SUPERADMIN / SUPPLIER can upload ────────────
@@ -46,6 +61,11 @@ export async function POST(request: NextRequest) {
 
             const bytes = await file.arrayBuffer();
             const buffer = Buffer.from(bytes);
+
+            // Verify actual file content matches declared MIME type (magic bytes)
+            if (!isValidMagicBytes(buffer, file.type)) {
+                return NextResponse.json({ success: false, error: 'File content does not match declared type. Upload a real image.' }, { status: 400 });
+            }
 
             // Build unique filename — e.g. products/1709123456789_product.jpg
             const timestamp = Date.now();

@@ -14,27 +14,32 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Password must be at least 6 characters.' }, { status: 400 });
         }
 
-        const record = await prisma.passwordResetToken.findUnique({
-            where: { token },
-            include: { user: { select: { id: true } } },
+        const hashedPassword = await bcrypt.hash(password, 12);
+
+        // Atomic: claim the token first with conditional update to prevent race conditions
+        const claimed = await prisma.passwordResetToken.updateMany({
+            where: { token, used: false, expiresAt: { gt: new Date() } },
+            data: { used: true },
         });
 
-        if (!record || record.used || record.expiresAt < new Date()) {
+        if (claimed.count === 0) {
             return NextResponse.json({ error: 'This reset link is invalid or has expired.' }, { status: 400 });
         }
 
-        const hashedPassword = await bcrypt.hash(password, 12);
+        // Token is now claimed — find the userId and update password
+        const record = await prisma.passwordResetToken.findUnique({
+            where: { token },
+            select: { userId: true },
+        });
 
-        await prisma.$transaction([
-            prisma.user.update({
-                where: { id: record.userId },
-                data: { hashedPassword },
-            }),
-            prisma.passwordResetToken.update({
-                where: { id: record.id },
-                data: { used: true },
-            }),
-        ]);
+        if (!record) {
+            return NextResponse.json({ error: 'This reset link is invalid or has expired.' }, { status: 400 });
+        }
+
+        await prisma.user.update({
+            where: { id: record.userId },
+            data: { hashedPassword },
+        });
 
         return NextResponse.json({ success: true });
     } catch (error) {
