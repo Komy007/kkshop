@@ -205,7 +205,7 @@ const en: Translations = {
         sec4Desc: "We're expanding! Authentic Korean food, instant noodles, snacks, household goods, and grocery items from Korean supermarkets — coming to KKShop soon. Everything from ramyeon to kitchen essentials, delivered to your Cambodian home.",
         // Seller Marketplace
         sellerTitle: 'Become a KKShop Seller',
-        sellerDesc: 'Share our vision for quality? Join KKShop as a verified seller. We review every application to ensure our customers always receive trusted, high-quality products.',
+        sellerDesc: 'Share our vision for quality? Join KKShop as a verified seller. We review every application to ensure our customers always receive trusted, high-quality products. A platform commission of 7%–30% applies depending on the product category.',
         sellerCard1Title: 'Cosmetics: Korean Only',
         sellerCard1Desc: 'All beauty and skincare products must be 100% manufactured in South Korea. No exceptions.',
         sellerCard2Title: 'Living & Lifestyle Products',

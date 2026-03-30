@@ -205,7 +205,7 @@ const zh: Translations = {
         sec4Desc: '我们正在扩展！正品韩国食品、方便面、零食、日用品 — 即将上线 KKShop。',
         // Seller Marketplace
         sellerTitle: '成为 KKShop 卖家',
-        sellerDesc: '认同我们的品质理念？欢迎成为 KKShop 认证卖家。我们对每份申请进行严格审核，确保客户始终获得值得信赖的高品质产品。',
+        sellerDesc: '认同我们的品质理念？欢迎成为 KKShop 认证卖家。我们对每份申请进行严格审核，确保客户始终获得值得信赖的高品质产品。根据商品品类，平台收取7%–30%的佣金。',
         sellerCard1Title: '化妆品：仅限韩国产品',
         sellerCard1Desc: '所有美妆护肤产品必须100%韩国制造。没有例外。',
         sellerCard2Title: '生活用品可注册',
