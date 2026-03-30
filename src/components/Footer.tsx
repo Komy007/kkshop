@@ -10,8 +10,8 @@ const footerTexts: Record<string, {
     payments: string; copyright: string; builtWith: string;
 }> = {
     en: {
-        tagline: "Cambodia's No.1 Premium Cross-Border E-commerce.",
-        tagline2: 'Bringing the authentic taste and quality of Korea directly to Phnom Penh.',
+        tagline: "Cambodia's No.1 Premium E-commerce.",
+        tagline2: 'Experience the authentic taste and quality of Korea right here in Phnom Penh. We deliver to wherever you are.',
         support: 'Customer Support', orders: 'Online Orders: 24/7',
         info: 'Information', about: 'About Us', delivery: 'Delivery Information',
         privacy: 'Privacy Policy', terms: 'Terms of Service',
@@ -20,8 +20,8 @@ const footerTexts: Record<string, {
         builtWith: 'Built with ❤️ for Global Commerce.',
     },
     ko: {
-        tagline: '캄보디아 No.1 프리미엄 크로스보더 이커머스.',
-        tagline2: '한국의 정통 맛과 품질을 프놈펜까지 직접 배송합니다.',
+        tagline: '캄보디아 No.1 프리미엄 이커머스.',
+        tagline2: '한국의 정통 맛과 품질을 프놈펜에서 경험하게 합니다. 당신이 계신 곳에 배달해 드립니다.',
         support: '고객 지원', orders: '온라인 주문: 24시간',
         info: '정보', about: '소개', delivery: '배송 안내',
         privacy: '개인정보 처리방침', terms: '이용약관',
@@ -30,8 +30,8 @@ const footerTexts: Record<string, {
         builtWith: '글로벌 커머스를 위해 ❤️ 제작.',
     },
     km: {
-        tagline: 'ពាណិជ្ជកម្មអេឡិចត្រូនិចឆ្លងព្រំដែនលេខ១របស់កម្ពុជា។',
-        tagline2: 'នាំយកផលិតផលកូរ៉េដើមទៅកាន់រាជធានីភ្នំពេញដោយផ្ទាល់។',
+        tagline: 'វេទិកាពាណិជ្ជកម្មអេឡិចត្រូនិកលេខ១កម្ពុជា។',
+        tagline2: 'រសជាតិ និងគុណភាពកូរ៉េពិតប្រាកដរង់ចាំអ្នកនៅភ្នំពេញ។ យើងដឹកជញ្ជូនដល់កន្លែងដែលអ្នកនៅ។',
         support: 'ផ្នែកគាំទ្រអតិថិជន', orders: 'បញ្ជាទិញអនឡាញ: ២៤/៧',
         info: 'ព័ត៌មាន', about: 'អំពីយើង', delivery: 'ព័ត៌មានដឹកជញ្ជូន',
         privacy: 'គោលនយោបាយភាពឯកជន', terms: 'លក្ខខណ្ឌនៃសេវាកម្ម',
@@ -40,8 +40,8 @@ const footerTexts: Record<string, {
         builtWith: 'បង្កើតដោយ ❤️ សម្រាប់ពាណិជ្ជកម្មសកល។',
     },
     zh: {
-        tagline: '柬埔寨第一跨境电商平台。',
-        tagline2: '将韩国正品的品味与品质直达金边。',
+        tagline: '柬埔寨第一电商平台。',
+        tagline2: '在金边体验韩国的正宗品味与品质。我们送货到您所在的地方。',
         support: '客户支持', orders: '在线订购：全天候',
         info: '信息', about: '关于我们', delivery: '配送信息',
         privacy: '隐私政策', terms: '服务条款',

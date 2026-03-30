@@ -219,7 +219,7 @@ const en: Translations = {
         contactDesc: 'Questions? We reply fast — in English, Korean, and Khmer.',
     },
     footer: {
-        tagline: "Cambodia's No.1 Premium Cross-Border E-commerce.\nBringing the authentic taste and quality of Korea directly to Phnom Penh.",
+        tagline: "Cambodia's No.1 Premium E-commerce.\nExperience the authentic taste and quality of Korea right here in Phnom Penh. We deliver to wherever you are.",
         customerSupport: 'Customer Support',
         information: 'Information',
         aboutUs: 'About Us',

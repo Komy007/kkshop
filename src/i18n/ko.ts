@@ -219,7 +219,7 @@ const ko: Translations = {
         contactDesc: '궁금한 사항이 있으신가요? 한국어·영어·크메르어로 빠르게 답변드립니다.',
     },
     footer: {
-        tagline: "캄보디아 No.1 프리미엄 크로스보더 이커머스.\n한국의 진짜 맛과 품질을 프놈펜으로 직배송합니다.",
+        tagline: "캄보디아 No.1 프리미엄 이커머스.\n한국의 정통 맛과 품질을 프놈펜에서 경험하게 합니다. 당신이 계신 곳에 배달해 드립니다.",
         customerSupport: '고객 지원',
         information: '정보',
         aboutUs: '회사 소개',

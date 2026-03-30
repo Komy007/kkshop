@@ -219,7 +219,7 @@ const zh: Translations = {
         contactDesc: '有疑问？我们快速回复 — 支持英语、韩语和高棉语。',
     },
     footer: {
-        tagline: '柬埔寨No.1跨境电商平台。\n将正宗韩国品质直送金边。',
+        tagline: '柬埔寨第一电商平台。\n在金边体验韩国的正宗品味与品质。我们送货到您所在的地方。',
         customerSupport: '客服支持',
         information: '信息',
         aboutUs: '关于我们',
