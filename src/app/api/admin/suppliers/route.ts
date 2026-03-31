@@ -66,11 +66,19 @@ export async function PATCH(req: NextRequest) {
             include: { user: { select: { email: true } } },
         });
 
-        // If approved, update the user's role to SUPPLIER
+        // If approved, update the user's role to SUPPLIER + ensure emailVerified
         if (status === 'APPROVED') {
+            const targetUser = await tx.user.findUnique({
+                where: { id: updated.userId },
+                select: { emailVerified: true },
+            });
             await tx.user.update({
                 where: { id: updated.userId },
-                data: { role: 'SUPPLIER' },
+                data: {
+                    role: 'SUPPLIER',
+                    // 이메일 미인증 상태면 승인 시 자동 인증 처리 (관리자 승인 = 신원 확인)
+                    ...(!targetUser?.emailVerified && { emailVerified: new Date() }),
+                },
             });
         }
 
