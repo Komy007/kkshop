@@ -5,7 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import {
     Save, Loader2, Globe, Upload, X, ImagePlus, Package, Tag, Leaf,
     Droplets, Star, Sparkles, RefreshCw, DollarSign, AlertTriangle, ArrowLeft,
-    Flame, CheckCircle,
+    Flame, CheckCircle, Plus,
 } from 'lucide-react';
 import { useTranslations } from '@/i18n/useTranslations';
 
@@ -25,6 +25,9 @@ interface ProductData {
     options: { id: string; minQty: number; maxQty: number | null; discountPct: string; freeShipping: boolean; labelKo: string | null; labelEn: string | null }[];
     translations: { langCode: string; name: string; shortDesc: string | null; detailDesc: string | null; ingredients: string | null; howToUse: string | null; benefits: string | null; seoKeywords: string | null }[];
 }
+
+const SIZE_PRESETS = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Free Size'];
+const vInp = "px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500";
 
 const Sec = ({ icon, title, desc }: { icon: React.ReactNode; title: string; desc?: string }) => (
     <div className="px-6 py-4 bg-gray-50 border-b border-gray-100">
@@ -64,6 +67,13 @@ export default function EditProductPage() {
     const [dragActive, setDragActive] = useState(false);
 
     const [options, setOptions] = useState<any[]>([]);
+
+    // ── Variant state ──
+    const [variantEnabled, setVariantEnabled] = useState(false);
+    const [variantType, setVariantType] = useState<'color' | 'size' | 'custom'>('color');
+    const [colorVars, setColorVars] = useState([{ name: '', hex: '#FF6B6B', stock: '0', price: '' }]);
+    const [sizeVars, setSizeVars] = useState<{ label: string; stock: string; price: string }[]>([]);
+    const [customVars, setCustomVars] = useState([{ label: '', stock: '0', price: '' }]);
 
     const [form, setForm] = useState({
         sku: '', priceUsd: '', costPrice: '', stockQty: '0', stockAlertQty: '10',
@@ -157,6 +167,24 @@ export default function EditProductPage() {
                     discountPct: o.discountPct, freeShipping: o.freeShipping,
                     labelKo: o.labelKo ?? '', labelEn: o.labelEn ?? '',
                 })) ?? []);
+                // Load variants
+                if (p.variants && p.variants.length > 0) {
+                    setVariantEnabled(true);
+                    const firstType = p.variants[0].variantType?.toLowerCase();
+                    if (firstType === 'color') {
+                        setVariantType('color');
+                        setColorVars(p.variants.map((v: any) => {
+                            const parts = (v.variantValue || '').split('|');
+                            return { name: parts[0] || '', hex: parts[1] || '#FF6B6B', stock: String(v.stockQty ?? 0), price: v.priceUsd ?? '' };
+                        }));
+                    } else if (firstType === 'size') {
+                        setVariantType('size');
+                        setSizeVars(p.variants.map((v: any) => ({ label: v.variantValue || '', stock: String(v.stockQty ?? 0), price: v.priceUsd ?? '' })));
+                    } else {
+                        setVariantType('custom');
+                        setCustomVars(p.variants.map((v: any) => ({ label: v.variantValue || '', stock: String(v.stockQty ?? 0), price: v.priceUsd ?? '' })));
+                    }
+                }
                 setCategories(Array.isArray(cats) ? cats : []);
                 setSuppliers(Array.isArray(sups) ? sups.filter((s: any) => s.status === 'APPROVED') : []);
             } catch (e: any) {
@@ -265,6 +293,21 @@ export default function EditProductPage() {
                     imageUrls: newImageUrls,
                     deleteImageIds,
                     options: options.map((o, i) => ({ ...o, sortOrder: i })),
+                    variants: (() => {
+                        if (!variantEnabled) return [];
+                        if (variantType === 'color') return colorVars.filter(v => v.name.trim()).map((v, i) => ({
+                            variantType: 'color', variantValue: `${v.name.trim()}|${v.hex}`,
+                            stockQty: parseInt(v.stock) || 0, priceUsd: v.price || null, sortOrder: i,
+                        }));
+                        if (variantType === 'size') return sizeVars.filter(v => v.label.trim()).map((v, i) => ({
+                            variantType: 'size', variantValue: v.label,
+                            stockQty: parseInt(v.stock) || 0, priceUsd: v.price || null, sortOrder: i,
+                        }));
+                        return customVars.filter(v => v.label.trim()).map((v, i) => ({
+                            variantType: 'custom', variantValue: v.label.trim(),
+                            stockQty: parseInt(v.stock) || 0, priceUsd: v.price || null, sortOrder: i,
+                        }));
+                    })(),
                 }),
             });
             const data = await res.json();
@@ -619,6 +662,143 @@ export default function EditProductPage() {
                             className="text-sm text-blue-600 font-semibold flex items-center gap-1 hover:text-blue-700">
                             {t.admin.edit.buttons.addOption}
                         </button>
+                    </div>
+                </div>
+
+                {/* ③-B Product Variants */}
+                <div className="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-100">
+                    <Sec icon={<Tag className="w-5 h-5 text-indigo-500" />} title="Product Variants · 상품 옵션" desc="색상 / 사이즈 / 커스텀 옵션 (선택사항)" />
+                    <div className="p-5 space-y-4">
+                        <label className="flex items-center gap-3 cursor-pointer select-none">
+                            <button type="button" role="switch" aria-checked={variantEnabled}
+                                onClick={() => setVariantEnabled(p => !p)}
+                                className={`relative inline-flex w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 ${variantEnabled ? 'bg-blue-500' : 'bg-gray-200'}`}>
+                                <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${variantEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
+                            </button>
+                            <span className="text-sm font-semibold text-gray-800">
+                                Enable product variants
+                                <span className="text-xs text-gray-400 ml-2 font-normal">색상 / 사이즈 / 기타 옵션 사용</span>
+                            </span>
+                        </label>
+
+                        {variantEnabled && (
+                            <div className="mt-4 space-y-5">
+                                <div>
+                                    <p className="text-xs font-semibold text-gray-600 mb-2">Variant Type · 옵션 종류:</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {(['color', 'size', 'custom'] as const).map(vt => (
+                                            <button key={vt} type="button" onClick={() => setVariantType(vt)}
+                                                className={`px-4 py-2 rounded-xl text-sm font-bold border transition-all ${variantType === vt ? 'bg-blue-500 text-white border-blue-500 shadow-sm' : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300 hover:text-blue-700'}`}>
+                                                {vt === 'color' ? '🎨 Color · 색상' : vt === 'size' ? '📏 Size · 사이즈' : '🏷️ Custom · 기타'}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {variantType === 'color' && (
+                                    <div className="space-y-3">
+                                        <div className="grid grid-cols-[40px_1fr_72px_88px_28px] gap-2 px-1 text-xs font-semibold text-gray-400">
+                                            <span /><span>Color name · 색상명</span><span className="text-center">Stock</span><span className="text-center">Price (opt)</span><span />
+                                        </div>
+                                        {colorVars.map((cv, i) => (
+                                            <div key={i} className="grid grid-cols-[40px_1fr_72px_88px_28px] gap-2 items-center bg-gray-50 rounded-xl p-2.5 border border-gray-100">
+                                                <input type="color" value={cv.hex} onChange={e => setColorVars(p => p.map((c, idx) => idx === i ? { ...c, hex: e.target.value } : c))}
+                                                    className="w-8 h-8 rounded-lg border border-gray-200 cursor-pointer p-0.5 bg-white" />
+                                                <input value={cv.name} onChange={e => setColorVars(p => p.map((c, idx) => idx === i ? { ...c, name: e.target.value } : c))}
+                                                    placeholder="e.g. Rose Pink" className={vInp} />
+                                                <input type="number" value={cv.stock} onChange={e => setColorVars(p => p.map((c, idx) => idx === i ? { ...c, stock: e.target.value } : c))}
+                                                    className={`text-center ${vInp}`} min="0" />
+                                                <input type="number" step="0.01" value={cv.price} onChange={e => setColorVars(p => p.map((c, idx) => idx === i ? { ...c, price: e.target.value } : c))}
+                                                    placeholder="—" className={`text-center ${vInp}`} />
+                                                {colorVars.length > 1 ? (
+                                                    <button type="button" onClick={() => setColorVars(p => p.filter((_, idx) => idx !== i))}
+                                                        className="p-1 text-red-400 hover:bg-red-50 rounded-lg"><X className="w-3.5 h-3.5" /></button>
+                                                ) : <span />}
+                                            </div>
+                                        ))}
+                                        {colorVars.length < 10 && (
+                                            <button type="button" onClick={() => setColorVars(p => [...p, { name: '', hex: '#4A90E2', stock: '0', price: '' }])}
+                                                className="text-sm font-bold text-blue-600 flex items-center gap-1.5 hover:text-blue-700 bg-blue-50 px-3 py-2 rounded-lg border border-blue-100 transition-colors">
+                                                <Plus className="w-4 h-4" /> Add Color · 색상 추가
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+
+                                {variantType === 'size' && (
+                                    <div className="space-y-4">
+                                        <div>
+                                            <p className="text-xs font-semibold text-gray-600 mb-2">Quick Add · 빠른 추가:</p>
+                                            <div className="flex flex-wrap gap-2">
+                                                {SIZE_PRESETS.map(s => {
+                                                    const added = sizeVars.some(v => v.label === s);
+                                                    return (
+                                                        <button key={s} type="button" onClick={() => !added && setSizeVars(p => [...p, { label: s, stock: '0', price: '' }])}
+                                                            disabled={added}
+                                                            className={`px-3 py-1.5 rounded-lg text-sm font-bold border transition-all ${added ? 'bg-blue-100 text-blue-600 border-blue-200 opacity-50 cursor-not-allowed' : 'bg-white text-gray-600 border-gray-200 hover:border-blue-400 hover:text-blue-700'}`}>
+                                                            {s}
+                                                        </button>
+                                                    );
+                                                })}
+                                                <button type="button" onClick={() => setSizeVars(p => [...p, { label: '', stock: '0', price: '' }])}
+                                                    className="px-3 py-1.5 rounded-lg text-sm font-bold border border-dashed border-gray-300 text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-all flex items-center gap-1">
+                                                    <Plus className="w-3.5 h-3.5" /> Custom
+                                                </button>
+                                            </div>
+                                        </div>
+                                        {sizeVars.length > 0 && (
+                                            <div className="space-y-2">
+                                                <div className="grid grid-cols-[1fr_72px_88px_28px] gap-2 px-1 text-xs font-semibold text-gray-400">
+                                                    <span>Size · 사이즈</span><span className="text-center">Stock</span><span className="text-center">Price (opt)</span><span />
+                                                </div>
+                                                {sizeVars.map((sv, i) => (
+                                                    <div key={i} className="grid grid-cols-[1fr_72px_88px_28px] gap-2 items-center bg-gray-50 p-2.5 rounded-xl border border-gray-100">
+                                                        <input value={sv.label} onChange={e => setSizeVars(p => p.map((s, idx) => idx === i ? { ...s, label: e.target.value } : s))}
+                                                            placeholder="e.g. M, 95" className={`font-semibold ${vInp}`} />
+                                                        <input type="number" value={sv.stock} onChange={e => setSizeVars(p => p.map((s, idx) => idx === i ? { ...s, stock: e.target.value } : s))}
+                                                            className={`text-center ${vInp}`} min="0" />
+                                                        <input type="number" step="0.01" value={sv.price} onChange={e => setSizeVars(p => p.map((s, idx) => idx === i ? { ...s, price: e.target.value } : s))}
+                                                            placeholder="—" className={`text-center ${vInp}`} />
+                                                        <button type="button" onClick={() => setSizeVars(p => p.filter((_, idx) => idx !== i))}
+                                                            className="p-1 text-red-400 hover:bg-red-50 rounded-lg"><X className="w-3.5 h-3.5" /></button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                        {sizeVars.length === 0 && (
+                                            <p className="text-xs text-gray-400 italic">Click size presets above or &quot;+ Custom&quot; to add sizes.</p>
+                                        )}
+                                    </div>
+                                )}
+
+                                {variantType === 'custom' && (
+                                    <div className="space-y-3">
+                                        <p className="text-xs text-gray-500">Add any custom options — bundle sets, scents, kit types, etc.</p>
+                                        <div className="grid grid-cols-[1fr_72px_88px_28px] gap-2 px-1 text-xs font-semibold text-gray-400">
+                                            <span>Option name · 옵션명</span><span className="text-center">Stock</span><span className="text-center">Price (opt)</span><span />
+                                        </div>
+                                        {customVars.map((cv, i) => (
+                                            <div key={i} className="grid grid-cols-[1fr_72px_88px_28px] gap-2 items-center bg-gray-50 p-2.5 rounded-xl border border-gray-100">
+                                                <input value={cv.label} onChange={e => setCustomVars(p => p.map((c, idx) => idx === i ? { ...c, label: e.target.value } : c))}
+                                                    placeholder="e.g. Starter Kit, Lavender" className={vInp} />
+                                                <input type="number" value={cv.stock} onChange={e => setCustomVars(p => p.map((c, idx) => idx === i ? { ...c, stock: e.target.value } : c))}
+                                                    className={`text-center ${vInp}`} min="0" />
+                                                <input type="number" step="0.01" value={cv.price} onChange={e => setCustomVars(p => p.map((c, idx) => idx === i ? { ...c, price: e.target.value } : c))}
+                                                    placeholder="—" className={`text-center ${vInp}`} />
+                                                {customVars.length > 1 ? (
+                                                    <button type="button" onClick={() => setCustomVars(p => p.filter((_, idx) => idx !== i))}
+                                                        className="p-1 text-red-400 hover:bg-red-50 rounded-lg"><X className="w-3.5 h-3.5" /></button>
+                                                ) : <span />}
+                                            </div>
+                                        ))}
+                                        <button type="button" onClick={() => setCustomVars(p => [...p, { label: '', stock: '0', price: '' }])}
+                                            className="text-sm font-bold text-blue-600 flex items-center gap-1.5 hover:text-blue-700 bg-blue-50 px-3 py-2 rounded-lg border border-blue-100 transition-colors">
+                                            <Plus className="w-4 h-4" /> Add Option · 옵션 추가
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
 

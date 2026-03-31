@@ -157,7 +157,7 @@ export default function SellerProductEditPage() {
     const addFiles = useCallback((files: FileList | File[]) => {
         const arr = Array.from(files).filter(f => f.type.startsWith('image/'));
         const visibleCount = existingImages.filter(img => !deleteImageIds.includes(img.id)).length + newImages.length;
-        const toAdd = arr.slice(0, Math.max(0, 5 - visibleCount));
+        const toAdd = arr.slice(0, Math.max(0, 10 - visibleCount));
         setNewImages(prev => [
             ...prev,
             ...toAdd.map(file => ({ file, preview: URL.createObjectURL(file) })),
@@ -344,7 +344,7 @@ export default function SellerProductEditPage() {
                         Product Images
                         <span className="text-[10px] font-normal text-gray-400 ml-1">{totalImages}/5 · 상품 이미지</span>
                     </h2>
-                    <p className="text-[11px] text-gray-400 mb-4 ml-3.5">Hover &amp; click × to remove · 상품 이미지 최대 5장</p>
+                    <p className="text-[11px] text-gray-400 mb-4 ml-3.5">Hover &amp; click × to remove · 상품 이미지 최대 10장</p>
                     <div className="flex gap-3 flex-wrap">
                         {visibleExisting.map((img, i) => (
                             <div key={img.id} className="relative w-24 h-24 group">

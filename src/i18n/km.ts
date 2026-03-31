@@ -275,7 +275,7 @@ const km: Translations = {
         new: {
             title: 'ផលិតផលថ្មី',
             subtitle: 'បកប្រែដោយស្វ័យប្រវត្តិ KO/EN/KM/ZH',
-            images: { title: 'រូបភាព (អតិបរមា 3)', desc: 'រូបដំបូង = រូបគម្រប', uploadHint: 'ចុច · អូស · Ctrl+V', uploadTypes: 'PNG / JPG / WebP · អតិបរមា 10MB', cover: 'គម្រប' },
+            images: { title: 'រូបភាព (អតិបរមា 10)', desc: 'រូបដំបូង = រូបគម្រប', uploadHint: 'ចុច · អូស · Ctrl+V', uploadTypes: 'PNG / JPG / WebP · អតិបរមា 10MB', cover: 'គម្រប' },
             options: { title: 'ជម្រើសបញ្ចុះតម្លៃ', desc: 'ទិញច្រើន បញ្ចុះថ្លៃច្រើន', minQty: 'ចំនួនអប្បបរមា', maxQty: 'ចំនួនអតិបរមា', discount: 'បញ្ចុះ (%)', freeShipping: 'ដឹកឥតគិតថ្លៃ', optionLabel: 'ស្លាក (ស្រេចចិត្ត)', addOption: '+ បន្ថែមជម្រើស', optionLabelPlaceholder: 'ឧ. ទិញ 2 – 10% off', unlimitedPlaceholder: 'គ្មានដំណក់' },
             basic: { title: 'ព័ត៌មានមូលដ្ឋាន', selectCategory: '— ជ្រើសប្រភេទ —', isNewLabel: 'ចុះបញ្ជីជាផលិតផលថ្មី', isNewDesc: 'បង្ហាញក្នុងផ្នែកថ្មី' },
             specs: { title: 'លក្ខណៈបច្ចេកទេស', desc: 'ព័ត៌មានសំខាន់' },

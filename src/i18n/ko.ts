@@ -296,7 +296,7 @@ const ko: Translations = {
             title: '상품 등록',
             subtitle: '구글 AI로 한·영·크메르·중문 자동 번역됩니다.',
             images: {
-                title: '상품 이미지 (최대 3장)',
+                title: '상품 이미지 (최대 10장)',
                 desc: '첫 번째 이미지 = 대표사진 · 나중에 추가도 가능',
                 uploadHint: '클릭 · 드래그 · Ctrl+V 붙여넣기',
                 uploadTypes: 'PNG / JPG / WebP · 최대 10MB',

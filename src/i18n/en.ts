@@ -296,7 +296,7 @@ const en: Translations = {
             title: 'New Product',
             subtitle: 'Auto-translated into KO / EN / KM / ZH via Google AI.',
             images: {
-                title: 'Product Images (max 3)',
+                title: 'Product Images (max 10)',
                 desc: 'First image = cover photo · More can be added later',
                 uploadHint: 'Click · Drag · Ctrl+V to paste',
                 uploadTypes: 'PNG / JPG / WebP · Max 10MB',

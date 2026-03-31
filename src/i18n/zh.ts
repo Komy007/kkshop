@@ -275,7 +275,7 @@ const zh: Translations = {
         new: {
             title: '新增商品',
             subtitle: '通过 Google AI 自动翻译为 KO/EN/KM/ZH',
-            images: { title: '商品图片 (最多3张)', desc: '第一张 = 封面图', uploadHint: '点击 · 拖拽 · Ctrl+V', uploadTypes: 'PNG / JPG / WebP · 最大 10MB', cover: '封面' },
+            images: { title: '商品图片 (最多10张)', desc: '第一张 = 封面图', uploadHint: '点击 · 拖拽 · Ctrl+V', uploadTypes: 'PNG / JPG / WebP · 最大 10MB', cover: '封面' },
             options: { title: '批量折扣选项', desc: '买越多，折扣越多', minQty: '最小数量', maxQty: '最大数量', discount: '折扣(%)', freeShipping: '免运费', optionLabel: '选项标签 (可选)', addOption: '+ 添加阶梯', optionLabelPlaceholder: '例: 购买2件 – 9折', unlimitedPlaceholder: '不限' },
             basic: { title: '基本信息与分类', selectCategory: '— 选择分类 —', isNewLabel: '注册为新品', isNewDesc: '显示在首页新品区' },
             specs: { title: '商品规格', desc: '影响购买决策的关键信息' },

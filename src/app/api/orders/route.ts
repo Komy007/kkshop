@@ -105,6 +105,45 @@ export async function POST(request: Request) {
             subtotalUsd += serverPrice * Number(item.quantity);
         }
 
+        // ── Bulk Discount (ProductOption) 적용 ──
+        // 각 상품의 수량별 할인 옵션을 조회하여 적용
+        const productOptionsMap = new Map<string, { minQty: number; maxQty: number | null; discountPct: number; freeShipping: boolean }[]>();
+        const productIdsForOptions = [...new Set(verifiedItems.map(i => i.productId))];
+        if (productIdsForOptions.length > 0) {
+            const allOptions = await prisma.productOption.findMany({
+                where: { productId: { in: productIdsForOptions.map(pid => BigInt(pid)) } },
+                select: { productId: true, minQty: true, maxQty: true, discountPct: true, freeShipping: true },
+                orderBy: { minQty: 'desc' }, // 높은 수량부터 매칭
+            });
+            for (const opt of allOptions) {
+                const pid = opt.productId.toString();
+                if (!productOptionsMap.has(pid)) productOptionsMap.set(pid, []);
+                productOptionsMap.get(pid)!.push({
+                    minQty: opt.minQty,
+                    maxQty: opt.maxQty,
+                    discountPct: Number(opt.discountPct),
+                    freeShipping: opt.freeShipping,
+                });
+            }
+        }
+
+        // 수량별 할인 적용하여 subtotal 재계산
+        let bulkFreeShipping = false;
+        subtotalUsd = 0;
+        for (const item of verifiedItems) {
+            const qty = Number(item.quantity);
+            const opts = productOptionsMap.get(item.productId) || [];
+            // 수량에 맞는 최적 할인 옵션 찾기 (내림차순이므로 첫 매칭이 최대 할인)
+            const matchedOpt = opts.find(o => qty >= o.minQty && (o.maxQty === null || qty <= o.maxQty));
+            if (matchedOpt && matchedOpt.discountPct > 0) {
+                const discounted = item.priceUsd * (1 - matchedOpt.discountPct / 100);
+                subtotalUsd += Math.round(discounted * qty * 100) / 100;
+            } else {
+                subtotalUsd += item.priceUsd * qty;
+            }
+            if (matchedOpt?.freeShipping) bulkFreeShipping = true;
+        }
+
         // Verify & Calculate Coupon
         let discountAmount = 0;
         let appliedCouponId = null;
@@ -118,7 +157,7 @@ export async function POST(request: Request) {
                 select: { shippingFee: true },
             });
             if (provinceRecord) {
-                shippingFee = Number(provinceRecord.shippingFee);
+                shippingFee = bulkFreeShipping ? 0 : Number(provinceRecord.shippingFee);
             } else {
                 // Province name not found in DB — reject to prevent $0 shipping
                 return NextResponse.json({ error: 'Invalid province selected. Please refresh and select again.' }, { status: 400 });

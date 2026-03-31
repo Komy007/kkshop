@@ -98,11 +98,11 @@ export default function SellerProductNewPage() {
                 }
             }
             if (!imageFiles.length) return;
-            const added = imageFiles.slice(0, 3 - images.length);
-            setImages(p => [...p, ...added].slice(0, 3));
+            const added = imageFiles.slice(0, 10 - images.length);
+            setImages(p => [...p, ...added].slice(0, 10));
             added.forEach(f => {
                 const reader = new FileReader();
-                reader.onload = ev => setPreviews(p => [...p, ev.target?.result as string].slice(0, 3));
+                reader.onload = ev => setPreviews(p => [...p, ev.target?.result as string].slice(0, 10));
                 reader.readAsDataURL(f);
             });
         };
@@ -114,11 +114,11 @@ export default function SellerProductNewPage() {
 
     const addImages = (files: FileList | null) => {
         if (!files) return;
-        const added = Array.from(files).slice(0, 3 - images.length);
-        setImages(p => [...p, ...added].slice(0, 3));
+        const added = Array.from(files).slice(0, 10 - images.length);
+        setImages(p => [...p, ...added].slice(0, 10));
         added.forEach(f => {
             const reader = new FileReader();
-            reader.onload = e => setPreviews(p => [...p, e.target?.result as string].slice(0, 3));
+            reader.onload = e => setPreviews(p => [...p, e.target?.result as string].slice(0, 10));
             reader.readAsDataURL(f);
         });
     };
@@ -243,7 +243,7 @@ export default function SellerProductNewPage() {
             <form onSubmit={handleSubmit} className="space-y-4">
 
                 {/* ── Images ── */}
-                <Section title="📸 Product Images" sub="상품 이미지 — max 3 photos · 최대 3장">
+                <Section title="📸 Product Images" sub="상품 이미지 — max 10 photos · 최대 10장">
                     <div className="flex gap-3 flex-wrap">
                         {previews.map((src, i) => (
                             <div key={i} className="relative w-24 h-24">
@@ -259,7 +259,7 @@ export default function SellerProductNewPage() {
                                 )}
                             </div>
                         ))}
-                        {images.length < 3 && (
+                        {images.length < 10 && (
                             <button type="button" onClick={() => fileRef.current?.click()}
                                 className="w-24 h-24 border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center text-gray-400 hover:border-teal-400 hover:text-teal-600 transition-colors">
                                 <Upload className="w-5 h-5 mb-1" />

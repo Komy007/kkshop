@@ -672,10 +672,33 @@ export default function ProductDetailClient() {
                 {/* F-Pattern Layout: Image Left, Info Right */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16">
 
-                    {/* LEFT: Product Image Gallery */}
+                    {/* LEFT: Product Image Gallery — swipe on mobile, thumbnails on desktop */}
                     <div className="flex flex-col gap-3">
-                        {/* Main Image */}
-                        <div className="relative rounded-3xl overflow-hidden aspect-[3/4] bg-gray-50 group border border-gray-100 shadow-sm">
+                        {/* Swipeable Main Image */}
+                        <div
+                            className="relative rounded-3xl overflow-hidden aspect-[3/4] bg-gray-50 group border border-gray-100 shadow-sm touch-pan-y"
+                            onTouchStart={(e) => {
+                                const touch = e.touches[0];
+                                (e.currentTarget as any)._swipeX = touch.clientX;
+                                (e.currentTarget as any)._swipeY = touch.clientY;
+                            }}
+                            onTouchEnd={(e) => {
+                                const startX = (e.currentTarget as any)._swipeX;
+                                const startY = (e.currentTarget as any)._swipeY;
+                                if (startX == null || galleryImages.length <= 1) return;
+                                const endTouch = e.changedTouches[0];
+                                const dx = endTouch.clientX - startX;
+                                const dy = endTouch.clientY - startY;
+                                if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy)) return; // too short or vertical scroll
+                                const currentIdx = galleryImages.findIndex(img => img.url === productImage);
+                                const idx = currentIdx >= 0 ? currentIdx : 0;
+                                if (dx < 0 && idx < galleryImages.length - 1) {
+                                    setSelectedImageUrl(galleryImages[idx + 1].url);
+                                } else if (dx > 0 && idx > 0) {
+                                    setSelectedImageUrl(galleryImages[idx - 1].url);
+                                }
+                            }}
+                        >
                             <img
                                 src={productImage}
                                 alt={product.name}
@@ -698,10 +721,21 @@ export default function ProductDetailClient() {
                                     </div>
                                 );
                             })()}
+                            {/* Dot indicators for mobile */}
+                            {galleryImages.length > 1 && (
+                                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 lg:hidden">
+                                    {galleryImages.map((img, idx) => (
+                                        <span key={img.id} className={`w-2 h-2 rounded-full transition-all ${
+                                            (selectedImageUrl || galleryImages[0]?.url) === img.url
+                                                ? 'bg-white scale-125' : 'bg-white/50'
+                                        }`} />
+                                    ))}
+                                </div>
+                            )}
                         </div>
-                        {/* Thumbnail Scroll Row */}
+                        {/* Thumbnail Scroll Row — desktop */}
                         {galleryImages.length > 1 && (
-                            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                            <div className="hidden lg:flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
                                 {galleryImages.map((img, idx) => (
                                     <button
                                         key={img.id}
@@ -711,6 +745,30 @@ export default function ProductDetailClient() {
                                             (selectedImageUrl || galleryImages[0]?.url) === img.url
                                                 ? 'border-brand-primary shadow-md scale-105'
                                                 : 'border-gray-200 hover:border-gray-400 opacity-70 hover:opacity-100'
+                                        }`}
+                                    >
+                                        <img
+                                            src={img.url}
+                                            alt={img.altText || `${product.name} ${idx + 1}`}
+                                            className="w-full h-full object-cover"
+                                            loading="lazy"
+                                        />
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                        {/* Mobile: horizontal scroll strip below main image */}
+                        {galleryImages.length > 1 && (
+                            <div className="flex lg:hidden gap-2 overflow-x-auto pb-1 snap-x snap-mandatory scrollbar-hide">
+                                {galleryImages.map((img, idx) => (
+                                    <button
+                                        key={img.id}
+                                        type="button"
+                                        onClick={() => setSelectedImageUrl(img.url)}
+                                        className={`flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden border-2 snap-start transition-all ${
+                                            (selectedImageUrl || galleryImages[0]?.url) === img.url
+                                                ? 'border-brand-primary shadow-md scale-105'
+                                                : 'border-gray-200 opacity-60'
                                         }`}
                                     >
                                         <img
@@ -1092,12 +1150,28 @@ export default function ProductDetailClient() {
                     {/* Tab Content */}
                     <div className="min-h-[200px] animate-fade-in text-gray-700">
                         {activeTab === 'desc' && (
-                            <div className="prose max-w-none">
-                                {product.detailDesc ? (
-                                    <div dangerouslySetInnerHTML={{ __html: product.detailDesc }} />
-                                ) : (
-                                    <p className="text-gray-500">{product.shortDesc || 'No description available.'}</p>
+                            <div className="space-y-6">
+                                {/* Continuous product image gallery */}
+                                {galleryImages.length > 1 && (
+                                    <div className="space-y-2">
+                                        {galleryImages.map((img, idx) => (
+                                            <img
+                                                key={img.id}
+                                                src={img.url}
+                                                alt={img.altText || `${product.name} ${idx + 1}`}
+                                                className="w-full rounded-xl"
+                                                loading="lazy"
+                                            />
+                                        ))}
+                                    </div>
                                 )}
+                                <div className="prose max-w-none">
+                                    {product.detailDesc ? (
+                                        <div dangerouslySetInnerHTML={{ __html: product.detailDesc }} />
+                                    ) : (
+                                        <p className="text-gray-500">{product.shortDesc || 'No description available.'}</p>
+                                    )}
+                                </div>
                             </div>
                         )}
                         {activeTab === 'ingredients' && (
