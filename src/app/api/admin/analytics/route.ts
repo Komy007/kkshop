@@ -63,10 +63,10 @@ export async function GET(req: NextRequest) {
       ORDER BY date ASC
     `;
 
-    const revenueByDay = revenueRows.map((row) => ({
+    const dailyRevenue = revenueRows.map((row) => ({
       date: new Date(row.date).toISOString().split('T')[0],
       revenue: parseFloat(row.revenue ?? '0'),
-      orderCount: Number(row.order_count),
+      orders: Number(row.order_count),
     }));
 
     // -----------------------------------------------------------------------
@@ -104,12 +104,13 @@ export async function GET(req: NextRequest) {
       LIMIT 10
     `;
 
-    const topProducts = topProductRows.map((row) => ({
+    const topProducts = topProductRows.map((row, idx) => ({
+      rank: idx + 1,
       productId: row.product_id.toString(),
       name: row.name ?? '',
       imageUrl: row.image_url ?? null,
-      totalQty: Number(row.total_qty),
-      totalRevenue: parseFloat(row.total_revenue ?? '0'),
+      qtySold: Number(row.total_qty),
+      revenue: parseFloat(row.total_revenue ?? '0'),
     }));
 
     // -----------------------------------------------------------------------
@@ -136,7 +137,7 @@ export async function GET(req: NextRequest) {
     `;
 
     const categoryRevenue = categoryRows.map((row) => ({
-      categoryName: row.category_name ?? 'Uncategorized',
+      name: row.category_name ?? 'Uncategorized',
       revenue: parseFloat(row.revenue ?? '0'),
     }));
 
@@ -192,16 +193,16 @@ export async function GET(req: NextRequest) {
       totalRevenue: parseFloat(summaryRow?.total_revenue ?? '0'),
       totalOrders: Number(summaryRow?.total_orders ?? 0),
       avgOrderValue: parseFloat(summaryRow?.avg_order_value ?? '0'),
-      newMembers: newMembersCount,
+      newUsers: newMembersCount,
     };
 
     return NextResponse.json({
       period: `${days}d`,
-      revenueByDay,
+      summary,
+      dailyRevenue,
       topProducts,
       categoryRevenue,
       memberGrowth,
-      summary,
     });
   } catch (error) {
     console.error('GET /api/admin/analytics error:', error);
