@@ -157,7 +157,14 @@ export async function POST(req: NextRequest) {
             if (existingSupplier) {
                 return NextResponse.json({ error: '해당 이메일은 이미 공급자 계정이 있습니다.' }, { status: 400 });
             }
-            // Keep existing user, supplier will be PENDING approval
+            // Upgrade existing user to SUPPLIER role (SUPERADMIN-created = auto-approved)
+            await prisma.user.update({
+                where: { id: user.id },
+                data: {
+                    role: 'SUPPLIER',
+                    emailVerified: user.emailVerified ?? new Date(),
+                },
+            });
         } else {
             const hashedPassword = await bcrypt.hash(password, 12);
             user = await prisma.user.create({
@@ -165,7 +172,8 @@ export async function POST(req: NextRequest) {
                     name: companyName,
                     email: contactEmail.toLowerCase(),
                     hashedPassword,
-                    role: 'USER', // Role set to SUPPLIER only after approval
+                    role: 'SUPPLIER',        // SUPERADMIN 직접 생성 → 즉시 SUPPLIER
+                    emailVerified: new Date(), // 이메일 인증 불필요 (관리자가 직접 생성)
                     phone: phone || null,
                 }
             });
@@ -180,8 +188,8 @@ export async function POST(req: NextRequest) {
                 contactEmail: contactEmail.toLowerCase(),
                 description: description || null,
                 commissionRate: commissionRate ? parseFloat(commissionRate) : 30,
-                status: 'PENDING',
-                adminNote: 'SUPERADMIN이 직접 생성함 - 승인 대기',
+                status: 'APPROVED',          // SUPERADMIN 직접 생성 → 즉시 승인
+                adminNote: 'SUPERADMIN이 직접 생성 — 자동 승인',
             },
             include: {
                 user: { select: { email: true, name: true } },
