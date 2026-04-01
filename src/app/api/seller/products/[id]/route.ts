@@ -127,7 +127,7 @@ export async function PATCH(
     const body = await req.json();
     const {
         name, shortDesc, detailDesc, ingredients, howToUse, benefits,
-        priceUsd, stockQty, volume, skinType, origin, categoryId,
+        priceUsd, stockQty, volume, skinType, origin, brandName, expiryMonths, certifications, categoryId,
         imageUrls = [],      // new GCS URLs to add
         deleteImageIds = [], // existing image IDs to remove
         options,             // full options replacement (undefined = no change)
@@ -208,6 +208,9 @@ export async function PATCH(
         if (volume !== undefined)     updateData.volume     = volume || null;
         if (skinType !== undefined)   updateData.skinType   = skinType || null;
         if (origin !== undefined)     updateData.origin     = origin || null;
+        if (brandName !== undefined)  updateData.brandName  = brandName || null;
+        if (expiryMonths !== undefined) updateData.expiryMonths = expiryMonths ? parseInt(expiryMonths) : null;
+        if (certifications !== undefined) updateData.certifications = certifications || null;
 
         await tx.product.update({
             where: { id: product.id },

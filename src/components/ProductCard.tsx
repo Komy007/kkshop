@@ -24,6 +24,8 @@ interface ProductData {
     isBestSeller?: boolean;
     badgeAuthentic?: boolean;
     badgeKoreanCertified?: boolean;
+    brandName?: string | null;
+    origin?: string | null;
 }
 
 const uiTranslations = {
@@ -133,6 +135,18 @@ export default function ProductCard({ product }: ProductCardProps) {
                         <ShoppingCart className="w-5 h-5" />
                     </button>
                 </div>
+
+                {/* Brand & Origin */}
+                {(product.brandName || (product.origin && /korea/i.test(product.origin))) && (
+                    <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
+                        {product.brandName && (
+                            <span className="text-[11px] text-gray-400 font-semibold uppercase tracking-wide truncate max-w-[140px]">{product.brandName}</span>
+                        )}
+                        {product.origin && /korea/i.test(product.origin) && (
+                            <span className="text-[10px] bg-rose-50 text-rose-600 font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap">🇰🇷 Korea</span>
+                        )}
+                    </div>
+                )}
 
                 {/* Rating */}
                 {(product.rating && product.reviewCount) ? (

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Search as SearchIcon, X, Star } from 'lucide-react';
 import { useAppStore, useSafeAppStore } from '@/store/useAppStore';
@@ -100,10 +100,11 @@ export default function SearchPage() {
     const categories = popularCategories[lang];
 
     const [query, setQuery] = useState('');
-    const [allProducts, setAllProducts] = useState<TranslatedProduct[]>([]);
     const [displayed, setDisplayed] = useState<TranslatedProduct[]>([]);
+    const [total, setTotal] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
     const [recentSearches, setRecentSearches] = useState<string[]>([]);
+    const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
     // Load recent searches from localStorage
     useEffect(() => {
@@ -113,27 +114,39 @@ export default function SearchPage() {
         }
     }, []);
 
-    // Pre-fetch ALL products on mount so search is instant
-    useEffect(() => {
-        async function fetchAll() {
-            setIsLoading(true);
-            try {
-                const res = await fetch(`/api/products?lang=${language}&limit=200`);
-                if (res.ok) {
-                    const json = await res.json();
-                    // API returns { products: TranslatedProduct[], total: number }
-                    const list: TranslatedProduct[] = Array.isArray(json) ? json : (json.products ?? []);
-                    setAllProducts(list);
-                    setDisplayed(list);
-                }
-            } catch (e) {
-                console.error('Failed to prefetch products', e);
-            } finally {
-                setIsLoading(false);
+    // Server-side search with debounce
+    const fetchProducts = useCallback(async (searchTerm: string) => {
+        setIsLoading(true);
+        try {
+            const params = new URLSearchParams({ lang: language, limit: '100' });
+            if (searchTerm.trim()) params.set('search', searchTerm.trim());
+            const res = await fetch(`/api/products?${params}`);
+            if (res.ok) {
+                const json = await res.json();
+                const list: TranslatedProduct[] = Array.isArray(json) ? json : (json.products ?? []);
+                setDisplayed(list);
+                setTotal(json.total ?? list.length);
             }
+        } catch (e) {
+            console.error('Failed to fetch products', e);
+        } finally {
+            setIsLoading(false);
         }
-        fetchAll();
     }, [language]);
+
+    // Initial load
+    useEffect(() => {
+        fetchProducts('');
+    }, [fetchProducts]);
+
+    // Debounced search on keystroke (300ms)
+    useEffect(() => {
+        if (debounceRef.current) clearTimeout(debounceRef.current);
+        debounceRef.current = setTimeout(() => {
+            fetchProducts(query);
+        }, 300);
+        return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+    }, [query, fetchProducts]);
 
     const saveSearch = (q: string) => {
         if (!q.trim()) return;
@@ -147,31 +160,11 @@ export default function SearchPage() {
         localStorage.removeItem('recentSearches');
     };
 
-    // Filter products as the user types (live search)
-    const doSearch = useCallback((q: string) => {
-        const term = q.trim().toLowerCase();
-        if (!term) {
-            setDisplayed(allProducts);
-            return;
-        }
-        const filtered = allProducts.filter(p =>
-            p.name.toLowerCase().includes(term) ||
-            (p.shortDesc && p.shortDesc.toLowerCase().includes(term)) ||
-            (p.seoKeywords && p.seoKeywords.toLowerCase().includes(term))
-        );
-        setDisplayed(filtered);
-    }, [allProducts]);
-
     const handleSearch = (e?: React.FormEvent) => {
         if (e) e.preventDefault();
         if (query.trim()) saveSearch(query.trim());
-        doSearch(query);
+        fetchProducts(query);
     };
-
-    // Live search on every keystroke
-    useEffect(() => {
-        doSearch(query);
-    }, [query, doSearch]);
 
     return (
         <main className="min-h-screen bg-white text-gray-900 pb-24">
@@ -287,6 +280,16 @@ export default function SearchPage() {
                                 </div>
 
                                 <div className="p-3 flex flex-col flex-1">
+                                    {(product.brandName || (product.origin && /korea/i.test(product.origin))) && (
+                                        <div className="flex items-center gap-1 mb-0.5">
+                                            {product.brandName && (
+                                                <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wide truncate">{product.brandName}</span>
+                                            )}
+                                            {product.origin && /korea/i.test(product.origin) && (
+                                                <span className="text-[9px] bg-rose-50 text-rose-600 font-bold px-1 py-px rounded-full whitespace-nowrap">🇰🇷</span>
+                                            )}
+                                        </div>
+                                    )}
                                     <p className="text-sm text-gray-800 leading-snug line-clamp-2 min-h-[40px] font-bold mb-2 group-hover:text-brand-primary transition-colors">
                                         {product.name}
                                     </p>

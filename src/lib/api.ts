@@ -109,6 +109,7 @@ export async function getProductsByLanguage(
     categorySlug?: string | null,
     limit: number = 48,
     skip: number = 0,
+    searchQuery?: string | null,
 ): Promise<{ products: TranslatedProduct[]; total: number }> {
     try {
         const where: any = { status: 'ACTIVE', approvalStatus: 'APPROVED' };
@@ -121,6 +122,24 @@ export async function getProductsByLanguage(
                 ];
             } else if (categorySlug !== 'all') {
                 where.category = { slug: categorySlug };
+            }
+        }
+
+        if (searchQuery) {
+            const term = searchQuery.trim();
+            if (term) {
+                const likePattern = { contains: term, mode: 'insensitive' as const };
+                where.OR = [
+                    ...(where.OR ?? []),
+                    { translations: { some: { name: likePattern } } },
+                    { translations: { some: { shortDesc: likePattern } } },
+                    { translations: { some: { ingredients: likePattern } } },
+                    { translations: { some: { seoKeywords: likePattern } } },
+                    { brandName: likePattern },
+                    { origin: likePattern },
+                    { certifications: likePattern },
+                    { sku: likePattern },
+                ];
             }
         }
 

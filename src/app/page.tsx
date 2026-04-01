@@ -232,9 +232,16 @@ function ProductCard({ product, t }: { product: TranslatedProduct; t: any }) {
                     </>
                 )}
             </div>
-            {/* Brand */}
-            {product.brandName && (
-                <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wide truncate mb-0.5">{product.brandName}</p>
+            {/* Brand & Origin */}
+            {(product.brandName || (product.origin && /korea/i.test(product.origin))) && (
+                <div className="flex items-center gap-1 mb-0.5">
+                    {product.brandName && (
+                        <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wide truncate">{product.brandName}</span>
+                    )}
+                    {product.origin && /korea/i.test(product.origin) && (
+                        <span className="text-[9px] bg-rose-50 text-rose-600 font-bold px-1 py-px rounded-full whitespace-nowrap">🇰🇷</span>
+                    )}
+                </div>
             )}
             {/* Name */}
             <p className="text-[12px] sm:text-[13px] font-bold text-gray-900 leading-[1.3] line-clamp-2 mb-1 min-h-[32px]">

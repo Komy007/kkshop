@@ -8,6 +8,7 @@ export async function GET(request: Request) {
     const lang = searchParams.get('lang') || 'ko';
     const category = searchParams.get('category');
     const section = searchParams.get('section'); // hot | new | popular | todaypick
+    const search = searchParams.get('search');
     const limit = Math.min(parseInt(searchParams.get('limit') || '48'), 100);
     const skip = Math.max(parseInt(searchParams.get('skip') || '0'), 0);
 
@@ -19,7 +20,7 @@ export async function GET(request: Request) {
         }
 
         // General paginated fetch
-        const result = await getProductsByLanguage(lang, category, limit, skip);
+        const result = await getProductsByLanguage(lang, category, limit, skip, search);
         return NextResponse.json(result);
     } catch (error) {
         console.error('Failed to fetch products:', error);

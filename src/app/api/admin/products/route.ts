@@ -314,10 +314,18 @@ export async function POST(req: Request) {
             for (let i = 0; i < options.length; i++) {
                 const opt = options[i];
                 let labelEn = opt.labelKo || null;
+                let labelKm = opt.labelKo || null;
+                let labelZh = opt.labelKo || null;
                 if (opt.labelKo && baseLang === 'ko') {
                     try {
-                        const [translatedLabel] = await translate.translate(opt.labelKo, 'en');
-                        labelEn = translatedLabel;
+                        const results = await Promise.all([
+                            translate.translate(opt.labelKo, 'en'),
+                            translate.translate(opt.labelKo, 'km'),
+                            translate.translate(opt.labelKo, 'zh'),
+                        ]);
+                        labelEn = results[0][0];
+                        labelKm = results[1][0];
+                        labelZh = results[2][0];
                     } catch (e) {
                         console.error('Failed to translate option label', e);
                     }
@@ -328,7 +336,9 @@ export async function POST(req: Request) {
                     discountPct: parseFloat(opt.discountPct) || 0,
                     freeShipping: Boolean(opt.freeShipping),
                     labelKo: opt.labelKo || null,
-                    labelEn: labelEn,
+                    labelEn,
+                    labelKm,
+                    labelZh,
                     sortOrder: i
                 });
             }

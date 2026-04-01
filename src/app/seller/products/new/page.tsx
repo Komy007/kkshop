@@ -60,7 +60,7 @@ export default function SellerProductNewPage() {
 
     const [form, setForm] = useState({
         sku: '', priceUsd: '', stockQty: '0', categoryId: '',
-        brandName: '', volume: '', origin: '', skinType: '', expiryMonths: '',
+        brandName: '', volume: '', origin: '', skinType: '', expiryMonths: '', certifications: '',
         nameKo: '', shortDescKo: '', detailDescKo: '',
         ingredientsKo: '', howToUseKo: '', benefitsKo: '',
     });
@@ -348,14 +348,25 @@ export default function SellerProductNewPage() {
                             <input value={form.skinType} onChange={e => set('skinType', e.target.value)}
                                 placeholder="e.g. All skin types" className={inp} />
                         </Field>
+                        <Field en="Expiry (months)" ko="유통기한 (개월)">
+                            <input type="number" value={form.expiryMonths} onChange={e => set('expiryMonths', e.target.value)}
+                                placeholder="e.g. 36" className={inp} min="1" />
+                            <p className="text-[10px] text-gray-400 mt-1">
+                                Shelf life from manufacturing date · 제조일로부터 사용 가능한 개월 수
+                            </p>
+                        </Field>
+                        <Field en="Certifications" ko="인증/특징">
+                            <input value={form.certifications} onChange={e => set('certifications', e.target.value)}
+                                placeholder="e.g. Vegan, EWG, Organic, KFDA" className={inp} />
+                            <p className="text-[10px] text-gray-400 mt-1">
+                                Comma-separated · 쉼표로 구분 (예: 비건, EWG인증, 유기농)
+                            </p>
+                        </Field>
                     </div>
                 </Section>
 
                 {/* ── Bulk Pricing Tiers ── */}
                 <Section title="🎁 Bulk Pricing Tiers" sub="수량별 할인 단계 — optional · 선택사항">
-                    <div className="mb-4 bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-800">
-                        ⚠️ Bulk quantity discounts are currently under development and will not be applied at checkout.
-                    </div>
                     {/* How it works hint */}
                     <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-700 flex items-start gap-2">
                         <Info className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />

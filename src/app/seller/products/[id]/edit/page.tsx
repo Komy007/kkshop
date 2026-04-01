@@ -12,11 +12,13 @@ interface ProductForm {
     name: string; shortDesc: string; detailDesc: string;
     ingredients: string; howToUse: string; benefits: string;
     priceUsd: string; stockQty: string; volume: string; skinType: string; origin: string;
+    brandName: string; expiryMonths: string; certifications: string;
     categoryId: string;
 }
 const EMPTY: ProductForm = {
     name: '', shortDesc: '', detailDesc: '', ingredients: '',
     howToUse: '', benefits: '', priceUsd: '', stockQty: '0', volume: '', skinType: '', origin: '',
+    brandName: '', expiryMonths: '', certifications: '',
     categoryId: '',
 };
 const BADGE: Record<string, string> = {
@@ -108,6 +110,9 @@ export default function SellerProductEditPage() {
                     volume:      data.volume        ?? '',
                     skinType:    data.skinType      ?? '',
                     origin:      data.origin        ?? '',
+                    brandName:   data.brandName     ?? '',
+                    expiryMonths: data.expiryMonths ? String(data.expiryMonths) : '',
+                    certifications: data.certifications ?? '',
                     categoryId:  data.categoryId    ?? '',
                 });
                 setApprovalStatus(data.approvalStatus ?? 'PENDING');
@@ -475,6 +480,15 @@ export default function SellerProductEditPage() {
                         </Field>
                         <Field en="Country of Origin" ko="제조국">
                             <input type="text" value={form.origin} onChange={set('origin')} placeholder="e.g. South Korea" className={inp} />
+                        </Field>
+                        <Field en="Brand Name" ko="브랜드명">
+                            <input type="text" value={form.brandName} onChange={set('brandName')} placeholder="e.g. COSRX, LANEIGE" className={inp} />
+                        </Field>
+                        <Field en="Expiry (months)" ko="유통기한 (개월)">
+                            <input type="number" value={form.expiryMonths} onChange={set('expiryMonths')} placeholder="e.g. 36" className={inp} min="1" />
+                        </Field>
+                        <Field en="Certifications" ko="인증/특징">
+                            <input type="text" value={form.certifications} onChange={set('certifications')} placeholder="e.g. Vegan, EWG, Organic" className={inp} />
                         </Field>
                     </div>
                 </section>
