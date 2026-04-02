@@ -16,12 +16,12 @@ interface PointsConfig {
 
 const DEFAULT: PointsConfig = {
     earnRate:       1,
-    redeemRate:     1,
+    redeemRate:     1000,
     minOrderToEarn: 5,
     maxRedeemPct:   50,
     expiryDays:     365,
-    welcomeBonus:   100,
-    reviewBonus:    50,
+    welcomeBonus:   1000,
+    reviewBonus:    500,
     enabled:        true,
 };
 
@@ -110,14 +110,14 @@ export default function PointsSettingsPage() {
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-5">
-                    <Field label="Earn Rate (%)" subLabel="Points earned per $1 spent. Default: 1%">
+                    <Field label="Earn Rate (%)" subLabel="Points earned per $1 spent. Default: 1% → $100 = 1,000P ($1 value)">
                         <div className="flex items-center gap-2">
                             <input type="number" min={0} max={20} step={0.5} value={cfg.earnRate}
                                 onChange={e => set({ earnRate: parseFloat(e.target.value) || 0 })}
                                 className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" />
                             <span className="text-sm text-slate-500 font-medium">%</span>
                         </div>
-                        <p className="text-xs text-slate-400 mt-1">e.g. $20 order earns {Math.round(20 * cfg.earnRate / 100)} points</p>
+                        <p className="text-xs text-slate-400 mt-1">e.g. $100 order earns {Math.round(100 * (cfg.earnRate / 100) * cfg.redeemRate).toLocaleString()} P (= ${(100 * cfg.earnRate / 100).toFixed(2)})</p>
                     </Field>
 
                     <Field label="Minimum Order to Earn" subLabel="Minimum order value (USD) required to earn points">
@@ -157,13 +157,14 @@ export default function PointsSettingsPage() {
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-5">
-                    <Field label="Redeem Rate" subLabel="How much $1 discount costs in points">
+                    <Field label="Redeem Rate" subLabel="How many points equal $1 USD discount">
                         <div className="flex items-center gap-2">
-                            <input type="number" min={1} step={1} value={cfg.redeemRate}
+                            <input type="number" min={1} step={100} value={cfg.redeemRate}
                                 onChange={e => set({ redeemRate: parseInt(e.target.value) || 1 })}
                                 className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                            <span className="text-sm text-slate-500 whitespace-nowrap">pts = $1</span>
+                            <span className="text-sm text-slate-500 whitespace-nowrap">P = $1</span>
                         </div>
+                        <p className="text-xs text-slate-400 mt-1">e.g. {cfg.redeemRate.toLocaleString()} points = $1.00 discount</p>
                     </Field>
 
                     <Field label="Max Redeem (%)" subLabel="Max % of order total payable by points">
@@ -198,11 +199,13 @@ export default function PointsSettingsPage() {
 
             {/* Preview Card */}
             <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-sm text-amber-700">
-                <div className="font-bold mb-2">Preview (for a $50 order)</div>
+                <div className="font-bold mb-2">Preview (for a $100 order)</div>
                 <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div>Points earned: <strong>{Math.round(50 * cfg.earnRate / 100)} pts</strong></div>
-                    <div>Max discount: <strong>${(50 * cfg.maxRedeemPct / 100).toFixed(2)}</strong></div>
-                    <div>Requires pts: <strong>{Math.round(50 * cfg.maxRedeemPct / 100 * cfg.redeemRate)} pts</strong></div>
+                    <div>Points earned: <strong>{Math.round(100 * (cfg.earnRate / 100) * cfg.redeemRate).toLocaleString()} P</strong></div>
+                    <div>Earned value: <strong>${(100 * cfg.earnRate / 100).toFixed(2)}</strong></div>
+                    <div>Max discount: <strong>${(100 * cfg.maxRedeemPct / 100).toFixed(2)}</strong></div>
+                    <div>Requires pts: <strong>{Math.round(100 * cfg.maxRedeemPct / 100 * cfg.redeemRate).toLocaleString()} P</strong></div>
+                    <div>Redeem rate: <strong>{cfg.redeemRate.toLocaleString()} P = $1</strong></div>
                     <div>Min order to earn: <strong>${cfg.minOrderToEarn}</strong></div>
                 </div>
             </div>

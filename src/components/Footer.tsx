@@ -14,7 +14,7 @@ const footerTexts: Record<string, {
         tagline2: 'Experience the authentic taste and quality of Korea right here in Phnom Penh. We deliver to wherever you are.',
         support: 'Customer Support', orders: 'Online Orders: 24/7',
         info: 'Information', about: 'About Us', delivery: 'Delivery Information',
-        privacy: 'Privacy Policy', terms: 'Terms of Service',
+        privacy: 'Privacy Policy', terms: 'Terms of Service', faq: 'FAQ', contact: 'Contact Us',
         payments: 'Accepted Payments',
         copyright: 'KKshop.cc. All rights reserved. Operating in Phnom Penh, Cambodia.',
         builtWith: 'Built with ❤️ for Global Commerce.',
@@ -24,7 +24,7 @@ const footerTexts: Record<string, {
         tagline2: '한국의 정통 맛과 품질을 프놈펜에서 경험하게 합니다. 당신이 계신 곳에 배달해 드립니다.',
         support: '고객 지원', orders: '온라인 주문: 24시간',
         info: '정보', about: '소개', delivery: '배송 안내',
-        privacy: '개인정보 처리방침', terms: '이용약관',
+        privacy: '개인정보 처리방침', terms: '이용약관', faq: '자주 묻는 질문', contact: '문의하기',
         payments: '결제 수단',
         copyright: 'KKshop.cc. All rights reserved. 캄보디아 프놈펜 운영.',
         builtWith: '글로벌 커머스를 위해 ❤️ 제작.',
@@ -34,7 +34,7 @@ const footerTexts: Record<string, {
         tagline2: 'រសជាតិ និងគុណភាពកូរ៉េពិតប្រាកដរង់ចាំអ្នកនៅភ្នំពេញ។ យើងដឹកជញ្ជូនដល់កន្លែងដែលអ្នកនៅ។',
         support: 'ផ្នែកគាំទ្រអតិថិជន', orders: 'បញ្ជាទិញអនឡាញ: ២៤/៧',
         info: 'ព័ត៌មាន', about: 'អំពីយើង', delivery: 'ព័ត៌មានដឹកជញ្ជូន',
-        privacy: 'គោលនយោបាយភាពឯកជន', terms: 'លក្ខខណ្ឌនៃសេវាកម្ម',
+        privacy: 'គោលនយោបាយភាពឯកជន', terms: 'លក្ខខណ្ឌនៃសេវាកម្ម', faq: 'សំណួរញឹកញាប់', contact: 'ទាក់ទងយើង',
         payments: 'វិធីបង់ប្រាក់',
         copyright: 'KKshop.cc។ រក្សាសិទ្ធិគ្រប់យ៉ាង។ ប្រតិបត្តិការនៅរាជធានីភ្នំពេញ កម្ពុជា។',
         builtWith: 'បង្កើតដោយ ❤️ សម្រាប់ពាណិជ្ជកម្មសកល។',
@@ -44,7 +44,7 @@ const footerTexts: Record<string, {
         tagline2: '在金边体验韩国的正宗品味与品质。我们送货到您所在的地方。',
         support: '客户支持', orders: '在线订购：全天候',
         info: '信息', about: '关于我们', delivery: '配送信息',
-        privacy: '隐私政策', terms: '服务条款',
+        privacy: '隐私政策', terms: '服务条款', faq: '常见问题', contact: '联系我们',
         payments: '支付方式',
         copyright: 'KKshop.cc. 保留所有权利。运营于柬埔寨金边。',
         builtWith: '用 ❤️ 为全球商务打造。',
@@ -93,6 +93,8 @@ export default function Footer() {
                     <ul className="space-y-2 text-gray-600 font-medium">
                         <li><a href="/about" className="hover:text-brand-primary transition-colors">{t.about}</a></li>
                         <li><a href="/shipping" className="hover:text-brand-primary transition-colors">{t.delivery}</a></li>
+                        <li><a href="/faq" className="hover:text-brand-primary transition-colors">{t.faq}</a></li>
+                        <li><a href="/contact" className="hover:text-brand-primary transition-colors">{t.contact}</a></li>
                         <li><a href="/privacy" className="hover:text-brand-primary transition-colors">{t.privacy}</a></li>
                         <li><a href="/terms" className="hover:text-brand-primary transition-colors">{t.terms}</a></li>
                     </ul>

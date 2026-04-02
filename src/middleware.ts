@@ -16,6 +16,19 @@ export default middleware((req: any) => {
 
     if (isApiAuthRoute) return
 
+    // Block admin API access when 2FA is pending (except 2FA verify endpoint itself)
+    const isAdminApiRoute = nextUrl.pathname.startsWith('/api/admin');
+    const is2FAApiRoute = nextUrl.pathname.startsWith('/api/admin/2fa');
+    if (isAdminApiRoute && !is2FAApiRoute && isLoggedIn && (req.auth?.user as any)?.twoFactorPending) {
+        return new Response(
+            JSON.stringify({ error: '2FA verification required' }),
+            { status: 403, headers: { 'Content-Type': 'application/json' } }
+        );
+    }
+
+    // Skip middleware for other API routes (handled by route handlers)
+    if (nextUrl.pathname.startsWith('/api')) return
+
     // Redirect all legacy /supplier/* paths to the canonical /seller/* equivalent
     if (isSupplierOldRoute) {
         const newPath = nextUrl.pathname.replace(/^\/supplier(\/register)?.*/, (_, reg) =>
@@ -130,6 +143,9 @@ export default middleware((req: any) => {
 }) as any;
 
 // Specify which routes the middleware should run on
+// Include /api/admin/* to enforce 2FA on admin APIs
 export const config = {
-    matcher: ['/((?!api|_next/static|_next/image|favicon.ico|.*\\.png|.*\\.webp|.*\\.svg|.*\\.jpg|.*\\.jpeg).*)'],
+    matcher: [
+        '/((?!_next/static|_next/image|favicon.ico|.*\\.png|.*\\.webp|.*\\.svg|.*\\.jpg|.*\\.jpeg).*)',
+    ],
 }

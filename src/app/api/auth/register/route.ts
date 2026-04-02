@@ -96,7 +96,7 @@ export async function POST(req: Request) {
 
         // --- 7. Reward referrer (if valid referral code was used) ---
         if (referrer) {
-            const REFERRAL_REWARD_POINTS = 50;
+            const REFERRAL_REWARD_POINTS = 1000; // 1,000P = $1 USD
             try {
                 await prisma.$transaction(async (tx) => {
                     // Award points to the referrer

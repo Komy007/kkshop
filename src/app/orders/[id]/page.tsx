@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
     Package, ChevronLeft, Truck, MapPin, Clock, CheckCircle,
-    XCircle, Loader2, ExternalLink, Tag, Gift
+    XCircle, Loader2, ExternalLink, Tag, Gift, Star
 } from 'lucide-react';
 import { useSafeAppStore } from '@/store/useAppStore';
 
@@ -42,6 +42,7 @@ const t: Record<string, any> = {
         returnCancel: 'Cancel',
         returnSuccess: 'Return request submitted. We will process it within 1-3 business days.',
         returnRequested: 'Return Requested',
+        writeReview: 'Write a Review',
     },
     ko: {
         title: '주문 상세',
@@ -75,6 +76,7 @@ const t: Record<string, any> = {
         returnCancel: '취소',
         returnSuccess: '반품 요청이 접수되었습니다. 1~3 영업일 내에 처리됩니다.',
         returnRequested: '반품 요청됨',
+        writeReview: '리뷰 작성하기',
     },
     km: {
         title: 'ព័ត៌មានលម្អិតការបញ្ជាទិញ',
@@ -108,6 +110,7 @@ const t: Record<string, any> = {
         returnCancel: 'បោះបង់',
         returnSuccess: 'សំណើរបានដាក់រួចរាល់។',
         returnRequested: 'បានស្នើសុំការសងប្រាក់វិញ',
+        writeReview: 'សរសេរការពិនិត្យ',
     },
     zh: {
         title: '订单详情',
@@ -141,6 +144,7 @@ const t: Record<string, any> = {
         returnCancel: '取消',
         returnSuccess: '退货申请已提交，我们将在1-3个工作日内处理。',
         returnRequested: '已申请退货',
+        writeReview: '写评价',
     },
 };
 
@@ -349,8 +353,8 @@ export default function OrderDetailPage() {
                             )}
                             {pointsUsed > 0 && (
                                 <div className="flex justify-between text-purple-600">
-                                    <span className="flex items-center gap-1"><Gift className="w-3.5 h-3.5" /> {tx.points}</span>
-                                    <span className="font-semibold">-{formatUsd(pointsUsed)}</span>
+                                    <span className="flex items-center gap-1"><Gift className="w-3.5 h-3.5" /> {tx.points} ({pointsUsed.toLocaleString()} P)</span>
+                                    <span className="font-semibold">-{formatUsd(pointsUsed / 1000)}</span>
                                 </div>
                             )}
                         </div>
@@ -359,6 +363,27 @@ export default function OrderDetailPage() {
                             <span className="text-brand-secondary">{formatUsd(order.totalUsd)}</span>
                         </div>
                     </div>
+
+                    {/* Write Review CTA */}
+                    {['DELIVERED', 'CONFIRMED', 'SHIPPING'].includes(order.status) && order.items?.length > 0 && (
+                        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4">
+                            <p className="text-xs text-gray-500 mb-2 font-medium">
+                                {tx.writeReview}
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                                {order.items.map((item: any) => (
+                                    <Link
+                                        key={item.productId}
+                                        href={`/products/${item.productId}?tab=reviews`}
+                                        className="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-50 border border-amber-200 text-amber-700 text-xs font-bold rounded-xl hover:bg-amber-100 transition-colors"
+                                    >
+                                        <Star className="w-3.5 h-3.5" />
+                                        <span className="max-w-[150px] truncate">{item.name}</span>
+                                    </Link>
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
                     {/* Return/Refund Request */}
                     {order.status === 'DELIVERED' && !returnSuccess && (

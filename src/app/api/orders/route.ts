@@ -42,18 +42,26 @@ export async function POST(request: Request) {
 
         const userId = session.user.id;
 
-        // Verify User & Points + DB에서 포인트 적립률 조회
+        // Verify User & Points + DB에서 포인트 설정 조회
         const [user, pointsSetting] = await Promise.all([
             prisma.user.findUnique({ where: { id: userId } }),
-            prisma.siteSetting.findUnique({ where: { key: 'points_rate' } }),
+            prisma.siteSetting.findUnique({ where: { key: 'points_config' } }),
         ]);
         if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
 
-        // points_rate: { earnRate: 0.01, ... } 형식 — 기본값 1%
-        const pointsConfig = (pointsSetting?.value as any) ?? {};
-        const earnRate: number = typeof pointsConfig.earnRate === 'number'
-            ? Math.min(Math.max(pointsConfig.earnRate, 0), 0.5) // 0~50% 범위 클램프
-            : 0.01;
+        // points_config: { earnRate: 1, redeemRate: 1000, ... } 형식
+        const pointsConfig = pointsSetting?.value
+            ? (typeof pointsSetting.value === 'string' ? JSON.parse(pointsSetting.value) : pointsSetting.value)
+            : {};
+        // earnRate: percentage (1 = 1%) → decimal (0.01)
+        const earnRatePct: number = typeof pointsConfig.earnRate === 'number'
+            ? Math.min(Math.max(pointsConfig.earnRate, 0), 50)
+            : 1;
+        const earnRate = earnRatePct / 100; // 1% → 0.01
+        // redeemRate: how many points = $1 USD (default 1000)
+        const redeemRate: number = typeof pointsConfig.redeemRate === 'number'
+            ? Math.max(pointsConfig.redeemRate, 1)
+            : 1000;
 
         const pts = parseInt(pointsUsed) || 0;
         if (pts > 0 && pts > user.pointBalance) {
@@ -203,11 +211,13 @@ export async function POST(request: Request) {
         }
 
         // Calculate Total
-        // CRITICAL: cap points to max useful amount — cannot redeem more than the remaining total
-        const maxUsablePoints = Math.max(0, Math.round(subtotalUsd + shippingFee - discountAmount));
+        // CRITICAL: cap points to max useful amount — convert points to USD via redeemRate
+        const remainingBeforePoints = subtotalUsd + shippingFee - discountAmount;
+        const maxUsablePoints = Math.max(0, Math.floor(remainingBeforePoints * redeemRate));
         const effectivePts = Math.min(pts, maxUsablePoints);
+        const pointsDiscountUsd = effectivePts / redeemRate; // e.g. 1000 pts / 1000 = $1
 
-        const totalUsd = Math.max(0, subtotalUsd + shippingFee - discountAmount - effectivePts);
+        const totalUsd = Math.max(0, subtotalUsd + shippingFee - discountAmount - pointsDiscountUsd);
 
         // Transaction for Order Creation + Stock Decrement + Point Deduction + Coupon Update
         const order = await prisma.$transaction(async (tx) => {
@@ -378,8 +388,9 @@ export async function POST(request: Request) {
                 });
             }
 
-            // 5. Reward new points (DB 설정 적립률 적용 — 기본 1%)
-            const rewardPoints = Math.floor(totalUsd * earnRate);
+            // 5. Reward new points (DB 설정 적립률 적용 — 기본 1%, 1000P=$1)
+            // e.g. $100 * 0.01 * 1000 = 1,000 points (= $1 value)
+            const rewardPoints = Math.floor(totalUsd * earnRate * redeemRate);
             if (rewardPoints > 0) {
                 const updatedUser = await tx.user.update({
                     where: { id: userId },
@@ -467,7 +478,7 @@ export async function POST(request: Request) {
                 const discountRow = Number(orderDetail.discountAmount) > 0
                     ? `<tr><td style="padding:4px;color:#e53e3e;">Coupon Discount</td><td style="padding:4px;text-align:right;color:#e53e3e;">-$${Number(orderDetail.discountAmount).toFixed(2)}</td></tr>` : '';
                 const pointsRow = orderDetail.pointsUsed > 0
-                    ? `<tr><td style="padding:4px;color:#e53e3e;">Points Used</td><td style="padding:4px;text-align:right;color:#e53e3e;">-$${orderDetail.pointsUsed}.00</td></tr>` : '';
+                    ? `<tr><td style="padding:4px;color:#e53e3e;">Points Used (${orderDetail.pointsUsed.toLocaleString()} P)</td><td style="padding:4px;text-align:right;color:#e53e3e;">-$${(orderDetail.pointsUsed / redeemRate).toFixed(2)}</td></tr>` : '';
 
                 const orderSummaryHtml = `
                     <table style="width:100%;border-collapse:collapse;margin:16px 0;">

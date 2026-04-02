@@ -6,6 +6,7 @@ import "./globals.css";
 import GNB from "@/components/GNB";
 import BottomTabBar from "@/components/BottomTabBar";
 import MiniCartDrawer from "@/components/MiniCartDrawer";
+import ChatWidget from "@/components/ChatWidget";
 import { SessionProvider } from "next-auth/react";
 import { prisma } from '@/lib/api';
 
@@ -163,6 +164,7 @@ export default async function RootLayout({
                         {children}
                     </main>
                     <MiniCartDrawer />
+                    <ChatWidget />
                     <BottomTabBar />
                 </SessionProvider>
             </body>

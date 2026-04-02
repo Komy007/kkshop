@@ -134,8 +134,15 @@ export async function PATCH(req: NextRequest) {
             }
 
             if (order.userId) {
-                // ② 주문 완료 시 지급된 1% 리워드 포인트 회수 (원자적 decrement)
-                const rewardPoints = Math.floor(Number(order.totalUsd) * 0.01);
+                // ② 주문 완료 시 지급된 리워드 포인트 회수 (1% × 1000P/$1)
+                let ptsCfg: any = {};
+                try {
+                    const ptsCfgRow = await tx.siteSetting.findUnique({ where: { key: 'points_config' } });
+                    ptsCfg = ptsCfgRow?.value ? (typeof ptsCfgRow.value === 'string' ? JSON.parse(ptsCfgRow.value as string) : ptsCfgRow.value) : {};
+                } catch { /* use defaults */ }
+                const refundEarnRate = (typeof ptsCfg.earnRate === 'number' ? ptsCfg.earnRate : 1) / 100;
+                const refundRedeemRate = typeof ptsCfg.redeemRate === 'number' ? ptsCfg.redeemRate : 1000;
+                const rewardPoints = Math.floor(Number(order.totalUsd) * refundEarnRate * refundRedeemRate);
                 if (rewardPoints > 0) {
                     await tx.user.update({
                         where: { id: order.userId },

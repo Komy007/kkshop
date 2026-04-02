@@ -28,7 +28,7 @@ const checkoutTranslations: Record<string, any> = {
         couponError: 'An error occurred.',
         points: 'Use Points',
         pointsBalance: 'Your Points',
-        pointsHint: '1 Point = $1 USD discount',
+        pointsHint: '1,000 P = $1 USD discount',
         useAll: 'Use All',
         payment: 'Payment Method',
         qrTitle: 'Bank QR Code (KHQR)',
@@ -69,7 +69,7 @@ const checkoutTranslations: Record<string, any> = {
         couponError: '오류가 발생했습니다.',
         points: '포인트 사용',
         pointsBalance: '보유 포인트',
-        pointsHint: '1 포인트 = 1 USD 할인',
+        pointsHint: '1,000 P = $1 할인',
         useAll: '전액사용',
         payment: '결제 수단',
         qrTitle: '은행 QR코드 결제 (KHQR)',
@@ -110,7 +110,7 @@ const checkoutTranslations: Record<string, any> = {
         couponError: 'បានកើតកំហុស',
         points: 'ប្រើពិន្ទុ',
         pointsBalance: 'ពិន្ទុរបស់អ្នក',
-        pointsHint: '1 ពិន្ទុ = បញ្ចុះ $1',
+        pointsHint: '1,000 P = បញ្ចុះ $1',
         useAll: 'ប្រើទាំងអស់',
         payment: 'វិធីសាស្ត្រទូទាត់',
         qrTitle: 'QR Code ធនាគារ (KHQR)',
@@ -151,7 +151,7 @@ const checkoutTranslations: Record<string, any> = {
         couponError: '发生错误',
         points: '使用积分',
         pointsBalance: '积分余额',
-        pointsHint: '1积分 = $1折扣',
+        pointsHint: '1,000 P = $1折扣',
         useAll: '全部使用',
         payment: '付款方式',
         qrTitle: '银行二维码 (KHQR)',
@@ -335,6 +335,8 @@ export default function CheckoutPage() {
         }
     };
 
+    const REDEEM_RATE = 1000; // 1,000 points = $1 USD
+
     const handlePointsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         let val = parseInt(e.target.value) || 0;
         if (val < 0) val = 0;
@@ -344,8 +346,8 @@ export default function CheckoutPage() {
                 ? subtotal * (couponStatus.discount! / 100)
                 : couponStatus.discount!)
             : 0;
-        const maxUsable = subtotal + shippingFee - discountAmt;
-        if (val > maxUsable) val = Math.floor(maxUsable);
+        const maxUsable = Math.floor((subtotal + shippingFee - discountAmt) * REDEEM_RATE);
+        if (val > maxUsable) val = maxUsable;
         setForm({ ...form, pointsUsed: val.toString() });
     };
 
@@ -397,7 +399,8 @@ export default function CheckoutPage() {
             ? subtotal * (couponStatus.discount! / 100)
             : couponStatus.discount!)
         : 0;
-    const finalTotal = Math.max(0, subtotal + shippingFee - discountAmt - (parseInt(form.pointsUsed) || 0));
+    const pointsDiscountUsd = (parseInt(form.pointsUsed) || 0) / REDEEM_RATE;
+    const finalTotal = Math.max(0, subtotal + shippingFee - discountAmt - pointsDiscountUsd);
     const formatUsd = (price: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(price);
 
     return (
@@ -671,8 +674,8 @@ export default function CheckoutPage() {
                                 )}
                                 {parseInt(form.pointsUsed) > 0 && (
                                     <div className="flex justify-between text-sm text-brand-primary font-bold">
-                                        <span>{t.pointsUsed}</span>
-                                        <span>-{formatUsd(parseInt(form.pointsUsed))}</span>
+                                        <span>{t.pointsUsed} ({parseInt(form.pointsUsed).toLocaleString()} P)</span>
+                                        <span>-{formatUsd((parseInt(form.pointsUsed) || 0) / REDEEM_RATE)}</span>
                                     </div>
                                 )}
                             </div>
