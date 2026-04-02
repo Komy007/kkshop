@@ -133,10 +133,11 @@ export async function POST(req: Request) {
 
         // --- 8. Create email verification token and send verification email ---
         const verifyToken = crypto.randomBytes(32).toString('hex');
+        const tokenHash = crypto.createHash('sha256').update(verifyToken).digest('hex');
         await prisma.emailVerificationToken.create({
             data: {
                 userId: newUser.id,
-                token: verifyToken,
+                token: tokenHash,
                 expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
             },
         });

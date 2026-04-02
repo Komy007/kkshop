@@ -110,6 +110,9 @@ export async function getProductsByLanguage(
     limit: number = 48,
     skip: number = 0,
     searchQuery?: string | null,
+    sortBy?: string | null,
+    minPrice?: number | null,
+    maxPrice?: number | null,
 ): Promise<{ products: TranslatedProduct[]; total: number }> {
     try {
         const where: any = { status: 'ACTIVE', approvalStatus: 'APPROVED' };
@@ -143,6 +146,25 @@ export async function getProductsByLanguage(
             }
         }
 
+        // Price range filter
+        if (minPrice != null && minPrice > 0) {
+            where.priceUsd = { ...(where.priceUsd ?? {}), gte: minPrice };
+        }
+        if (maxPrice != null && maxPrice > 0) {
+            where.priceUsd = { ...(where.priceUsd ?? {}), lte: maxPrice };
+        }
+
+        // Sort options
+        let orderBy: any[];
+        switch (sortBy) {
+            case 'price_asc':  orderBy = [{ priceUsd: 'asc' }]; break;
+            case 'price_desc': orderBy = [{ priceUsd: 'desc' }]; break;
+            case 'newest':     orderBy = [{ createdAt: 'desc' }]; break;
+            case 'rating':     orderBy = [{ reviewAvg: 'desc' }, { reviewCount: 'desc' }]; break;
+            case 'popular':    orderBy = [{ reviewCount: 'desc' }, { reviewAvg: 'desc' }]; break;
+            default:           orderBy = [{ displayPriority: 'desc' }, { isNew: 'desc' }, { createdAt: 'desc' }]; break;
+        }
+
         const [products, total] = await Promise.all([
             prisma.product.findMany({
                 where,
@@ -151,7 +173,7 @@ export async function getProductsByLanguage(
                     category: { select: { slug: true } },
                     images: { orderBy: { sortOrder: 'asc' }, take: 1 },
                 },
-                orderBy: [{ displayPriority: 'desc' }, { isNew: 'desc' }, { createdAt: 'desc' }],
+                orderBy,
                 take: Math.min(limit, 100), // 최대 100개 제한
                 skip,
             }),

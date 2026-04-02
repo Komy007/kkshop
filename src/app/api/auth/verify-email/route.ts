@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/api';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
+import crypto from 'crypto';
 
 // GET /api/auth/verify-email?token=xxx
 export async function GET(req: Request) {
@@ -12,8 +13,11 @@ export async function GET(req: Request) {
             return NextResponse.json({ error: 'Missing token' }, { status: 400 });
         }
 
+        // Hash the incoming token to match stored hash
+        const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
         const record = await prisma.emailVerificationToken.findUnique({
-            where: { token },
+            where: { token: tokenHash },
             include: { user: { select: { id: true, email: true, emailVerified: true } } },
         });
 
@@ -31,7 +35,7 @@ export async function GET(req: Request) {
 
         // Already verified
         if (record.user.emailVerified) {
-            await prisma.emailVerificationToken.update({ where: { token }, data: { used: true } });
+            await prisma.emailVerificationToken.update({ where: { token: tokenHash }, data: { used: true } });
             return NextResponse.json({ success: true, alreadyVerified: true });
         }
 
@@ -42,7 +46,7 @@ export async function GET(req: Request) {
                 data: { emailVerified: new Date() },
             }),
             prisma.emailVerificationToken.update({
-                where: { token },
+                where: { token: tokenHash },
                 data: { used: true },
             }),
         ]);
@@ -86,14 +90,14 @@ export async function POST(req: Request) {
             data: { used: true },
         });
 
-        const crypto = await import('crypto');
         const { sendVerificationEmail } = await import('@/lib/mail');
 
         const verifyToken = crypto.randomBytes(32).toString('hex');
+        const verifyHash = crypto.createHash('sha256').update(verifyToken).digest('hex');
         await prisma.emailVerificationToken.create({
             data: {
                 userId: user.id,
-                token: verifyToken,
+                token: verifyHash,
                 expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
             },
         });

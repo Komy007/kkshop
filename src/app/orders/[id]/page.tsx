@@ -35,6 +35,13 @@ const t: Record<string, any> = {
         },
         loading: 'Loading order...',
         notFound: 'Order not found.',
+        returnBtn: 'Request Return/Refund',
+        returnTitle: 'Return Request',
+        returnReason: 'Please describe your reason (min 10 chars)',
+        returnSubmit: 'Submit Return Request',
+        returnCancel: 'Cancel',
+        returnSuccess: 'Return request submitted. We will process it within 1-3 business days.',
+        returnRequested: 'Return Requested',
     },
     ko: {
         title: '주문 상세',
@@ -61,6 +68,13 @@ const t: Record<string, any> = {
         },
         loading: '주문 정보를 불러오는 중...',
         notFound: '주문을 찾을 수 없습니다.',
+        returnBtn: '반품/환불 요청',
+        returnTitle: '반품 요청',
+        returnReason: '반품 사유를 입력해 주세요 (10자 이상)',
+        returnSubmit: '반품 요청 접수',
+        returnCancel: '취소',
+        returnSuccess: '반품 요청이 접수되었습니다. 1~3 영업일 내에 처리됩니다.',
+        returnRequested: '반품 요청됨',
     },
     km: {
         title: 'ព័ត៌មានលម្អិតការបញ្ជាទិញ',
@@ -87,6 +101,13 @@ const t: Record<string, any> = {
         },
         loading: 'កំពុងផ្ទុក...',
         notFound: 'រកមិនឃើញការបញ្ជាទិញ។',
+        returnBtn: 'ស្នើសុំការសងប្រាក់វិញ',
+        returnTitle: 'សំណើរសងប្រាក់វិញ',
+        returnReason: 'សូមពិពណ៌នាអំពីមូលហេតុ (យ៉ាងតិច១០អក្សរ)',
+        returnSubmit: 'ដាក់សំណើរ',
+        returnCancel: 'បោះបង់',
+        returnSuccess: 'សំណើរបានដាក់រួចរាល់។',
+        returnRequested: 'បានស្នើសុំការសងប្រាក់វិញ',
     },
     zh: {
         title: '订单详情',
@@ -113,6 +134,13 @@ const t: Record<string, any> = {
         },
         loading: '加载订单中...',
         notFound: '找不到该订单。',
+        returnBtn: '申请退货/退款',
+        returnTitle: '退货申请',
+        returnReason: '请描述您的退货原因（至少10个字符）',
+        returnSubmit: '提交退货申请',
+        returnCancel: '取消',
+        returnSuccess: '退货申请已提交，我们将在1-3个工作日内处理。',
+        returnRequested: '已申请退货',
     },
 };
 
@@ -122,6 +150,7 @@ const STATUS_STYLES: Record<string, string> = {
     SHIPPING: 'bg-purple-50 text-purple-700 border-purple-200',
     DELIVERED: 'bg-green-50 text-green-700 border-green-200',
     CANCELLED: 'bg-red-50 text-red-600 border-red-200',
+    RETURN_REQUESTED: 'bg-orange-50 text-orange-700 border-orange-200',
 };
 
 const STATUS_ICONS: Record<string, React.ReactNode> = {
@@ -130,6 +159,7 @@ const STATUS_ICONS: Record<string, React.ReactNode> = {
     SHIPPING: <Truck className="w-4 h-4" />,
     DELIVERED: <CheckCircle className="w-4 h-4" />,
     CANCELLED: <XCircle className="w-4 h-4" />,
+    RETURN_REQUESTED: <Package className="w-4 h-4" />,
 };
 
 const formatUsd = (n: number | string) =>
@@ -148,6 +178,11 @@ export default function OrderDetailPage() {
     const [order, setOrder] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [notFound, setNotFound] = useState(false);
+    const [showReturn, setShowReturn] = useState(false);
+    const [returnReason, setReturnReason] = useState('');
+    const [returnLoading, setReturnLoading] = useState(false);
+    const [returnSuccess, setReturnSuccess] = useState(false);
+    const [returnError, setReturnError] = useState('');
 
     useEffect(() => {
         fetch(`/api/user/orders/${id}`)
@@ -324,6 +359,75 @@ export default function OrderDetailPage() {
                             <span className="text-brand-secondary">{formatUsd(order.totalUsd)}</span>
                         </div>
                     </div>
+
+                    {/* Return/Refund Request */}
+                    {order.status === 'DELIVERED' && !returnSuccess && (
+                        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4">
+                            {!showReturn ? (
+                                <button
+                                    onClick={() => setShowReturn(true)}
+                                    className="w-full py-3 text-sm font-bold text-orange-600 border border-orange-200 rounded-xl hover:bg-orange-50 transition-colors"
+                                >
+                                    {tx.returnBtn}
+                                </button>
+                            ) : (
+                                <div>
+                                    <h3 className="text-sm font-extrabold text-gray-900 mb-2">{tx.returnTitle}</h3>
+                                    <textarea
+                                        value={returnReason}
+                                        onChange={e => setReturnReason(e.target.value)}
+                                        placeholder={tx.returnReason}
+                                        rows={3}
+                                        className="w-full border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:border-orange-400 resize-none"
+                                    />
+                                    {returnError && <p className="text-xs text-red-500 mt-1">{returnError}</p>}
+                                    <div className="flex gap-2 mt-3">
+                                        <button
+                                            onClick={() => { setShowReturn(false); setReturnError(''); }}
+                                            className="flex-1 py-2.5 text-sm font-bold text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50"
+                                        >
+                                            {tx.returnCancel}
+                                        </button>
+                                        <button
+                                            onClick={async () => {
+                                                setReturnError('');
+                                                setReturnLoading(true);
+                                                try {
+                                                    const res = await fetch(`/api/orders/${order.id}/return`, {
+                                                        method: 'POST',
+                                                        headers: { 'Content-Type': 'application/json' },
+                                                        body: JSON.stringify({ reason: returnReason }),
+                                                    });
+                                                    const data = await res.json();
+                                                    if (!res.ok) {
+                                                        setReturnError(data.error || 'Failed');
+                                                    } else {
+                                                        setReturnSuccess(true);
+                                                        setOrder({ ...order, status: 'RETURN_REQUESTED' });
+                                                    }
+                                                } catch {
+                                                    setReturnError('Network error');
+                                                } finally {
+                                                    setReturnLoading(false);
+                                                }
+                                            }}
+                                            disabled={returnLoading || returnReason.trim().length < 10}
+                                            className="flex-1 py-2.5 text-sm font-bold text-white bg-orange-500 rounded-xl hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {returnLoading ? '...' : tx.returnSubmit}
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Return success message */}
+                    {(returnSuccess || order.status === 'RETURN_REQUESTED') && (
+                        <div className="bg-orange-50 border border-orange-200 rounded-2xl p-4 text-sm text-orange-700 font-medium">
+                            ✅ {tx.returnSuccess || tx.returnRequested}
+                        </div>
+                    )}
                 </div>
             </div>
         </main>

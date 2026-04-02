@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/api';
 import { auth } from '@/auth';
 import bcrypt from 'bcryptjs';
+import { PasswordSchema } from '@/lib/validators';
 
 export async function POST(req: Request) {
     const session = await auth();
@@ -12,8 +13,9 @@ export async function POST(req: Request) {
     if (!currentPassword || !newPassword) {
         return NextResponse.json({ error: '현재 비밀번호와 새 비밀번호를 입력하세요.' }, { status: 400 });
     }
-    if (newPassword.length < 8) {
-        return NextResponse.json({ error: '새 비밀번호는 최소 8자 이상이어야 합니다.' }, { status: 400 });
+    const pwResult = PasswordSchema.safeParse(newPassword);
+    if (!pwResult.success) {
+        return NextResponse.json({ error: pwResult.error.errors[0]?.message ?? '비밀번호 조건을 확인하세요.' }, { status: 400 });
     }
 
     const user = await prisma.user.findUnique({ where: { email: session.user.email! } });

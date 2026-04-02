@@ -44,12 +44,13 @@ export async function POST(req: Request) {
             data: { used: true },
         });
 
-        // Create new token (expires in 1 hour)
+        // Create new token (expires in 1 hour) — store SHA-256 hash only
         const token = crypto.randomBytes(32).toString('hex');
+        const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
         await prisma.passwordResetToken.create({
             data: {
                 userId: user.id,
-                token,
+                token: tokenHash,
                 expiresAt: new Date(Date.now() + 60 * 60 * 1000),
             },
         });

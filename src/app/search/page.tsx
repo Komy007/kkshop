@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Search as SearchIcon, X, Star } from 'lucide-react';
+import { ArrowLeft, Search as SearchIcon, X, Star, ChevronDown } from 'lucide-react';
 import { useAppStore, useSafeAppStore } from '@/store/useAppStore';
 import { type TranslatedProduct } from '@/lib/api';
 import Footer from '@/components/Footer';
@@ -99,12 +99,29 @@ export default function SearchPage() {
     const t = searchTranslations[lang];
     const categories = popularCategories[lang];
 
+    const PAGE_SIZE = 24;
+    const sortLabels: Record<string, string> = {
+        '': lang === 'ko' ? '추천순' : lang === 'km' ? 'ផ្សេងៗ' : lang === 'zh' ? '推荐' : 'Recommended',
+        newest: lang === 'ko' ? '최신순' : lang === 'km' ? 'ថ្មីបំផុត' : lang === 'zh' ? '最新' : 'Newest',
+        price_asc: lang === 'ko' ? '낮은 가격순' : lang === 'km' ? 'តម្លៃទាប→ខ្ពស់' : lang === 'zh' ? '价格低→高' : 'Price: Low→High',
+        price_desc: lang === 'ko' ? '높은 가격순' : lang === 'km' ? 'តម្លៃខ្ពស់→ទាប' : lang === 'zh' ? '价格高→低' : 'Price: High→Low',
+        rating: lang === 'ko' ? '평점순' : lang === 'km' ? 'ពិន្ទុខ្ពស់' : lang === 'zh' ? '评分最高' : 'Top Rated',
+    };
+    const loadMoreLabel = lang === 'ko' ? '더 보기' : lang === 'km' ? 'ផ្ទុកបន្ថែម' : lang === 'zh' ? '加载更多' : 'Load More';
+
     const [query, setQuery] = useState('');
     const [displayed, setDisplayed] = useState<TranslatedProduct[]>([]);
     const [total, setTotal] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [recentSearches, setRecentSearches] = useState<string[]>([]);
+    const [sort, setSort] = useState('');
+    const [showSort, setShowSort] = useState(false);
+    const [page, setPage] = useState(0);
+    const [suggestions, setSuggestions] = useState<{ brands: string[]; products: { id: string; name: string }[] }>({ brands: [], products: [] });
+    const [showSuggestions, setShowSuggestions] = useState(false);
     const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+    const suggestRef = useRef<ReturnType<typeof setTimeout>>();
 
     // Load recent searches from localStorage
     useEffect(() => {
@@ -114,39 +131,73 @@ export default function SearchPage() {
         }
     }, []);
 
-    // Server-side search with debounce
-    const fetchProducts = useCallback(async (searchTerm: string) => {
-        setIsLoading(true);
+    // Server-side search
+    const fetchProducts = useCallback(async (searchTerm: string, skip: number, append: boolean) => {
+        append ? setIsLoadingMore(true) : setIsLoading(true);
         try {
-            const params = new URLSearchParams({ lang: language, limit: '100' });
+            const params = new URLSearchParams({ lang: language, limit: String(PAGE_SIZE), skip: String(skip) });
             if (searchTerm.trim()) params.set('search', searchTerm.trim());
+            if (sort) params.set('sort', sort);
             const res = await fetch(`/api/products?${params}`);
             if (res.ok) {
                 const json = await res.json();
                 const list: TranslatedProduct[] = Array.isArray(json) ? json : (json.products ?? []);
-                setDisplayed(list);
+                setDisplayed(prev => append ? [...prev, ...list] : list);
                 setTotal(json.total ?? list.length);
             }
         } catch (e) {
             console.error('Failed to fetch products', e);
         } finally {
             setIsLoading(false);
+            setIsLoadingMore(false);
         }
-    }, [language]);
+    }, [language, sort]);
 
-    // Initial load
+    // Initial load & on sort change
     useEffect(() => {
-        fetchProducts('');
-    }, [fetchProducts]);
+        setPage(0);
+        fetchProducts(query, 0, false);
+    }, [sort, language]);
 
     // Debounced search on keystroke (300ms)
     useEffect(() => {
         if (debounceRef.current) clearTimeout(debounceRef.current);
         debounceRef.current = setTimeout(() => {
-            fetchProducts(query);
+            setPage(0);
+            fetchProducts(query, 0, false);
+            setShowSuggestions(false);
         }, 300);
         return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
-    }, [query, fetchProducts]);
+    }, [query]);
+
+    // Autocomplete suggestions (150ms debounce, fires faster)
+    useEffect(() => {
+        if (suggestRef.current) clearTimeout(suggestRef.current);
+        if (!query.trim() || query.trim().length < 2) {
+            setSuggestions({ brands: [], products: [] });
+            setShowSuggestions(false);
+            return;
+        }
+        suggestRef.current = setTimeout(async () => {
+            try {
+                const res = await fetch(`/api/products/suggest?q=${encodeURIComponent(query.trim())}&lang=${language}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setSuggestions(data);
+                    if (data.brands.length > 0 || data.products.length > 0) {
+                        setShowSuggestions(true);
+                    }
+                }
+            } catch { /* ignore */ }
+        }, 150);
+        return () => { if (suggestRef.current) clearTimeout(suggestRef.current); };
+    }, [query, language]);
+
+    const handleLoadMore = () => {
+        const nextPage = page + 1;
+        setPage(nextPage);
+        fetchProducts(query, nextPage * PAGE_SIZE, true);
+    };
 
     const saveSearch = (q: string) => {
         if (!q.trim()) return;
@@ -189,6 +240,40 @@ export default function SearchPage() {
                         </button>
                     )}
                 </form>
+
+                {/* Autocomplete Suggestions */}
+                {showSuggestions && (suggestions.brands.length > 0 || suggestions.products.length > 0) && (
+                    <div className="absolute top-full left-0 right-0 mt-1 mx-4 bg-white border border-gray-200 rounded-xl shadow-xl z-50 py-2 max-h-[300px] overflow-y-auto">
+                        {suggestions.brands.length > 0 && (
+                            <div className="px-3 pb-1">
+                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Brands</p>
+                                {suggestions.brands.map(b => (
+                                    <button
+                                        key={b}
+                                        onClick={() => { setQuery(b); setShowSuggestions(false); }}
+                                        className="block w-full text-left px-2 py-1.5 text-sm font-semibold text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors"
+                                    >
+                                        🏷️ {b}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                        {suggestions.products.length > 0 && (
+                            <div className="px-3 pt-1 border-t border-gray-100">
+                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Products</p>
+                                {suggestions.products.map(p => (
+                                    <a
+                                        key={p.id}
+                                        href={`/products/${p.id}`}
+                                        className="block w-full text-left px-2 py-1.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors line-clamp-1"
+                                    >
+                                        {p.name}
+                                    </a>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
 
             {/* Recent Searches */}
@@ -232,14 +317,38 @@ export default function SearchPage() {
 
             {/* Product Grid — always shown (all products or filtered) */}
             <div className="bg-gray-50 min-h-screen pt-4 pb-20">
-                {query && (
-                    <div className="px-4 mb-3 text-sm font-bold text-gray-600">
-                        <span className="text-black text-base">'{query}'</span> — {displayed.length} {t.productsFound}
+                <div className="px-4 mb-3 flex items-center justify-between">
+                    {query ? (
+                        <div className="text-sm font-bold text-gray-600">
+                            <span className="text-black text-base">&apos;{query}&apos;</span> — {total} {t.productsFound}
+                        </div>
+                    ) : (
+                        <div className="text-sm font-extrabold text-gray-900">{t.allProducts} ({total})</div>
+                    )}
+                    {/* Sort dropdown */}
+                    <div className="relative">
+                        <button
+                            onClick={() => setShowSort(!showSort)}
+                            className="flex items-center gap-1 px-3 py-1.5 rounded-full border border-gray-200 text-xs font-bold text-gray-700 hover:border-gray-400 bg-white"
+                        >
+                            {sortLabels[sort] || sortLabels['']}
+                            <ChevronDown className="w-3 h-3" />
+                        </button>
+                        {showSort && (
+                            <div className="absolute top-full right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 py-1 min-w-[160px]">
+                                {Object.entries(sortLabels).map(([key, label]) => (
+                                    <button
+                                        key={key}
+                                        onClick={() => { setSort(key); setShowSort(false); }}
+                                        className={`w-full text-left px-4 py-2 text-sm font-medium hover:bg-gray-50 ${sort === key ? 'text-blue-600 bg-blue-50' : 'text-gray-700'}`}
+                                    >
+                                        {label}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
                     </div>
-                )}
-                {!query && (
-                    <div className="px-4 mb-3 text-sm font-extrabold text-gray-900">{t.allProducts} ({displayed.length})</div>
-                )}
+                </div>
 
                 {isLoading ? (
                     <div className="flex justify-center py-20">
@@ -251,6 +360,7 @@ export default function SearchPage() {
                         <p className="text-gray-500 font-medium">'{query}' {t.noResults}</p>
                     </div>
                 ) : (
+                    <>
                     <div className="px-4 max-w-7xl mx-auto grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
                         {displayed.map((product) => (
                             <Link key={product.id} href={`/products/${product.id}`} className="group flex flex-col bg-white rounded-2xl overflow-hidden hover:shadow-lg transition-all border border-gray-200">
@@ -322,8 +432,26 @@ export default function SearchPage() {
                             </Link>
                         ))}
                     </div>
+                    {/* Load More - inside fragment */}
+                    {displayed.length < total && (
+                        <div className="flex justify-center mt-6">
+                            <button
+                                onClick={handleLoadMore}
+                                disabled={isLoadingMore}
+                                className="px-8 py-3 bg-white border border-gray-300 rounded-full text-gray-700 font-bold text-sm hover:bg-gray-50 shadow-sm disabled:opacity-50"
+                            >
+                                {isLoadingMore ? (
+                                    <div className="w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin mx-auto" />
+                                ) : (
+                                    `${loadMoreLabel} (${displayed.length}/${total})`
+                                )}
+                            </button>
+                        </div>
+                    )}
+                    </>
                 )}
             </div>
+            {showSort && <div className="fixed inset-0 z-30" onClick={() => setShowSort(false)} />}
             <Footer />
         </main>
     );

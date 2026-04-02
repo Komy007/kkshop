@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/api';
 import { auth } from '@/auth';
 import bcrypt from 'bcryptjs';
+import { PasswordSchema } from '@/lib/validators';
 
 export async function POST(req: Request) {
     const session = await auth();
@@ -13,8 +14,9 @@ export async function POST(req: Request) {
     if (!currentPassword || !newPassword) {
         return NextResponse.json({ error: 'missing_fields' }, { status: 400 });
     }
-    if (newPassword.length < 8) {
-        return NextResponse.json({ error: 'password_too_short' }, { status: 400 });
+    const pwResult = PasswordSchema.safeParse(newPassword);
+    if (!pwResult.success) {
+        return NextResponse.json({ error: pwResult.error.errors[0]?.message ?? 'password_too_weak' }, { status: 400 });
     }
 
     const user = await prisma.user.findUnique({ where: { id: session.user.id } });

@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/api';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
+import { PasswordSchema } from '@/lib/validators';
 
 export async function POST(req: Request) {
     try {
@@ -10,15 +12,19 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Token and password are required.' }, { status: 400 });
         }
 
-        if (password.length < 6) {
-            return NextResponse.json({ error: 'Password must be at least 6 characters.' }, { status: 400 });
+        const pwResult = PasswordSchema.safeParse(password);
+        if (!pwResult.success) {
+            return NextResponse.json({ error: pwResult.error.errors[0]?.message ?? 'Invalid password' }, { status: 400 });
         }
 
         const hashedPassword = await bcrypt.hash(password, 12);
 
+        // Hash the incoming token to match stored SHA-256 hash
+        const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
         // Atomic: claim the token first with conditional update to prevent race conditions
         const claimed = await prisma.passwordResetToken.updateMany({
-            where: { token, used: false, expiresAt: { gt: new Date() } },
+            where: { token: tokenHash, used: false, expiresAt: { gt: new Date() } },
             data: { used: true },
         });
 
@@ -28,7 +34,7 @@ export async function POST(req: Request) {
 
         // Token is now claimed — find the userId and update password
         const record = await prisma.passwordResetToken.findUnique({
-            where: { token },
+            where: { token: tokenHash },
             select: { userId: true },
         });
 

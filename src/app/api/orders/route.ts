@@ -56,7 +56,7 @@ export async function POST(request: Request) {
             : 0.01;
 
         const pts = parseInt(pointsUsed) || 0;
-        if (pts > user.pointBalance) {
+        if (pts > 0 && pts > user.pointBalance) {
             return NextResponse.json({ error: 'Not enough points' }, { status: 400 });
         }
 
@@ -332,12 +332,16 @@ export async function POST(request: Request) {
                 }
             }
 
-            // 3. Deduct Points if used (update 반환값으로 balanceAfter 계산 — stale read 방지)
+            // 3. Deduct Points if used (atomic decrement + negative balance guard)
             if (effectivePts > 0) {
                 const afterDeduct = await tx.user.update({
                     where: { id: userId },
                     data: { pointBalance: { decrement: effectivePts } }
                 });
+                // Race condition guard: if concurrent orders depleted points, rollback
+                if (afterDeduct.pointBalance < 0) {
+                    throw new Error('Insufficient points (concurrent deduction detected)');
+                }
                 await tx.userPoint.create({
                     data: {
                         userId,

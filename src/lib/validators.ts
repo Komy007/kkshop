@@ -41,6 +41,26 @@ export const CreateOrderSchema = z.object({
     pointsUsed:     z.number().int().min(0).default(0),
 });
 
+// ── 비밀번호 공통 검증 (모든 엔드포인트에서 사용) ────────────────────────────
+export const PasswordSchema = z.string()
+    .min(8, '비밀번호는 8자 이상이어야 합니다')
+    .max(72, '비밀번호는 72자 이하이어야 합니다')
+    .regex(/[a-zA-Z]/, '영문자를 포함해야 합니다')
+    .regex(/[0-9]/, '숫자를 포함해야 합니다');
+
+// ── 셀러(공급자) 등록 ───────────────────────────────────────────────────────
+export const SupplierRegisterSchema = z.object({
+    companyName:     z.string().min(2, '회사명은 2자 이상이어야 합니다').max(100).trim(),
+    brandName:       z.string().max(100).trim().optional().nullable(),
+    country:         z.string().max(50).trim().optional().nullable(),
+    phone:           z.string().min(7, '전화번호를 입력하세요').max(30).trim().optional().nullable(),
+    contactEmail:    z.string().email('올바른 이메일 주소를 입력하세요').max(255),
+    description:     z.string().max(2000).trim().optional().nullable(),
+    ceoName:         z.string().max(100).trim().optional().nullable(),
+    businessNumber:  z.string().max(50).trim().optional().nullable(),
+    businessAddress: z.string().max(255).trim().optional().nullable(),
+});
+
 // ── 반품 요청 (고객) ──────────────────────────────────────────────────────────
 export const ReturnRequestSchema = z.object({
     reason: z.string()
