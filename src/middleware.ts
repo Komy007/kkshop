@@ -143,9 +143,11 @@ export default middleware((req: any) => {
 }) as any;
 
 // Specify which routes the middleware should run on
-// Include /api/admin/* to enforce 2FA on admin APIs
+// 1) All pages (excluding static assets)
+// 2) /api/admin/* explicitly (for 2FA enforcement) — but NOT /api/auth/*
 export const config = {
     matcher: [
-        '/((?!_next/static|_next/image|favicon.ico|.*\\.png|.*\\.webp|.*\\.svg|.*\\.jpg|.*\\.jpeg).*)',
+        '/((?!api|_next/static|_next/image|favicon.ico|.*\\.png|.*\\.webp|.*\\.svg|.*\\.jpg|.*\\.jpeg).*)',
+        '/api/admin/:path*',
     ],
 }
