@@ -297,17 +297,21 @@ export default function ProductDetailClient() {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
 
     // Update selectedOption automatically based on qty if options exist
+    // Only select an option if qty actually meets the minQty threshold
     useEffect(() => {
         if (!product || !product.options || product.options.length === 0) return;
 
-        let bestOption = product.options[0];
+        // Find the best matching option: qty must be >= minQty AND <= maxQty
+        let bestOption: (typeof product.options)[0] | null = null;
         for (const opt of product.options) {
             if (qty >= opt.minQty && (!opt.maxQty || qty <= opt.maxQty)) {
                 bestOption = opt;
             }
         }
-        if (bestOption && bestOption.id !== selectedOptionId) {
-            setSelectedOptionId(bestOption.id);
+        // If no option matches current qty (e.g. qty=1 but minQty=3), clear selection
+        const newId = bestOption ? bestOption.id : '';
+        if (newId !== selectedOptionId) {
+            setSelectedOptionId(newId);
         }
     }, [qty, product]);
 
@@ -547,15 +551,18 @@ export default function ProductDetailClient() {
         if (!product) return;
         const productImage = selectedImageUrl || product.imageUrl || 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&q=80&w=800';
 
-        // Calculate price: variant price > hot sale price > option discount > regular
+        // Calculate price: variant price > option discount (only if qty qualifies) > hot sale > regular
         let appliedPrice = product.priceUsd;
         const selectedVariant = product.variants?.find(v => v.id === selectedVariantId);
         if (selectedVariant?.priceUsd) {
             appliedPrice = selectedVariant.priceUsd;
         } else if (product.options && product.options.length > 0) {
             const opt = product.options.find((o: any) => o.id === selectedOptionId);
-            if (opt && opt.discountPct > 0) {
+            // Only apply discount if qty actually meets the option's minQty requirement
+            if (opt && opt.discountPct > 0 && qty >= opt.minQty && (!opt.maxQty || qty <= opt.maxQty)) {
                 appliedPrice = product.priceUsd * (1 - opt.discountPct / 100);
+            } else if (product.isHotSale && product.hotSalePrice) {
+                appliedPrice = product.hotSalePrice;
             }
         } else if (product.isHotSale && product.hotSalePrice) {
             appliedPrice = product.hotSalePrice;
@@ -617,9 +624,17 @@ export default function ProductDetailClient() {
         ? product.images
         : product.imageUrl ? [{ id: 'main', url: product.imageUrl, altText: null, sortOrder: 0 }] : [];
     const selectedVariant = product.variants?.find(v => v.id === selectedVariantId);
-    const displayPrice = selectedVariant?.priceUsd ?? (product.isHotSale && product.hotSalePrice ? product.hotSalePrice : product.priceUsd);
-    const isHotSaleDisplay = !selectedVariant?.priceUsd && product.isHotSale && !!product.hotSalePrice;
     const effectiveStock = selectedVariant ? selectedVariant.stockQty : product.stockQty;
+
+    // displayPrice: only apply option discount if qty meets the option's minQty
+    const activeOption = selectedOptionId
+        ? (product as any).options?.find((o: any) => o.id === selectedOptionId && qty >= o.minQty && (!o.maxQty || qty <= o.maxQty))
+        : null;
+    const displayPrice = selectedVariant?.priceUsd
+        ?? (activeOption && activeOption.discountPct > 0
+            ? product.priceUsd * (1 - activeOption.discountPct / 100)
+            : (product.isHotSale && product.hotSalePrice ? product.hotSalePrice : product.priceUsd));
+    const isHotSaleDisplay = !selectedVariant?.priceUsd && !activeOption && product.isHotSale && !!product.hotSalePrice;
 
     return (
         <>
@@ -964,24 +979,38 @@ export default function ProductDetailClient() {
                         </div>
 
                         {/* Quantity Selector */}
-                        <div className="flex items-center gap-4">
-                            <span className="text-sm font-semibold text-gray-500">{t.qty}</span>
-                            <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-                                <button
-                                    onClick={() => setQty(Math.max(1, qty - 1))}
-                                    className="px-3 py-2 text-gray-400 hover:bg-gray-50 transition-colors"
-                                >
-                                    <Minus className="w-4 h-4 text-gray-700" />
-                                </button>
-                                <span className="px-4 py-2 text-gray-900 font-bold min-w-[3rem] text-center bg-white">{qty}</span>
-                                <button
-                                    onClick={() => setQty(qty + 1)}
-                                    className="px-3 py-2 text-gray-400 hover:bg-gray-50 transition-colors"
-                                >
-                                    <Plus className="w-4 h-4 text-gray-700" />
-                                </button>
-                            </div>
-                        </div>
+                        {(() => {
+                            // Compute overall max qty: minimum of stock and lowest maxQty across options
+                            const optionMaxQty = (product as any).options && (product as any).options.length > 0
+                                ? Math.min(...(product as any).options.filter((o: any) => o.maxQty).map((o: any) => o.maxQty))
+                                : Infinity;
+                            const maxAllowed = Math.min(effectiveStock, isFinite(optionMaxQty) ? optionMaxQty : effectiveStock);
+                            return (
+                                <div className="flex items-center gap-4">
+                                    <span className="text-sm font-semibold text-gray-500">{t.qty}</span>
+                                    <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                                        <button
+                                            onClick={() => setQty(Math.max(1, qty - 1))}
+                                            disabled={qty <= 1}
+                                            className="px-3 py-2 text-gray-400 hover:bg-gray-50 transition-colors disabled:opacity-30"
+                                        >
+                                            <Minus className="w-4 h-4 text-gray-700" />
+                                        </button>
+                                        <span className="px-4 py-2 text-gray-900 font-bold min-w-[3rem] text-center bg-white">{qty}</span>
+                                        <button
+                                            onClick={() => setQty(Math.min(maxAllowed, qty + 1))}
+                                            disabled={qty >= maxAllowed}
+                                            className="px-3 py-2 text-gray-400 hover:bg-gray-50 transition-colors disabled:opacity-30"
+                                        >
+                                            <Plus className="w-4 h-4 text-gray-700" />
+                                        </button>
+                                    </div>
+                                    {isFinite(optionMaxQty) && (
+                                        <span className="text-xs text-gray-400">Max {optionMaxQty}</span>
+                                    )}
+                                </div>
+                            );
+                        })()}
 
                         {/* Product Options */}
                         {(product as any).options && (product as any).options.length > 0 && (
