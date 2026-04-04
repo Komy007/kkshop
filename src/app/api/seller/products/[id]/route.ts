@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/api';
 import { auth } from '@/auth';
+import { Translate } from '@google-cloud/translate/build/src/v2';
+
+const translate = new Translate();
 
 export const dynamic = 'force-dynamic';
 
@@ -134,6 +137,41 @@ export async function PATCH(
         variants,            // full variants replacement (undefined = no change)
     } = body;
 
+    // Pre-translate option labels BEFORE entering the transaction
+    let translatedOptions: any[] = [];
+    if (Array.isArray(options) && options.length > 0) {
+        translatedOptions = await Promise.all(
+            options.map(async (opt: any, i: number) => {
+                let labelEn = opt.labelKo || null;
+                let labelKm = opt.labelKo || null;
+                let labelZh = opt.labelKo || null;
+                if (opt.labelKo) {
+                    try {
+                        const [resEn, resKm, resZh] = await Promise.all([
+                            translate.translate(opt.labelKo, 'en'),
+                            translate.translate(opt.labelKo, 'km'),
+                            translate.translate(opt.labelKo, 'zh'),
+                        ]);
+                        labelEn = resEn[0] || labelEn;
+                        labelKm = resKm[0] || labelKm;
+                        labelZh = resZh[0] || labelZh;
+                    } catch { /* fallback to labelKo */ }
+                }
+                return {
+                    minQty: parseInt(opt.minQty) || 1,
+                    maxQty: opt.maxQty ? parseInt(opt.maxQty) : null,
+                    discountPct: parseFloat(opt.discountPct) || 0,
+                    freeShipping: Boolean(opt.freeShipping),
+                    labelKo: opt.labelKo || null,
+                    labelEn,
+                    labelKm,
+                    labelZh,
+                    sortOrder: i,
+                };
+            })
+        );
+    }
+
     await prisma.$transaction(async (tx) => {
         // Update Korean translation (base language for seller)
         if (name !== undefined) {
@@ -217,21 +255,12 @@ export async function PATCH(
             data: updateData,
         });
 
-        // Replace options if provided
+        // Replace options if provided (labels pre-translated above)
         if (options !== undefined) {
             await tx.productOption.deleteMany({ where: { productId: product.id } });
-            if (Array.isArray(options) && options.length > 0) {
+            if (translatedOptions.length > 0) {
                 await tx.productOption.createMany({
-                    data: options.map((opt: any, i: number) => ({
-                        productId: product.id,
-                        minQty: parseInt(opt.minQty) || 1,
-                        maxQty: opt.maxQty ? parseInt(opt.maxQty) : null,
-                        discountPct: parseFloat(opt.discountPct) || 0,
-                        freeShipping: Boolean(opt.freeShipping),
-                        labelKo: opt.labelKo || null,
-                        labelEn: opt.labelKo || null, // auto-translated later by admin
-                        sortOrder: i,
-                    })),
+                    data: translatedOptions.map(opt => ({ ...opt, productId: product.id })),
                 });
             }
         }

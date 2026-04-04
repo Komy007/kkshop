@@ -259,6 +259,41 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
             }
         }
 
+        // Pre-translate option labels BEFORE entering the transaction (external API calls)
+        let translatedOptions: any[] = [];
+        if (options.length > 0) {
+            translatedOptions = await Promise.all(
+                options.map(async (opt: any, i: number) => {
+                    let labelEn = opt.labelEn || opt.labelKo || null;
+                    let labelKm = opt.labelKm || opt.labelKo || null;
+                    let labelZh = opt.labelZh || opt.labelKo || null;
+                    if (opt.labelKo) {
+                        try {
+                            const [resEn, resKm, resZh] = await Promise.all([
+                                translate.translate(opt.labelKo, 'en'),
+                                translate.translate(opt.labelKo, 'km'),
+                                translate.translate(opt.labelKo, 'zh'),
+                            ]);
+                            labelEn = resEn[0] || labelEn;
+                            labelKm = resKm[0] || labelKm;
+                            labelZh = resZh[0] || labelZh;
+                        } catch { /* fallback to labelKo if translation fails */ }
+                    }
+                    return {
+                        minQty: parseInt(opt.minQty) || 1,
+                        maxQty: opt.maxQty ? parseInt(opt.maxQty) : null,
+                        discountPct: parseFloat(opt.discountPct) || 0,
+                        freeShipping: Boolean(opt.freeShipping),
+                        labelKo: opt.labelKo || null,
+                        labelEn,
+                        labelKm,
+                        labelZh,
+                        sortOrder: i,
+                    };
+                })
+            );
+        }
+
         await prisma.$transaction(async (tx) => {
             // 1. Update product core fields
             if (Object.keys(productData).length > 0) {
@@ -326,20 +361,11 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
                 }
             }
 
-            // 5. Replace options if provided
-            if (options.length > 0) {
+            // 5. Replace options if provided (labels pre-translated above)
+            if (translatedOptions.length > 0) {
                 await tx.productOption.deleteMany({ where: { productId } });
                 await tx.productOption.createMany({
-                    data: options.map((opt: any, i: number) => ({
-                        productId,
-                        minQty: parseInt(opt.minQty) || 1,
-                        maxQty: opt.maxQty ? parseInt(opt.maxQty) : null,
-                        discountPct: parseFloat(opt.discountPct) || 0,
-                        freeShipping: Boolean(opt.freeShipping),
-                        labelKo: opt.labelKo || null,
-                        labelEn: opt.labelEn || null,
-                        sortOrder: i,
-                    })),
+                    data: translatedOptions.map(opt => ({ ...opt, productId })),
                 });
             }
         });
