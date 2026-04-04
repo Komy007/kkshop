@@ -3,9 +3,19 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Building2, ArrowRight, CheckCircle, Loader2, Globe } from 'lucide-react';
+import { useSafeAppStore } from '@/store/useAppStore';
+
+const benefitsI18n: Record<string, { market: { title: string; desc: string }; lang: { title: string; desc: string }; commission: { title: string; desc: string } }> = {
+    ko: { market: { title: '캄보디아 시장', desc: '현지 고객 직접 접근' }, lang: { title: '4개국어 지원', desc: '한/영/크메르/중문' }, commission: { title: '7%~ 협의 수수료', desc: '투명한 정산 시스템' } },
+    en: { market: { title: 'Cambodia Market', desc: 'Direct access to local customers' }, lang: { title: '4 Languages', desc: 'KO / EN / KM / ZH' }, commission: { title: 'From 7% Commission', desc: 'Transparent settlement' } },
+    km: { market: { title: 'ទីផ្សារកម្ពុជា', desc: 'ចូលដំណើរការអតិថិជនផ្ទាល់' }, lang: { title: '4 ភាសា', desc: 'កូរ៉េ/អង់គ្លេស/ខ្មែរ/ចិន' }, commission: { title: 'ពី 7% កម្រៃជើងសា', desc: 'ប្រព័ន្ធទូទាត់តម្លាភាព' } },
+    zh: { market: { title: '柬埔寨市场', desc: '直接触达本地客户' }, lang: { title: '4种语言', desc: '韩/英/高棉/中文' }, commission: { title: '7%起 佣金可协商', desc: '透明结算体系' } },
+};
 
 export default function SellerRegisterPage() {
     const router = useRouter();
+    const store = useSafeAppStore();
+    const lang = store?.language || 'en';
     const [step, setStep] = useState<'form' | 'success'>('form');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -89,11 +99,14 @@ export default function SellerRegisterPage() {
 
                 {/* Benefits */}
                 <div className="grid grid-cols-3 gap-4 mb-8">
-                    {[
-                        { icon: '🌏', title: '캄보디아 시장', desc: '현지 고객 직접 접근' },
-                        { icon: '🌐', title: '4개국어 지원', desc: '한/영/크메르/중문' },
-                        { icon: '💰', title: '25~35% 수수료', desc: '투명한 정산 시스템' },
-                    ].map(b => (
+                    {(() => {
+                        const b = benefitsI18n[lang] || benefitsI18n.en;
+                        return [
+                            { icon: '🌏', ...b.market },
+                            { icon: '🌐', ...b.lang },
+                            { icon: '💰', ...b.commission },
+                        ];
+                    })().map(b => (
                         <div key={b.title} className="bg-white rounded-xl p-4 text-center shadow-sm border border-gray-100">
                             <div className="text-2xl mb-2">{b.icon}</div>
                             <div className="text-sm font-semibold text-gray-900">{b.title}</div>
