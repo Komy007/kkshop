@@ -7,6 +7,7 @@ import {
     Droplets, Star, Sparkles, RefreshCw, DollarSign, AlertTriangle, ArrowLeft,
     Flame, CheckCircle, Plus,
 } from 'lucide-react';
+import DraggableImageGrid from '@/components/DraggableImageGrid';
 import { useTranslations } from '@/i18n/useTranslations';
 
 interface ImageItem { id?: string; url: string; isNew?: boolean; file?: File; preview?: string; }
@@ -243,6 +244,26 @@ export default function EditProductPage() {
         });
     };
 
+    const reorderExistingImages = (from: number, to: number) => {
+        setExistingImages(prev => {
+            const visible = prev.filter(img => !deleteImageIds.includes(img.id));
+            const [moved] = visible.splice(from, 1);
+            visible.splice(to, 0, moved);
+            // Re-insert deleted items at original positions isn't needed; just rebuild full list
+            const deletedItems = prev.filter(img => deleteImageIds.includes(img.id));
+            return [...visible, ...deletedItems];
+        });
+    };
+
+    const reorderNewImages = (from: number, to: number) => {
+        setNewImages(prev => {
+            const arr = [...prev];
+            const [moved] = arr.splice(from, 1);
+            arr.splice(to, 0, moved);
+            return arr;
+        });
+    };
+
     const uploadNewImages = async (): Promise<string[]> => {
         const uploaded: string[] = [];
         for (const img of newImages) {
@@ -383,40 +404,36 @@ export default function EditProductPage() {
                         {/* Existing images */}
                         {existingImages.filter(img => !deleteImageIds.includes(img.id)).length > 0 && (
                             <div>
-                                <p className="text-xs text-gray-500 mb-2">현재 이미지 (클릭하여 삭제)</p>
-                                <div className="grid grid-cols-4 gap-3">
-                                    {existingImages.filter(img => !deleteImageIds.includes(img.id)).map((img, i) => (
-                                        <div key={img.id} className="relative group aspect-square">
-                                            <img src={img.url.startsWith('http') || img.url.startsWith('/') ? img.url : `/${img.url}`}
-                                                className="w-full h-full object-cover rounded-xl border border-gray-200"
-                                                onError={(e) => {
-                                                    (e.target as HTMLImageElement).src = 'https://placehold.co/400x400?text=Image+Load+Error';
-                                                }} />
-                                            {i === 0 && <span className="absolute top-2 left-2 bg-blue-600 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">{t.common.confirm === '확인' ? '대표' : 'Main'}</span>}
-                                            <button type="button" onClick={() => removeExistingImage(img.id)}
-                                                className="absolute top-2 right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow">
-                                                <X className="w-3.5 h-3.5" />
-                                            </button>
-                                        </div>
-                                    ))}
-                                </div>
+                                <p className="text-xs text-gray-500 mb-2">현재 이미지 (드래그하여 순서 변경)</p>
+                                <DraggableImageGrid
+                                    images={existingImages.filter(img => !deleteImageIds.includes(img.id)).map(img => ({
+                                        id: img.id,
+                                        src: img.url.startsWith('http') || img.url.startsWith('/') ? img.url : `/${img.url}`,
+                                    }))}
+                                    onReorder={reorderExistingImages}
+                                    onRemove={(idx) => {
+                                        const visible = existingImages.filter(img => !deleteImageIds.includes(img.id));
+                                        if (visible[idx]) removeExistingImage(visible[idx].id);
+                                    }}
+                                    coverLabel={t.common.confirm === '확인' ? '대표' : 'Main'}
+                                    layout="grid4"
+                                />
                             </div>
                         )}
                         {/* New images to upload */}
                         {newImages.length > 0 && (
                             <div>
-                                <p className="text-xs text-blue-500 mb-2">추가할 이미지</p>
-                                <div className="grid grid-cols-4 gap-3">
-                                    {newImages.map((img, i) => (
-                                        <div key={i} className="relative group aspect-square">
-                                            <img src={img.preview} className="w-full h-full object-cover rounded-xl border border-blue-200" />
-                                            <button type="button" onClick={() => removeNewImage(i)}
-                                                className="absolute top-2 right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow">
-                                                <X className="w-3.5 h-3.5" />
-                                            </button>
-                                        </div>
-                                    ))}
-                                </div>
+                                <p className="text-xs text-blue-500 mb-2">추가할 이미지 (드래그하여 순서 변경)</p>
+                                <DraggableImageGrid
+                                    images={newImages.map((img, i) => ({
+                                        id: `new-${i}-${img.preview.slice(-8)}`,
+                                        src: img.preview,
+                                        borderColor: 'border-blue-200',
+                                    }))}
+                                    onReorder={reorderNewImages}
+                                    onRemove={removeNewImage}
+                                    layout="grid4"
+                                />
                             </div>
                         )}
                         {/* Upload area */}

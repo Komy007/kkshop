@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Save, Loader2, ChevronLeft, AlertCircle, CheckCircle, Upload, X, ImagePlus, Plus } from 'lucide-react';
+import DraggableImageGrid from '@/components/DraggableImageGrid';
 
 const SIZE_PRESETS = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Free Size'];
 
@@ -194,6 +195,20 @@ export default function SellerProductEditPage() {
         });
     };
 
+    const reorderExistingImages = (from: number, to: number) => {
+        setExistingImages(prev => {
+            const visible = prev.filter(img => !deleteImageIds.includes(img.id));
+            const [moved] = visible.splice(from, 1);
+            visible.splice(to, 0, moved);
+            const deleted = prev.filter(img => deleteImageIds.includes(img.id));
+            return [...visible, ...deleted];
+        });
+    };
+
+    const reorderNewImages = (from: number, to: number) => {
+        setNewImages(prev => { const a = [...prev]; const [m] = a.splice(from, 1); a.splice(to, 0, m); return a; });
+    };
+
     const set = (field: keyof ProductForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
         setForm(prev => ({ ...prev, [field]: e.target.value }));
 
@@ -349,37 +364,31 @@ export default function SellerProductEditPage() {
                         Product Images
                         <span className="text-[10px] font-normal text-gray-400 ml-1">{totalImages}/5 · 상품 이미지</span>
                     </h2>
-                    <p className="text-[11px] text-gray-400 mb-4 ml-3.5">Hover &amp; click × to remove · 상품 이미지 최대 10장</p>
-                    <div className="flex gap-3 flex-wrap">
-                        {visibleExisting.map((img, i) => (
-                            <div key={img.id} className="relative w-24 h-24 group">
-                                <img src={img.url} alt={`Image ${i + 1}`}
-                                    className="w-24 h-24 object-cover rounded-xl border border-gray-200"
-                                    onError={e => { (e.target as HTMLImageElement).src = 'https://placehold.co/96x96?text=Error'; }} />
-                                {i === 0 && (
-                                    <span className="absolute bottom-1 left-1 bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded font-bold">
-                                        Main · 대표
-                                    </span>
-                                )}
-                                <button type="button" onClick={() => removeExisting(img.id)}
-                                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center shadow opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <X className="w-3 h-3" />
-                                </button>
-                            </div>
-                        ))}
-                        {newImages.map((img, i) => (
-                            <div key={`new-${i}`} className="relative w-24 h-24 group">
-                                <img src={img.preview} alt="New"
-                                    className="w-24 h-24 object-cover rounded-xl border-2 border-teal-300" />
-                                <span className="absolute bottom-1 left-1 bg-teal-600 text-white text-[9px] px-1.5 py-0.5 rounded font-bold">
-                                    New · 신규
-                                </span>
-                                <button type="button" onClick={() => removeNew(i)}
-                                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center shadow">
-                                    <X className="w-3 h-3" />
-                                </button>
-                            </div>
-                        ))}
+                    <p className="text-[11px] text-gray-400 mb-4 ml-3.5">Drag to reorder · Hover × to remove · 상품 이미지 최대 10장</p>
+                    <div className="flex gap-3 flex-wrap items-start">
+                        {visibleExisting.length > 0 && (
+                            <DraggableImageGrid
+                                images={visibleExisting.map(img => ({ id: img.id, src: img.url }))}
+                                onReorder={reorderExistingImages}
+                                onRemove={(idx) => { if (visibleExisting[idx]) removeExisting(visibleExisting[idx].id); }}
+                                coverLabel="Main"
+                                layout="flex"
+                            />
+                        )}
+                        {newImages.length > 0 && (
+                            <DraggableImageGrid
+                                images={newImages.map((img, i) => ({
+                                    id: `new-${i}-${img.preview.slice(-8)}`,
+                                    src: img.preview,
+                                    badge: 'New · 신규',
+                                    badgeColor: 'bg-teal-600',
+                                    borderColor: 'border-teal-300 border-2',
+                                }))}
+                                onReorder={reorderNewImages}
+                                onRemove={removeNew}
+                                layout="flex"
+                            />
+                        )}
                         {totalImages < 5 && (
                             <button type="button" onClick={() => fileRef.current?.click()}
                                 className="w-24 h-24 border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center text-gray-400 hover:border-teal-400 hover:text-teal-600 transition-colors">

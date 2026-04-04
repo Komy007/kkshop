@@ -3,6 +3,7 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Save, Loader2, Globe, Upload, X, ImagePlus, Package, Tag, Leaf, Droplets, Star, Sparkles, RefreshCw, Plus } from 'lucide-react';
+import DraggableImageGrid from '@/components/DraggableImageGrid';
 import { useTranslations } from '@/i18n/useTranslations';
 
 interface ImageItem { file: File; preview: string; url?: string; }
@@ -131,6 +132,15 @@ export default function NewProductPage() {
         });
     };
 
+    const reorderImages = (from: number, to: number) => {
+        setImages(prev => {
+            const arr = [...prev];
+            const [moved] = arr.splice(from, 1);
+            arr.splice(to, 0, moved);
+            return arr;
+        });
+    };
+
     const uploadImages = async (): Promise<string[]> => {
         const uploaded: string[] = [];
         for (const img of images) {
@@ -232,14 +242,14 @@ export default function NewProductPage() {
                             </div>
                         )}
                         {images.length > 0 && (
-                            <div className={`grid grid-cols-3 gap-3 ${images.length < MAX_IMAGES ? 'mt-4' : ''}`}>
-                                {images.map((img, i) => (
-                                    <div key={i} className="relative group aspect-square">
-                                        <img src={img.preview} className="w-full h-full object-cover rounded-xl border border-gray-200" />
-                                        {i === 0 && <span className="absolute top-2 left-2 bg-blue-600 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">🌟 {n.images.cover}</span>}
-                                        <button type="button" onClick={() => removeImage(i)} className="absolute top-2 right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow"><X className="w-3.5 h-3.5" /></button>
-                                    </div>
-                                ))}
+                            <div className={images.length < MAX_IMAGES ? 'mt-4' : ''}>
+                                <DraggableImageGrid
+                                    images={images.map((img, i) => ({ id: `img-${i}-${img.preview.slice(-8)}`, src: img.preview }))}
+                                    onReorder={reorderImages}
+                                    onRemove={removeImage}
+                                    coverLabel={n.images.cover}
+                                    layout="grid3"
+                                />
                             </div>
                         )}
                     </div>

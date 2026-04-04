@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Upload, X, Loader2, Sparkles, Info, CheckCircle, Plus } from 'lucide-react';
+import DraggableImageGrid from '@/components/DraggableImageGrid';
 
 interface Category { id: string; slug: string; nameKo: string; nameEn?: string; parentId?: string | null; }
 
@@ -128,6 +129,11 @@ export default function SellerProductNewPage() {
         setPreviews(p => p.filter((_, idx) => idx !== i));
     };
 
+    const reorderImages = (from: number, to: number) => {
+        setImages(prev => { const a = [...prev]; const [m] = a.splice(from, 1); a.splice(to, 0, m); return a; });
+        setPreviews(prev => { const a = [...prev]; const [m] = a.splice(from, 1); a.splice(to, 0, m); return a; });
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!form.nameKo)     return alert('Product name is required. · 상품명을 입력해주세요.');
@@ -243,22 +249,17 @@ export default function SellerProductNewPage() {
             <form onSubmit={handleSubmit} className="space-y-4">
 
                 {/* ── Images ── */}
-                <Section title="📸 Product Images" sub="상품 이미지 — max 10 photos · 최대 10장">
-                    <div className="flex gap-3 flex-wrap">
-                        {previews.map((src, i) => (
-                            <div key={i} className="relative w-24 h-24">
-                                <img src={src} className="w-24 h-24 object-cover rounded-xl border" alt="" />
-                                <button type="button" onClick={() => removeImage(i)}
-                                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center shadow">
-                                    <X className="w-3 h-3" />
-                                </button>
-                                {i === 0 && (
-                                    <div className="absolute bottom-1 left-1 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded font-semibold">
-                                        Main · 대표
-                                    </div>
-                                )}
-                            </div>
-                        ))}
+                <Section title="📸 Product Images" sub="상품 이미지 — max 10 photos · 최대 10장 · drag to reorder">
+                    <div className="flex gap-3 flex-wrap items-start">
+                        {previews.length > 0 && (
+                            <DraggableImageGrid
+                                images={previews.map((src, i) => ({ id: `seller-img-${i}-${src.slice(-8)}`, src }))}
+                                onReorder={reorderImages}
+                                onRemove={removeImage}
+                                coverLabel="Main"
+                                layout="flex"
+                            />
+                        )}
                         {images.length < 10 && (
                             <button type="button" onClick={() => fileRef.current?.click()}
                                 className="w-24 h-24 border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center text-gray-400 hover:border-teal-400 hover:text-teal-600 transition-colors">
