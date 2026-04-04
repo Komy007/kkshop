@@ -57,6 +57,10 @@ const pdpTranslations: Record<string, any> = {
             off: (pct: number) => `${pct}% 할인`,
             freeShip: '무료배송',
             defaultLabel: (n: number) => `${n}개 이상 구매`,
+            selected: '선택됨',
+            selectHint: '클릭하면 자동으로 최소 수량이 설정됩니다',
+            saving: (pct: number, amount: string) => `${pct}% 할인 중 — ${amount} 절약`,
+            perUnit: '개당',
         },
     },
     en: {
@@ -107,6 +111,10 @@ const pdpTranslations: Record<string, any> = {
             off: (pct: number) => `${pct}% off`,
             freeShip: 'Free Shipping',
             defaultLabel: (n: number) => `Buy ${n}+`,
+            selected: 'Selected',
+            selectHint: 'Click to auto-set minimum quantity',
+            saving: (pct: number, amount: string) => `${pct}% off — Save ${amount}`,
+            perUnit: 'per unit',
         },
     },
     km: {
@@ -157,6 +165,10 @@ const pdpTranslations: Record<string, any> = {
             off: (pct: number) => `បញ្ចុះ ${pct}%`,
             freeShip: 'ដឹកដោយឥតគិតថ្លៃ',
             defaultLabel: (n: number) => `ទិញ ${n}+`,
+            selected: 'បានជ្រើស',
+            selectHint: 'ចុចដើម្បីកំណត់ចំនួនអប្បបរមាដោយស្វ័យប្រវត្តិ',
+            saving: (pct: number, amount: string) => `បញ្ចុះ ${pct}% — សន្សំ ${amount}`,
+            perUnit: 'ក្នុងមួយដុំ',
         },
     },
     zh: {
@@ -207,6 +219,10 @@ const pdpTranslations: Record<string, any> = {
             off: (pct: number) => `${pct}% 折扣`,
             freeShip: '免运费',
             defaultLabel: (n: number) => `购买 ${n}+`,
+            selected: '已选择',
+            selectHint: '点击后自动设置最低数量',
+            saving: (pct: number, amount: string) => `${pct}% 优惠 — 节省 ${amount}`,
+            perUnit: '每件',
         },
     },
 };
@@ -296,24 +312,11 @@ export default function ProductDetailClient() {
     const [qaMessage, setQaMessage] = useState({ type: '', text: '' });
     const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-    // Update selectedOption automatically based on qty if options exist
-    // Only select an option if qty actually meets the minQty threshold
+    // Clear selectedOptionId when product changes (e.g. navigation)
     useEffect(() => {
-        if (!product || !product.options || product.options.length === 0) return;
-
-        // Find the best matching option: qty must be >= minQty AND <= maxQty
-        let bestOption: (typeof product.options)[0] | null = null;
-        for (const opt of product.options) {
-            if (qty >= opt.minQty && (!opt.maxQty || qty <= opt.maxQty)) {
-                bestOption = opt;
-            }
-        }
-        // If no option matches current qty (e.g. qty=1 but minQty=3), clear selection
-        const newId = bestOption ? bestOption.id : '';
-        if (newId !== selectedOptionId) {
-            setSelectedOptionId(newId);
-        }
-    }, [qty, product]);
+        setSelectedOptionId('');
+        setQty(1);
+    }, [product?.id]);
 
     useEffect(() => {
         setMounted(true);
@@ -863,21 +866,49 @@ export default function ProductDetailClient() {
                         )}
 
                         {/* Price */}
-                        <div className="flex items-end gap-3">
-                            {isHotSaleDisplay && product.hotSalePrice ? (
-                                <>
-                                    <span className="text-4xl font-black text-red-500">{formatUsd(displayPrice)}</span>
-                                    <span className="text-xl font-bold text-gray-400 line-through pb-1">{formatUsd(product.priceUsd)}</span>
-                                </>
-                            ) : selectedVariant?.priceUsd && selectedVariant.priceUsd !== product.priceUsd ? (
-                                <>
-                                    <span className="text-4xl font-black text-brand-secondary">{formatUsd(selectedVariant.priceUsd)}</span>
-                                    <span className="text-xl font-bold text-gray-400 line-through pb-1">{formatUsd(product.priceUsd)}</span>
-                                </>
-                            ) : (
-                                <span className="text-4xl font-black text-brand-secondary">{formatUsd(displayPrice)}</span>
+                        <div className="flex flex-col gap-1">
+                            <div className="flex items-end gap-3">
+                                {activeOption && activeOption.discountPct > 0 ? (
+                                    <>
+                                        <span className="text-4xl font-black text-red-500">{formatUsd(displayPrice)}</span>
+                                        <span className="text-xl font-bold text-gray-400 line-through pb-1">{formatUsd(product.priceUsd)}</span>
+                                        <span className="text-gray-400 text-sm pb-1">USD</span>
+                                    </>
+                                ) : isHotSaleDisplay && product.hotSalePrice ? (
+                                    <>
+                                        <span className="text-4xl font-black text-red-500">{formatUsd(displayPrice)}</span>
+                                        <span className="text-xl font-bold text-gray-400 line-through pb-1">{formatUsd(product.priceUsd)}</span>
+                                        <span className="text-gray-400 text-sm pb-1">USD</span>
+                                    </>
+                                ) : selectedVariant?.priceUsd && selectedVariant.priceUsd !== product.priceUsd ? (
+                                    <>
+                                        <span className="text-4xl font-black text-brand-secondary">{formatUsd(selectedVariant.priceUsd)}</span>
+                                        <span className="text-xl font-bold text-gray-400 line-through pb-1">{formatUsd(product.priceUsd)}</span>
+                                        <span className="text-gray-400 text-sm pb-1">USD</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <span className="text-4xl font-black text-brand-secondary">{formatUsd(displayPrice)}</span>
+                                        <span className="text-gray-400 text-sm pb-1">USD</span>
+                                    </>
+                                )}
+                            </div>
+                            {/* Savings summary row — visible when bulk option is active */}
+                            {activeOption && activeOption.discountPct > 0 && (
+                                <div className="flex items-center gap-2">
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-red-50 border border-red-200 text-red-600 text-xs font-bold rounded-full">
+                                        🏷️ {t.option.saving(
+                                            activeOption.discountPct,
+                                            formatUsd((product.priceUsd - displayPrice) * qty)
+                                        )}
+                                    </span>
+                                    {activeOption.freeShipping && (
+                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-brand-primary/10 border border-brand-primary/30 text-brand-primary text-xs font-bold rounded-full">
+                                            🚚 {t.option.freeShip}
+                                        </span>
+                                    )}
+                                </div>
                             )}
-                            <span className="text-gray-400 text-sm pb-1">USD</span>
                         </div>
 
                         {/* Variant Selector */}
@@ -978,19 +1009,118 @@ export default function ProductDetailClient() {
                             </span>
                         </div>
 
+                        {/* Bulk Discount Options — prominent card buttons */}
+                        {(product as any).options && (product as any).options.length > 0 && (
+                            <div className="space-y-2">
+                                <span className="block text-sm font-bold text-gray-700">
+                                    🎁 {t.option.sectionTitle}
+                                </span>
+                                <div className="grid grid-cols-1 gap-2">
+                                    {(product as any).options.map((opt: any) => {
+                                        const isSelected = selectedOptionId === opt.id;
+                                        const discountedPrice = opt.discountPct > 0
+                                            ? product.priceUsd * (1 - opt.discountPct / 100)
+                                            : product.priceUsd;
+                                        return (
+                                            <button
+                                                key={opt.id}
+                                                type="button"
+                                                onClick={() => {
+                                                    if (isSelected) {
+                                                        setSelectedOptionId('');
+                                                        setQty(1);
+                                                    } else {
+                                                        setSelectedOptionId(opt.id);
+                                                        setQty(opt.minQty);
+                                                    }
+                                                }}
+                                                className={`relative w-full flex items-center justify-between p-3 rounded-xl border-2 transition-all text-left active:scale-[0.98] ${
+                                                    isSelected
+                                                        ? 'border-brand-primary bg-brand-primary/5 shadow-sm'
+                                                        : 'border-gray-200 bg-white hover:border-brand-primary/40 hover:bg-gray-50'
+                                                }`}
+                                            >
+                                                {/* Selected badge */}
+                                                {isSelected && (
+                                                    <span className="absolute top-2 right-2 flex items-center gap-1 text-[10px] font-bold text-brand-primary bg-brand-primary/10 px-1.5 py-0.5 rounded-full">
+                                                        <Check className="w-3 h-3" />
+                                                        {t.option.selected}
+                                                    </span>
+                                                )}
+                                                {/* Left: discount badge + label */}
+                                                <div className="flex items-center gap-3 pr-20">
+                                                    <div className={`flex-shrink-0 w-11 h-11 rounded-lg flex flex-col items-center justify-center text-xs font-black leading-tight ${
+                                                        isSelected
+                                                            ? 'bg-brand-primary text-white'
+                                                            : 'bg-red-50 text-red-500'
+                                                    }`}>
+                                                        {opt.discountPct > 0 ? (
+                                                            <>
+                                                                <span className="text-base leading-none">{opt.discountPct}%</span>
+                                                                <span className="text-[9px] opacity-80">OFF</span>
+                                                            </>
+                                                        ) : (
+                                                            <span className="text-[10px] text-center leading-snug px-1">{t.option.freeShip}</span>
+                                                        )}
+                                                    </div>
+                                                    <div>
+                                                        <div className="font-bold text-gray-900 text-sm">
+                                                            {opt.label || t.option.defaultLabel(opt.minQty)}
+                                                        </div>
+                                                        <div className="text-xs text-gray-500 mt-0.5 flex items-center gap-1.5 flex-wrap">
+                                                            <span>{opt.maxQty ? t.option.minMax(opt.minQty, opt.maxQty) : t.option.minOnly(opt.minQty)}</span>
+                                                            {opt.freeShipping && opt.discountPct > 0 && (
+                                                                <span className="text-brand-primary font-semibold">+{t.option.freeShip}</span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                {/* Right: price info */}
+                                                <div className="text-right flex-shrink-0">
+                                                    {opt.discountPct > 0 && (
+                                                        <>
+                                                            <div className="text-red-500 font-black text-base leading-tight">{formatUsd(discountedPrice)}</div>
+                                                            <div className="text-xs text-gray-400 line-through">{formatUsd(product.priceUsd)}</div>
+                                                            <div className="text-[10px] text-gray-400">{t.option.perUnit}</div>
+                                                        </>
+                                                    )}
+                                                    {opt.freeShipping && opt.discountPct === 0 && (
+                                                        <span className="text-brand-primary font-semibold text-xs">{t.option.freeShip}</span>
+                                                    )}
+                                                </div>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                                <p className="text-xs text-gray-400 text-center">{t.option.selectHint}</p>
+                            </div>
+                        )}
+
                         {/* Quantity Selector */}
                         {(() => {
-                            // Compute overall max qty: minimum of stock and lowest maxQty across options
-                            const optionMaxQty = (product as any).options && (product as any).options.length > 0
-                                ? Math.min(...(product as any).options.filter((o: any) => o.maxQty).map((o: any) => o.maxQty))
-                                : Infinity;
+                            const selectedOpt = selectedOptionId
+                                ? (product as any).options?.find((o: any) => o.id === selectedOptionId)
+                                : null;
+                            // maxAllowed: if option selected use its maxQty; else use lowest maxQty across all options or stock
+                            const optionMaxQty = selectedOpt?.maxQty
+                                ? selectedOpt.maxQty
+                                : ((product as any).options && (product as any).options.length > 0
+                                    ? Math.min(...(product as any).options.filter((o: any) => o.maxQty).map((o: any) => o.maxQty))
+                                    : Infinity);
                             const maxAllowed = Math.min(effectiveStock, isFinite(optionMaxQty) ? optionMaxQty : effectiveStock);
                             return (
                                 <div className="flex items-center gap-4">
                                     <span className="text-sm font-semibold text-gray-500">{t.qty}</span>
                                     <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden shadow-sm">
                                         <button
-                                            onClick={() => setQty(Math.max(1, qty - 1))}
+                                            onClick={() => {
+                                                const newQty = Math.max(1, qty - 1);
+                                                setQty(newQty);
+                                                // deselect option if qty falls below its minQty
+                                                if (selectedOpt && newQty < selectedOpt.minQty) {
+                                                    setSelectedOptionId('');
+                                                }
+                                            }}
                                             disabled={qty <= 1}
                                             className="px-3 py-2 text-gray-400 hover:bg-gray-50 transition-colors disabled:opacity-30"
                                         >
@@ -1011,41 +1141,6 @@ export default function ProductDetailClient() {
                                 </div>
                             );
                         })()}
-
-                        {/* Product Options */}
-                        {(product as any).options && (product as any).options.length > 0 && (
-                            <div className="mt-2 p-4 bg-gray-50 rounded-xl border border-gray-200">
-                                <span className="block text-sm font-bold text-gray-700 mb-2">🎈 {t.option.sectionTitle}</span>
-                                <div className="space-y-2">
-                                    {(product as any).options.map((opt: any) => (
-                                        <label key={opt.id} className={`flex items-center justify-between p-3 rounded-lg border-2 cursor-pointer transition-all ${selectedOptionId === opt.id ? 'border-brand-primary bg-blue-50/50' : 'border-transparent bg-white hover:border-gray-200'}`}>
-                                            <div className="flex items-center gap-3">
-                                                <input type="radio" name="product_option" value={opt.id} checked={selectedOptionId === opt.id} onChange={() => {
-                                                    setSelectedOptionId(opt.id);
-                                                    if (qty < opt.minQty) setQty(opt.minQty);
-                                                }} className="w-4 h-4 text-brand-primary focus:ring-brand-primary" />
-                                                <div>
-                                                    <div className="font-semibold text-gray-900 text-sm">
-                                                        {opt.label || t.option.defaultLabel(opt.minQty)}
-                                                    </div>
-                                                    <div className="text-xs text-gray-500 mt-0.5">
-                                                        {opt.maxQty ? t.option.minMax(opt.minQty, opt.maxQty) : t.option.minOnly(opt.minQty)}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="text-right">
-                                                {opt.discountPct > 0 && (
-                                                    <span className="block text-red-500 font-bold text-sm">{t.option.off(opt.discountPct)}</span>
-                                                )}
-                                                {opt.freeShipping && (
-                                                    <span className="block text-brand-primary font-semibold text-xs mt-0.5">{t.option.freeShip}</span>
-                                                )}
-                                            </div>
-                                        </label>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
 
                         {/* CTA Buttons — Coupang Style */}
                         <div className="flex gap-3 mt-4">
