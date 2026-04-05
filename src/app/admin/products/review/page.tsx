@@ -35,6 +35,8 @@ interface ProductDetail {
     hotSalePrice: string | null;
     costPrice: string | null;
     expiryMonths: number | null;
+    unitLabel: string | null;
+    unitsPerPkg: number | null;
     approvalStatus: string;
     rejectionReason: string | null;
     createdAt: string;
@@ -198,6 +200,12 @@ function ProductDetailPanel({ productId, onClose, showEdit }: { productId: strin
                             {detail.costPrice && <InfoItem label="Cost · 원가" value={`$${Number(detail.costPrice).toFixed(2)}`} />}
                             {detail.hotSalePrice && <InfoItem label="Sale Price · 할인가" value={`$${Number(detail.hotSalePrice).toFixed(2)}`} highlight />}
                             {detail.expiryMonths && <InfoItem label="Expiry · 유효기간" value={`${detail.expiryMonths} months`} />}
+                            {detail.unitLabel && detail.unitLabel !== '개' && (
+                                <InfoItem
+                                    label="Selling Unit · 판매단위"
+                                    value={detail.unitsPerPkg ? `1 ${detail.unitLabel} = ${detail.unitsPerPkg} 개` : detail.unitLabel}
+                                />
+                            )}
                         </div>
                         <div className="flex gap-2 flex-wrap">
                             {detail.isNew && <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-bold rounded-full">NEW</span>}

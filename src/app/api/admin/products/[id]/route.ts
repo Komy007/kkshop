@@ -61,6 +61,8 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
             origin: product.origin ?? null,
             expiryMonths: product.expiryMonths ?? null,
             certifications: product.certifications ?? null,
+            unitLabel: product.unitLabel ?? null,
+            unitsPerPkg: product.unitsPerPkg ?? null,
             costPrice: product.costPrice != null ? product.costPrice.toString() : null,
             createdAt: product.createdAt,
             updatedAt: product.updatedAt,
@@ -138,7 +140,7 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
             sku, priceUsd, costPrice, stockAlertQty, stockQty, categoryId, supplierId,
             status, approvalStatus, isNew, isHotSale, hotSalePrice,
             badgeAuthentic, badgeKoreanCertified, isTodayPick, displayPriority,
-            brandName, volume, skinType, origin, expiryMonths, certifications,
+            brandName, volume, skinType, origin, expiryMonths, certifications, unitLabel, unitsPerPkg,
             baseLang, name, shortDesc, detailDesc, ingredients, howToUse, benefits, seoKeywords,
             retranslate = false,
             directTranslations, // [{ langCode, name, shortDesc, ... }] — direct per-language edit, no Google Translate
@@ -187,6 +189,8 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
         if (origin !== undefined) productData.origin = origin || null;
         if (expiryMonths !== undefined) productData.expiryMonths = expiryMonths ? parseInt(expiryMonths) : null;
         if (certifications !== undefined) productData.certifications = certifications || null;
+        if (unitLabel !== undefined)   productData.unitLabel   = unitLabel || null;
+        if (unitsPerPkg !== undefined) productData.unitsPerPkg = unitsPerPkg ? parseInt(unitsPerPkg) : null;
         if (badgeAuthentic !== undefined) productData.badgeAuthentic = Boolean(badgeAuthentic);
         if (badgeKoreanCertified !== undefined) productData.badgeKoreanCertified = Boolean(badgeKoreanCertified);
         if (isTodayPick !== undefined) productData.isTodayPick = Boolean(isTodayPick);

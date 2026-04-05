@@ -90,6 +90,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const {
         sku, priceUsd, stockQty, categoryId, brandName, volume, origin, skinType, expiryMonths,
+        unitLabel, unitsPerPkg,
         nameKo, shortDescKo, detailDescKo, ingredientsKo, howToUseKo, benefitsKo,
         imageUrls = [], options = [], variants = [],
     } = body;
@@ -177,6 +178,8 @@ export async function POST(req: Request) {
             origin: origin || null,
             skinType: skinType || null,
             expiryMonths: expiryMonths ? parseInt(expiryMonths) : null,
+            unitLabel: unitLabel || null,
+            unitsPerPkg: unitsPerPkg ? parseInt(unitsPerPkg) : null,
             status: 'INACTIVE',
             approvalStatus: 'PENDING',
             imageUrl: imageUrls[0] || null,

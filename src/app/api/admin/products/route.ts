@@ -229,6 +229,8 @@ export async function POST(req: Request) {
             origin = null,
             expiryMonths = null,
             certifications = null,
+            unitLabel = null,
+            unitsPerPkg = null,
             options = [], // [{ minQty, maxQty, discountPct, freeShipping, labelKo }]
             variants = [], // [{ variantType, variantValue, sku?, stockQty, priceUsd?, imageUrl?, sortOrder }]
             doTranslate = false, // translate to all 4 languages only when explicitly requested
@@ -362,6 +364,8 @@ export async function POST(req: Request) {
                     origin: origin || null,
                     expiryMonths: expiryMonths ? parseInt(expiryMonths) : null,
                     certifications: certifications || null,
+                    unitLabel: unitLabel || null,
+                    unitsPerPkg: unitsPerPkg ? parseInt(unitsPerPkg) : null,
                 }
             });
 

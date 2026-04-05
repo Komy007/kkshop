@@ -35,6 +35,8 @@ export interface TranslatedProduct {
     origin?: string | null;
     certifications?: string | null;
     expiryMonths?: number | null;
+    unitLabel?: string | null;
+    unitsPerPkg?: number | null;
     // Translated fields
     name: string;
     shortDesc: string | null;
@@ -91,6 +93,8 @@ function serializeProduct(product: any, langCode: string): TranslatedProduct {
         origin: product.origin ?? null,
         certifications: product.certifications ?? null,
         expiryMonths: product.expiryMonths ?? null,
+        unitLabel: (product as any).unitLabel ?? null,
+        unitsPerPkg: (product as any).unitsPerPkg ?? null,
         // name: user's language first, fallback to English
         name: localTrans.name || enTrans.name || product.sku,
         // descriptions: user's language, fallback to English

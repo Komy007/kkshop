@@ -55,6 +55,8 @@ export async function GET(
         skinType: product.skinType ?? null,
         origin: product.origin ?? null,
         expiryMonths: product.expiryMonths ?? null,
+        unitLabel: product.unitLabel ?? null,
+        unitsPerPkg: product.unitsPerPkg ?? null,
         status: product.status,
         approvalStatus: product.approvalStatus,
         rejectionReason: product.rejectionReason ?? null,
@@ -131,6 +133,7 @@ export async function PATCH(
     const {
         name, shortDesc, detailDesc, ingredients, howToUse, benefits,
         priceUsd, stockQty, volume, skinType, origin, brandName, expiryMonths, certifications, categoryId,
+        unitLabel, unitsPerPkg,
         imageUrls = [],      // new GCS URLs to add
         deleteImageIds = [], // existing image IDs to remove
         options,             // full options replacement (undefined = no change)
@@ -249,6 +252,8 @@ export async function PATCH(
         if (brandName !== undefined)  updateData.brandName  = brandName || null;
         if (expiryMonths !== undefined) updateData.expiryMonths = expiryMonths ? parseInt(expiryMonths) : null;
         if (certifications !== undefined) updateData.certifications = certifications || null;
+        if (unitLabel !== undefined)   updateData.unitLabel   = unitLabel || null;
+        if (unitsPerPkg !== undefined) updateData.unitsPerPkg = unitsPerPkg ? parseInt(unitsPerPkg) : null;
 
         await tx.product.update({
             where: { id: product.id },

@@ -81,6 +81,9 @@ model Product {
   expiryMonths     Int?     @map("expiry_months")
   certifications   String?  @db.VarChar(255)
   brandName        String?  @map("brand_name") @db.VarChar(100)
+  // Selling unit fields
+  unitLabel        String?  @map("unit_label") @db.VarChar(20)    // 개/box/pack/set/병/튜브/매
+  unitsPerPkg      Int?     @map("units_per_pkg")                  // 1 box = N 개
   // Inventory & Cost fields
   costPrice        Decimal? @map("cost_price") @db.Decimal(10, 2)
   stockAlertQty    Int      @default(10) @map("stock_alert_qty")

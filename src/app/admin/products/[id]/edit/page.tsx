@@ -27,7 +27,9 @@ interface ProductData {
     translations: { langCode: string; name: string; shortDesc: string | null; detailDesc: string | null; ingredients: string | null; howToUse: string | null; benefits: string | null; seoKeywords: string | null }[];
 }
 
-const SIZE_PRESETS = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Free Size'];
+const SIZE_PRESETS   = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Free Size'];
+const VOLUME_PRESETS = ['30ml', '50ml', '100ml', '150ml', '200ml', '250ml', '300ml', '500ml', '1L'];
+const UNIT_LABELS    = ['개', 'box', 'pack', 'set', '병', '튜브', '매', '장', '캡슐'];
 const vInp = "px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500";
 
 const Sec = ({ icon, title, desc }: { icon: React.ReactNode; title: string; desc?: string }) => (
@@ -67,13 +69,17 @@ export default function EditProductPage() {
     const [newImages, setNewImages] = useState<{ file: File; preview: string }[]>([]);
     const [dragActive, setDragActive] = useState(false);
 
+    const [bulkDiscountEnabled, setBulkDiscountEnabled] = useState(false);
     const [options, setOptions] = useState<any[]>([]);
 
     // ── Variant state ──
-    const [variantEnabled, setVariantEnabled] = useState(false);
-    const [variantType, setVariantType] = useState<'color' | 'size' | 'custom'>('color');
-    const [colorVars, setColorVars] = useState([{ name: '', hex: '#FF6B6B', stock: '0', price: '' }]);
-    const [sizeVars, setSizeVars] = useState<{ label: string; stock: string; price: string }[]>([]);
+    const [enableColor,  setEnableColor]  = useState(false);
+    const [enableSize,   setEnableSize]   = useState(false);
+    const [enableVolume, setEnableVolume] = useState(false);
+    const [enableCustom, setEnableCustom] = useState(false);
+    const [colorVars,  setColorVars]  = useState([{ name: '', hex: '#FF6B6B', stock: '0', price: '' }]);
+    const [sizeVars,   setSizeVars]   = useState<{ label: string; stock: string; price: string }[]>([]);
+    const [volumeVars, setVolumeVars] = useState<{ label: string; stock: string; price: string }[]>([]);
     const [customVars, setCustomVars] = useState([{ label: '', stock: '0', price: '' }]);
 
     const [form, setForm] = useState({
@@ -86,6 +92,7 @@ export default function EditProductPage() {
         displayPriority: 0,
         brandName: '', volume: '', skinType: '', origin: '',
         expiryMonths: '', certifications: '',
+        unitLabel: '개', unitsPerPkg: '',
         baseLang: 'ko',
         name: '', shortDesc: '', detailDesc: '',
         ingredients: '', howToUse: '', benefits: '', seoKeywords: '',
@@ -135,6 +142,8 @@ export default function EditProductPage() {
                     origin: p.origin ?? '',
                     expiryMonths: p.expiryMonths ? String(p.expiryMonths) : '',
                     certifications: p.certifications ?? '',
+                    unitLabel: p.unitLabel ?? '개',
+                    unitsPerPkg: p.unitsPerPkg ? String(p.unitsPerPkg) : '',
                     baseLang: 'ko',
                     name: koTrans.name ?? '',
                     shortDesc: koTrans.shortDesc ?? '',
@@ -163,28 +172,23 @@ export default function EditProductPage() {
                     };
                 });
                 setLangTranslations(langMap);
-                setOptions(p.options?.map((o: any) => ({
+                const rawOpts = p.options?.map((o: any) => ({
                     id: o.id, minQty: String(o.minQty), maxQty: o.maxQty ? String(o.maxQty) : '',
                     discountPct: o.discountPct, freeShipping: o.freeShipping,
                     labelKo: o.labelKo ?? '', labelEn: o.labelEn ?? '',
-                })) ?? []);
-                // Load variants
+                })) ?? [];
+                setOptions(rawOpts);
+                if (rawOpts.length > 0) setBulkDiscountEnabled(true);
+                // Load variants — each type independently
                 if (p.variants && p.variants.length > 0) {
-                    setVariantEnabled(true);
-                    const firstType = p.variants[0].variantType?.toLowerCase();
-                    if (firstType === 'color') {
-                        setVariantType('color');
-                        setColorVars(p.variants.map((v: any) => {
-                            const parts = (v.variantValue || '').split('|');
-                            return { name: parts[0] || '', hex: parts[1] || '#FF6B6B', stock: String(v.stockQty ?? 0), price: v.priceUsd ?? '' };
-                        }));
-                    } else if (firstType === 'size') {
-                        setVariantType('size');
-                        setSizeVars(p.variants.map((v: any) => ({ label: v.variantValue || '', stock: String(v.stockQty ?? 0), price: v.priceUsd ?? '' })));
-                    } else {
-                        setVariantType('custom');
-                        setCustomVars(p.variants.map((v: any) => ({ label: v.variantValue || '', stock: String(v.stockQty ?? 0), price: v.priceUsd ?? '' })));
-                    }
+                    const colorRows  = p.variants.filter((v: any) => ['COLOR','color'].includes(v.variantType));
+                    const sizeRows   = p.variants.filter((v: any) => ['SIZE','size'].includes(v.variantType));
+                    const volumeRows = p.variants.filter((v: any) => v.variantType === 'VOLUME');
+                    const otherRows  = p.variants.filter((v: any) => ['OTHER','custom'].includes(v.variantType));
+                    if (colorRows.length > 0) { setEnableColor(true); setColorVars(colorRows.map((v: any) => { const parts = (v.variantValue || '').split('|'); return { name: parts[0] || '', hex: parts[1] || '#FF6B6B', stock: String(v.stockQty ?? 0), price: v.priceUsd ?? '' }; })); }
+                    if (sizeRows.length > 0)   { setEnableSize(true);  setSizeVars(sizeRows.map((v: any) => ({ label: v.variantValue || '', stock: String(v.stockQty ?? 0), price: v.priceUsd ?? '' }))); }
+                    if (volumeRows.length > 0) { setEnableVolume(true); setVolumeVars(volumeRows.map((v: any) => ({ label: v.variantValue || '', stock: String(v.stockQty ?? 0), price: v.priceUsd ?? '' }))); }
+                    if (otherRows.length > 0)  { setEnableCustom(true); setCustomVars(otherRows.map((v: any) => ({ label: v.variantValue || '', stock: String(v.stockQty ?? 0), price: v.priceUsd ?? '' }))); }
                 }
                 setCategories(Array.isArray(cats) ? cats : []);
                 setSuppliers(Array.isArray(sups) ? sups.filter((s: any) => s.status === 'APPROVED') : []);
@@ -313,21 +317,16 @@ export default function EditProductPage() {
                     directTranslations,
                     imageUrls: newImageUrls,
                     deleteImageIds,
-                    options: options.map((o, i) => ({ ...o, sortOrder: i })),
+                    unitLabel: form.unitLabel,
+                    unitsPerPkg: (form as any).unitsPerPkg ? parseInt((form as any).unitsPerPkg) : null,
+                    options: bulkDiscountEnabled ? options.map((o, i) => ({ ...o, sortOrder: i })) : [],
                     variants: (() => {
-                        if (!variantEnabled) return [];
-                        if (variantType === 'color') return colorVars.filter(v => v.name.trim()).map((v, i) => ({
-                            variantType: 'color', variantValue: `${v.name.trim()}|${v.hex}`,
-                            stockQty: parseInt(v.stock) || 0, priceUsd: v.price || null, sortOrder: i,
-                        }));
-                        if (variantType === 'size') return sizeVars.filter(v => v.label.trim()).map((v, i) => ({
-                            variantType: 'size', variantValue: v.label,
-                            stockQty: parseInt(v.stock) || 0, priceUsd: v.price || null, sortOrder: i,
-                        }));
-                        return customVars.filter(v => v.label.trim()).map((v, i) => ({
-                            variantType: 'custom', variantValue: v.label.trim(),
-                            stockQty: parseInt(v.stock) || 0, priceUsd: v.price || null, sortOrder: i,
-                        }));
+                        const v: any[] = [];
+                        if (enableColor)  colorVars.filter(c => c.name.trim()).forEach((c, i) => v.push({ variantType: 'COLOR', variantValue: `${c.name.trim()}|${c.hex}`, stockQty: parseInt(c.stock) || 0, priceUsd: c.price || null, sortOrder: i }));
+                        if (enableSize)   sizeVars.filter(s => s.label.trim()).forEach((s, i) => v.push({ variantType: 'SIZE', variantValue: s.label.trim(), stockQty: parseInt(s.stock) || 0, priceUsd: s.price || null, sortOrder: i }));
+                        if (enableVolume) volumeVars.filter(vv => vv.label.trim()).forEach((vv, i) => v.push({ variantType: 'VOLUME', variantValue: vv.label.trim(), stockQty: parseInt(vv.stock) || 0, priceUsd: vv.price || null, sortOrder: i }));
+                        if (enableCustom) customVars.filter(c => c.label.trim()).forEach((c, i) => v.push({ variantType: 'OTHER', variantValue: c.label.trim(), stockQty: parseInt(c.stock) || 0, priceUsd: c.price || null, sortOrder: i }));
+                        return v;
                     })(),
                 }),
             });
@@ -640,7 +639,14 @@ export default function EditProductPage() {
                 <div className="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-100">
                     <Sec icon={<Star className="w-5 h-5 text-yellow-500" />} title={t.admin.edit.sections.options} desc="" />
                     <div className="p-5 space-y-3">
-                        {options.map((opt, i) => (
+                        <label className="flex items-center gap-3 cursor-pointer select-none">
+                            <button type="button" role="switch" aria-checked={bulkDiscountEnabled} onClick={() => setBulkDiscountEnabled(p => !p)}
+                                className={`relative inline-flex w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 ${bulkDiscountEnabled ? 'bg-blue-500' : 'bg-gray-200'}`}>
+                                <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${bulkDiscountEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
+                            </button>
+                            <span className="text-sm font-semibold text-gray-800">수량 할인 사용 <span className="text-xs text-gray-400 font-normal">· Bulk discount</span></span>
+                        </label>
+                        {bulkDiscountEnabled && options.map((opt, i) => (
                             <div key={i} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_auto_2fr_auto] gap-3 items-end bg-gray-50 p-3 rounded-lg border border-gray-200">
                                 <div>
                                     <label className="block text-xs font-medium text-gray-600 mb-1">최소 수량</label>
@@ -675,143 +681,70 @@ export default function EditProductPage() {
                                 </button>
                             </div>
                         ))}
-                        <button type="button" onClick={() => setOptions([...options, { minQty: '2', maxQty: '', discountPct: '10', freeShipping: false, labelKo: '' }])}
-                            className="text-sm text-blue-600 font-semibold flex items-center gap-1 hover:text-blue-700">
-                            {t.admin.edit.buttons.addOption}
-                        </button>
+                        {bulkDiscountEnabled && (
+                            <button type="button" onClick={() => setOptions([...options, { minQty: '10', maxQty: '', discountPct: '10', freeShipping: false, labelKo: '' }])}
+                                className="text-sm text-blue-600 font-semibold flex items-center gap-1 hover:text-blue-700">
+                                {t.admin.edit.buttons.addOption}
+                            </button>
+                        )}
                     </div>
                 </div>
 
                 {/* ③-B Product Variants */}
                 <div className="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-100">
-                    <Sec icon={<Tag className="w-5 h-5 text-indigo-500" />} title="Product Variants · 상품 옵션" desc="색상 / 사이즈 / 커스텀 옵션 (선택사항)" />
+                    <Sec icon={<Tag className="w-5 h-5 text-indigo-500" />} title="Product Variants · 상품 옵션" desc="색상 / 사이즈 / 용량 / 기타 (복수 선택 가능)" />
                     <div className="p-5 space-y-4">
-                        <label className="flex items-center gap-3 cursor-pointer select-none">
-                            <button type="button" role="switch" aria-checked={variantEnabled}
-                                onClick={() => setVariantEnabled(p => !p)}
-                                className={`relative inline-flex w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 ${variantEnabled ? 'bg-blue-500' : 'bg-gray-200'}`}>
-                                <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${variantEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
-                            </button>
-                            <span className="text-sm font-semibold text-gray-800">
-                                Enable product variants
-                                <span className="text-xs text-gray-400 ml-2 font-normal">색상 / 사이즈 / 기타 옵션 사용</span>
-                            </span>
-                        </label>
+                        {/* Multi-type checkboxes */}
+                        <div className="flex flex-wrap gap-2">
+                            {([
+                                { key: 'color',  label: '🎨 Color',  val: enableColor,  set: setEnableColor  },
+                                { key: 'size',   label: '📏 Size',   val: enableSize,   set: setEnableSize   },
+                                { key: 'volume', label: '🧴 Volume', val: enableVolume, set: setEnableVolume },
+                                { key: 'custom', label: '🏷️ Custom', val: enableCustom, set: setEnableCustom },
+                            ] as const).map(({ key, label, val, set: setter }) => (
+                                <label key={key} className={`flex items-center gap-2 px-3 py-2 rounded-xl border cursor-pointer text-sm font-semibold transition-all select-none ${val ? 'bg-blue-500 text-white border-blue-500 shadow-sm' : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300 hover:text-blue-700'}`}>
+                                    <input type="checkbox" checked={val} onChange={() => setter(p => !p)} className="hidden" />
+                                    {label}
+                                </label>
+                            ))}
+                        </div>
 
-                        {variantEnabled && (
-                            <div className="mt-4 space-y-5">
-                                <div>
-                                    <p className="text-xs font-semibold text-gray-600 mb-2">Variant Type · 옵션 종류:</p>
-                                    <div className="flex flex-wrap gap-2">
-                                        {(['color', 'size', 'custom'] as const).map(vt => (
-                                            <button key={vt} type="button" onClick={() => setVariantType(vt)}
-                                                className={`px-4 py-2 rounded-xl text-sm font-bold border transition-all ${variantType === vt ? 'bg-blue-500 text-white border-blue-500 shadow-sm' : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300 hover:text-blue-700'}`}>
-                                                {vt === 'color' ? '🎨 Color · 색상' : vt === 'size' ? '📏 Size · 사이즈' : '🏷️ Custom · 기타'}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {variantType === 'color' && (
+                        {(enableColor || enableSize || enableVolume || enableCustom) && (
+                            <div className="space-y-6">
+                                {enableColor && (
                                     <div className="space-y-3">
-                                        <div className="grid grid-cols-[40px_1fr_72px_88px_28px] gap-2 px-1 text-xs font-semibold text-gray-400">
-                                            <span /><span>Color name · 색상명</span><span className="text-center">Stock</span><span className="text-center">Price (opt)</span><span />
-                                        </div>
-                                        {colorVars.map((cv, i) => (
-                                            <div key={i} className="grid grid-cols-[40px_1fr_72px_88px_28px] gap-2 items-center bg-gray-50 rounded-xl p-2.5 border border-gray-100">
-                                                <input type="color" value={cv.hex} onChange={e => setColorVars(p => p.map((c, idx) => idx === i ? { ...c, hex: e.target.value } : c))}
-                                                    className="w-8 h-8 rounded-lg border border-gray-200 cursor-pointer p-0.5 bg-white" />
-                                                <input value={cv.name} onChange={e => setColorVars(p => p.map((c, idx) => idx === i ? { ...c, name: e.target.value } : c))}
-                                                    placeholder="e.g. Rose Pink" className={vInp} />
-                                                <input type="number" value={cv.stock} onChange={e => setColorVars(p => p.map((c, idx) => idx === i ? { ...c, stock: e.target.value } : c))}
-                                                    className={`text-center ${vInp}`} min="0" />
-                                                <input type="number" step="0.01" value={cv.price} onChange={e => setColorVars(p => p.map((c, idx) => idx === i ? { ...c, price: e.target.value } : c))}
-                                                    placeholder="—" className={`text-center ${vInp}`} />
-                                                {colorVars.length > 1 ? (
-                                                    <button type="button" onClick={() => setColorVars(p => p.filter((_, idx) => idx !== i))}
-                                                        className="p-1 text-red-400 hover:bg-red-50 rounded-lg"><X className="w-3.5 h-3.5" /></button>
-                                                ) : <span />}
-                                            </div>
-                                        ))}
-                                        {colorVars.length < 10 && (
-                                            <button type="button" onClick={() => setColorVars(p => [...p, { name: '', hex: '#4A90E2', stock: '0', price: '' }])}
-                                                className="text-sm font-bold text-blue-600 flex items-center gap-1.5 hover:text-blue-700 bg-blue-50 px-3 py-2 rounded-lg border border-blue-100 transition-colors">
-                                                <Plus className="w-4 h-4" /> Add Color · 색상 추가
-                                            </button>
-                                        )}
+                                        <p className="text-xs font-bold text-gray-700">🎨 Color Variants</p>
+                                        <div className="grid grid-cols-[40px_1fr_72px_88px_28px] gap-2 px-1 text-xs font-semibold text-gray-400"><span /><span>Color name</span><span className="text-center">Stock</span><span className="text-center">Price (opt)</span><span /></div>
+                                        {colorVars.map((cv, i) => (<div key={i} className="grid grid-cols-[40px_1fr_72px_88px_28px] gap-2 items-center bg-gray-50 rounded-xl p-2.5 border border-gray-100"><input type="color" value={cv.hex} onChange={e => setColorVars(p => p.map((c, idx) => idx === i ? { ...c, hex: e.target.value } : c))} className="w-8 h-8 rounded-lg border border-gray-200 cursor-pointer p-0.5 bg-white" /><input value={cv.name} onChange={e => setColorVars(p => p.map((c, idx) => idx === i ? { ...c, name: e.target.value } : c))} placeholder="e.g. Rose Pink" className={vInp} /><input type="number" value={cv.stock} onChange={e => setColorVars(p => p.map((c, idx) => idx === i ? { ...c, stock: e.target.value } : c))} className={`text-center ${vInp}`} min="0" /><input type="number" step="0.01" value={cv.price} onChange={e => setColorVars(p => p.map((c, idx) => idx === i ? { ...c, price: e.target.value } : c))} placeholder="—" className={`text-center ${vInp}`} />{colorVars.length > 1 ? <button type="button" onClick={() => setColorVars(p => p.filter((_, idx) => idx !== i))} className="p-1 text-red-400 hover:bg-red-50 rounded-lg"><X className="w-3.5 h-3.5" /></button> : <span />}</div>))}
+                                        {colorVars.length < 10 && <button type="button" onClick={() => setColorVars(p => [...p, { name: '', hex: '#4A90E2', stock: '0', price: '' }])} className="text-sm font-bold text-blue-600 flex items-center gap-1.5 hover:text-blue-700 bg-blue-50 px-3 py-2 rounded-lg border border-blue-100"><Plus className="w-4 h-4" /> Add Color</button>}
                                     </div>
                                 )}
-
-                                {variantType === 'size' && (
-                                    <div className="space-y-4">
-                                        <div>
-                                            <p className="text-xs font-semibold text-gray-600 mb-2">Quick Add · 빠른 추가:</p>
-                                            <div className="flex flex-wrap gap-2">
-                                                {SIZE_PRESETS.map(s => {
-                                                    const added = sizeVars.some(v => v.label === s);
-                                                    return (
-                                                        <button key={s} type="button" onClick={() => !added && setSizeVars(p => [...p, { label: s, stock: '0', price: '' }])}
-                                                            disabled={added}
-                                                            className={`px-3 py-1.5 rounded-lg text-sm font-bold border transition-all ${added ? 'bg-blue-100 text-blue-600 border-blue-200 opacity-50 cursor-not-allowed' : 'bg-white text-gray-600 border-gray-200 hover:border-blue-400 hover:text-blue-700'}`}>
-                                                            {s}
-                                                        </button>
-                                                    );
-                                                })}
-                                                <button type="button" onClick={() => setSizeVars(p => [...p, { label: '', stock: '0', price: '' }])}
-                                                    className="px-3 py-1.5 rounded-lg text-sm font-bold border border-dashed border-gray-300 text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-all flex items-center gap-1">
-                                                    <Plus className="w-3.5 h-3.5" /> Custom
-                                                </button>
-                                            </div>
+                                {enableSize && (
+                                    <div className="space-y-3">
+                                        <p className="text-xs font-bold text-gray-700">📏 Size Variants</p>
+                                        <div className="flex flex-wrap gap-2">
+                                            {SIZE_PRESETS.map(s => { const added = sizeVars.some(v => v.label === s); return <button key={s} type="button" onClick={() => !added && setSizeVars(p => [...p, { label: s, stock: '0', price: '' }])} disabled={added} className={`px-3 py-1.5 rounded-lg text-sm font-bold border transition-all ${added ? 'bg-blue-100 text-blue-600 border-blue-200 opacity-50 cursor-not-allowed' : 'bg-white text-gray-600 border-gray-200 hover:border-blue-400 hover:text-blue-700'}`}>{s}</button>; })}
+                                            <button type="button" onClick={() => setSizeVars(p => [...p, { label: '', stock: '0', price: '' }])} className="px-3 py-1.5 rounded-lg text-sm font-bold border border-dashed border-gray-300 text-gray-500 hover:border-blue-400 hover:text-blue-600 flex items-center gap-1"><Plus className="w-3.5 h-3.5" /> Custom</button>
                                         </div>
-                                        {sizeVars.length > 0 && (
-                                            <div className="space-y-2">
-                                                <div className="grid grid-cols-[1fr_72px_88px_28px] gap-2 px-1 text-xs font-semibold text-gray-400">
-                                                    <span>Size · 사이즈</span><span className="text-center">Stock</span><span className="text-center">Price (opt)</span><span />
-                                                </div>
-                                                {sizeVars.map((sv, i) => (
-                                                    <div key={i} className="grid grid-cols-[1fr_72px_88px_28px] gap-2 items-center bg-gray-50 p-2.5 rounded-xl border border-gray-100">
-                                                        <input value={sv.label} onChange={e => setSizeVars(p => p.map((s, idx) => idx === i ? { ...s, label: e.target.value } : s))}
-                                                            placeholder="e.g. M, 95" className={`font-semibold ${vInp}`} />
-                                                        <input type="number" value={sv.stock} onChange={e => setSizeVars(p => p.map((s, idx) => idx === i ? { ...s, stock: e.target.value } : s))}
-                                                            className={`text-center ${vInp}`} min="0" />
-                                                        <input type="number" step="0.01" value={sv.price} onChange={e => setSizeVars(p => p.map((s, idx) => idx === i ? { ...s, price: e.target.value } : s))}
-                                                            placeholder="—" className={`text-center ${vInp}`} />
-                                                        <button type="button" onClick={() => setSizeVars(p => p.filter((_, idx) => idx !== i))}
-                                                            className="p-1 text-red-400 hover:bg-red-50 rounded-lg"><X className="w-3.5 h-3.5" /></button>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                        {sizeVars.length === 0 && (
-                                            <p className="text-xs text-gray-400 italic">Click size presets above or &quot;+ Custom&quot; to add sizes.</p>
-                                        )}
+                                        {sizeVars.length > 0 && <div className="space-y-2">{sizeVars.map((sv, i) => (<div key={i} className="grid grid-cols-[1fr_72px_88px_28px] gap-2 items-center bg-gray-50 p-2.5 rounded-xl border border-gray-100"><input value={sv.label} onChange={e => setSizeVars(p => p.map((s, idx) => idx === i ? { ...s, label: e.target.value } : s))} placeholder="e.g. M" className={`font-semibold ${vInp}`} /><input type="number" value={sv.stock} onChange={e => setSizeVars(p => p.map((s, idx) => idx === i ? { ...s, stock: e.target.value } : s))} className={`text-center ${vInp}`} min="0" /><input type="number" step="0.01" value={sv.price} onChange={e => setSizeVars(p => p.map((s, idx) => idx === i ? { ...s, price: e.target.value } : s))} placeholder="—" className={`text-center ${vInp}`} /><button type="button" onClick={() => setSizeVars(p => p.filter((_, idx) => idx !== i))} className="p-1 text-red-400 hover:bg-red-50 rounded-lg"><X className="w-3.5 h-3.5" /></button></div>))}</div>}
                                     </div>
                                 )}
-
-                                {variantType === 'custom' && (
+                                {enableVolume && (
                                     <div className="space-y-3">
-                                        <p className="text-xs text-gray-500">Add any custom options — bundle sets, scents, kit types, etc.</p>
-                                        <div className="grid grid-cols-[1fr_72px_88px_28px] gap-2 px-1 text-xs font-semibold text-gray-400">
-                                            <span>Option name · 옵션명</span><span className="text-center">Stock</span><span className="text-center">Price (opt)</span><span />
+                                        <p className="text-xs font-bold text-gray-700">🧴 Volume Variants</p>
+                                        <div className="flex flex-wrap gap-2">
+                                            {VOLUME_PRESETS.map(v => { const added = volumeVars.some(vv => vv.label === v); return <button key={v} type="button" onClick={() => !added && setVolumeVars(p => [...p, { label: v, stock: '0', price: '' }])} disabled={added} className={`px-3 py-1.5 rounded-lg text-sm font-bold border transition-all ${added ? 'bg-blue-100 text-blue-600 border-blue-200 opacity-50 cursor-not-allowed' : 'bg-white text-gray-600 border-gray-200 hover:border-blue-400 hover:text-blue-700'}`}>{v}</button>; })}
+                                            <button type="button" onClick={() => setVolumeVars(p => [...p, { label: '', stock: '0', price: '' }])} className="px-3 py-1.5 rounded-lg text-sm font-bold border border-dashed border-gray-300 text-gray-500 hover:border-blue-400 hover:text-blue-600 flex items-center gap-1"><Plus className="w-3.5 h-3.5" /> Custom</button>
                                         </div>
-                                        {customVars.map((cv, i) => (
-                                            <div key={i} className="grid grid-cols-[1fr_72px_88px_28px] gap-2 items-center bg-gray-50 p-2.5 rounded-xl border border-gray-100">
-                                                <input value={cv.label} onChange={e => setCustomVars(p => p.map((c, idx) => idx === i ? { ...c, label: e.target.value } : c))}
-                                                    placeholder="e.g. Starter Kit, Lavender" className={vInp} />
-                                                <input type="number" value={cv.stock} onChange={e => setCustomVars(p => p.map((c, idx) => idx === i ? { ...c, stock: e.target.value } : c))}
-                                                    className={`text-center ${vInp}`} min="0" />
-                                                <input type="number" step="0.01" value={cv.price} onChange={e => setCustomVars(p => p.map((c, idx) => idx === i ? { ...c, price: e.target.value } : c))}
-                                                    placeholder="—" className={`text-center ${vInp}`} />
-                                                {customVars.length > 1 ? (
-                                                    <button type="button" onClick={() => setCustomVars(p => p.filter((_, idx) => idx !== i))}
-                                                        className="p-1 text-red-400 hover:bg-red-50 rounded-lg"><X className="w-3.5 h-3.5" /></button>
-                                                ) : <span />}
-                                            </div>
-                                        ))}
-                                        <button type="button" onClick={() => setCustomVars(p => [...p, { label: '', stock: '0', price: '' }])}
-                                            className="text-sm font-bold text-blue-600 flex items-center gap-1.5 hover:text-blue-700 bg-blue-50 px-3 py-2 rounded-lg border border-blue-100 transition-colors">
-                                            <Plus className="w-4 h-4" /> Add Option · 옵션 추가
-                                        </button>
+                                        {volumeVars.length > 0 && <div className="space-y-2">{volumeVars.map((vv, i) => (<div key={i} className="grid grid-cols-[1fr_72px_88px_28px] gap-2 items-center bg-gray-50 p-2.5 rounded-xl border border-gray-100"><input value={vv.label} onChange={e => setVolumeVars(p => p.map((v, idx) => idx === i ? { ...v, label: e.target.value } : v))} placeholder="e.g. 100ml" className={`font-semibold ${vInp}`} /><input type="number" value={vv.stock} onChange={e => setVolumeVars(p => p.map((v, idx) => idx === i ? { ...v, stock: e.target.value } : v))} className={`text-center ${vInp}`} min="0" /><input type="number" step="0.01" value={vv.price} onChange={e => setVolumeVars(p => p.map((v, idx) => idx === i ? { ...v, price: e.target.value } : v))} placeholder="—" className={`text-center ${vInp}`} /><button type="button" onClick={() => setVolumeVars(p => p.filter((_, idx) => idx !== i))} className="p-1 text-red-400 hover:bg-red-50 rounded-lg"><X className="w-3.5 h-3.5" /></button></div>))}</div>}
+                                    </div>
+                                )}
+                                {enableCustom && (
+                                    <div className="space-y-3">
+                                        <p className="text-xs font-bold text-gray-700">🏷️ Custom Variants</p>
+                                        <div className="grid grid-cols-[1fr_72px_88px_28px] gap-2 px-1 text-xs font-semibold text-gray-400"><span>Option name</span><span className="text-center">Stock</span><span className="text-center">Price (opt)</span><span /></div>
+                                        {customVars.map((cv, i) => (<div key={i} className="grid grid-cols-[1fr_72px_88px_28px] gap-2 items-center bg-gray-50 p-2.5 rounded-xl border border-gray-100"><input value={cv.label} onChange={e => setCustomVars(p => p.map((c, idx) => idx === i ? { ...c, label: e.target.value } : c))} placeholder="e.g. Starter Kit" className={vInp} /><input type="number" value={cv.stock} onChange={e => setCustomVars(p => p.map((c, idx) => idx === i ? { ...c, stock: e.target.value } : c))} className={`text-center ${vInp}`} min="0" /><input type="number" step="0.01" value={cv.price} onChange={e => setCustomVars(p => p.map((c, idx) => idx === i ? { ...c, price: e.target.value } : c))} placeholder="—" className={`text-center ${vInp}`} />{customVars.length > 1 ? <button type="button" onClick={() => setCustomVars(p => p.filter((_, idx) => idx !== i))} className="p-1 text-red-400 hover:bg-red-50 rounded-lg"><X className="w-3.5 h-3.5" /></button> : <span />}</div>))}
+                                        <button type="button" onClick={() => setCustomVars(p => [...p, { label: '', stock: '0', price: '' }])} className="text-sm font-bold text-blue-600 flex items-center gap-1.5 hover:text-blue-700 bg-blue-50 px-3 py-2 rounded-lg border border-blue-100"><Plus className="w-4 h-4" /> Add Option</button>
                                     </div>
                                 )}
                             </div>
@@ -838,6 +771,22 @@ export default function EditProductPage() {
                                     placeholder={f.placeholder} />
                             </div>
                         ))}
+                        {/* Selling Unit */}
+                        <div className="col-span-2 md:col-span-3">
+                            <label className="block text-xs font-medium text-gray-600 mb-1">Selling Unit <span className="text-gray-400 font-normal">· 판매 단위</span></label>
+                            <div className="flex items-center gap-3">
+                                <select name="unitLabel" value={(form as any).unitLabel ?? '개'} onChange={handleChange} className="border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white w-28">
+                                    {UNIT_LABELS.map(u => <option key={u} value={u}>{u}</option>)}
+                                </select>
+                                {(form as any).unitLabel && (form as any).unitLabel !== '개' && (
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs text-gray-400 whitespace-nowrap">1 {(form as any).unitLabel} =</span>
+                                        <input type="number" name="unitsPerPkg" min="1" value={(form as any).unitsPerPkg ?? ''} onChange={handleChange} placeholder="e.g. 12" className="border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none w-24" />
+                                        <span className="text-xs text-gray-400">개</span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
                     </div>
                 </div>
 

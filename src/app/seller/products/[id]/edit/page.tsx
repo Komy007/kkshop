@@ -5,7 +5,9 @@ import { useParams, useRouter } from 'next/navigation';
 import { Save, Loader2, ChevronLeft, AlertCircle, CheckCircle, Upload, X, ImagePlus, Plus } from 'lucide-react';
 import DraggableImageGrid from '@/components/DraggableImageGrid';
 
-const SIZE_PRESETS = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Free Size'];
+const SIZE_PRESETS   = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Free Size'];
+const VOLUME_PRESETS = ['30ml', '50ml', '100ml', '150ml', '200ml', '250ml', '300ml', '500ml', '1L'];
+const UNIT_LABELS    = ['개', 'box', 'pack', 'set', '병', '튜브', '매', '장', '캡슐'];
 
 interface Category { id: string; nameKo: string; nameEn?: string; parentId?: string | null; }
 
@@ -15,12 +17,14 @@ interface ProductForm {
     priceUsd: string; stockQty: string; volume: string; skinType: string; origin: string;
     brandName: string; expiryMonths: string; certifications: string;
     categoryId: string;
+    unitLabel: string; unitsPerPkg: string;
 }
 const EMPTY: ProductForm = {
     name: '', shortDesc: '', detailDesc: '', ingredients: '',
     howToUse: '', benefits: '', priceUsd: '', stockQty: '0', volume: '', skinType: '', origin: '',
     brandName: '', expiryMonths: '', certifications: '',
     categoryId: '',
+    unitLabel: '개', unitsPerPkg: '',
 };
 const BADGE: Record<string, string> = {
     PENDING:  'bg-yellow-100 text-yellow-700',
@@ -45,6 +49,19 @@ const Field = ({ en, ko, required, children }: { en: string; ko: string; require
     </div>
 );
 
+const ToggleSwitch = ({ checked, onChange, label, sub }: { checked: boolean; onChange: () => void; label: string; sub?: string }) => (
+    <label className="flex items-center gap-3 cursor-pointer select-none">
+        <button type="button" role="switch" aria-checked={checked} onClick={onChange}
+            className={`relative inline-flex w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-1 ${checked ? 'bg-teal-500' : 'bg-gray-200'}`}>
+            <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${checked ? 'translate-x-5' : 'translate-x-0'}`} />
+        </button>
+        <span className="text-sm font-semibold text-gray-800">
+            {label}
+            {sub && <span className="text-xs text-gray-400 ml-2 font-normal">{sub}</span>}
+        </span>
+    </label>
+);
+
 const inp  = "w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 outline-none";
 const ta   = "w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 outline-none resize-none";
 const vInp = "px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500";
@@ -63,26 +80,29 @@ export default function SellerProductEditPage() {
     const [message,        setMessage]        = useState<{ type: 'success' | 'error'; text: string; textKo: string } | null>(null);
 
     // Category state
-    const [categories,  setCategories] = useState<Category[]>([]);
-    const [catLoading,  setCatLoading] = useState(true);
-    const [catError,    setCatError]   = useState(false);
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [catLoading, setCatLoading] = useState(true);
+    const [catError,   setCatError]   = useState(false);
 
     // Image state
     const [existingImages, setExistingImages] = useState<{ id: string; url: string }[]>([]);
     const [deleteImageIds, setDeleteImageIds] = useState<string[]>([]);
     const [newImages,      setNewImages]      = useState<{ file: File; preview: string }[]>([]);
 
-    // Options (quantity discount) state
+    // Bulk discount toggle + options
+    const [bulkDiscountEnabled, setBulkDiscountEnabled] = useState(false);
     const [options, setOptions] = useState<{ minQty: string; maxQty: string; discountPct: string; freeShipping: boolean; labelKo: string }[]>([]);
 
-    // Variant state
-    const [variantEnabled, setVariantEnabled] = useState(false);
-    const [variantType,    setVariantType]    = useState<'color' | 'size' | 'custom'>('color');
+    // Multi-type variant state
+    const [enableColor,  setEnableColor]  = useState(false);
+    const [enableSize,   setEnableSize]   = useState(false);
+    const [enableVolume, setEnableVolume] = useState(false);
+    const [enableCustom, setEnableCustom] = useState(false);
     const [colorVars,  setColorVars]  = useState([{ name: '', hex: '#FF6B6B', stock: '0', price: '' }]);
     const [sizeVars,   setSizeVars]   = useState<{ label: string; stock: string; price: string }[]>([]);
+    const [volumeVars, setVolumeVars] = useState<{ label: string; stock: string; price: string }[]>([]);
     const [customVars, setCustomVars] = useState([{ label: '', stock: '0', price: '' }]);
 
-    // Load categories (public, no auth needed)
     const loadCategories = useCallback(() => {
         setCatLoading(true); setCatError(false);
         fetch('/api/categories')
@@ -100,21 +120,23 @@ export default function SellerProductEditPage() {
                 if (data.error) { router.push('/seller/products'); return; }
                 const ko = data.translations?.find((t: any) => t.langCode === 'ko') ?? {};
                 setForm({
-                    name:        ko.name            ?? '',
-                    shortDesc:   ko.shortDesc       ?? '',
-                    detailDesc:  ko.detailDesc      ?? '',
-                    ingredients: ko.ingredients     ?? '',
-                    howToUse:    ko.howToUse        ?? '',
-                    benefits:    ko.benefits        ?? '',
-                    priceUsd:    data.priceUsd      ?? '',
-                    stockQty:    String(data.stockQty ?? 0),
-                    volume:      data.volume        ?? '',
-                    skinType:    data.skinType      ?? '',
-                    origin:      data.origin        ?? '',
-                    brandName:   data.brandName     ?? '',
-                    expiryMonths: data.expiryMonths ? String(data.expiryMonths) : '',
+                    name:           ko.name            ?? '',
+                    shortDesc:      ko.shortDesc       ?? '',
+                    detailDesc:     ko.detailDesc      ?? '',
+                    ingredients:    ko.ingredients     ?? '',
+                    howToUse:       ko.howToUse        ?? '',
+                    benefits:       ko.benefits        ?? '',
+                    priceUsd:       data.priceUsd      ?? '',
+                    stockQty:       String(data.stockQty ?? 0),
+                    volume:         data.volume        ?? '',
+                    skinType:       data.skinType      ?? '',
+                    origin:         data.origin        ?? '',
+                    brandName:      data.brandName     ?? '',
+                    expiryMonths:   data.expiryMonths  ? String(data.expiryMonths) : '',
                     certifications: data.certifications ?? '',
-                    categoryId:  data.categoryId    ?? '',
+                    categoryId:     data.categoryId    ?? '',
+                    unitLabel:      data.unitLabel     ?? '개',
+                    unitsPerPkg:    data.unitsPerPkg   ? String(data.unitsPerPkg) : '',
                 });
                 setApprovalStatus(data.approvalStatus ?? 'PENDING');
                 setExistingImages(data.images ?? []);
@@ -122,34 +144,55 @@ export default function SellerProductEditPage() {
                 // Load options
                 const rawOptions = data.options ?? [];
                 if (rawOptions.length > 0) {
+                    setBulkDiscountEnabled(true);
                     setOptions(rawOptions.map((o: any) => ({
-                        minQty:      String(o.minQty),
-                        maxQty:      o.maxQty ? String(o.maxQty) : '',
-                        discountPct: String(parseFloat(o.discountPct)),
+                        minQty:       String(o.minQty),
+                        maxQty:       o.maxQty ? String(o.maxQty) : '',
+                        discountPct:  String(parseFloat(o.discountPct)),
                         freeShipping: Boolean(o.freeShipping),
-                        labelKo:     o.labelKo ?? '',
+                        labelKo:      o.labelKo ?? '',
                     })));
                 }
 
-                // Load variants
+                // Load variants — each type independently
                 const rawVariants = data.variants ?? [];
                 if (rawVariants.length > 0) {
-                    setVariantEnabled(true);
-                    const vType = rawVariants[0].variantType as 'color' | 'size' | 'custom';
-                    setVariantType(vType);
-                    if (vType === 'color') {
-                        setColorVars(rawVariants.map((v: any) => {
+                    const colorRows  = rawVariants.filter((v: any) => v.variantType === 'COLOR');
+                    const sizeRows   = rawVariants.filter((v: any) => v.variantType === 'SIZE');
+                    const volumeRows = rawVariants.filter((v: any) => v.variantType === 'VOLUME');
+                    const otherRows  = rawVariants.filter((v: any) => v.variantType === 'OTHER');
+
+                    // Also support legacy lowercase values
+                    const colorRowsAll  = [...colorRows,  ...rawVariants.filter((v: any) => v.variantType === 'color')];
+                    const sizeRowsAll   = [...sizeRows,   ...rawVariants.filter((v: any) => v.variantType === 'size')];
+                    const otherRowsAll  = [...otherRows,  ...rawVariants.filter((v: any) => v.variantType === 'custom')];
+
+                    if (colorRowsAll.length > 0) {
+                        setEnableColor(true);
+                        setColorVars(colorRowsAll.map((v: any) => {
                             const [name = '', hex = '#FF6B6B'] = v.variantValue.split('|');
                             return { name, hex, stock: String(v.stockQty), price: v.priceUsd ?? '' };
                         }));
-                    } else if (vType === 'size') {
-                        setSizeVars(rawVariants.map((v: any) => ({
+                    }
+                    if (sizeRowsAll.length > 0) {
+                        setEnableSize(true);
+                        setSizeVars(sizeRowsAll.map((v: any) => ({
                             label: v.variantValue,
                             stock: String(v.stockQty),
                             price: v.priceUsd ?? '',
                         })));
-                    } else {
-                        setCustomVars(rawVariants.map((v: any) => ({
+                    }
+                    if (volumeRows.length > 0) {
+                        setEnableVolume(true);
+                        setVolumeVars(volumeRows.map((v: any) => ({
+                            label: v.variantValue,
+                            stock: String(v.stockQty),
+                            price: v.priceUsd ?? '',
+                        })));
+                    }
+                    if (otherRowsAll.length > 0) {
+                        setEnableCustom(true);
+                        setCustomVars(otherRowsAll.map((v: any) => ({
                             label: v.variantValue,
                             stock: String(v.stockQty),
                             price: v.priceUsd ?? '',
@@ -209,7 +252,7 @@ export default function SellerProductEditPage() {
         setNewImages(prev => { const a = [...prev]; const [m] = a.splice(from, 1); a.splice(to, 0, m); return a; });
     };
 
-    const set = (field: keyof ProductForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+    const set = (field: keyof ProductForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
         setForm(prev => ({ ...prev, [field]: e.target.value }));
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -234,42 +277,44 @@ export default function SellerProductEditPage() {
                 setUploading(false);
             }
 
-            // 2. Build variants payload
-            let variantsPayload: any[] = [];
-            if (variantEnabled) {
-                if (variantType === 'color') {
-                    variantsPayload = colorVars
-                        .filter(v => v.name.trim())
-                        .map((v, i) => ({
-                            variantType: 'color',
-                            variantValue: `${v.name.trim()}|${v.hex}`,
-                            stockQty: parseInt(v.stock) || 0,
-                            priceUsd: v.price || null,
-                            sortOrder: i,
-                        }));
-                } else if (variantType === 'size') {
-                    variantsPayload = sizeVars
-                        .filter(v => v.label.trim())
-                        .map((v, i) => ({
-                            variantType: 'size',
-                            variantValue: v.label,
-                            stockQty: parseInt(v.stock) || 0,
-                            priceUsd: v.price || null,
-                            sortOrder: i,
-                        }));
-                } else {
-                    variantsPayload = customVars
-                        .filter(v => v.label.trim())
-                        .map((v, i) => ({
-                            variantType: 'custom',
-                            variantValue: v.label.trim(),
-                            stockQty: parseInt(v.stock) || 0,
-                            priceUsd: v.price || null,
-                            sortOrder: i,
-                        }));
-                }
+            // 2. Build multi-type variants payload
+            const variantsPayload: any[] = [];
+            if (enableColor) {
+                colorVars.filter(v => v.name.trim()).forEach((v, i) => variantsPayload.push({
+                    variantType:  'COLOR',
+                    variantValue: `${v.name.trim()}|${v.hex}`,
+                    stockQty:     parseInt(v.stock) || 0,
+                    priceUsd:     v.price || null,
+                    sortOrder:    i,
+                }));
             }
-            // variantEnabled=false → send [] to clear all variants
+            if (enableSize) {
+                sizeVars.filter(v => v.label.trim()).forEach((v, i) => variantsPayload.push({
+                    variantType:  'SIZE',
+                    variantValue: v.label.trim(),
+                    stockQty:     parseInt(v.stock) || 0,
+                    priceUsd:     v.price || null,
+                    sortOrder:    i,
+                }));
+            }
+            if (enableVolume) {
+                volumeVars.filter(v => v.label.trim()).forEach((v, i) => variantsPayload.push({
+                    variantType:  'VOLUME',
+                    variantValue: v.label.trim(),
+                    stockQty:     parseInt(v.stock) || 0,
+                    priceUsd:     v.price || null,
+                    sortOrder:    i,
+                }));
+            }
+            if (enableCustom) {
+                customVars.filter(v => v.label.trim()).forEach((v, i) => variantsPayload.push({
+                    variantType:  'OTHER',
+                    variantValue: v.label.trim(),
+                    stockQty:     parseInt(v.stock) || 0,
+                    priceUsd:     v.price || null,
+                    sortOrder:    i,
+                }));
+            }
 
             // 3. Save product
             const res = await fetch(`/api/seller/products/${productId}`, {
@@ -277,10 +322,11 @@ export default function SellerProductEditPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     ...form,
-                    imageUrls:    uploadedUrls,
+                    unitsPerPkg:   form.unitsPerPkg ? parseInt(form.unitsPerPkg) : null,
+                    imageUrls:     uploadedUrls,
                     deleteImageIds,
-                    options:      options.length > 0 ? options : [],
-                    variants:     variantsPayload,
+                    options:       bulkDiscountEnabled ? options : [],
+                    variants:      variantsPayload,
                 }),
             });
             const data = await res.json();
@@ -309,9 +355,10 @@ export default function SellerProductEditPage() {
         );
     }
 
-    const badgeInfo      = BADGE_LABEL[approvalStatus];
+    const badgeInfo       = BADGE_LABEL[approvalStatus];
     const visibleExisting = existingImages.filter(img => !deleteImageIds.includes(img.id));
     const totalImages     = visibleExisting.length + newImages.length;
+    const anyVariant      = enableColor || enableSize || enableVolume || enableCustom;
 
     return (
         <div className="max-w-2xl mx-auto py-8 px-4">
@@ -362,7 +409,7 @@ export default function SellerProductEditPage() {
                     <h2 className="text-sm font-bold text-gray-900 mb-0.5 flex items-center gap-2">
                         <span className="w-1.5 h-4 bg-teal-500 rounded-full inline-block" />
                         Product Images
-                        <span className="text-[10px] font-normal text-gray-400 ml-1">{totalImages}/5 · 상품 이미지</span>
+                        <span className="text-[10px] font-normal text-gray-400 ml-1">{totalImages}/10 · 상품 이미지</span>
                     </h2>
                     <p className="text-[11px] text-gray-400 mb-4 ml-3.5">Drag to reorder · Hover × to remove · 상품 이미지 최대 10장</p>
                     <div className="flex gap-3 flex-wrap items-start">
@@ -389,7 +436,7 @@ export default function SellerProductEditPage() {
                                 layout="flex"
                             />
                         )}
-                        {totalImages < 5 && (
+                        {totalImages < 10 && (
                             <button type="button" onClick={() => fileRef.current?.click()}
                                 className="w-24 h-24 border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center text-gray-400 hover:border-teal-400 hover:text-teal-600 transition-colors">
                                 <ImagePlus className="w-5 h-5 mb-1" />
@@ -464,6 +511,31 @@ export default function SellerProductEditPage() {
                             <textarea value={form.detailDesc} onChange={set('detailDesc')} rows={5}
                                 placeholder="Product features, effects, detailed information · 상품 상세 설명" className={`${ta} resize-y`} />
                         </Field>
+
+                        {/* Selling Unit */}
+                        <div className="pt-1">
+                            <p className="text-xs font-semibold text-gray-700 mb-2">
+                                Selling Unit <span className="text-gray-400 font-normal ml-1">판매 단위</span>
+                            </p>
+                            <div className="flex items-center gap-3">
+                                <select value={form.unitLabel} onChange={set('unitLabel')} className={`${inp} w-32`}>
+                                    {UNIT_LABELS.map(u => <option key={u} value={u}>{u}</option>)}
+                                </select>
+                                {form.unitLabel !== '개' && (
+                                    <div className="flex items-center gap-2 flex-1">
+                                        <span className="text-xs text-gray-400 whitespace-nowrap">1 {form.unitLabel} =</span>
+                                        <input type="number" min="1" value={form.unitsPerPkg} onChange={set('unitsPerPkg')}
+                                            placeholder="e.g. 12" className={`${inp} w-24`} />
+                                        <span className="text-xs text-gray-400">개</span>
+                                    </div>
+                                )}
+                            </div>
+                            {form.unitLabel !== '개' && form.unitsPerPkg && (
+                                <p className="text-[11px] text-teal-600 mt-1.5 ml-0.5">
+                                    Preview: 1 {form.unitLabel} = {form.unitsPerPkg} 개
+                                </p>
+                            )}
+                        </div>
                     </div>
                 </section>
 
@@ -525,62 +597,74 @@ export default function SellerProductEditPage() {
                     </div>
                 </section>
 
-                {/* ── Quantity Discount Options ── */}
+                {/* ── Bulk Discount Options ── */}
                 <section className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-                    <h2 className="text-sm font-bold text-gray-900 mb-0.5 flex items-center gap-2">
-                        <span className="w-1.5 h-4 bg-teal-500 rounded-full inline-block" />
-                        Quantity Discount Options
-                    </h2>
-                    <p className="text-[11px] text-gray-400 mb-4 ml-3.5">단위별 할인 옵션 — optional · 선택사항</p>
-                    <div className="space-y-3">
-                        {options.length === 0 && (
-                            <p className="text-xs text-gray-400 italic">No quantity options set. Click below to add. · 수량 옵션 없음.</p>
-                        )}
-                        {options.map((opt, i) => (
-                            <div key={i} className="grid grid-cols-[1fr_1fr_1fr_auto_1fr_auto] gap-2 items-end bg-teal-50/50 p-3 rounded-xl border border-teal-100 relative">
-                                <div>
-                                    <label className="block text-[10px] font-semibold text-gray-600 mb-1">Min Qty</label>
-                                    <input type="number" value={opt.minQty}
-                                        onChange={e => setOptions(options.map((o, idx) => idx === i ? { ...o, minQty: e.target.value } : o))}
-                                        className={inp} min="1" />
-                                </div>
-                                <div>
-                                    <label className="block text-[10px] font-semibold text-gray-600 mb-1">Max Qty</label>
-                                    <input type="number" value={opt.maxQty}
-                                        onChange={e => setOptions(options.map((o, idx) => idx === i ? { ...o, maxQty: e.target.value } : o))}
-                                        className={inp} placeholder="∞" />
-                                </div>
-                                <div>
-                                    <label className="block text-[10px] font-semibold text-gray-600 mb-1">Discount %</label>
-                                    <input type="number" value={opt.discountPct}
-                                        onChange={e => setOptions(options.map((o, idx) => idx === i ? { ...o, discountPct: e.target.value } : o))}
-                                        className={inp} />
-                                </div>
-                                <div className="pb-2">
-                                    <label className="flex items-center gap-1.5 text-xs cursor-pointer font-semibold text-gray-600 whitespace-nowrap">
-                                        <input type="checkbox" checked={opt.freeShipping}
-                                            onChange={e => setOptions(options.map((o, idx) => idx === i ? { ...o, freeShipping: e.target.checked } : o))}
-                                            className="rounded text-teal-600 border-gray-300 w-3.5 h-3.5" />
-                                        Free Ship
-                                    </label>
-                                </div>
-                                <div>
-                                    <label className="block text-[10px] font-semibold text-gray-600 mb-1">Label · 라벨</label>
-                                    <input value={opt.labelKo}
-                                        onChange={e => setOptions(options.map((o, idx) => idx === i ? { ...o, labelKo: e.target.value } : o))}
-                                        className={inp} placeholder="e.g. Buy 2 get 10% off" />
-                                </div>
-                                <button type="button" onClick={() => setOptions(options.filter((_, idx) => idx !== i))}
-                                    className="mb-1 p-1.5 text-red-400 hover:bg-red-50 rounded-lg">
-                                    <X className="w-4 h-4" />
-                                </button>
-                            </div>
-                        ))}
-                        <button type="button" onClick={() => setOptions([...options, { minQty: '2', maxQty: '', discountPct: '10', freeShipping: false, labelKo: '' }])}
-                            className="text-sm text-teal-600 font-bold flex items-center gap-1 hover:text-teal-700 bg-teal-50 px-3 py-2 rounded-lg border border-teal-100 transition-colors">
-                            <Plus className="w-4 h-4" /> Add Quantity Option · 수량 옵션 추가
-                        </button>
+                    <div className="flex items-start justify-between mb-4">
+                        <div>
+                            <h2 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                                <span className="w-1.5 h-4 bg-teal-500 rounded-full inline-block" />
+                                Bulk Discount Options
+                            </h2>
+                            <p className="text-[11px] text-gray-400 mt-0.5 ml-3.5">수량별 할인 — optional · 선택사항</p>
+                        </div>
+                        <ToggleSwitch
+                            checked={bulkDiscountEnabled}
+                            onChange={() => setBulkDiscountEnabled(p => !p)}
+                            label=""
+                        />
                     </div>
+
+                    {bulkDiscountEnabled && (
+                        <div className="space-y-3">
+                            {options.length === 0 && (
+                                <p className="text-xs text-gray-400 italic">No discount tiers yet. Click below to add. · 수량 옵션 없음.</p>
+                            )}
+                            {options.map((opt, i) => (
+                                <div key={i} className="grid grid-cols-[1fr_1fr_1fr_auto_1fr_auto] gap-2 items-end bg-teal-50/50 p-3 rounded-xl border border-teal-100">
+                                    <div>
+                                        <label className="block text-[10px] font-semibold text-gray-600 mb-1">Min Qty</label>
+                                        <input type="number" value={opt.minQty}
+                                            onChange={e => setOptions(options.map((o, idx) => idx === i ? { ...o, minQty: e.target.value } : o))}
+                                            className={inp} min="1" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-semibold text-gray-600 mb-1">Max Qty</label>
+                                        <input type="number" value={opt.maxQty}
+                                            onChange={e => setOptions(options.map((o, idx) => idx === i ? { ...o, maxQty: e.target.value } : o))}
+                                            className={inp} placeholder="∞" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-semibold text-gray-600 mb-1">Discount %</label>
+                                        <input type="number" value={opt.discountPct}
+                                            onChange={e => setOptions(options.map((o, idx) => idx === i ? { ...o, discountPct: e.target.value } : o))}
+                                            className={inp} />
+                                    </div>
+                                    <div className="pb-2">
+                                        <label className="flex items-center gap-1.5 text-xs cursor-pointer font-semibold text-gray-600 whitespace-nowrap">
+                                            <input type="checkbox" checked={opt.freeShipping}
+                                                onChange={e => setOptions(options.map((o, idx) => idx === i ? { ...o, freeShipping: e.target.checked } : o))}
+                                                className="rounded text-teal-600 border-gray-300 w-3.5 h-3.5" />
+                                            Free Ship
+                                        </label>
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-semibold text-gray-600 mb-1">Label · 라벨</label>
+                                        <input value={opt.labelKo}
+                                            onChange={e => setOptions(options.map((o, idx) => idx === i ? { ...o, labelKo: e.target.value } : o))}
+                                            className={inp} placeholder="e.g. 10개 구매시 10% 할인" />
+                                    </div>
+                                    <button type="button" onClick={() => setOptions(options.filter((_, idx) => idx !== i))}
+                                        className="mb-1 p-1.5 text-red-400 hover:bg-red-50 rounded-lg">
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            ))}
+                            <button type="button" onClick={() => setOptions([...options, { minQty: '10', maxQty: '', discountPct: '10', freeShipping: false, labelKo: '' }])}
+                                className="text-sm text-teal-600 font-bold flex items-center gap-1 hover:text-teal-700 bg-teal-50 px-3 py-2 rounded-lg border border-teal-100 transition-colors">
+                                <Plus className="w-4 h-4" /> Add Discount Tier · 할인 구간 추가
+                            </button>
+                        </div>
+                    )}
                 </section>
 
                 {/* ── Product Variants ── */}
@@ -589,39 +673,29 @@ export default function SellerProductEditPage() {
                         <span className="w-1.5 h-4 bg-teal-500 rounded-full inline-block" />
                         Product Variants
                     </h2>
-                    <p className="text-[11px] text-gray-400 mb-4 ml-3.5">색상·사이즈·커스텀 옵션 — optional · 선택사항</p>
+                    <p className="text-[11px] text-gray-400 mb-4 ml-3.5">색상·사이즈·용량·기타 옵션 — optional · 선택사항</p>
 
-                    {/* Toggle */}
-                    <label className="flex items-center gap-3 cursor-pointer select-none">
-                        <button type="button" role="switch" aria-checked={variantEnabled}
-                            onClick={() => setVariantEnabled(p => !p)}
-                            className={`relative inline-flex w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-1 ${variantEnabled ? 'bg-teal-500' : 'bg-gray-200'}`}>
-                            <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${variantEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
-                        </button>
-                        <span className="text-sm font-semibold text-gray-800">
-                            Enable product variants
-                            <span className="text-xs text-gray-400 ml-2 font-normal">색상 / 사이즈 / 기타 옵션 사용</span>
-                        </span>
-                    </label>
+                    {/* Type checkboxes */}
+                    <div className="flex flex-wrap gap-3 mb-4">
+                        {([
+                            { key: 'color',  label: '🎨 Color · 색상',    val: enableColor,  set: setEnableColor  },
+                            { key: 'size',   label: '📏 Size · 사이즈',    val: enableSize,   set: setEnableSize   },
+                            { key: 'volume', label: '🧴 Volume · 용량',    val: enableVolume, set: setEnableVolume },
+                            { key: 'custom', label: '🏷️ Custom · 기타',    val: enableCustom, set: setEnableCustom },
+                        ] as const).map(({ key, label, val, set: setter }) => (
+                            <label key={key} className={`flex items-center gap-2 px-3 py-2 rounded-xl border cursor-pointer text-sm font-semibold transition-all select-none ${val ? 'bg-teal-500 text-white border-teal-500 shadow-sm' : 'bg-white text-gray-600 border-gray-200 hover:border-teal-300 hover:text-teal-700'}`}>
+                                <input type="checkbox" checked={val} onChange={() => setter(p => !p)} className="hidden" />
+                                {label}
+                            </label>
+                        ))}
+                    </div>
 
-                    {variantEnabled && (
-                        <div className="mt-5 space-y-5">
-                            {/* Type selector */}
-                            <div>
-                                <p className="text-xs font-semibold text-gray-600 mb-2">Variant Type · 옵션 종류:</p>
-                                <div className="flex flex-wrap gap-2">
-                                    {(['color', 'size', 'custom'] as const).map(t => (
-                                        <button key={t} type="button" onClick={() => setVariantType(t)}
-                                            className={`px-4 py-2 rounded-xl text-sm font-bold border transition-all ${variantType === t ? 'bg-teal-500 text-white border-teal-500 shadow-sm' : 'bg-white text-gray-600 border-gray-200 hover:border-teal-300 hover:text-teal-700'}`}>
-                                            {t === 'color' ? '🎨 Color · 색상' : t === 'size' ? '📏 Size · 사이즈' : '🏷️ Custom · 기타'}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
+                    {anyVariant && (
+                        <div className="space-y-6">
                             {/* ── Color ── */}
-                            {variantType === 'color' && (
+                            {enableColor && (
                                 <div className="space-y-3">
+                                    <p className="text-xs font-bold text-gray-700">🎨 Color Variants · 색상 옵션</p>
                                     <div className="grid grid-cols-[32px_1fr_68px_84px_28px] gap-2 px-1 text-[10px] font-semibold text-gray-400">
                                         <span />
                                         <span>Color name · 색상명</span>
@@ -636,15 +710,13 @@ export default function SellerProductEditPage() {
                                                 className="w-8 h-8 rounded-lg border border-gray-200 cursor-pointer p-0.5 bg-white" />
                                             <input value={cv.name}
                                                 onChange={e => setColorVars(p => p.map((c, idx) => idx === i ? { ...c, name: e.target.value } : c))}
-                                                placeholder="e.g. Rose Pink"
-                                                className={vInp} />
+                                                placeholder="e.g. Rose Pink" className={vInp} />
                                             <input type="number" value={cv.stock}
                                                 onChange={e => setColorVars(p => p.map((c, idx) => idx === i ? { ...c, stock: e.target.value } : c))}
                                                 className={`text-center ${vInp}`} min="0" />
                                             <input type="number" step="0.01" value={cv.price}
                                                 onChange={e => setColorVars(p => p.map((c, idx) => idx === i ? { ...c, price: e.target.value } : c))}
-                                                placeholder="—"
-                                                className={`text-center ${vInp}`} />
+                                                placeholder="—" className={`text-center ${vInp}`} />
                                             {colorVars.length > 1 ? (
                                                 <button type="button" onClick={() => setColorVars(p => p.filter((_, idx) => idx !== i))}
                                                     className="p-1 text-red-400 hover:bg-red-50 rounded-lg">
@@ -663,8 +735,9 @@ export default function SellerProductEditPage() {
                             )}
 
                             {/* ── Size ── */}
-                            {variantType === 'size' && (
+                            {enableSize && (
                                 <div className="space-y-4">
+                                    <p className="text-xs font-bold text-gray-700">📏 Size Variants · 사이즈 옵션</p>
                                     <div>
                                         <p className="text-xs font-semibold text-gray-600 mb-2">Quick Add · 빠른 추가:</p>
                                         <div className="flex flex-wrap gap-2">
@@ -698,15 +771,13 @@ export default function SellerProductEditPage() {
                                                 <div key={i} className="grid grid-cols-[1fr_68px_84px_28px] gap-2 items-center bg-gray-50 p-2.5 rounded-xl border border-gray-100">
                                                     <input value={sv.label}
                                                         onChange={e => setSizeVars(p => p.map((s, idx) => idx === i ? { ...s, label: e.target.value } : s))}
-                                                        placeholder="e.g. M, 95"
-                                                        className={`font-semibold ${vInp}`} />
+                                                        placeholder="e.g. M, 95" className={`font-semibold ${vInp}`} />
                                                     <input type="number" value={sv.stock}
                                                         onChange={e => setSizeVars(p => p.map((s, idx) => idx === i ? { ...s, stock: e.target.value } : s))}
                                                         className={`text-center ${vInp}`} min="0" />
                                                     <input type="number" step="0.01" value={sv.price}
                                                         onChange={e => setSizeVars(p => p.map((s, idx) => idx === i ? { ...s, price: e.target.value } : s))}
-                                                        placeholder="—"
-                                                        className={`text-center ${vInp}`} />
+                                                        placeholder="—" className={`text-center ${vInp}`} />
                                                     <button type="button" onClick={() => setSizeVars(p => p.filter((_, idx) => idx !== i))}
                                                         className="p-1 text-red-400 hover:bg-red-50 rounded-lg">
                                                         <X className="w-3.5 h-3.5" />
@@ -721,9 +792,68 @@ export default function SellerProductEditPage() {
                                 </div>
                             )}
 
+                            {/* ── Volume ── */}
+                            {enableVolume && (
+                                <div className="space-y-4">
+                                    <p className="text-xs font-bold text-gray-700">🧴 Volume Variants · 용량 옵션</p>
+                                    <div>
+                                        <p className="text-xs font-semibold text-gray-600 mb-2">Quick Add · 빠른 추가:</p>
+                                        <div className="flex flex-wrap gap-2">
+                                            {VOLUME_PRESETS.map(v => {
+                                                const added = volumeVars.some(vv => vv.label === v);
+                                                return (
+                                                    <button key={v} type="button"
+                                                        onClick={() => !added && setVolumeVars(p => [...p, { label: v, stock: '0', price: '' }])}
+                                                        disabled={added}
+                                                        className={`px-3 py-1.5 rounded-lg text-sm font-bold border transition-all ${added ? 'bg-teal-100 text-teal-600 border-teal-200 opacity-50 cursor-not-allowed' : 'bg-white text-gray-600 border-gray-200 hover:border-teal-400 hover:text-teal-700'}`}>
+                                                        {v}
+                                                    </button>
+                                                );
+                                            })}
+                                            <button type="button"
+                                                onClick={() => setVolumeVars(p => [...p, { label: '', stock: '0', price: '' }])}
+                                                className="px-3 py-1.5 rounded-lg text-sm font-bold border border-dashed border-gray-300 text-gray-500 hover:border-teal-400 hover:text-teal-600 flex items-center gap-1">
+                                                <Plus className="w-3.5 h-3.5" /> Custom
+                                            </button>
+                                        </div>
+                                    </div>
+                                    {volumeVars.length > 0 && (
+                                        <div className="space-y-2">
+                                            <div className="grid grid-cols-[1fr_68px_84px_28px] gap-2 px-1 text-[10px] font-semibold text-gray-400">
+                                                <span>Volume · 용량</span>
+                                                <span className="text-center">Stock</span>
+                                                <span className="text-center">Price (opt)</span>
+                                                <span />
+                                            </div>
+                                            {volumeVars.map((vv, i) => (
+                                                <div key={i} className="grid grid-cols-[1fr_68px_84px_28px] gap-2 items-center bg-gray-50 p-2.5 rounded-xl border border-gray-100">
+                                                    <input value={vv.label}
+                                                        onChange={e => setVolumeVars(p => p.map((v, idx) => idx === i ? { ...v, label: e.target.value } : v))}
+                                                        placeholder="e.g. 100ml" className={`font-semibold ${vInp}`} />
+                                                    <input type="number" value={vv.stock}
+                                                        onChange={e => setVolumeVars(p => p.map((v, idx) => idx === i ? { ...v, stock: e.target.value } : v))}
+                                                        className={`text-center ${vInp}`} min="0" />
+                                                    <input type="number" step="0.01" value={vv.price}
+                                                        onChange={e => setVolumeVars(p => p.map((v, idx) => idx === i ? { ...v, price: e.target.value } : v))}
+                                                        placeholder="—" className={`text-center ${vInp}`} />
+                                                    <button type="button" onClick={() => setVolumeVars(p => p.filter((_, idx) => idx !== i))}
+                                                        className="p-1 text-red-400 hover:bg-red-50 rounded-lg">
+                                                        <X className="w-3.5 h-3.5" />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                    {volumeVars.length === 0 && (
+                                        <p className="text-xs text-gray-400 italic">Click volume presets above to add. · 용량을 추가하세요.</p>
+                                    )}
+                                </div>
+                            )}
+
                             {/* ── Custom ── */}
-                            {variantType === 'custom' && (
+                            {enableCustom && (
                                 <div className="space-y-3">
+                                    <p className="text-xs font-bold text-gray-700">🏷️ Custom Variants · 기타 옵션</p>
                                     <div className="grid grid-cols-[1fr_68px_84px_28px] gap-2 px-1 text-[10px] font-semibold text-gray-400">
                                         <span>Option name · 옵션명</span>
                                         <span className="text-center">Stock</span>
@@ -734,15 +864,13 @@ export default function SellerProductEditPage() {
                                         <div key={i} className="grid grid-cols-[1fr_68px_84px_28px] gap-2 items-center bg-gray-50 p-2.5 rounded-xl border border-gray-100">
                                             <input value={cv.label}
                                                 onChange={e => setCustomVars(p => p.map((c, idx) => idx === i ? { ...c, label: e.target.value } : c))}
-                                                placeholder="e.g. Starter Kit, Lavender"
-                                                className={vInp} />
+                                                placeholder="e.g. Starter Kit, Lavender" className={vInp} />
                                             <input type="number" value={cv.stock}
                                                 onChange={e => setCustomVars(p => p.map((c, idx) => idx === i ? { ...c, stock: e.target.value } : c))}
                                                 className={`text-center ${vInp}`} min="0" />
                                             <input type="number" step="0.01" value={cv.price}
                                                 onChange={e => setCustomVars(p => p.map((c, idx) => idx === i ? { ...c, price: e.target.value } : c))}
-                                                placeholder="—"
-                                                className={`text-center ${vInp}`} />
+                                                placeholder="—" className={`text-center ${vInp}`} />
                                             {customVars.length > 1 ? (
                                                 <button type="button" onClick={() => setCustomVars(p => p.filter((_, idx) => idx !== i))}
                                                     className="p-1 text-red-400 hover:bg-red-50 rounded-lg">

@@ -236,7 +236,7 @@ interface ProductImage {
 
 interface ProductVariant {
     id: string;
-    variantType: 'COLOR' | 'SIZE' | 'OTHER';
+    variantType: 'COLOR' | 'SIZE' | 'VOLUME' | 'OTHER';
     variantValue: string;
     sku: string | null;
     stockQty: number;
@@ -893,6 +893,13 @@ export default function ProductDetailClient() {
                                     </>
                                 )}
                             </div>
+                            {/* Unit label */}
+                            {(product as any).unitLabel && (product as any).unitLabel !== '개' && (
+                                <p className="text-xs text-gray-400 mt-0.5">
+                                    1 {(product as any).unitLabel}
+                                    {(product as any).unitsPerPkg && ` = ${(product as any).unitsPerPkg} 개`}
+                                </p>
+                            )}
                             {/* Savings summary row — visible when bulk option is active */}
                             {activeOption && activeOption.discountPct > 0 && (
                                 <div className="flex items-center gap-2">
@@ -913,9 +920,10 @@ export default function ProductDetailClient() {
 
                         {/* Variant Selector */}
                         {product.variants && product.variants.length > 0 && (() => {
-                            const colorVariants = product.variants.filter(v => v.variantType === 'COLOR');
-                            const sizeVariants = product.variants.filter(v => v.variantType === 'SIZE');
-                            const otherVariants = product.variants.filter(v => v.variantType === 'OTHER');
+                            const colorVariants  = product.variants.filter(v => v.variantType === 'COLOR');
+                            const sizeVariants   = product.variants.filter(v => v.variantType === 'SIZE');
+                            const volumeVariants = product.variants.filter(v => v.variantType === 'VOLUME');
+                            const otherVariants  = product.variants.filter(v => v.variantType === 'OTHER');
                             return (
                                 <div className="space-y-3">
                                     {colorVariants.length > 0 && (
@@ -967,6 +975,31 @@ export default function ProductDetailClient() {
                                                             } ${isSoldOut ? 'opacity-40 cursor-not-allowed line-through' : 'cursor-pointer'}`}
                                                         >
                                                             {v.variantValue}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    )}
+                                    {volumeVariants.length > 0 && (
+                                        <div>
+                                            <p className="text-sm font-bold text-gray-700 mb-2">Volume</p>
+                                            <div className="flex flex-wrap gap-2">
+                                                {volumeVariants.map(v => {
+                                                    const isSelected = selectedVariantId === v.id;
+                                                    const isSoldOut = v.stockQty <= 0;
+                                                    return (
+                                                        <button
+                                                            key={v.id}
+                                                            type="button"
+                                                            onClick={() => setSelectedVariantId(isSelected ? '' : v.id)}
+                                                            disabled={isSoldOut}
+                                                            className={`px-4 py-2 rounded-xl border-2 text-sm font-bold transition-all ${
+                                                                isSelected ? 'border-brand-primary bg-brand-primary/10 text-brand-primary' : 'border-gray-200 text-gray-700 hover:border-gray-400'
+                                                            } ${isSoldOut ? 'opacity-40 cursor-not-allowed line-through' : 'cursor-pointer'}`}
+                                                        >
+                                                            {v.variantValue}
+                                                            {v.priceUsd && <span className="ml-1.5 text-xs font-normal text-gray-500">${parseFloat(v.priceUsd as any).toFixed(2)}</span>}
                                                         </button>
                                                     );
                                                 })}

@@ -2,19 +2,20 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Upload, X, Loader2, Sparkles, Info, CheckCircle, Plus } from 'lucide-react';
+import { Upload, X, Loader2, Sparkles, Info, CheckCircle, Plus, Package } from 'lucide-react';
 import DraggableImageGrid from '@/components/DraggableImageGrid';
 
 interface Category { id: string; slug: string; nameKo: string; nameEn?: string; parentId?: string | null; }
 
 const SIZE_PRESETS = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Free Size'];
+const VOLUME_PRESETS = ['30ml', '50ml', '100ml', '150ml', '200ml', '250ml', '300ml', '500ml', '1L'];
+const UNIT_LABELS = ['개', 'box', 'pack', 'set', '병', '튜브', '매', '장', '캡슐'];
 
-// ── 스타일 상수 (모듈 스코프) ─────────────────────────────────────────────
+// ── 스타일 상수 ────────────────────────────────────────────────────────────
 const inp  = "w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500";
 const ta   = "w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 resize-none";
 const vInp = "px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500";
 
-// ── 헬퍼 컴포넌트 — 반드시 모듈 스코프에 정의해야 리렌더시 재마운트 방지 ──
 function Section({ title, sub, children }: { title: string; sub?: string; children: React.ReactNode }) {
     return (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-4">
@@ -39,49 +40,67 @@ function Field({ en, ko, required, children }: { en: string; ko: string; require
     );
 }
 
+function ToggleSwitch({ checked, onChange, label, sub }: { checked: boolean; onChange: () => void; label: string; sub?: string }) {
+    return (
+        <label className="flex items-center gap-3 cursor-pointer select-none">
+            <button
+                type="button"
+                role="switch"
+                aria-checked={checked}
+                onClick={onChange}
+                className={`relative inline-flex w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-1 ${checked ? 'bg-teal-500' : 'bg-gray-200'}`}
+            >
+                <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${checked ? 'translate-x-5' : 'translate-x-0'}`} />
+            </button>
+            <span className="text-sm font-semibold text-gray-800">
+                {label}
+                {sub && <span className="text-xs text-gray-400 ml-2 font-normal">{sub}</span>}
+            </span>
+        </label>
+    );
+}
+
 export default function SellerProductNewPage() {
     const router  = useRouter();
     const fileRef = useRef<HTMLInputElement>(null);
     const [images,      setImages]     = useState<File[]>([]);
     const [previews,    setPreviews]   = useState<string[]>([]);
-    const [categories,     setCategories]    = useState<Category[]>([]);
-    const [catLoading,     setCatLoading]    = useState(true);
-    const [catError,       setCatError]      = useState(false);
-    const [options,     setOptions]    = useState([{ minQty: '1', maxQty: '', discountPct: '0', freeShipping: false, labelKo: '1 unit (default)' }]);
+    const [categories,  setCategories] = useState<Category[]>([]);
+    const [catLoading,  setCatLoading] = useState(true);
+    const [catError,    setCatError]   = useState(false);
     const [submitting,  setSubmitting] = useState(false);
     const [translating, setTranslating]= useState(false);
     const [success,     setSuccess]    = useState(false);
 
+    // ── Bulk discount toggle ───────────────────────────────────────────────
+    const [bulkDiscountEnabled, setBulkDiscountEnabled] = useState(false);
+    const [options, setOptions] = useState([{ minQty: '3', maxQty: '', discountPct: '5', freeShipping: false, labelKo: '' }]);
+
     // ── Variant state ──────────────────────────────────────────────────────
-    const [variantEnabled, setVariantEnabled] = useState(false);
-    const [variantType,    setVariantType]    = useState<'color' | 'size' | 'custom'>('color');
+    const [variantEnabled,  setVariantEnabled]  = useState(false);
+    const [enableColor,     setEnableColor]     = useState(true);
+    const [enableSize,      setEnableSize]      = useState(false);
+    const [enableVolume,    setEnableVolume]    = useState(false);
+    const [enableCustom,    setEnableCustom]    = useState(false);
     const [colorVars,  setColorVars]  = useState([{ name: '', hex: '#FF6B6B', stock: '0', price: '' }]);
     const [sizeVars,   setSizeVars]   = useState<{ label: string; stock: string; price: string }[]>([]);
+    const [volumeVars, setVolumeVars] = useState<{ label: string; stock: string; price: string }[]>([]);
     const [customVars, setCustomVars] = useState([{ label: '', stock: '0', price: '' }]);
 
     const [form, setForm] = useState({
         sku: '', priceUsd: '', stockQty: '0', categoryId: '',
         brandName: '', volume: '', origin: '', skinType: '', expiryMonths: '', certifications: '',
+        unitLabel: '개', unitsPerPkg: '',
         nameKo: '', shortDescKo: '', detailDescKo: '',
         ingredientsKo: '', howToUseKo: '', benefitsKo: '',
     });
 
     const loadCategories = () => {
-        setCatLoading(true);
-        setCatError(false);
+        setCatLoading(true); setCatError(false);
         fetch('/api/categories')
-            .then(r => {
-                if (!r.ok) throw new Error(`HTTP ${r.status}`);
-                return r.json();
-            })
-            .then(d => {
-                setCategories(Array.isArray(d) ? d : []);
-                setCatLoading(false);
-            })
-            .catch(() => {
-                setCatError(true);
-                setCatLoading(false);
-            });
+            .then(r => { if (!r.ok) throw new Error(); return r.json(); })
+            .then(d => { setCategories(Array.isArray(d) ? d : []); setCatLoading(false); })
+            .catch(() => { setCatError(true); setCatLoading(false); });
     };
 
     useEffect(() => { loadCategories(); }, []);
@@ -155,44 +174,61 @@ export default function SellerProductNewPage() {
         }
         setTranslating(false);
 
-        // ── Build variants payload ──────────────────────────────────────
+        // ── Build variants payload (multi-type) ─────────────────────────
         let variantsPayload: any[] = [];
         if (variantEnabled) {
-            if (variantType === 'color') {
-                variantsPayload = colorVars
-                    .filter(v => v.name.trim())
-                    .map((v, i) => ({
-                        variantType: 'color',
+            let sortIdx = 0;
+            if (enableColor) {
+                colorVars.filter(v => v.name.trim()).forEach(v => {
+                    variantsPayload.push({
+                        variantType: 'COLOR',
                         variantValue: `${v.name.trim()}|${v.hex}`,
                         stockQty: parseInt(v.stock) || 0,
                         priceUsd: v.price || null,
-                        sortOrder: i,
-                    }));
-            } else if (variantType === 'size') {
-                variantsPayload = sizeVars
-                    .filter(v => v.label.trim())
-                    .map((v, i) => ({
-                        variantType: 'size',
+                        sortOrder: sortIdx++,
+                    });
+                });
+            }
+            if (enableSize) {
+                sizeVars.filter(v => v.label.trim()).forEach(v => {
+                    variantsPayload.push({
+                        variantType: 'SIZE',
                         variantValue: v.label,
                         stockQty: parseInt(v.stock) || 0,
                         priceUsd: v.price || null,
-                        sortOrder: i,
-                    }));
-            } else {
-                variantsPayload = customVars
-                    .filter(v => v.label.trim())
-                    .map((v, i) => ({
-                        variantType: 'custom',
+                        sortOrder: sortIdx++,
+                    });
+                });
+            }
+            if (enableVolume) {
+                volumeVars.filter(v => v.label.trim()).forEach(v => {
+                    variantsPayload.push({
+                        variantType: 'VOLUME',
+                        variantValue: v.label,
+                        stockQty: parseInt(v.stock) || 0,
+                        priceUsd: v.price || null,
+                        sortOrder: sortIdx++,
+                    });
+                });
+            }
+            if (enableCustom) {
+                customVars.filter(v => v.label.trim()).forEach(v => {
+                    variantsPayload.push({
+                        variantType: 'OTHER',
                         variantValue: v.label.trim(),
                         stockQty: parseInt(v.stock) || 0,
                         priceUsd: v.price || null,
-                        sortOrder: i,
-                    }));
+                        sortOrder: sortIdx++,
+                    });
+                });
             }
         }
 
         const payload = {
-            ...form, imageUrls, options,
+            ...form,
+            unitsPerPkg: form.unitsPerPkg ? parseInt(form.unitsPerPkg) : null,
+            imageUrls,
+            options: bulkDiscountEnabled ? options : [],
             variants: variantsPayload,
             approvalStatus: 'PENDING',
             status: 'INACTIVE',
@@ -283,41 +319,32 @@ export default function SellerProductNewPage() {
                             {catLoading ? (
                                 <div className={`${inp} flex items-center gap-2 text-gray-400 bg-gray-50`}>
                                     <Loader2 className="w-4 h-4 animate-spin" />
-                                    <span className="text-sm">Loading categories… · 카테고리 불러오는 중…</span>
+                                    <span className="text-sm">Loading…</span>
                                 </div>
                             ) : catError ? (
                                 <div className="space-y-1">
                                     <div className={`${inp} flex items-center justify-between bg-red-50 border-red-200 text-red-600`}>
-                                        <span className="text-sm">Failed to load — · 불러오기 실패</span>
-                                        <button type="button" onClick={loadCategories}
-                                            className="text-xs font-bold underline hover:no-underline ml-2">
-                                            Retry · 재시도
-                                        </button>
+                                        <span className="text-sm">Failed · 불러오기 실패</span>
+                                        <button type="button" onClick={loadCategories} className="text-xs font-bold underline ml-2">Retry</button>
                                     </div>
                                 </div>
                             ) : categories.length === 0 ? (
                                 <div className={`${inp} bg-amber-50 border-amber-200 text-amber-700 text-sm`}>
-                                    No categories available — please ask admin to add categories first.
-                                    <span className="block text-xs opacity-70 mt-0.5">카테고리가 없습니다. 관리자에게 카테고리 추가를 요청하세요.</span>
+                                    No categories — ask admin · 카테고리 없음
                                 </div>
                             ) : (
                                 <select value={form.categoryId} onChange={e => set('categoryId', e.target.value)} className={inp} required>
                                     <option value="">— Select category · 카테고리 선택 —</option>
-                                    {/* Top-level categories as optgroup, sub-categories inside */}
                                     {categories.filter(c => !c.parentId).map(parent => {
                                         const subs = categories.filter(c => c.parentId === parent.id);
                                         return subs.length > 0 ? (
                                             <optgroup key={parent.id} label={`📁 ${parent.nameEn || parent.nameKo}`}>
                                                 {subs.map(s => (
-                                                    <option key={s.id} value={s.id}>
-                                                        {s.nameEn || s.nameKo}
-                                                    </option>
+                                                    <option key={s.id} value={s.id}>{s.nameEn || s.nameKo}</option>
                                                 ))}
                                             </optgroup>
                                         ) : (
-                                            <option key={parent.id} value={parent.id}>
-                                                {parent.nameEn || parent.nameKo}
-                                            </option>
+                                            <option key={parent.id} value={parent.id}>{parent.nameEn || parent.nameKo}</option>
                                         );
                                     })}
                                 </select>
@@ -334,12 +361,49 @@ export default function SellerProductNewPage() {
                         <Field en="Initial Stock Qty" ko="초기 재고수량">
                             <input type="number" value={form.stockQty} onChange={e => set('stockQty', e.target.value)} className={inp} />
                         </Field>
-                        <Field en="Volume / Weight / Unit" ko="용량/중량/단위">
+
+                        {/* ── Selling Unit ── */}
+                        <div className="col-span-2">
+                            <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
+                                <div className="flex items-center gap-2 mb-3">
+                                    <Package className="w-4 h-4 text-teal-600" />
+                                    <span className="text-sm font-bold text-gray-800">Selling Unit · 판매 단위</span>
+                                    <span className="text-xs text-gray-400">How is this product sold? · 어떤 단위로 판매하나요?</span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="block text-xs font-semibold text-gray-600 mb-1">Unit · 단위</label>
+                                        <select value={form.unitLabel} onChange={e => set('unitLabel', e.target.value)} className={inp}>
+                                            {UNIT_LABELS.map(u => <option key={u} value={u}>{u}</option>)}
+                                        </select>
+                                    </div>
+                                    {form.unitLabel !== '개' && (
+                                        <div>
+                                            <label className="block text-xs font-semibold text-gray-600 mb-1">
+                                                Items per unit · 단위당 개수
+                                            </label>
+                                            <input
+                                                type="number"
+                                                value={form.unitsPerPkg}
+                                                onChange={e => set('unitsPerPkg', e.target.value)}
+                                                placeholder={`e.g. 1 ${form.unitLabel} = ? 개`}
+                                                className={inp}
+                                                min="1"
+                                            />
+                                            {form.unitsPerPkg && (
+                                                <p className="text-[10px] text-teal-600 mt-1">
+                                                    → 1 {form.unitLabel} = {form.unitsPerPkg} 개
+                                                </p>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        <Field en="Volume / Weight" ko="용량/중량">
                             <input value={form.volume} onChange={e => set('volume', e.target.value)}
-                                placeholder="e.g. 150ml  |  1 pack = 5 bags (120g each)  |  500g" className={inp} />
-                            <p className="text-[10px] text-gray-400 mt-1">
-                                For bundled products describe contents: <em>1 box = 10 packs (each 30g)</em> · 묶음 상품은 구성 단위 기재
-                            </p>
+                                placeholder="e.g. 150ml, 500g" className={inp} />
                         </Field>
                         <Field en="Country of Origin" ko="원산지">
                             <input value={form.origin} onChange={e => set('origin', e.target.value)}
@@ -352,144 +416,138 @@ export default function SellerProductNewPage() {
                         <Field en="Expiry (months)" ko="유통기한 (개월)">
                             <input type="number" value={form.expiryMonths} onChange={e => set('expiryMonths', e.target.value)}
                                 placeholder="e.g. 36" className={inp} min="1" />
-                            <p className="text-[10px] text-gray-400 mt-1">
-                                Shelf life from manufacturing date · 제조일로부터 사용 가능한 개월 수
-                            </p>
                         </Field>
-                        <Field en="Certifications" ko="인증/특징">
-                            <input value={form.certifications} onChange={e => set('certifications', e.target.value)}
-                                placeholder="e.g. Vegan, EWG, Organic, KFDA" className={inp} />
-                            <p className="text-[10px] text-gray-400 mt-1">
-                                Comma-separated · 쉼표로 구분 (예: 비건, EWG인증, 유기농)
-                            </p>
-                        </Field>
+                        <div className="col-span-2">
+                            <Field en="Certifications" ko="인증/특징">
+                                <input value={form.certifications} onChange={e => set('certifications', e.target.value)}
+                                    placeholder="e.g. Vegan, EWG, Organic, KFDA · 쉼표로 구분" className={inp} />
+                            </Field>
+                        </div>
                     </div>
                 </Section>
 
-                {/* ── Bulk Pricing Tiers ── */}
-                <Section title="🎁 Bulk Pricing Tiers" sub="수량별 할인 단계 — optional · 선택사항">
-                    {/* How it works hint */}
-                    <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-700 flex items-start gap-2">
-                        <Info className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
-                        <div>
-                            <strong>How tiers work:</strong> Buyers who purchase the minimum quantity in a tier automatically get that discount.
-                            Example: Buy 3+ = 10% off, Buy 10+ = 20% off + Free Shipping.
-                            <span className="block opacity-70 mt-0.5">구매 수량이 최소수량 이상이면 자동으로 해당 할인이 적용됩니다.</span>
-                        </div>
-                    </div>
-                    {/* Quick preset buttons */}
-                    <div className="mb-3 flex flex-wrap gap-2 items-center">
-                        <span className="text-xs font-semibold text-gray-500">Quick presets:</span>
-                        {[
-                            { label: 'Buy 3+ / 5% off', min: '3', max: '', pct: '5', ship: false },
-                            { label: 'Buy 5+ / 10% off', min: '5', max: '', pct: '10', ship: false },
-                            { label: 'Buy 10+ / 15% off', min: '10', max: '', pct: '15', ship: false },
-                            { label: 'Buy 20+ / 20% + Free Ship', min: '20', max: '', pct: '20', ship: true },
-                        ].map(p => (
-                            <button key={p.label} type="button"
-                                onClick={() => setOptions(prev => {
-                                    const exists = prev.some(o => o.minQty === p.min);
-                                    if (exists) return prev;
-                                    return [...prev, { minQty: p.min, maxQty: p.max, discountPct: p.pct, freeShipping: p.ship, labelKo: '' }];
-                                })}
-                                className="px-2.5 py-1 rounded-lg text-[11px] font-semibold border bg-white text-gray-600 border-gray-200 hover:border-teal-400 hover:text-teal-700 transition-all">
-                                {p.label}
-                            </button>
-                        ))}
-                    </div>
-                    <div className="space-y-4">
-                        {options.map((opt, i) => (
-                            <div key={i} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_auto_2fr_auto] gap-3 items-end bg-teal-50/50 p-4 rounded-xl border border-teal-100 relative">
+                {/* ── Bulk Pricing Tiers (optional toggle) ── */}
+                <Section title="🎁 Bulk Pricing" sub="수량별 할인 — optional · 선택사항">
+                    <ToggleSwitch
+                        checked={bulkDiscountEnabled}
+                        onChange={() => setBulkDiscountEnabled(p => !p)}
+                        label="Enable Bulk Discount · 수량 할인 사용"
+                        sub="할인 없으면 비활성"
+                    />
+
+                    {bulkDiscountEnabled && (
+                        <div className="mt-4 space-y-4">
+                            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-700 flex items-start gap-2">
+                                <Info className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
                                 <div>
-                                    <label className="block text-xs font-semibold text-gray-700 mb-1">Min Qty · 최소수량</label>
-                                    <input type="number" value={opt.minQty} onChange={e => setOptions(options.map((o, idx) => idx === i ? { ...o, minQty: e.target.value } : o))}
-                                        className={inp} min="1" />
+                                    Buyers who reach the minimum quantity get the tier discount automatically.
+                                    <span className="block opacity-70 mt-0.5">최소 수량 달성 시 자동으로 해당 할인율 적용됩니다.</span>
                                 </div>
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-700 mb-1">Max Qty · 최대수량</label>
-                                    <input type="number" value={opt.maxQty} onChange={e => setOptions(options.map((o, idx) => idx === i ? { ...o, maxQty: e.target.value } : o))}
-                                        className={inp} placeholder="Unlimited" />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-700 mb-1">Discount % · 할인율</label>
-                                    <input type="number" value={opt.discountPct} onChange={e => setOptions(options.map((o, idx) => idx === i ? { ...o, discountPct: e.target.value } : o))}
-                                        className={inp} />
-                                </div>
-                                <div className="pb-3">
-                                    <label className="flex items-center gap-2 text-sm cursor-pointer font-semibold text-gray-700 whitespace-nowrap">
-                                        <input type="checkbox" checked={opt.freeShipping} onChange={e => setOptions(options.map((o, idx) => idx === i ? { ...o, freeShipping: e.target.checked } : o))}
-                                            className="rounded text-teal-600 focus:ring-teal-500 border-gray-300 w-4 h-4" />
-                                        Free Ship · 무료배송
-                                    </label>
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-700 mb-1">Option Label · 옵션 라벨</label>
-                                    <input value={opt.labelKo} onChange={e => setOptions(options.map((o, idx) => idx === i ? { ...o, labelKo: e.target.value } : o))}
-                                        className={inp} placeholder="e.g. Buy 2 get 10% off" />
-                                    <div className="text-[10px] text-teal-600 mt-1">Auto-translated · 자동 번역</div>
-                                </div>
-                                {options.length > 1 && (
-                                    <button type="button" onClick={() => setOptions(options.filter((_, idx) => idx !== i))}
-                                        className="absolute top-2 right-2 md:relative md:top-0 md:right-0 mb-2 text-red-400 hover:bg-red-50 p-1.5 rounded-lg transition-colors">
-                                        <X className="w-4 h-4" />
-                                    </button>
-                                )}
                             </div>
-                        ))}
-                        <button type="button" onClick={() => {
-                            const lastMin = parseInt(options[options.length - 1]?.minQty || '1', 10);
-                            const nextMin = String(lastMin + 5);
-                            const lastPct = parseFloat(options[options.length - 1]?.discountPct || '0');
-                            const nextPct = String(Math.min(lastPct + 5, 50));
-                            setOptions([...options, { minQty: nextMin, maxQty: '', discountPct: nextPct, freeShipping: false, labelKo: '' }]);
-                        }}
-                            className="text-sm text-teal-600 font-bold flex items-center gap-1.5 hover:text-teal-700 bg-teal-50 px-3 py-2 rounded-lg transition-colors border border-teal-100">
-                            <Plus className="w-4 h-4" /> Add Tier · 할인 단계 추가
-                        </button>
-                    </div>
+                            {/* Quick presets */}
+                            <div className="flex flex-wrap gap-2 items-center">
+                                <span className="text-xs font-semibold text-gray-500">Quick presets:</span>
+                                {[
+                                    { label: 'Buy 3+ / 5% off', min: '3', max: '', pct: '5', ship: false },
+                                    { label: 'Buy 5+ / 10% off', min: '5', max: '', pct: '10', ship: false },
+                                    { label: 'Buy 10+ / 15% off', min: '10', max: '', pct: '15', ship: false },
+                                    { label: 'Buy 20+ / 20% + Free Ship', min: '20', max: '', pct: '20', ship: true },
+                                ].map(p => (
+                                    <button key={p.label} type="button"
+                                        onClick={() => setOptions(prev => {
+                                            if (prev.some(o => o.minQty === p.min)) return prev;
+                                            return [...prev, { minQty: p.min, maxQty: p.max, discountPct: p.pct, freeShipping: p.ship, labelKo: '' }];
+                                        })}
+                                        className="px-2.5 py-1 rounded-lg text-[11px] font-semibold border bg-white text-gray-600 border-gray-200 hover:border-teal-400 hover:text-teal-700 transition-all">
+                                        {p.label}
+                                    </button>
+                                ))}
+                            </div>
+                            {options.map((opt, i) => (
+                                <div key={i} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_auto_2fr_auto] gap-3 items-end bg-teal-50/50 p-4 rounded-xl border border-teal-100 relative">
+                                    <div>
+                                        <label className="block text-xs font-semibold text-gray-700 mb-1">Min Qty · 최소수량</label>
+                                        <input type="number" value={opt.minQty} onChange={e => setOptions(options.map((o, idx) => idx === i ? { ...o, minQty: e.target.value } : o))}
+                                            className={inp} min="1" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-semibold text-gray-700 mb-1">Max Qty · 최대수량</label>
+                                        <input type="number" value={opt.maxQty} onChange={e => setOptions(options.map((o, idx) => idx === i ? { ...o, maxQty: e.target.value } : o))}
+                                            className={inp} placeholder="Unlimited" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-semibold text-gray-700 mb-1">Discount % · 할인율</label>
+                                        <input type="number" value={opt.discountPct} onChange={e => setOptions(options.map((o, idx) => idx === i ? { ...o, discountPct: e.target.value } : o))}
+                                            className={inp} min="0" max="100" />
+                                    </div>
+                                    <div className="pb-3">
+                                        <label className="flex items-center gap-2 text-sm cursor-pointer font-semibold text-gray-700 whitespace-nowrap">
+                                            <input type="checkbox" checked={opt.freeShipping} onChange={e => setOptions(options.map((o, idx) => idx === i ? { ...o, freeShipping: e.target.checked } : o))}
+                                                className="rounded text-teal-600 focus:ring-teal-500 border-gray-300 w-4 h-4" />
+                                            Free Ship · 무료배송
+                                        </label>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-semibold text-gray-700 mb-1">Label · 라벨</label>
+                                        <input value={opt.labelKo} onChange={e => setOptions(options.map((o, idx) => idx === i ? { ...o, labelKo: e.target.value } : o))}
+                                            className={inp} placeholder="e.g. Buy 3 get 5% off" />
+                                        <div className="text-[10px] text-teal-600 mt-1">Auto-translated · 자동 번역</div>
+                                    </div>
+                                    {options.length > 1 && (
+                                        <button type="button" onClick={() => setOptions(options.filter((_, idx) => idx !== i))}
+                                            className="absolute top-2 right-2 md:relative md:top-0 md:right-0 mb-2 text-red-400 hover:bg-red-50 p-1.5 rounded-lg transition-colors">
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
+                            <button type="button" onClick={() => {
+                                const lastMin = parseInt(options[options.length - 1]?.minQty || '1', 10);
+                                const lastPct = parseFloat(options[options.length - 1]?.discountPct || '0');
+                                setOptions([...options, { minQty: String(lastMin + 5), maxQty: '', discountPct: String(Math.min(lastPct + 5, 50)), freeShipping: false, labelKo: '' }]);
+                            }}
+                                className="text-sm text-teal-600 font-bold flex items-center gap-1.5 hover:text-teal-700 bg-teal-50 px-3 py-2 rounded-lg transition-colors border border-teal-100">
+                                <Plus className="w-4 h-4" /> Add Tier · 할인 단계 추가
+                            </button>
+                        </div>
+                    )}
                 </Section>
 
                 {/* ── Product Variants ── */}
-                <Section title="🎨 Product Variants" sub="색상·사이즈·커스텀 옵션 — optional · 선택사항">
-                    {/* Toggle switch */}
-                    <label className="flex items-center gap-3 cursor-pointer select-none">
-                        <button
-                            type="button"
-                            role="switch"
-                            aria-checked={variantEnabled}
-                            onClick={() => setVariantEnabled(p => !p)}
-                            className={`relative inline-flex w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-1 ${variantEnabled ? 'bg-teal-500' : 'bg-gray-200'}`}
-                        >
-                            <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${variantEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
-                        </button>
-                        <span className="text-sm font-semibold text-gray-800">
-                            Enable product variants
-                            <span className="text-xs text-gray-400 ml-2 font-normal">색상 / 사이즈 / 기타 옵션 사용</span>
-                        </span>
-                    </label>
+                <Section title="🎨 Product Variants" sub="색상·사이즈·용량·커스텀 옵션 — optional · 선택사항">
+                    <ToggleSwitch
+                        checked={variantEnabled}
+                        onChange={() => setVariantEnabled(p => !p)}
+                        label="Enable product variants"
+                        sub="색상 / 사이즈 / 용량 / 기타 옵션 사용"
+                    />
 
                     {variantEnabled && (
                         <div className="mt-5 space-y-5">
-                            {/* Type selector */}
+                            {/* Multi-type checkboxes */}
                             <div>
-                                <p className="text-xs font-semibold text-gray-600 mb-2">Variant Type · 옵션 종류:</p>
-                                <div className="flex flex-wrap gap-2">
-                                    {(['color', 'size', 'custom'] as const).map(t => (
-                                        <button key={t} type="button" onClick={() => setVariantType(t)}
-                                            className={`px-4 py-2 rounded-xl text-sm font-bold border transition-all ${variantType === t ? 'bg-teal-500 text-white border-teal-500 shadow-sm' : 'bg-white text-gray-600 border-gray-200 hover:border-teal-300 hover:text-teal-700'}`}>
-                                            {t === 'color' ? '🎨 Color · 색상' : t === 'size' ? '📏 Size · 사이즈' : '🏷️ Custom · 기타'}
-                                        </button>
+                                <p className="text-xs font-semibold text-gray-600 mb-2">Select variant types · 옵션 종류 선택 (복수 선택 가능):</p>
+                                <div className="flex flex-wrap gap-3">
+                                    {([
+                                        { key: 'color',  label: '🎨 Color · 색상',    checked: enableColor,  setChecked: setEnableColor },
+                                        { key: 'size',   label: '📏 Size · 사이즈',    checked: enableSize,   setChecked: setEnableSize },
+                                        { key: 'volume', label: '💧 Volume · 용량',    checked: enableVolume, setChecked: setEnableVolume },
+                                        { key: 'custom', label: '🏷️ Custom · 기타',    checked: enableCustom, setChecked: setEnableCustom },
+                                    ] as const).map(({ key, label, checked, setChecked }) => (
+                                        <label key={key} className={`flex items-center gap-2 px-4 py-2 rounded-xl border-2 cursor-pointer transition-all text-sm font-bold select-none ${
+                                            checked ? 'border-teal-500 bg-teal-50 text-teal-700' : 'border-gray-200 bg-white text-gray-600 hover:border-teal-300'
+                                        }`}>
+                                            <input type="checkbox" checked={checked} onChange={() => setChecked((p: boolean) => !p)} className="sr-only" />
+                                            {label}
+                                        </label>
                                     ))}
                                 </div>
                             </div>
 
                             {/* ── Color variants ── */}
-                            {variantType === 'color' && (
-                                <div className="space-y-3">
-                                    <p className="text-xs text-gray-500">
-                                        Pick a color and enter its name. Optionally set individual stock &amp; price per color.
-                                        <span className="block opacity-70">색상을 선택하고 이름을 입력하세요. 색상별 재고/가격을 개별 설정할 수 있습니다.</span>
-                                    </p>
+                            {enableColor && (
+                                <div className="space-y-3 p-4 bg-gray-50 rounded-xl border border-gray-100">
+                                    <p className="text-xs font-bold text-gray-700">🎨 Color variants · 색상 옵션</p>
                                     <div className="grid grid-cols-[40px_1fr_72px_88px_28px] gap-2 px-1 text-xs font-semibold text-gray-400">
                                         <span />
                                         <span>Color name · 색상명</span>
@@ -498,39 +556,21 @@ export default function SellerProductNewPage() {
                                         <span />
                                     </div>
                                     {colorVars.map((cv, i) => (
-                                        <div key={i} className="grid grid-cols-[40px_1fr_72px_88px_28px] gap-2 items-center bg-gray-50 rounded-xl p-2.5 border border-gray-100">
-                                            <input
-                                                type="color"
-                                                value={cv.hex}
+                                        <div key={i} className="grid grid-cols-[40px_1fr_72px_88px_28px] gap-2 items-center bg-white rounded-xl p-2.5 border border-gray-100">
+                                            <input type="color" value={cv.hex}
                                                 onChange={e => setColorVars(p => p.map((c, idx) => idx === i ? { ...c, hex: e.target.value } : c))}
-                                                className="w-8 h-8 rounded-lg border border-gray-200 cursor-pointer p-0.5 bg-white"
-                                                title="Pick color"
-                                            />
-                                            <input
-                                                value={cv.name}
+                                                className="w-8 h-8 rounded-lg border border-gray-200 cursor-pointer p-0.5 bg-white" />
+                                            <input value={cv.name}
                                                 onChange={e => setColorVars(p => p.map((c, idx) => idx === i ? { ...c, name: e.target.value } : c))}
-                                                placeholder="e.g. Rose Pink"
-                                                className={vInp}
-                                            />
-                                            <input
-                                                type="number"
-                                                value={cv.stock}
+                                                placeholder="e.g. Rose Pink" className={vInp} />
+                                            <input type="number" value={cv.stock}
                                                 onChange={e => setColorVars(p => p.map((c, idx) => idx === i ? { ...c, stock: e.target.value } : c))}
-                                                className={`text-center ${vInp}`}
-                                                min="0"
-                                            />
-                                            <input
-                                                type="number" step="0.01"
-                                                value={cv.price}
+                                                className={`text-center ${vInp}`} min="0" />
+                                            <input type="number" step="0.01" value={cv.price}
                                                 onChange={e => setColorVars(p => p.map((c, idx) => idx === i ? { ...c, price: e.target.value } : c))}
-                                                placeholder="—"
-                                                className={`text-center ${vInp}`}
-                                            />
+                                                placeholder="—" className={`text-center ${vInp}`} />
                                             {colorVars.length > 1 ? (
-                                                <button type="button" onClick={() => setColorVars(p => p.filter((_, idx) => idx !== i))}
-                                                    className="p-1 text-red-400 hover:bg-red-50 rounded-lg">
-                                                    <X className="w-3.5 h-3.5" />
-                                                </button>
+                                                <button type="button" onClick={() => setColorVars(p => p.filter((_, idx) => idx !== i))} className="p-1 text-red-400 hover:bg-red-50 rounded-lg"><X className="w-3.5 h-3.5" /></button>
                                             ) : <span />}
                                         </div>
                                     ))}
@@ -544,103 +584,98 @@ export default function SellerProductNewPage() {
                             )}
 
                             {/* ── Size variants ── */}
-                            {variantType === 'size' && (
-                                <div className="space-y-4">
-                                    <div>
-                                        <p className="text-xs font-semibold text-gray-600 mb-2">Quick Add · 빠른 추가:</p>
-                                        <div className="flex flex-wrap gap-2">
-                                            {SIZE_PRESETS.map(s => {
-                                                const added = sizeVars.some(v => v.label === s);
-                                                return (
-                                                    <button key={s} type="button"
-                                                        onClick={() => !added && setSizeVars(p => [...p, { label: s, stock: '0', price: '' }])}
-                                                        disabled={added}
-                                                        className={`px-3 py-1.5 rounded-lg text-sm font-bold border transition-all ${added ? 'bg-teal-100 text-teal-600 border-teal-200 opacity-50 cursor-not-allowed' : 'bg-white text-gray-600 border-gray-200 hover:border-teal-400 hover:text-teal-700'}`}>
-                                                        {s}
-                                                    </button>
-                                                );
-                                            })}
-                                            <button type="button"
-                                                onClick={() => setSizeVars(p => [...p, { label: '', stock: '0', price: '' }])}
-                                                className="px-3 py-1.5 rounded-lg text-sm font-bold border border-dashed border-gray-300 text-gray-500 hover:border-teal-400 hover:text-teal-600 transition-all flex items-center gap-1">
-                                                <Plus className="w-3.5 h-3.5" /> Custom
-                                            </button>
-                                        </div>
+                            {enableSize && (
+                                <div className="space-y-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
+                                    <p className="text-xs font-bold text-gray-700">📏 Size variants · 사이즈 옵션</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {SIZE_PRESETS.map(s => {
+                                            const added = sizeVars.some(v => v.label === s);
+                                            return (
+                                                <button key={s} type="button"
+                                                    onClick={() => !added && setSizeVars(p => [...p, { label: s, stock: '0', price: '' }])}
+                                                    disabled={added}
+                                                    className={`px-3 py-1.5 rounded-lg text-sm font-bold border transition-all ${added ? 'bg-teal-100 text-teal-600 border-teal-200 opacity-50 cursor-not-allowed' : 'bg-white text-gray-600 border-gray-200 hover:border-teal-400 hover:text-teal-700'}`}>
+                                                    {s}
+                                                </button>
+                                            );
+                                        })}
+                                        <button type="button" onClick={() => setSizeVars(p => [...p, { label: '', stock: '0', price: '' }])}
+                                            className="px-3 py-1.5 rounded-lg text-sm font-bold border border-dashed border-gray-300 text-gray-500 hover:border-teal-400 hover:text-teal-600 transition-all flex items-center gap-1">
+                                            <Plus className="w-3.5 h-3.5" /> Custom
+                                        </button>
                                     </div>
                                     {sizeVars.length > 0 && (
                                         <div className="space-y-2">
                                             <div className="grid grid-cols-[1fr_72px_88px_28px] gap-2 px-1 text-xs font-semibold text-gray-400">
-                                                <span>Size · 사이즈</span>
-                                                <span className="text-center">Stock</span>
-                                                <span className="text-center">Price (opt)</span>
-                                                <span />
+                                                <span>Size · 사이즈</span><span className="text-center">Stock</span><span className="text-center">Price (opt)</span><span />
                                             </div>
                                             {sizeVars.map((sv, i) => (
-                                                <div key={i} className="grid grid-cols-[1fr_72px_88px_28px] gap-2 items-center bg-gray-50 p-2.5 rounded-xl border border-gray-100">
-                                                    <input
-                                                        value={sv.label}
-                                                        onChange={e => setSizeVars(p => p.map((s, idx) => idx === i ? { ...s, label: e.target.value } : s))}
-                                                        placeholder="e.g. M, 95"
-                                                        className={`font-semibold ${vInp}`}
-                                                    />
-                                                    <input type="number"
-                                                        value={sv.stock}
-                                                        onChange={e => setSizeVars(p => p.map((s, idx) => idx === i ? { ...s, stock: e.target.value } : s))}
-                                                        className={`text-center ${vInp}`} min="0" />
-                                                    <input type="number" step="0.01"
-                                                        value={sv.price}
-                                                        onChange={e => setSizeVars(p => p.map((s, idx) => idx === i ? { ...s, price: e.target.value } : s))}
-                                                        placeholder="—"
-                                                        className={`text-center ${vInp}`} />
-                                                    <button type="button" onClick={() => setSizeVars(p => p.filter((_, idx) => idx !== i))}
-                                                        className="p-1 text-red-400 hover:bg-red-50 rounded-lg">
-                                                        <X className="w-3.5 h-3.5" />
-                                                    </button>
+                                                <div key={i} className="grid grid-cols-[1fr_72px_88px_28px] gap-2 items-center bg-white p-2.5 rounded-xl border border-gray-100">
+                                                    <input value={sv.label} onChange={e => setSizeVars(p => p.map((s, idx) => idx === i ? { ...s, label: e.target.value } : s))} placeholder="e.g. M, 95" className={`font-semibold ${vInp}`} />
+                                                    <input type="number" value={sv.stock} onChange={e => setSizeVars(p => p.map((s, idx) => idx === i ? { ...s, stock: e.target.value } : s))} className={`text-center ${vInp}`} min="0" />
+                                                    <input type="number" step="0.01" value={sv.price} onChange={e => setSizeVars(p => p.map((s, idx) => idx === i ? { ...s, price: e.target.value } : s))} placeholder="—" className={`text-center ${vInp}`} />
+                                                    <button type="button" onClick={() => setSizeVars(p => p.filter((_, idx) => idx !== i))} className="p-1 text-red-400 hover:bg-red-50 rounded-lg"><X className="w-3.5 h-3.5" /></button>
                                                 </div>
                                             ))}
                                         </div>
                                     )}
-                                    {sizeVars.length === 0 && (
-                                        <p className="text-xs text-gray-400 italic">Click size presets above or &quot;+ Custom&quot; to add sizes. · 위 버튼으로 사이즈를 추가하세요.</p>
+                                </div>
+                            )}
+
+                            {/* ── Volume variants ── */}
+                            {enableVolume && (
+                                <div className="space-y-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
+                                    <p className="text-xs font-bold text-gray-700">💧 Volume variants · 용량 옵션</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {VOLUME_PRESETS.map(v => {
+                                            const added = volumeVars.some(x => x.label === v);
+                                            return (
+                                                <button key={v} type="button"
+                                                    onClick={() => !added && setVolumeVars(p => [...p, { label: v, stock: '0', price: '' }])}
+                                                    disabled={added}
+                                                    className={`px-3 py-1.5 rounded-lg text-sm font-bold border transition-all ${added ? 'bg-teal-100 text-teal-600 border-teal-200 opacity-50 cursor-not-allowed' : 'bg-white text-gray-600 border-gray-200 hover:border-teal-400 hover:text-teal-700'}`}>
+                                                    {v}
+                                                </button>
+                                            );
+                                        })}
+                                        <button type="button" onClick={() => setVolumeVars(p => [...p, { label: '', stock: '0', price: '' }])}
+                                            className="px-3 py-1.5 rounded-lg text-sm font-bold border border-dashed border-gray-300 text-gray-500 hover:border-teal-400 hover:text-teal-600 transition-all flex items-center gap-1">
+                                            <Plus className="w-3.5 h-3.5" /> Custom
+                                        </button>
+                                    </div>
+                                    {volumeVars.length > 0 && (
+                                        <div className="space-y-2">
+                                            <div className="grid grid-cols-[1fr_72px_88px_28px] gap-2 px-1 text-xs font-semibold text-gray-400">
+                                                <span>Volume · 용량</span><span className="text-center">Stock</span><span className="text-center">Price (opt)</span><span />
+                                            </div>
+                                            {volumeVars.map((vv, i) => (
+                                                <div key={i} className="grid grid-cols-[1fr_72px_88px_28px] gap-2 items-center bg-white p-2.5 rounded-xl border border-gray-100">
+                                                    <input value={vv.label} onChange={e => setVolumeVars(p => p.map((x, idx) => idx === i ? { ...x, label: e.target.value } : x))} placeholder="e.g. 100ml" className={`font-semibold ${vInp}`} />
+                                                    <input type="number" value={vv.stock} onChange={e => setVolumeVars(p => p.map((x, idx) => idx === i ? { ...x, stock: e.target.value } : x))} className={`text-center ${vInp}`} min="0" />
+                                                    <input type="number" step="0.01" value={vv.price} onChange={e => setVolumeVars(p => p.map((x, idx) => idx === i ? { ...x, price: e.target.value } : x))} placeholder="—" className={`text-center ${vInp}`} />
+                                                    <button type="button" onClick={() => setVolumeVars(p => p.filter((_, idx) => idx !== i))} className="p-1 text-red-400 hover:bg-red-50 rounded-lg"><X className="w-3.5 h-3.5" /></button>
+                                                </div>
+                                            ))}
+                                        </div>
                                     )}
                                 </div>
                             )}
 
                             {/* ── Custom variants ── */}
-                            {variantType === 'custom' && (
-                                <div className="space-y-3">
-                                    <p className="text-xs text-gray-500">
-                                        Add any custom options — bundle sets, scents, kit types, etc.
-                                        <span className="block opacity-70">커스텀 옵션 추가 (예: 세트 구성, 향기, 용도별 등)</span>
-                                    </p>
+                            {enableCustom && (
+                                <div className="space-y-3 p-4 bg-gray-50 rounded-xl border border-gray-100">
+                                    <p className="text-xs font-bold text-gray-700">🏷️ Custom variants · 기타 옵션</p>
+                                    <p className="text-xs text-gray-500">Bundle sets, scents, kit types, etc. · 세트 구성, 향기, 용도별 등</p>
                                     <div className="grid grid-cols-[1fr_72px_88px_28px] gap-2 px-1 text-xs font-semibold text-gray-400">
-                                        <span>Option name · 옵션명</span>
-                                        <span className="text-center">Stock</span>
-                                        <span className="text-center">Price (opt)</span>
-                                        <span />
+                                        <span>Option name · 옵션명</span><span className="text-center">Stock</span><span className="text-center">Price (opt)</span><span />
                                     </div>
                                     {customVars.map((cv, i) => (
-                                        <div key={i} className="grid grid-cols-[1fr_72px_88px_28px] gap-2 items-center bg-gray-50 p-2.5 rounded-xl border border-gray-100">
-                                            <input
-                                                value={cv.label}
-                                                onChange={e => setCustomVars(p => p.map((c, idx) => idx === i ? { ...c, label: e.target.value } : c))}
-                                                placeholder="e.g. Starter Kit, Lavender"
-                                                className={vInp}
-                                            />
-                                            <input type="number"
-                                                value={cv.stock}
-                                                onChange={e => setCustomVars(p => p.map((c, idx) => idx === i ? { ...c, stock: e.target.value } : c))}
-                                                className={`text-center ${vInp}`} min="0" />
-                                            <input type="number" step="0.01"
-                                                value={cv.price}
-                                                onChange={e => setCustomVars(p => p.map((c, idx) => idx === i ? { ...c, price: e.target.value } : c))}
-                                                placeholder="—"
-                                                className={`text-center ${vInp}`} />
+                                        <div key={i} className="grid grid-cols-[1fr_72px_88px_28px] gap-2 items-center bg-white p-2.5 rounded-xl border border-gray-100">
+                                            <input value={cv.label} onChange={e => setCustomVars(p => p.map((c, idx) => idx === i ? { ...c, label: e.target.value } : c))} placeholder="e.g. Starter Kit" className={vInp} />
+                                            <input type="number" value={cv.stock} onChange={e => setCustomVars(p => p.map((c, idx) => idx === i ? { ...c, stock: e.target.value } : c))} className={`text-center ${vInp}`} min="0" />
+                                            <input type="number" step="0.01" value={cv.price} onChange={e => setCustomVars(p => p.map((c, idx) => idx === i ? { ...c, price: e.target.value } : c))} placeholder="—" className={`text-center ${vInp}`} />
                                             {customVars.length > 1 ? (
-                                                <button type="button" onClick={() => setCustomVars(p => p.filter((_, idx) => idx !== i))}
-                                                    className="p-1 text-red-400 hover:bg-red-50 rounded-lg">
-                                                    <X className="w-3.5 h-3.5" />
-                                                </button>
+                                                <button type="button" onClick={() => setCustomVars(p => p.filter((_, idx) => idx !== i))} className="p-1 text-red-400 hover:bg-red-50 rounded-lg"><X className="w-3.5 h-3.5" /></button>
                                             ) : <span />}
                                         </div>
                                     ))}
