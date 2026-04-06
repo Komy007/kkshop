@@ -240,7 +240,7 @@ export default function NewProductPage() {
                         {images.length > 0 && (
                             <div className={images.length < MAX_IMAGES ? 'mt-4' : ''}>
                                 <DraggableImageGrid
-                                    images={images.map((img, i) => ({ id: `img-${i}-${img.preview.slice(-8)}`, src: img.preview }))}
+                                    images={images.map((img) => ({ id: img.preview, src: img.preview }))}
                                     onReorder={reorderImages}
                                     onRemove={removeImage}
                                     coverLabel={n.images.cover}

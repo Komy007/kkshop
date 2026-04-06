@@ -424,8 +424,8 @@ export default function EditProductPage() {
                             <div>
                                 <p className="text-xs text-blue-500 mb-2">추가할 이미지 (드래그하여 순서 변경)</p>
                                 <DraggableImageGrid
-                                    images={newImages.map((img, i) => ({
-                                        id: `new-${i}-${img.preview.slice(-8)}`,
+                                    images={newImages.map((img) => ({
+                                        id: img.preview,
                                         src: img.preview,
                                         borderColor: 'border-blue-200',
                                     }))}

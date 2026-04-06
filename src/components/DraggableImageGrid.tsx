@@ -49,37 +49,36 @@ export default function DraggableImageGrid({ images, onReorder, onRemove, coverL
                                     <div
                                         ref={provided.innerRef}
                                         {...provided.draggableProps}
-                                        className={`relative group ${layout === 'flex' ? 'w-24 h-24' : 'aspect-square'} ${snapshot.isDragging ? 'z-50 ring-2 ring-blue-400 shadow-xl' : ''}`}
+                                        {...provided.dragHandleProps}
+                                        className={`relative group ${layout === 'flex' ? 'w-24 h-24' : 'aspect-square'} cursor-grab active:cursor-grabbing select-none ${snapshot.isDragging ? 'z-50 ring-2 ring-blue-400 shadow-xl opacity-90 scale-105' : ''}`}
+                                        style={provided.draggableProps.style}
                                     >
                                         <img
                                             src={img.src}
-                                            className={`w-full h-full object-cover rounded-xl border ${img.borderColor || 'border-gray-200'}`}
+                                            draggable={false}
+                                            className={`w-full h-full object-cover rounded-xl border ${img.borderColor || 'border-gray-200'} pointer-events-none`}
                                             onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/400x400?text=Error'; }}
                                         />
                                         {/* Cover / custom badge */}
                                         {i === 0 && coverLabel && (
-                                            <span className="absolute top-2 left-2 bg-blue-600 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">
+                                            <span className="absolute top-1.5 left-1.5 bg-blue-600 text-white text-[10px] px-2 py-0.5 rounded-full font-bold pointer-events-none">
                                                 🌟 {coverLabel}
                                             </span>
                                         )}
                                         {img.badge && (
-                                            <span className={`absolute bottom-1 left-1 ${img.badgeColor || 'bg-black/60'} text-white text-[9px] px-1.5 py-0.5 rounded font-bold`}>
+                                            <span className={`absolute bottom-1 left-1 ${img.badgeColor || 'bg-black/60'} text-white text-[9px] px-1.5 py-0.5 rounded font-bold pointer-events-none`}>
                                                 {img.badge}
                                             </span>
                                         )}
-                                        {/* Drag handle */}
-                                        <div
-                                            {...provided.dragHandleProps}
-                                            className="absolute top-2 left-1/2 -translate-x-1/2 w-7 h-5 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing"
-                                            title="Drag to reorder"
-                                        >
-                                            <GripVertical className="w-3.5 h-3.5 text-white" />
+                                        {/* Drag hint icon — always faintly visible */}
+                                        <div className="absolute top-1.5 right-7 flex items-center justify-center opacity-30 group-hover:opacity-80 transition-opacity pointer-events-none">
+                                            <GripVertical className="w-4 h-4 text-white drop-shadow" />
                                         </div>
                                         {/* Remove button */}
                                         <button
                                             type="button"
-                                            onClick={() => onRemove(i)}
-                                            className="absolute top-2 right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow"
+                                            onClick={(e) => { e.stopPropagation(); onRemove(i); }}
+                                            className="absolute top-1.5 right-1.5 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow pointer-events-auto"
                                         >
                                             <X className="w-3.5 h-3.5" />
                                         </button>

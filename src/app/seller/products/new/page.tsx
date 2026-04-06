@@ -289,7 +289,7 @@ export default function SellerProductNewPage() {
                     <div className="flex gap-3 flex-wrap items-start">
                         {previews.length > 0 && (
                             <DraggableImageGrid
-                                images={previews.map((src, i) => ({ id: `seller-img-${i}-${src.slice(-8)}`, src }))}
+                                images={previews.map((src) => ({ id: src, src }))}
                                 onReorder={reorderImages}
                                 onRemove={removeImage}
                                 coverLabel="Main"

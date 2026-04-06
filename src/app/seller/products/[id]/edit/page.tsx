@@ -424,8 +424,8 @@ export default function SellerProductEditPage() {
                         )}
                         {newImages.length > 0 && (
                             <DraggableImageGrid
-                                images={newImages.map((img, i) => ({
-                                    id: `new-${i}-${img.preview.slice(-8)}`,
+                                images={newImages.map((img) => ({
+                                    id: img.preview,
                                     src: img.preview,
                                     badge: 'New · 신규',
                                     badgeColor: 'bg-teal-600',
