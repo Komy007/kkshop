@@ -115,8 +115,17 @@ function LoginContent() {
             if (result?.error) {
                 setError('Invalid email or password');
             } else {
-                // Redirect admins to /admin, regular users to /
-                router.push('/');
+                // Fetch session to check role, then redirect accordingly
+                const sessionRes = await fetch('/api/auth/session');
+                const session = await sessionRes.json();
+                const role = session?.user?.role;
+                if (role === 'SUPPLIER') {
+                    router.push('/seller');
+                } else if (role === 'ADMIN' || role === 'SUPERADMIN') {
+                    router.push('/admin');
+                } else {
+                    router.push('/');
+                }
                 router.refresh();
             }
         } catch (err) {

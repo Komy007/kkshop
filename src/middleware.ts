@@ -130,8 +130,10 @@ export default middleware((req: any) => {
         return Response.redirect(new URL('/', nextUrl));
     }
 
-    // --- Global Redirection for Suppliers if they wander into consumer view? ---
-    // (Optional: let them see front store, but keep them in seller for management)
+    // --- Auto-redirect SUPPLIER to /seller when they land on the consumer front ---
+    if (isLoggedIn && req.auth?.user?.role === 'SUPPLIER') {
+        return Response.redirect(new URL('/seller', nextUrl));
+    }
     
     // --- Onboarding: Mandatory for everyone logged in without a phone (Google users) ---
     const isOnboardingRoute = nextUrl.pathname === '/onboarding';
