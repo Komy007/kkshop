@@ -339,6 +339,10 @@ const en: Translations = {
                 label: 'Auto-translate into 4 languages on save',
                 desc: 'Generates KO/EN/KM/ZH via Google Translate API. Unchecked = saves input language only.',
             },
+            autoDetect: {
+                notice: 'Enter in any language — auto-detected & translated into Korean, English, Khmer & Chinese',
+                badge: 'Auto 4-Language Translation',
+            },
             buttons: {
                 save: 'Save',
                 saveWithTranslate: 'Save & Auto-translate (4 langs)',

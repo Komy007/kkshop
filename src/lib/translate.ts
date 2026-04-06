@@ -31,18 +31,38 @@ export async function translate(text: string, targetLang: string): Promise<strin
 }
 
 /**
+ * Detect the language of a given text.
+ * Returns the detected language code if it is one of our 4 supported langs (ko/en/km/zh),
+ * otherwise falls back to 'ko'.
+ */
+export async function detectLanguage(text: string): Promise<LangCode> {
+    if (!text?.trim()) return 'ko';
+    try {
+        const [detection] = await client.detect(text);
+        const lang = (Array.isArray(detection) ? detection[0]?.language : (detection as any).language) as string;
+        return (TARGET_LANGS as readonly string[]).includes(lang) ? (lang as LangCode) : 'ko';
+    } catch {
+        return 'ko';
+    }
+}
+
+/**
  * Translate all product text fields to all 4 target languages.
  * baseLang is the source language (skip translation for this lang).
+ * If baseLang is omitted, the source language is auto-detected from fields.name.
  * Returns array of { langCode, ...translated fields } for upsert.
  */
 export async function translateProductFields(
     fields: ProductFields,
-    baseLang: string
+    baseLang?: string
 ): Promise<Array<{ langCode: string } & ProductFields>> {
     const results: Array<{ langCode: string } & ProductFields> = [];
 
+    // If no baseLang provided, auto-detect from the product name
+    const srcLang: string = baseLang ?? await detectLanguage(fields.name);
+
     for (const lang of TARGET_LANGS) {
-        if (lang === baseLang) {
+        if (lang === srcLang) {
             results.push({ langCode: lang, ...fields });
             continue;
         }

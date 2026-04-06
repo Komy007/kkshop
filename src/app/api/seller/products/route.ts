@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/api';
 import { auth } from '@/auth';
-import { translate } from '@/lib/translate';
+import { translate, detectLanguage } from '@/lib/translate';
 
 const PAGE_SIZE = 30;
 
@@ -90,6 +90,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const {
         sku, priceUsd, stockQty, categoryId, brandName, volume, origin, skinType, expiryMonths,
+        certifications,
         unitLabel, unitsPerPkg,
         nameKo, shortDescKo, detailDescKo, ingredientsKo, howToUseKo, benefitsKo,
         imageUrls = [], options = [], variants = [],
@@ -104,34 +105,32 @@ export async function POST(req: Request) {
     const existing = await prisma.product.findUnique({ where: { sku } });
     if (existing) return NextResponse.json({ error: 'SKU가 이미 존재합니다.' }, { status: 400 });
 
-    // Auto-translate to 4 languages using korean input
-    const LANGS: Array<{ code: string; koreanSource: string }> = [
-        { code: 'en', koreanSource: 'en' },
-        { code: 'km', koreanSource: 'km' },
-        { code: 'zh', koreanSource: 'zh' },
-    ];
+    // Auto-detect input language from product name — no manual selection needed
+    const srcLang: string = await detectLanguage(nameKo);
 
-    const translateField = async (text: string, targetLang: string) => {
-        if (!text) return '';
-        try { return await translate(text, targetLang); } catch { return text; }
+    const translateField = async (text: string, targetLang: string): Promise<string | null> => {
+        if (!text?.trim()) return null;
+        try { return (await translate(text, targetLang)) || text; } catch { return text; }
     };
 
-    // Build translations for all 4 langs
-    const buildTranslation = async (langCode: string, targetLang: string) => ({
+    // Build translations for all 4 langs.
+    // Detected language slot → store original text as-is (no API call).
+    // All other slots → translate via Google Translate.
+    const buildTranslation = async (langCode: string) => ({
         langCode,
-        name: langCode === 'ko' ? nameKo : await translateField(nameKo, targetLang),
-        shortDesc: langCode === 'ko' ? (shortDescKo || null) : (shortDescKo ? await translateField(shortDescKo, targetLang) : null),
-        detailDesc: langCode === 'ko' ? (detailDescKo || null) : (detailDescKo ? await translateField(detailDescKo, targetLang) : null),
-        ingredients: langCode === 'ko' ? (ingredientsKo || null) : (ingredientsKo ? await translateField(ingredientsKo, targetLang) : null),
-        howToUse: langCode === 'ko' ? (howToUseKo || null) : (howToUseKo ? await translateField(howToUseKo, targetLang) : null),
-        benefits: langCode === 'ko' ? (benefitsKo || null) : (benefitsKo ? await translateField(benefitsKo, targetLang) : null),
+        name: langCode === srcLang ? nameKo : await translateField(nameKo, langCode),
+        shortDesc: langCode === srcLang ? (shortDescKo || null) : (shortDescKo ? await translateField(shortDescKo, langCode) : null),
+        detailDesc: langCode === srcLang ? (detailDescKo || null) : (detailDescKo ? await translateField(detailDescKo, langCode) : null),
+        ingredients: langCode === srcLang ? (ingredientsKo || null) : (ingredientsKo ? await translateField(ingredientsKo, langCode) : null),
+        howToUse: langCode === srcLang ? (howToUseKo || null) : (howToUseKo ? await translateField(howToUseKo, langCode) : null),
+        benefits: langCode === srcLang ? (benefitsKo || null) : (benefitsKo ? await translateField(benefitsKo, langCode) : null),
     });
 
     const [trKo, trEn, trKm, trZh] = await Promise.all([
-        buildTranslation('ko', 'ko'),
-        buildTranslation('en', 'en'),
-        buildTranslation('km', 'km'),
-        buildTranslation('zh', 'zh'),
+        buildTranslation('ko'),
+        buildTranslation('en'),
+        buildTranslation('km'),
+        buildTranslation('zh'),
     ]);
 
     const optionsData = await Promise.all(options.map(async (opt: any, i: number) => {
@@ -178,6 +177,7 @@ export async function POST(req: Request) {
             origin: origin || null,
             skinType: skinType || null,
             expiryMonths: expiryMonths ? parseInt(expiryMonths) : null,
+            certifications: certifications || null,
             unitLabel: unitLabel || null,
             unitsPerPkg: unitsPerPkg ? parseInt(unitsPerPkg) : null,
             status: 'INACTIVE',

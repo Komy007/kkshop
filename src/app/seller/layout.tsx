@@ -42,6 +42,18 @@ export default function SellerLayout({ children }: { children: React.ReactNode }
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [companyName, setCompanyName] = useState('');
 
+    // Prevent the root layout's pt-24/pb-20 wrapper from making the window scrollable.
+    // Without this, clicking buttons fires browser scrollIntoView on the window,
+    // which shifts the seller layout out of the viewport.
+    useEffect(() => {
+        document.documentElement.style.overflow = 'hidden';
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.documentElement.style.overflow = '';
+            document.body.style.overflow = '';
+        };
+    }, []);
+
     useEffect(() => {
         fetch('/api/seller/profile').then(r => r.json()).then(d => setCompanyName(d?.companyName || 'Seller'));
         for (const item of NAV) {

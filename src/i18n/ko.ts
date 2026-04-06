@@ -339,6 +339,10 @@ const ko: Translations = {
                 label: '저장 시 4개국어 자동 번역',
                 desc: '체크 시 구글 번역 API로 한·영·크메르·중문이 생성됩니다. 미체크 시 입력 언어로만 저장됩니다.',
             },
+            autoDetect: {
+                notice: '어떤 언어로 입력하셔도 자동 감지하여 한국어·영어·크메르어·중국어 4개국어로 번역됩니다',
+                badge: '4개국어 자동 번역',
+            },
             buttons: {
                 save: '저장',
                 saveWithTranslate: '저장 & 4개국어 자동 번역',

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/api';
 import { auth } from '@/auth';
 import { Translate } from '@google-cloud/translate/build/src/v2';
+import { detectLanguage } from '@/lib/translate';
 
 const translate = new Translate();
 
@@ -140,6 +141,9 @@ export async function PATCH(
         variants,            // full variants replacement (undefined = no change)
     } = body;
 
+    // Auto-detect input language from product name — no manual selection needed
+    const srcLang: string = name ? await detectLanguage(name) : 'ko';
+
     // Pre-translate option labels BEFORE entering the transaction
     let translatedOptions: any[] = [];
     if (Array.isArray(options) && options.length > 0) {
@@ -175,31 +179,54 @@ export async function PATCH(
         );
     }
 
+    // Pre-translate text fields to all 4 languages (if content is being updated)
+    let translations: Array<{ langCode: string; name: string; shortDesc: string | null; detailDesc: string | null; ingredients: string | null; howToUse: string | null; benefits: string | null }> = [];
+    if (name !== undefined) {
+        const xlateField = async (text: string | undefined | null, targetLang: string): Promise<string | null> => {
+            if (!text) return null;
+            try { const [r] = await translate.translate(text, targetLang); return r; } catch { return text; }
+        };
+        const TARGET_LANGS = ['ko', 'en', 'km', 'zh'];
+        translations = await Promise.all(
+            TARGET_LANGS.map(async (lang) => ({
+                langCode: lang,
+                name:         lang === srcLang ? (name ?? '') : (await xlateField(name, lang) ?? name ?? ''),
+                shortDesc:    lang === srcLang ? (shortDesc ?? null) : await xlateField(shortDesc, lang),
+                detailDesc:   lang === srcLang ? (detailDesc ?? null) : await xlateField(detailDesc, lang),
+                ingredients:  lang === srcLang ? (ingredients ?? null) : await xlateField(ingredients, lang),
+                howToUse:     lang === srcLang ? (howToUse ?? null) : await xlateField(howToUse, lang),
+                benefits:     lang === srcLang ? (benefits ?? null) : await xlateField(benefits, lang),
+            }))
+        );
+    }
+
     await prisma.$transaction(async (tx) => {
-        // Update Korean translation (base language for seller)
-        if (name !== undefined) {
+        // Update all 4 language translations if text content is provided
+        if (translations.length > 0) {
+            for (const tr of translations) {
             await tx.productTranslation.upsert({
-                where: { productId_langCode: { productId: product.id, langCode: 'ko' } },
+                where: { productId_langCode: { productId: product.id, langCode: tr.langCode } },
                 create: {
                     productId: product.id,
-                    langCode: 'ko',
-                    name: name ?? '',
-                    shortDesc: shortDesc ?? null,
-                    detailDesc: detailDesc ?? null,
-                    ingredients: ingredients ?? null,
-                    howToUse: howToUse ?? null,
-                    benefits: benefits ?? null,
+                    langCode: tr.langCode,
+                    name: tr.name,
+                    shortDesc: tr.shortDesc,
+                    detailDesc: tr.detailDesc,
+                    ingredients: tr.ingredients,
+                    howToUse: tr.howToUse,
+                    benefits: tr.benefits,
                 },
                 update: {
-                    name: name ?? undefined,
-                    shortDesc: shortDesc ?? null,
-                    detailDesc: detailDesc ?? null,
-                    ingredients: ingredients ?? null,
-                    howToUse: howToUse ?? null,
-                    benefits: benefits ?? null,
+                    name: tr.name,
+                    shortDesc: tr.shortDesc,
+                    detailDesc: tr.detailDesc,
+                    ingredients: tr.ingredients,
+                    howToUse: tr.howToUse,
+                    benefits: tr.benefits,
                 },
             });
-        }
+            } // end for loop
+        } // end if translations
 
         // Delete removed images (BigInt 변환 전 숫자 검증)
         if (deleteImageIds.length > 0) {

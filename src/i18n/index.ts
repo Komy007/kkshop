@@ -337,6 +337,7 @@ export interface Translations {
             specs: { title: string; desc: string; };
             content: { title: string; desc: string; productName: string; shortDesc: string; ingredients: string; howToUse: string; benefits: string; detailDesc: string; seoKeywords: string; };
             translate: { label: string; desc: string; };
+            autoDetect: { notice: string; badge: string; };
             buttons: { save: string; saveWithTranslate: string; saving: string; savingTranslate: string; cancel: string; };
             success: { withTranslate: string; withoutTranslate: string; };
         };

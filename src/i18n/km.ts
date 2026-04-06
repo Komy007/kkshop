@@ -281,6 +281,10 @@ const km: Translations = {
             specs: { title: 'លក្ខណៈបច្ចេកទេស', desc: 'ព័ត៌មានសំខាន់' },
             content: { title: 'មាតិកា', desc: 'ពិនិត្យជម្រើសបកប្រែខាងក្រោម', productName: 'ឈ្មោះផលិតផល *', shortDesc: 'សង្ខេប', ingredients: 'ឧបករណ៍ផ្សំ', howToUse: 'របៀបប្រើ', benefits: 'អត្ថប្រយោជន៍', detailDesc: 'ការពិពណ៌នាលម្អិត', seoKeywords: 'SEO Keywords' },
             translate: { label: 'បកប្រែ 4 ភាសានៅពេលរក្សាទុក', desc: 'ប្រើ Google Translate API' },
+            autoDetect: {
+                notice: 'បញ្ចូលភាសាណាក็បាន — ស្វ័យប្រវត្តិស្វែងរក និងបកប្រែជា ខ្មែរ · អង់គ្លេស · កូរ៉េ · ចិន',
+                badge: 'បកប្រែ ៤ ភាសា',
+            },
             buttons: { save: 'រក្សាទុក', saveWithTranslate: 'រក្សាទុក & បកប្រែ', saving: 'កំពុងរក្សាទុក...', savingTranslate: 'កំពុងបកប្រែ...', cancel: 'បោះបង់' },
             success: { withTranslate: '✅ ផលិតផលបានចុះបញ្ជី និងបកប្រែ 4 ភាសា!', withoutTranslate: '✅ ផលិតផលបានចុះបញ្ជី។' },
         },

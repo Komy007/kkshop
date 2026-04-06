@@ -281,6 +281,10 @@ const zh: Translations = {
             specs: { title: '商品规格', desc: '影响购买决策的关键信息' },
             content: { title: '内容', desc: '勾选下方翻译选项生成4种语言', productName: '商品名 *', shortDesc: '简短描述', ingredients: '主要成分', howToUse: '使用方法', benefits: '主要功效', detailDesc: '详细描述', seoKeywords: 'SEO关键词' },
             translate: { label: '保存时自动翻译为4种语言', desc: '使用 Google Translate API 生成' },
+            autoDetect: {
+                notice: '支持任意语言输入 — 自动识别并翻译成韩文、英文、高棉文和中文',
+                badge: '四语言自动翻译',
+            },
             buttons: { save: '保存', saveWithTranslate: '保存 & 自动翻译', saving: '保存中...', savingTranslate: '翻译中...', cancel: '取消' },
             success: { withTranslate: '✅ 商品已注册并自动翻译为4种语言！', withoutTranslate: '✅ 商品已注册。' },
         },

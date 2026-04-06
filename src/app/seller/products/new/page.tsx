@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Upload, X, Loader2, Sparkles, Info, CheckCircle, Plus, Package } from 'lucide-react';
 import DraggableImageGrid from '@/components/DraggableImageGrid';
+import { useTranslations } from '@/i18n/useTranslations';
 
 interface Category { id: string; slug: string; nameKo: string; nameEn?: string; parentId?: string | null; }
 
@@ -15,6 +16,10 @@ const UNIT_LABELS = ['개', 'box', 'pack', 'set', '병', '튜브', '매', '장',
 const inp  = "w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500";
 const ta   = "w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 resize-none";
 const vInp = "px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500";
+
+// Stable unique key generator for variant rows (prevents focus-jump on add/remove)
+let _vseq = 0;
+const vk = () => `vk${++_vseq}_${Date.now()}`;
 
 function Section({ title, sub, children }: { title: string; sub?: string; children: React.ReactNode }) {
     return (
@@ -42,26 +47,27 @@ function Field({ en, ko, required, children }: { en: string; ko: string; require
 
 function ToggleSwitch({ checked, onChange, label, sub }: { checked: boolean; onChange: () => void; label: string; sub?: string }) {
     return (
-        <label className="flex items-center gap-3 cursor-pointer select-none">
+        <div className="flex items-center gap-3 select-none">
             <button
                 type="button"
                 role="switch"
                 aria-checked={checked}
                 onClick={onChange}
-                className={`relative inline-flex w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-1 ${checked ? 'bg-teal-500' : 'bg-gray-200'}`}
+                className={`relative inline-flex w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-1 flex-shrink-0 ${checked ? 'bg-teal-500' : 'bg-gray-200'}`}
             >
                 <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${checked ? 'translate-x-5' : 'translate-x-0'}`} />
             </button>
-            <span className="text-sm font-semibold text-gray-800">
+            <button type="button" onClick={onChange} className="text-sm font-semibold text-gray-800 text-left">
                 {label}
                 {sub && <span className="text-xs text-gray-400 ml-2 font-normal">{sub}</span>}
-            </span>
-        </label>
+            </button>
+        </div>
     );
 }
 
 export default function SellerProductNewPage() {
     const router  = useRouter();
+    const t       = useTranslations();
     const fileRef = useRef<HTMLInputElement>(null);
     const [images,      setImages]     = useState<File[]>([]);
     const [previews,    setPreviews]   = useState<string[]>([]);
@@ -78,14 +84,24 @@ export default function SellerProductNewPage() {
 
     // ── Variant state ──────────────────────────────────────────────────────
     const [variantEnabled,  setVariantEnabled]  = useState(false);
-    const [enableColor,     setEnableColor]     = useState(true);
+    const [enableColor,     setEnableColor]     = useState(false);
     const [enableSize,      setEnableSize]      = useState(false);
     const [enableVolume,    setEnableVolume]    = useState(false);
     const [enableCustom,    setEnableCustom]    = useState(false);
-    const [colorVars,  setColorVars]  = useState([{ name: '', hex: '#FF6B6B', stock: '0', price: '' }]);
-    const [sizeVars,   setSizeVars]   = useState<{ label: string; stock: string; price: string }[]>([]);
-    const [volumeVars, setVolumeVars] = useState<{ label: string; stock: string; price: string }[]>([]);
-    const [customVars, setCustomVars] = useState([{ label: '', stock: '0', price: '' }]);
+
+    // Refs for scrolling variant sections into view on enable
+    const colorSectionRef  = useRef<HTMLDivElement>(null);
+    const sizeSectionRef   = useRef<HTMLDivElement>(null);
+    const volumeSectionRef = useRef<HTMLDivElement>(null);
+    const customSectionRef = useRef<HTMLDivElement>(null);
+    const scrollInto = (ref: React.RefObject<HTMLDivElement>) =>
+        requestAnimationFrame(() => requestAnimationFrame(() =>
+            ref.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+        ));
+    const [colorVars,  setColorVars]  = useState<{_k:string;name:string;hex:string;stock:string;price:string}[]>([]);
+    const [sizeVars,   setSizeVars]   = useState<{_k:string;label:string;stock:string;price:string}[]>([]);
+    const [volumeVars, setVolumeVars] = useState<{_k:string;label:string;stock:string;price:string}[]>([]);
+    const [customVars, setCustomVars] = useState<{_k:string;label:string;stock:string;price:string}[]>([]);
 
     const [form, setForm] = useState({
         sku: '', priceUsd: '', stockQty: '0', categoryId: '',
@@ -153,6 +169,44 @@ export default function SellerProductNewPage() {
         setPreviews(prev => { const a = [...prev]; const [m] = a.splice(from, 1); a.splice(to, 0, m); return a; });
     };
 
+    // ── Variant toggle handlers — auto-add first empty row on enable ──────
+    const toggleColor = () => {
+        const next = !enableColor;
+        setEnableColor(next);
+        if (next) {
+            if (colorVars.length === 0)
+                setColorVars([{ _k: vk(), name: '', hex: '#FF6B6B', stock: '0', price: '' }]);
+            scrollInto(colorSectionRef);
+        }
+    };
+    const toggleSize = () => {
+        const next = !enableSize;
+        setEnableSize(next);
+        if (next) {
+            if (sizeVars.length === 0)
+                setSizeVars([{ _k: vk(), label: '', stock: '0', price: '' }]);
+            scrollInto(sizeSectionRef);
+        }
+    };
+    const toggleVolume = () => {
+        const next = !enableVolume;
+        setEnableVolume(next);
+        if (next) {
+            if (volumeVars.length === 0)
+                setVolumeVars([{ _k: vk(), label: '', stock: '0', price: '' }]);
+            scrollInto(volumeSectionRef);
+        }
+    };
+    const toggleCustom = () => {
+        const next = !enableCustom;
+        setEnableCustom(next);
+        if (next) {
+            if (customVars.length === 0)
+                setCustomVars([{ _k: vk(), label: '', stock: '0', price: '' }]);
+            scrollInto(customSectionRef);
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!form.nameKo)     return alert('Product name is required. · 상품명을 입력해주세요.');
@@ -193,7 +247,7 @@ export default function SellerProductNewPage() {
                 sizeVars.filter(v => v.label.trim()).forEach(v => {
                     variantsPayload.push({
                         variantType: 'SIZE',
-                        variantValue: v.label,
+                        variantValue: v.label.trim(),
                         stockQty: parseInt(v.stock) || 0,
                         priceUsd: v.price || null,
                         sortOrder: sortIdx++,
@@ -204,7 +258,7 @@ export default function SellerProductNewPage() {
                 volumeVars.filter(v => v.label.trim()).forEach(v => {
                     variantsPayload.push({
                         variantType: 'VOLUME',
-                        variantValue: v.label,
+                        variantValue: v.label.trim(),
                         stockQty: parseInt(v.stock) || 0,
                         priceUsd: v.price || null,
                         sortOrder: sortIdx++,
@@ -273,12 +327,14 @@ export default function SellerProductNewPage() {
             <div className="mb-6">
                 <h1 className="text-2xl font-extrabold text-gray-900">Register New Product</h1>
                 <p className="text-sm text-gray-400 mt-0.5">새 상품 등록</p>
-                <div className="mt-3 flex items-start gap-2 p-3 bg-teal-50 border border-teal-200 rounded-xl text-sm text-teal-700">
-                    <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                    <div>
-                        <strong>Auto-translation enabled</strong> — enter product info and it will be auto-translated into English, Chinese &amp; Khmer.
-                        <span className="block text-xs opacity-75 mt-0.5">한국어로 입력하면 영어·중문·크메르어 자동 번역됩니다.</span>
+                <div className="mt-3 flex items-center gap-3 p-3 bg-teal-50 border border-teal-200 rounded-xl text-sm text-teal-700">
+                    <Sparkles className="w-4 h-4 flex-shrink-0 text-teal-500" />
+                    <div className="flex-1">
+                        <span className="font-bold">{t.admin.new.autoDetect?.notice ?? 'Enter in any language — auto-detected & translated into 4 languages'}</span>
                     </div>
+                    <span className="flex-shrink-0 bg-teal-600 text-white text-[11px] font-bold px-2.5 py-1 rounded-full whitespace-nowrap">
+                        ✦ {t.admin.new.autoDetect?.badge ?? 'Auto 4-Language Translation'}
+                    </span>
                 </div>
             </div>
 
@@ -517,7 +573,14 @@ export default function SellerProductNewPage() {
                 <Section title="🎨 Product Variants" sub="색상·사이즈·용량·커스텀 옵션 — optional · 선택사항">
                     <ToggleSwitch
                         checked={variantEnabled}
-                        onChange={() => setVariantEnabled(p => !p)}
+                        onChange={() => {
+                            const next = !variantEnabled;
+                            setVariantEnabled(next);
+                            if (!next) {
+                                setEnableColor(false); setEnableSize(false);
+                                setEnableVolume(false); setEnableCustom(false);
+                            }
+                        }}
                         label="Enable product variants"
                         sub="색상 / 사이즈 / 용량 / 기타 옵션 사용"
                     />
@@ -529,24 +592,23 @@ export default function SellerProductNewPage() {
                                 <p className="text-xs font-semibold text-gray-600 mb-2">Select variant types · 옵션 종류 선택 (복수 선택 가능):</p>
                                 <div className="flex flex-wrap gap-3">
                                     {([
-                                        { key: 'color',  label: '🎨 Color · 색상',    checked: enableColor,  setChecked: setEnableColor },
-                                        { key: 'size',   label: '📏 Size · 사이즈',    checked: enableSize,   setChecked: setEnableSize },
-                                        { key: 'volume', label: '💧 Volume · 용량',    checked: enableVolume, setChecked: setEnableVolume },
-                                        { key: 'custom', label: '🏷️ Custom · 기타',    checked: enableCustom, setChecked: setEnableCustom },
-                                    ] as const).map(({ key, label, checked, setChecked }) => (
-                                        <label key={key} className={`flex items-center gap-2 px-4 py-2 rounded-xl border-2 cursor-pointer transition-all text-sm font-bold select-none ${
+                                        { key: 'color',  label: '🎨 Color · 색상',    checked: enableColor,  toggle: toggleColor },
+                                        { key: 'size',   label: '📏 Size · 사이즈',    checked: enableSize,   toggle: toggleSize },
+                                        { key: 'volume', label: '💧 Volume · 용량',    checked: enableVolume, toggle: toggleVolume },
+                                        { key: 'custom', label: '🏷️ Custom · 기타',    checked: enableCustom, toggle: toggleCustom },
+                                    ] as const).map(({ key, label, checked, toggle }) => (
+                                        <button key={key} type="button" onClick={toggle} className={`flex items-center gap-2 px-4 py-2 rounded-xl border-2 cursor-pointer transition-all text-sm font-bold select-none ${
                                             checked ? 'border-teal-500 bg-teal-50 text-teal-700' : 'border-gray-200 bg-white text-gray-600 hover:border-teal-300'
                                         }`}>
-                                            <input type="checkbox" checked={checked} onChange={() => setChecked((p: boolean) => !p)} className="sr-only" />
                                             {label}
-                                        </label>
+                                        </button>
                                     ))}
                                 </div>
                             </div>
 
                             {/* ── Color variants ── */}
                             {enableColor && (
-                                <div className="space-y-3 p-4 bg-gray-50 rounded-xl border border-gray-100">
+                                <div ref={colorSectionRef} className="space-y-3 p-4 bg-gray-50 rounded-xl border border-gray-100">
                                     <p className="text-xs font-bold text-gray-700">🎨 Color variants · 색상 옵션</p>
                                     <div className="grid grid-cols-[40px_1fr_72px_88px_28px] gap-2 px-1 text-xs font-semibold text-gray-400">
                                         <span />
@@ -555,27 +617,27 @@ export default function SellerProductNewPage() {
                                         <span className="text-center">Price (opt)</span>
                                         <span />
                                     </div>
-                                    {colorVars.map((cv, i) => (
-                                        <div key={i} className="grid grid-cols-[40px_1fr_72px_88px_28px] gap-2 items-center bg-white rounded-xl p-2.5 border border-gray-100">
+                                    {colorVars.map((cv) => (
+                                        <div key={cv._k} className="grid grid-cols-[40px_1fr_72px_88px_28px] gap-2 items-center bg-white rounded-xl p-2.5 border border-gray-100">
                                             <input type="color" value={cv.hex}
-                                                onChange={e => setColorVars(p => p.map((c, idx) => idx === i ? { ...c, hex: e.target.value } : c))}
+                                                onChange={e => setColorVars(p => p.map(c => c._k === cv._k ? { ...c, hex: e.target.value } : c))}
                                                 className="w-8 h-8 rounded-lg border border-gray-200 cursor-pointer p-0.5 bg-white" />
                                             <input value={cv.name}
-                                                onChange={e => setColorVars(p => p.map((c, idx) => idx === i ? { ...c, name: e.target.value } : c))}
+                                                onChange={e => setColorVars(p => p.map(c => c._k === cv._k ? { ...c, name: e.target.value } : c))}
                                                 placeholder="e.g. Rose Pink" className={vInp} />
                                             <input type="number" value={cv.stock}
-                                                onChange={e => setColorVars(p => p.map((c, idx) => idx === i ? { ...c, stock: e.target.value } : c))}
+                                                onChange={e => setColorVars(p => p.map(c => c._k === cv._k ? { ...c, stock: e.target.value } : c))}
                                                 className={`text-center ${vInp}`} min="0" />
                                             <input type="number" step="0.01" value={cv.price}
-                                                onChange={e => setColorVars(p => p.map((c, idx) => idx === i ? { ...c, price: e.target.value } : c))}
+                                                onChange={e => setColorVars(p => p.map(c => c._k === cv._k ? { ...c, price: e.target.value } : c))}
                                                 placeholder="—" className={`text-center ${vInp}`} />
                                             {colorVars.length > 1 ? (
-                                                <button type="button" onClick={() => setColorVars(p => p.filter((_, idx) => idx !== i))} className="p-1 text-red-400 hover:bg-red-50 rounded-lg"><X className="w-3.5 h-3.5" /></button>
+                                                <button type="button" onClick={() => setColorVars(p => p.filter(c => c._k !== cv._k))} className="p-1 text-red-400 hover:bg-red-50 rounded-lg"><X className="w-3.5 h-3.5" /></button>
                                             ) : <span />}
                                         </div>
                                     ))}
                                     {colorVars.length < 10 && (
-                                        <button type="button" onClick={() => setColorVars(p => [...p, { name: '', hex: '#4A90E2', stock: '0', price: '' }])}
+                                        <button type="button" onClick={() => setColorVars(p => [...p, { _k: vk(), name: '', hex: '#4A90E2', stock: '0', price: '' }])}
                                             className="text-sm font-bold text-teal-600 flex items-center gap-1.5 hover:text-teal-700 bg-teal-50 px-3 py-2 rounded-lg border border-teal-100 transition-colors">
                                             <Plus className="w-4 h-4" /> Add Color · 색상 추가
                                         </button>
@@ -585,101 +647,97 @@ export default function SellerProductNewPage() {
 
                             {/* ── Size variants ── */}
                             {enableSize && (
-                                <div className="space-y-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
+                                <div ref={sizeSectionRef} className="space-y-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
                                     <p className="text-xs font-bold text-gray-700">📏 Size variants · 사이즈 옵션</p>
                                     <div className="flex flex-wrap gap-2">
                                         {SIZE_PRESETS.map(s => {
                                             const added = sizeVars.some(v => v.label === s);
                                             return (
                                                 <button key={s} type="button"
-                                                    onClick={() => !added && setSizeVars(p => [...p, { label: s, stock: '0', price: '' }])}
+                                                    onClick={() => !added && setSizeVars(p => [...p, { _k: vk(), label: s, stock: '0', price: '' }])}
                                                     disabled={added}
                                                     className={`px-3 py-1.5 rounded-lg text-sm font-bold border transition-all ${added ? 'bg-teal-100 text-teal-600 border-teal-200 opacity-50 cursor-not-allowed' : 'bg-white text-gray-600 border-gray-200 hover:border-teal-400 hover:text-teal-700'}`}>
                                                     {s}
                                                 </button>
                                             );
                                         })}
-                                        <button type="button" onClick={() => setSizeVars(p => [...p, { label: '', stock: '0', price: '' }])}
+                                        <button type="button" onClick={() => setSizeVars(p => [...p, { _k: vk(), label: '', stock: '0', price: '' }])}
                                             className="px-3 py-1.5 rounded-lg text-sm font-bold border border-dashed border-gray-300 text-gray-500 hover:border-teal-400 hover:text-teal-600 transition-all flex items-center gap-1">
                                             <Plus className="w-3.5 h-3.5" /> Custom
                                         </button>
                                     </div>
-                                    {sizeVars.length > 0 && (
-                                        <div className="space-y-2">
-                                            <div className="grid grid-cols-[1fr_72px_88px_28px] gap-2 px-1 text-xs font-semibold text-gray-400">
-                                                <span>Size · 사이즈</span><span className="text-center">Stock</span><span className="text-center">Price (opt)</span><span />
-                                            </div>
-                                            {sizeVars.map((sv, i) => (
-                                                <div key={i} className="grid grid-cols-[1fr_72px_88px_28px] gap-2 items-center bg-white p-2.5 rounded-xl border border-gray-100">
-                                                    <input value={sv.label} onChange={e => setSizeVars(p => p.map((s, idx) => idx === i ? { ...s, label: e.target.value } : s))} placeholder="e.g. M, 95" className={`font-semibold ${vInp}`} />
-                                                    <input type="number" value={sv.stock} onChange={e => setSizeVars(p => p.map((s, idx) => idx === i ? { ...s, stock: e.target.value } : s))} className={`text-center ${vInp}`} min="0" />
-                                                    <input type="number" step="0.01" value={sv.price} onChange={e => setSizeVars(p => p.map((s, idx) => idx === i ? { ...s, price: e.target.value } : s))} placeholder="—" className={`text-center ${vInp}`} />
-                                                    <button type="button" onClick={() => setSizeVars(p => p.filter((_, idx) => idx !== i))} className="p-1 text-red-400 hover:bg-red-50 rounded-lg"><X className="w-3.5 h-3.5" /></button>
-                                                </div>
-                                            ))}
+                                    <div className="space-y-2">
+                                        <div className="grid grid-cols-[1fr_72px_88px_28px] gap-2 px-1 text-xs font-semibold text-gray-400">
+                                            <span>Size · 사이즈</span><span className="text-center">Stock</span><span className="text-center">Price (opt)</span><span />
                                         </div>
-                                    )}
+                                        {sizeVars.map((sv) => (
+                                            <div key={sv._k} className="grid grid-cols-[1fr_72px_88px_28px] gap-2 items-center bg-white p-2.5 rounded-xl border border-gray-100">
+                                                <input value={sv.label} onChange={e => setSizeVars(p => p.map(s => s._k === sv._k ? { ...s, label: e.target.value } : s))} placeholder="e.g. M, 95" className={`font-semibold ${vInp}`} />
+                                                <input type="number" value={sv.stock} onChange={e => setSizeVars(p => p.map(s => s._k === sv._k ? { ...s, stock: e.target.value } : s))} className={`text-center ${vInp}`} min="0" />
+                                                <input type="number" step="0.01" value={sv.price} onChange={e => setSizeVars(p => p.map(s => s._k === sv._k ? { ...s, price: e.target.value } : s))} placeholder="—" className={`text-center ${vInp}`} />
+                                                <button type="button" onClick={() => setSizeVars(p => p.filter(s => s._k !== sv._k))} className="p-1 text-red-400 hover:bg-red-50 rounded-lg"><X className="w-3.5 h-3.5" /></button>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             )}
 
                             {/* ── Volume variants ── */}
                             {enableVolume && (
-                                <div className="space-y-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
+                                <div ref={volumeSectionRef} className="space-y-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
                                     <p className="text-xs font-bold text-gray-700">💧 Volume variants · 용량 옵션</p>
                                     <div className="flex flex-wrap gap-2">
                                         {VOLUME_PRESETS.map(v => {
                                             const added = volumeVars.some(x => x.label === v);
                                             return (
                                                 <button key={v} type="button"
-                                                    onClick={() => !added && setVolumeVars(p => [...p, { label: v, stock: '0', price: '' }])}
+                                                    onClick={() => !added && setVolumeVars(p => [...p, { _k: vk(), label: v, stock: '0', price: '' }])}
                                                     disabled={added}
                                                     className={`px-3 py-1.5 rounded-lg text-sm font-bold border transition-all ${added ? 'bg-teal-100 text-teal-600 border-teal-200 opacity-50 cursor-not-allowed' : 'bg-white text-gray-600 border-gray-200 hover:border-teal-400 hover:text-teal-700'}`}>
                                                     {v}
                                                 </button>
                                             );
                                         })}
-                                        <button type="button" onClick={() => setVolumeVars(p => [...p, { label: '', stock: '0', price: '' }])}
+                                        <button type="button" onClick={() => setVolumeVars(p => [...p, { _k: vk(), label: '', stock: '0', price: '' }])}
                                             className="px-3 py-1.5 rounded-lg text-sm font-bold border border-dashed border-gray-300 text-gray-500 hover:border-teal-400 hover:text-teal-600 transition-all flex items-center gap-1">
                                             <Plus className="w-3.5 h-3.5" /> Custom
                                         </button>
                                     </div>
-                                    {volumeVars.length > 0 && (
-                                        <div className="space-y-2">
-                                            <div className="grid grid-cols-[1fr_72px_88px_28px] gap-2 px-1 text-xs font-semibold text-gray-400">
-                                                <span>Volume · 용량</span><span className="text-center">Stock</span><span className="text-center">Price (opt)</span><span />
-                                            </div>
-                                            {volumeVars.map((vv, i) => (
-                                                <div key={i} className="grid grid-cols-[1fr_72px_88px_28px] gap-2 items-center bg-white p-2.5 rounded-xl border border-gray-100">
-                                                    <input value={vv.label} onChange={e => setVolumeVars(p => p.map((x, idx) => idx === i ? { ...x, label: e.target.value } : x))} placeholder="e.g. 100ml" className={`font-semibold ${vInp}`} />
-                                                    <input type="number" value={vv.stock} onChange={e => setVolumeVars(p => p.map((x, idx) => idx === i ? { ...x, stock: e.target.value } : x))} className={`text-center ${vInp}`} min="0" />
-                                                    <input type="number" step="0.01" value={vv.price} onChange={e => setVolumeVars(p => p.map((x, idx) => idx === i ? { ...x, price: e.target.value } : x))} placeholder="—" className={`text-center ${vInp}`} />
-                                                    <button type="button" onClick={() => setVolumeVars(p => p.filter((_, idx) => idx !== i))} className="p-1 text-red-400 hover:bg-red-50 rounded-lg"><X className="w-3.5 h-3.5" /></button>
-                                                </div>
-                                            ))}
+                                    <div className="space-y-2">
+                                        <div className="grid grid-cols-[1fr_72px_88px_28px] gap-2 px-1 text-xs font-semibold text-gray-400">
+                                            <span>Volume · 용량</span><span className="text-center">Stock</span><span className="text-center">Price (opt)</span><span />
                                         </div>
-                                    )}
+                                        {volumeVars.map((vv) => (
+                                            <div key={vv._k} className="grid grid-cols-[1fr_72px_88px_28px] gap-2 items-center bg-white p-2.5 rounded-xl border border-gray-100">
+                                                <input value={vv.label} onChange={e => setVolumeVars(p => p.map(x => x._k === vv._k ? { ...x, label: e.target.value } : x))} placeholder="e.g. 100ml" className={`font-semibold ${vInp}`} />
+                                                <input type="number" value={vv.stock} onChange={e => setVolumeVars(p => p.map(x => x._k === vv._k ? { ...x, stock: e.target.value } : x))} className={`text-center ${vInp}`} min="0" />
+                                                <input type="number" step="0.01" value={vv.price} onChange={e => setVolumeVars(p => p.map(x => x._k === vv._k ? { ...x, price: e.target.value } : x))} placeholder="—" className={`text-center ${vInp}`} />
+                                                <button type="button" onClick={() => setVolumeVars(p => p.filter(x => x._k !== vv._k))} className="p-1 text-red-400 hover:bg-red-50 rounded-lg"><X className="w-3.5 h-3.5" /></button>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             )}
 
                             {/* ── Custom variants ── */}
                             {enableCustom && (
-                                <div className="space-y-3 p-4 bg-gray-50 rounded-xl border border-gray-100">
+                                <div ref={customSectionRef} className="space-y-3 p-4 bg-gray-50 rounded-xl border border-gray-100">
                                     <p className="text-xs font-bold text-gray-700">🏷️ Custom variants · 기타 옵션</p>
                                     <p className="text-xs text-gray-500">Bundle sets, scents, kit types, etc. · 세트 구성, 향기, 용도별 등</p>
                                     <div className="grid grid-cols-[1fr_72px_88px_28px] gap-2 px-1 text-xs font-semibold text-gray-400">
                                         <span>Option name · 옵션명</span><span className="text-center">Stock</span><span className="text-center">Price (opt)</span><span />
                                     </div>
-                                    {customVars.map((cv, i) => (
-                                        <div key={i} className="grid grid-cols-[1fr_72px_88px_28px] gap-2 items-center bg-white p-2.5 rounded-xl border border-gray-100">
-                                            <input value={cv.label} onChange={e => setCustomVars(p => p.map((c, idx) => idx === i ? { ...c, label: e.target.value } : c))} placeholder="e.g. Starter Kit" className={vInp} />
-                                            <input type="number" value={cv.stock} onChange={e => setCustomVars(p => p.map((c, idx) => idx === i ? { ...c, stock: e.target.value } : c))} className={`text-center ${vInp}`} min="0" />
-                                            <input type="number" step="0.01" value={cv.price} onChange={e => setCustomVars(p => p.map((c, idx) => idx === i ? { ...c, price: e.target.value } : c))} placeholder="—" className={`text-center ${vInp}`} />
+                                    {customVars.map((cv) => (
+                                        <div key={cv._k} className="grid grid-cols-[1fr_72px_88px_28px] gap-2 items-center bg-white p-2.5 rounded-xl border border-gray-100">
+                                            <input value={cv.label} onChange={e => setCustomVars(p => p.map(c => c._k === cv._k ? { ...c, label: e.target.value } : c))} placeholder="e.g. Starter Kit" className={vInp} />
+                                            <input type="number" value={cv.stock} onChange={e => setCustomVars(p => p.map(c => c._k === cv._k ? { ...c, stock: e.target.value } : c))} className={`text-center ${vInp}`} min="0" />
+                                            <input type="number" step="0.01" value={cv.price} onChange={e => setCustomVars(p => p.map(c => c._k === cv._k ? { ...c, price: e.target.value } : c))} placeholder="—" className={`text-center ${vInp}`} />
                                             {customVars.length > 1 ? (
-                                                <button type="button" onClick={() => setCustomVars(p => p.filter((_, idx) => idx !== i))} className="p-1 text-red-400 hover:bg-red-50 rounded-lg"><X className="w-3.5 h-3.5" /></button>
+                                                <button type="button" onClick={() => setCustomVars(p => p.filter(c => c._k !== cv._k))} className="p-1 text-red-400 hover:bg-red-50 rounded-lg"><X className="w-3.5 h-3.5" /></button>
                                             ) : <span />}
                                         </div>
                                     ))}
-                                    <button type="button" onClick={() => setCustomVars(p => [...p, { label: '', stock: '0', price: '' }])}
+                                    <button type="button" onClick={() => setCustomVars(p => [...p, { _k: vk(), label: '', stock: '0', price: '' }])}
                                         className="text-sm font-bold text-teal-600 flex items-center gap-1.5 hover:text-teal-700 bg-teal-50 px-3 py-2 rounded-lg border border-teal-100 transition-colors">
                                         <Plus className="w-4 h-4" /> Add Option · 옵션 추가
                                     </button>
@@ -690,16 +748,15 @@ export default function SellerProductNewPage() {
                 </Section>
 
                 {/* ── Product Description ── */}
-                <Section title="🌐 Product Description" sub="상품 설명 — Enter in Korean/English → auto-translated to 4 languages · 입력 후 4개국어 자동 번역">
+                <Section title="🌐 Product Description" sub="상품 설명 — 어떤 언어로 입력해도 4개국어 자동 번역 · Any language auto-translated to 4 langs">
                     <div className="space-y-4">
                         <div className="flex items-center gap-2 text-xs text-teal-600 bg-teal-50 px-3 py-2 rounded-lg border border-teal-100">
-                            <Sparkles className="w-3.5 h-3.5" />
-                            Saved content is automatically translated into English, Korean, Chinese &amp; Khmer.
-                            <span className="opacity-70">· 저장 시 4개국어 자동 생성</span>
+                            <Sparkles className="w-3.5 h-3.5 flex-shrink-0" />
+                            {t.admin.new.autoDetect?.notice ?? 'Enter in any language — auto-detected & translated into 4 languages'}
                         </div>
                         <Field en="Product Name" ko="상품명" required>
                             <input value={form.nameKo} onChange={e => set('nameKo', e.target.value)}
-                                placeholder="e.g. Hydrating Ampoule Serum 50ml / 수분 앰플 세럼 50ml" className={inp} required />
+                                placeholder="e.g. Hydrating Ampoule Serum 50ml · 수분 앰플 세럼 50ml" className={inp} required />
                         </Field>
                         <Field en="Short Description" ko="짧은 설명">
                             <textarea value={form.shortDescKo} onChange={e => set('shortDescKo', e.target.value)}

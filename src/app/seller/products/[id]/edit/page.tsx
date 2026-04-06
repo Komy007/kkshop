@@ -2,12 +2,17 @@
 
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Save, Loader2, ChevronLeft, AlertCircle, CheckCircle, Upload, X, ImagePlus, Plus } from 'lucide-react';
+import { Save, Loader2, ChevronLeft, AlertCircle, CheckCircle, Upload, X, ImagePlus, Plus, Sparkles } from 'lucide-react';
 import DraggableImageGrid from '@/components/DraggableImageGrid';
+import { useTranslations } from '@/i18n/useTranslations';
 
 const SIZE_PRESETS   = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Free Size'];
 const VOLUME_PRESETS = ['30ml', '50ml', '100ml', '150ml', '200ml', '250ml', '300ml', '500ml', '1L'];
 const UNIT_LABELS    = ['개', 'box', 'pack', 'set', '병', '튜브', '매', '장', '캡슐'];
+
+// Stable unique key generator for variant rows
+let _vseq = 0;
+const vk = () => `vk${++_vseq}_${Date.now()}`;
 
 interface Category { id: string; nameKo: string; nameEn?: string; parentId?: string | null; }
 
@@ -50,16 +55,16 @@ const Field = ({ en, ko, required, children }: { en: string; ko: string; require
 );
 
 const ToggleSwitch = ({ checked, onChange, label, sub }: { checked: boolean; onChange: () => void; label: string; sub?: string }) => (
-    <label className="flex items-center gap-3 cursor-pointer select-none">
+    <div className="flex items-center gap-3 select-none">
         <button type="button" role="switch" aria-checked={checked} onClick={onChange}
-            className={`relative inline-flex w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-1 ${checked ? 'bg-teal-500' : 'bg-gray-200'}`}>
+            className={`relative inline-flex w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-1 flex-shrink-0 ${checked ? 'bg-teal-500' : 'bg-gray-200'}`}>
             <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${checked ? 'translate-x-5' : 'translate-x-0'}`} />
         </button>
-        <span className="text-sm font-semibold text-gray-800">
+        <button type="button" onClick={onChange} className="text-sm font-semibold text-gray-800 text-left">
             {label}
             {sub && <span className="text-xs text-gray-400 ml-2 font-normal">{sub}</span>}
-        </span>
-    </label>
+        </button>
+    </div>
 );
 
 const inp  = "w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 outline-none";
@@ -69,6 +74,7 @@ const vInp = "px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-
 export default function SellerProductEditPage() {
     const params    = useParams();
     const router    = useRouter();
+    const t         = useTranslations();
     const productId = params.id as string;
     const fileRef   = useRef<HTMLInputElement>(null);
 
@@ -94,14 +100,25 @@ export default function SellerProductEditPage() {
     const [options, setOptions] = useState<{ minQty: string; maxQty: string; discountPct: string; freeShipping: boolean; labelKo: string }[]>([]);
 
     // Multi-type variant state
+    const [variantEnabled, setVariantEnabled] = useState(false);
     const [enableColor,  setEnableColor]  = useState(false);
     const [enableSize,   setEnableSize]   = useState(false);
     const [enableVolume, setEnableVolume] = useState(false);
     const [enableCustom, setEnableCustom] = useState(false);
-    const [colorVars,  setColorVars]  = useState([{ name: '', hex: '#FF6B6B', stock: '0', price: '' }]);
-    const [sizeVars,   setSizeVars]   = useState<{ label: string; stock: string; price: string }[]>([]);
-    const [volumeVars, setVolumeVars] = useState<{ label: string; stock: string; price: string }[]>([]);
-    const [customVars, setCustomVars] = useState([{ label: '', stock: '0', price: '' }]);
+    const [colorVars,  setColorVars]  = useState<{_k:string;name:string;hex:string;stock:string;price:string}[]>([]);
+    const [sizeVars,   setSizeVars]   = useState<{_k:string;label:string;stock:string;price:string}[]>([]);
+    const [volumeVars, setVolumeVars] = useState<{_k:string;label:string;stock:string;price:string}[]>([]);
+    const [customVars, setCustomVars] = useState<{_k:string;label:string;stock:string;price:string}[]>([]);
+
+    // Refs for scrolling variant sections into view on enable
+    const colorSectionRef  = useRef<HTMLDivElement>(null);
+    const sizeSectionRef   = useRef<HTMLDivElement>(null);
+    const volumeSectionRef = useRef<HTMLDivElement>(null);
+    const customSectionRef = useRef<HTMLDivElement>(null);
+    const scrollInto = (ref: React.RefObject<HTMLDivElement>) =>
+        requestAnimationFrame(() => requestAnimationFrame(() =>
+            ref.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+        ));
 
     const loadCategories = useCallback(() => {
         setCatLoading(true); setCatError(false);
@@ -163,41 +180,44 @@ export default function SellerProductEditPage() {
                     const otherRows  = rawVariants.filter((v: any) => v.variantType === 'OTHER');
 
                     // Also support legacy lowercase values
-                    const colorRowsAll  = [...colorRows,  ...rawVariants.filter((v: any) => v.variantType === 'color')];
-                    const sizeRowsAll   = [...sizeRows,   ...rawVariants.filter((v: any) => v.variantType === 'size')];
-                    const otherRowsAll  = [...otherRows,  ...rawVariants.filter((v: any) => v.variantType === 'custom')];
+                    const colorRowsAll = [...colorRows,  ...rawVariants.filter((v: any) => v.variantType === 'color')];
+                    const sizeRowsAll  = [...sizeRows,   ...rawVariants.filter((v: any) => v.variantType === 'size')];
+                    const otherRowsAll = [...otherRows,  ...rawVariants.filter((v: any) => v.variantType === 'custom')];
 
+                    let hasAny = false;
                     if (colorRowsAll.length > 0) {
+                        hasAny = true;
                         setEnableColor(true);
                         setColorVars(colorRowsAll.map((v: any) => {
                             const [name = '', hex = '#FF6B6B'] = v.variantValue.split('|');
-                            return { name, hex, stock: String(v.stockQty), price: v.priceUsd ?? '' };
+                            return { _k: vk(), name, hex, stock: String(v.stockQty), price: v.priceUsd ?? '' };
                         }));
                     }
                     if (sizeRowsAll.length > 0) {
+                        hasAny = true;
                         setEnableSize(true);
                         setSizeVars(sizeRowsAll.map((v: any) => ({
-                            label: v.variantValue,
-                            stock: String(v.stockQty),
-                            price: v.priceUsd ?? '',
+                            _k: vk(), label: v.variantValue,
+                            stock: String(v.stockQty), price: v.priceUsd ?? '',
                         })));
                     }
                     if (volumeRows.length > 0) {
+                        hasAny = true;
                         setEnableVolume(true);
                         setVolumeVars(volumeRows.map((v: any) => ({
-                            label: v.variantValue,
-                            stock: String(v.stockQty),
-                            price: v.priceUsd ?? '',
+                            _k: vk(), label: v.variantValue,
+                            stock: String(v.stockQty), price: v.priceUsd ?? '',
                         })));
                     }
                     if (otherRowsAll.length > 0) {
+                        hasAny = true;
                         setEnableCustom(true);
                         setCustomVars(otherRowsAll.map((v: any) => ({
-                            label: v.variantValue,
-                            stock: String(v.stockQty),
-                            price: v.priceUsd ?? '',
+                            _k: vk(), label: v.variantValue,
+                            stock: String(v.stockQty), price: v.priceUsd ?? '',
                         })));
                     }
+                    if (hasAny) setVariantEnabled(true);
                 }
             })
             .finally(() => setLoading(false));
@@ -255,6 +275,53 @@ export default function SellerProductEditPage() {
     const set = (field: keyof ProductForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
         setForm(prev => ({ ...prev, [field]: e.target.value }));
 
+    // ── Variant toggle handlers — auto-add first empty row on enable ──────
+    const toggleVariantEnabled = () => {
+        const next = !variantEnabled;
+        setVariantEnabled(next);
+        if (!next) {
+            // Collapsing: uncheck all types (data preserved in state for undo)
+            setEnableColor(false); setEnableSize(false);
+            setEnableVolume(false); setEnableCustom(false);
+        }
+    };
+    const toggleColor = () => {
+        const next = !enableColor;
+        setEnableColor(next);
+        if (next) {
+            if (colorVars.length === 0)
+                setColorVars([{ _k: vk(), name: '', hex: '#FF6B6B', stock: '0', price: '' }]);
+            scrollInto(colorSectionRef);
+        }
+    };
+    const toggleSize = () => {
+        const next = !enableSize;
+        setEnableSize(next);
+        if (next) {
+            if (sizeVars.length === 0)
+                setSizeVars([{ _k: vk(), label: '', stock: '0', price: '' }]);
+            scrollInto(sizeSectionRef);
+        }
+    };
+    const toggleVolume = () => {
+        const next = !enableVolume;
+        setEnableVolume(next);
+        if (next) {
+            if (volumeVars.length === 0)
+                setVolumeVars([{ _k: vk(), label: '', stock: '0', price: '' }]);
+            scrollInto(volumeSectionRef);
+        }
+    };
+    const toggleCustom = () => {
+        const next = !enableCustom;
+        setEnableCustom(next);
+        if (next) {
+            if (customVars.length === 0)
+                setCustomVars([{ _k: vk(), label: '', stock: '0', price: '' }]);
+            scrollInto(customSectionRef);
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!form.name.trim()) {
@@ -279,41 +346,44 @@ export default function SellerProductEditPage() {
 
             // 2. Build multi-type variants payload
             const variantsPayload: any[] = [];
-            if (enableColor) {
-                colorVars.filter(v => v.name.trim()).forEach((v, i) => variantsPayload.push({
-                    variantType:  'COLOR',
-                    variantValue: `${v.name.trim()}|${v.hex}`,
-                    stockQty:     parseInt(v.stock) || 0,
-                    priceUsd:     v.price || null,
-                    sortOrder:    i,
-                }));
-            }
-            if (enableSize) {
-                sizeVars.filter(v => v.label.trim()).forEach((v, i) => variantsPayload.push({
-                    variantType:  'SIZE',
-                    variantValue: v.label.trim(),
-                    stockQty:     parseInt(v.stock) || 0,
-                    priceUsd:     v.price || null,
-                    sortOrder:    i,
-                }));
-            }
-            if (enableVolume) {
-                volumeVars.filter(v => v.label.trim()).forEach((v, i) => variantsPayload.push({
-                    variantType:  'VOLUME',
-                    variantValue: v.label.trim(),
-                    stockQty:     parseInt(v.stock) || 0,
-                    priceUsd:     v.price || null,
-                    sortOrder:    i,
-                }));
-            }
-            if (enableCustom) {
-                customVars.filter(v => v.label.trim()).forEach((v, i) => variantsPayload.push({
-                    variantType:  'OTHER',
-                    variantValue: v.label.trim(),
-                    stockQty:     parseInt(v.stock) || 0,
-                    priceUsd:     v.price || null,
-                    sortOrder:    i,
-                }));
+            if (variantEnabled) {
+                let sortIdx = 0;
+                if (enableColor) {
+                    colorVars.filter(v => v.name.trim()).forEach(v => variantsPayload.push({
+                        variantType:  'COLOR',
+                        variantValue: `${v.name.trim()}|${v.hex}`,
+                        stockQty:     parseInt(v.stock) || 0,
+                        priceUsd:     v.price || null,
+                        sortOrder:    sortIdx++,
+                    }));
+                }
+                if (enableSize) {
+                    sizeVars.filter(v => v.label.trim()).forEach(v => variantsPayload.push({
+                        variantType:  'SIZE',
+                        variantValue: v.label.trim(),
+                        stockQty:     parseInt(v.stock) || 0,
+                        priceUsd:     v.price || null,
+                        sortOrder:    sortIdx++,
+                    }));
+                }
+                if (enableVolume) {
+                    volumeVars.filter(v => v.label.trim()).forEach(v => variantsPayload.push({
+                        variantType:  'VOLUME',
+                        variantValue: v.label.trim(),
+                        stockQty:     parseInt(v.stock) || 0,
+                        priceUsd:     v.price || null,
+                        sortOrder:    sortIdx++,
+                    }));
+                }
+                if (enableCustom) {
+                    customVars.filter(v => v.label.trim()).forEach(v => variantsPayload.push({
+                        variantType:  'OTHER',
+                        variantValue: v.label.trim(),
+                        stockQty:     parseInt(v.stock) || 0,
+                        priceUsd:     v.price || null,
+                        sortOrder:    sortIdx++,
+                    }));
+                }
             }
 
             // 3. Save product
@@ -358,7 +428,7 @@ export default function SellerProductEditPage() {
     const badgeInfo       = BADGE_LABEL[approvalStatus];
     const visibleExisting = existingImages.filter(img => !deleteImageIds.includes(img.id));
     const totalImages     = visibleExisting.length + newImages.length;
-    const anyVariant      = enableColor || enableSize || enableVolume || enableCustom;
+    const anyVariant      = variantEnabled && (enableColor || enableSize || enableVolume || enableCustom);
 
     return (
         <div className="max-w-2xl mx-auto py-8 px-4">
@@ -457,11 +527,23 @@ export default function SellerProductEditPage() {
 
                 {/* ── Basic Info ── */}
                 <section className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-                    <h2 className="text-sm font-bold text-gray-900 mb-0.5 flex items-center gap-2">
-                        <span className="w-1.5 h-4 bg-teal-500 rounded-full inline-block" />
-                        Basic Information
-                    </h2>
-                    <p className="text-[11px] text-gray-400 mb-4 ml-3.5">기본 정보</p>
+                    <div className="flex items-center justify-between mb-4">
+                        <div>
+                            <h2 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                                <span className="w-1.5 h-4 bg-teal-500 rounded-full inline-block" />
+                                Basic Information
+                            </h2>
+                            <p className="text-[11px] text-gray-400 ml-3.5 mt-0.5">기본 정보</p>
+                        </div>
+                        <span className="bg-teal-600 text-white text-[11px] font-bold px-2.5 py-1 rounded-full whitespace-nowrap">
+                            ✦ {t.admin.new.autoDetect?.badge ?? 'Auto 4-Language Translation'}
+                        </span>
+                    </div>
+                    {/* Auto-detect notice */}
+                    <div className="mb-4 flex items-center gap-2 text-xs text-teal-700 bg-teal-50 px-3 py-2 rounded-lg border border-teal-100">
+                        <Sparkles className="w-3.5 h-3.5 flex-shrink-0 text-teal-500" />
+                        <span>{t.admin.new.autoDetect?.notice ?? 'Enter in any language — auto-detected & translated into 4 languages'}</span>
+                    </div>
                     <div className="space-y-4">
                         {/* Category */}
                         <Field en="Category" ko="카테고리" required>
@@ -499,9 +581,9 @@ export default function SellerProductEditPage() {
                             )}
                         </Field>
 
-                        <Field en="Product Name" ko="상품명 (한국어)" required>
+                        <Field en="Product Name" ko="상품명" required>
                             <input type="text" value={form.name} onChange={set('name')} required
-                                placeholder="e.g. Hydrating Ampoule Serum / 수분 앰플 세럼" className={inp} />
+                                placeholder="e.g. Hydrating Ampoule Serum 50ml · 수분 앰플 세럼 50ml" className={inp} />
                         </Field>
                         <Field en="Short Description" ko="짧은 설명">
                             <textarea value={form.shortDesc} onChange={set('shortDesc')} rows={2}
@@ -675,26 +757,40 @@ export default function SellerProductEditPage() {
                     </h2>
                     <p className="text-[11px] text-gray-400 mb-4 ml-3.5">색상·사이즈·용량·기타 옵션 — optional · 선택사항</p>
 
-                    {/* Type checkboxes */}
-                    <div className="flex flex-wrap gap-3 mb-4">
-                        {([
-                            { key: 'color',  label: '🎨 Color · 색상',    val: enableColor,  set: setEnableColor  },
-                            { key: 'size',   label: '📏 Size · 사이즈',    val: enableSize,   set: setEnableSize   },
-                            { key: 'volume', label: '🧴 Volume · 용량',    val: enableVolume, set: setEnableVolume },
-                            { key: 'custom', label: '🏷️ Custom · 기타',    val: enableCustom, set: setEnableCustom },
-                        ] as const).map(({ key, label, val, set: setter }) => (
-                            <label key={key} className={`flex items-center gap-2 px-3 py-2 rounded-xl border cursor-pointer text-sm font-semibold transition-all select-none ${val ? 'bg-teal-500 text-white border-teal-500 shadow-sm' : 'bg-white text-gray-600 border-gray-200 hover:border-teal-300 hover:text-teal-700'}`}>
-                                <input type="checkbox" checked={val} onChange={() => setter(p => !p)} className="hidden" />
-                                {label}
-                            </label>
-                        ))}
-                    </div>
+                    {/* Enable toggle */}
+                    <button type="button" onClick={toggleVariantEnabled} className={`flex items-center gap-3 select-none mb-4 p-3 rounded-xl border transition-all w-full text-left ${variantEnabled ? 'border-teal-200 bg-teal-50' : 'border-gray-200 bg-gray-50'}`}>
+                        <div className={`relative w-10 h-5 rounded-full transition-colors flex-shrink-0 ${variantEnabled ? 'bg-teal-500' : 'bg-gray-300'}`}>
+                            <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200 ${variantEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
+                        </div>
+                        <span className={`text-sm font-semibold ${variantEnabled ? 'text-teal-700' : 'text-gray-600'}`}>
+                            Enable product variants
+                            <span className="font-normal opacity-70 ml-1.5">색상 / 사이즈 / 용량 / 기타 옵션 사용</span>
+                        </span>
+                    </button>
 
-                    {anyVariant && (
+                    {variantEnabled && (
+                        <>
+                        {/* Type checkboxes */}
+                        <div className="flex flex-wrap gap-3 mb-4">
+                            {([
+                                { key: 'color',  label: '🎨 Color · 색상',    val: enableColor,  toggle: toggleColor  },
+                                { key: 'size',   label: '📏 Size · 사이즈',    val: enableSize,   toggle: toggleSize   },
+                                { key: 'volume', label: '🧴 Volume · 용량',    val: enableVolume, toggle: toggleVolume },
+                                { key: 'custom', label: '🏷️ Custom · 기타',    val: enableCustom, toggle: toggleCustom },
+                            ] as const).map(({ key, label, val, toggle }) => (
+                                <button key={key} type="button" onClick={toggle} className={`flex items-center gap-2 px-3 py-2 rounded-xl border cursor-pointer text-sm font-semibold transition-all select-none ${val ? 'bg-teal-500 text-white border-teal-500 shadow-sm' : 'bg-white text-gray-600 border-gray-200 hover:border-teal-300 hover:text-teal-700'}`}>
+                                    {label}
+                                </button>
+                            ))}
+                        </div>
+                        </>
+                    )}
+
+                    {variantEnabled && (
                         <div className="space-y-6">
                             {/* ── Color ── */}
                             {enableColor && (
-                                <div className="space-y-3">
+                                <div ref={colorSectionRef} className="space-y-3">
                                     <p className="text-xs font-bold text-gray-700">🎨 Color Variants · 색상 옵션</p>
                                     <div className="grid grid-cols-[32px_1fr_68px_84px_28px] gap-2 px-1 text-[10px] font-semibold text-gray-400">
                                         <span />
@@ -703,22 +799,22 @@ export default function SellerProductEditPage() {
                                         <span className="text-center">Price (opt)</span>
                                         <span />
                                     </div>
-                                    {colorVars.map((cv, i) => (
-                                        <div key={i} className="grid grid-cols-[32px_1fr_68px_84px_28px] gap-2 items-center bg-gray-50 rounded-xl p-2.5 border border-gray-100">
+                                    {colorVars.map((cv) => (
+                                        <div key={cv._k} className="grid grid-cols-[32px_1fr_68px_84px_28px] gap-2 items-center bg-gray-50 rounded-xl p-2.5 border border-gray-100">
                                             <input type="color" value={cv.hex}
-                                                onChange={e => setColorVars(p => p.map((c, idx) => idx === i ? { ...c, hex: e.target.value } : c))}
+                                                onChange={e => setColorVars(p => p.map(c => c._k === cv._k ? { ...c, hex: e.target.value } : c))}
                                                 className="w-8 h-8 rounded-lg border border-gray-200 cursor-pointer p-0.5 bg-white" />
                                             <input value={cv.name}
-                                                onChange={e => setColorVars(p => p.map((c, idx) => idx === i ? { ...c, name: e.target.value } : c))}
+                                                onChange={e => setColorVars(p => p.map(c => c._k === cv._k ? { ...c, name: e.target.value } : c))}
                                                 placeholder="e.g. Rose Pink" className={vInp} />
                                             <input type="number" value={cv.stock}
-                                                onChange={e => setColorVars(p => p.map((c, idx) => idx === i ? { ...c, stock: e.target.value } : c))}
+                                                onChange={e => setColorVars(p => p.map(c => c._k === cv._k ? { ...c, stock: e.target.value } : c))}
                                                 className={`text-center ${vInp}`} min="0" />
                                             <input type="number" step="0.01" value={cv.price}
-                                                onChange={e => setColorVars(p => p.map((c, idx) => idx === i ? { ...c, price: e.target.value } : c))}
+                                                onChange={e => setColorVars(p => p.map(c => c._k === cv._k ? { ...c, price: e.target.value } : c))}
                                                 placeholder="—" className={`text-center ${vInp}`} />
                                             {colorVars.length > 1 ? (
-                                                <button type="button" onClick={() => setColorVars(p => p.filter((_, idx) => idx !== i))}
+                                                <button type="button" onClick={() => setColorVars(p => p.filter(c => c._k !== cv._k))}
                                                     className="p-1 text-red-400 hover:bg-red-50 rounded-lg">
                                                     <X className="w-3.5 h-3.5" />
                                                 </button>
@@ -726,7 +822,7 @@ export default function SellerProductEditPage() {
                                         </div>
                                     ))}
                                     {colorVars.length < 10 && (
-                                        <button type="button" onClick={() => setColorVars(p => [...p, { name: '', hex: '#4A90E2', stock: '0', price: '' }])}
+                                        <button type="button" onClick={() => setColorVars(p => [...p, { _k: vk(), name: '', hex: '#4A90E2', stock: '0', price: '' }])}
                                             className="text-sm font-bold text-teal-600 flex items-center gap-1.5 bg-teal-50 px-3 py-2 rounded-lg border border-teal-100 hover:text-teal-700 transition-colors">
                                             <Plus className="w-4 h-4" /> Add Color · 색상 추가
                                         </button>
@@ -736,7 +832,7 @@ export default function SellerProductEditPage() {
 
                             {/* ── Size ── */}
                             {enableSize && (
-                                <div className="space-y-4">
+                                <div ref={sizeSectionRef} className="space-y-4">
                                     <p className="text-xs font-bold text-gray-700">📏 Size Variants · 사이즈 옵션</p>
                                     <div>
                                         <p className="text-xs font-semibold text-gray-600 mb-2">Quick Add · 빠른 추가:</p>
@@ -745,7 +841,7 @@ export default function SellerProductEditPage() {
                                                 const added = sizeVars.some(v => v.label === s);
                                                 return (
                                                     <button key={s} type="button"
-                                                        onClick={() => !added && setSizeVars(p => [...p, { label: s, stock: '0', price: '' }])}
+                                                        onClick={() => !added && setSizeVars(p => [...p, { _k: vk(), label: s, stock: '0', price: '' }])}
                                                         disabled={added}
                                                         className={`px-3 py-1.5 rounded-lg text-sm font-bold border transition-all ${added ? 'bg-teal-100 text-teal-600 border-teal-200 opacity-50 cursor-not-allowed' : 'bg-white text-gray-600 border-gray-200 hover:border-teal-400 hover:text-teal-700'}`}>
                                                         {s}
@@ -753,48 +849,43 @@ export default function SellerProductEditPage() {
                                                 );
                                             })}
                                             <button type="button"
-                                                onClick={() => setSizeVars(p => [...p, { label: '', stock: '0', price: '' }])}
+                                                onClick={() => setSizeVars(p => [...p, { _k: vk(), label: '', stock: '0', price: '' }])}
                                                 className="px-3 py-1.5 rounded-lg text-sm font-bold border border-dashed border-gray-300 text-gray-500 hover:border-teal-400 hover:text-teal-600 flex items-center gap-1">
                                                 <Plus className="w-3.5 h-3.5" /> Custom
                                             </button>
                                         </div>
                                     </div>
-                                    {sizeVars.length > 0 && (
-                                        <div className="space-y-2">
-                                            <div className="grid grid-cols-[1fr_68px_84px_28px] gap-2 px-1 text-[10px] font-semibold text-gray-400">
-                                                <span>Size · 사이즈</span>
-                                                <span className="text-center">Stock</span>
-                                                <span className="text-center">Price (opt)</span>
-                                                <span />
-                                            </div>
-                                            {sizeVars.map((sv, i) => (
-                                                <div key={i} className="grid grid-cols-[1fr_68px_84px_28px] gap-2 items-center bg-gray-50 p-2.5 rounded-xl border border-gray-100">
-                                                    <input value={sv.label}
-                                                        onChange={e => setSizeVars(p => p.map((s, idx) => idx === i ? { ...s, label: e.target.value } : s))}
-                                                        placeholder="e.g. M, 95" className={`font-semibold ${vInp}`} />
-                                                    <input type="number" value={sv.stock}
-                                                        onChange={e => setSizeVars(p => p.map((s, idx) => idx === i ? { ...s, stock: e.target.value } : s))}
-                                                        className={`text-center ${vInp}`} min="0" />
-                                                    <input type="number" step="0.01" value={sv.price}
-                                                        onChange={e => setSizeVars(p => p.map((s, idx) => idx === i ? { ...s, price: e.target.value } : s))}
-                                                        placeholder="—" className={`text-center ${vInp}`} />
-                                                    <button type="button" onClick={() => setSizeVars(p => p.filter((_, idx) => idx !== i))}
-                                                        className="p-1 text-red-400 hover:bg-red-50 rounded-lg">
-                                                        <X className="w-3.5 h-3.5" />
-                                                    </button>
-                                                </div>
-                                            ))}
+                                    <div className="space-y-2">
+                                        <div className="grid grid-cols-[1fr_68px_84px_28px] gap-2 px-1 text-[10px] font-semibold text-gray-400">
+                                            <span>Size · 사이즈</span>
+                                            <span className="text-center">Stock</span>
+                                            <span className="text-center">Price (opt)</span>
+                                            <span />
                                         </div>
-                                    )}
-                                    {sizeVars.length === 0 && (
-                                        <p className="text-xs text-gray-400 italic">Click size presets above to add. · 사이즈를 추가하세요.</p>
-                                    )}
+                                        {sizeVars.map((sv) => (
+                                            <div key={sv._k} className="grid grid-cols-[1fr_68px_84px_28px] gap-2 items-center bg-gray-50 p-2.5 rounded-xl border border-gray-100">
+                                                <input value={sv.label}
+                                                    onChange={e => setSizeVars(p => p.map(s => s._k === sv._k ? { ...s, label: e.target.value } : s))}
+                                                    placeholder="e.g. M, 95" className={`font-semibold ${vInp}`} />
+                                                <input type="number" value={sv.stock}
+                                                    onChange={e => setSizeVars(p => p.map(s => s._k === sv._k ? { ...s, stock: e.target.value } : s))}
+                                                    className={`text-center ${vInp}`} min="0" />
+                                                <input type="number" step="0.01" value={sv.price}
+                                                    onChange={e => setSizeVars(p => p.map(s => s._k === sv._k ? { ...s, price: e.target.value } : s))}
+                                                    placeholder="—" className={`text-center ${vInp}`} />
+                                                <button type="button" onClick={() => setSizeVars(p => p.filter(s => s._k !== sv._k))}
+                                                    className="p-1 text-red-400 hover:bg-red-50 rounded-lg">
+                                                    <X className="w-3.5 h-3.5" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             )}
 
                             {/* ── Volume ── */}
                             {enableVolume && (
-                                <div className="space-y-4">
+                                <div ref={volumeSectionRef} className="space-y-4">
                                     <p className="text-xs font-bold text-gray-700">🧴 Volume Variants · 용량 옵션</p>
                                     <div>
                                         <p className="text-xs font-semibold text-gray-600 mb-2">Quick Add · 빠른 추가:</p>
@@ -803,7 +894,7 @@ export default function SellerProductEditPage() {
                                                 const added = volumeVars.some(vv => vv.label === v);
                                                 return (
                                                     <button key={v} type="button"
-                                                        onClick={() => !added && setVolumeVars(p => [...p, { label: v, stock: '0', price: '' }])}
+                                                        onClick={() => !added && setVolumeVars(p => [...p, { _k: vk(), label: v, stock: '0', price: '' }])}
                                                         disabled={added}
                                                         className={`px-3 py-1.5 rounded-lg text-sm font-bold border transition-all ${added ? 'bg-teal-100 text-teal-600 border-teal-200 opacity-50 cursor-not-allowed' : 'bg-white text-gray-600 border-gray-200 hover:border-teal-400 hover:text-teal-700'}`}>
                                                         {v}
@@ -811,48 +902,43 @@ export default function SellerProductEditPage() {
                                                 );
                                             })}
                                             <button type="button"
-                                                onClick={() => setVolumeVars(p => [...p, { label: '', stock: '0', price: '' }])}
+                                                onClick={() => setVolumeVars(p => [...p, { _k: vk(), label: '', stock: '0', price: '' }])}
                                                 className="px-3 py-1.5 rounded-lg text-sm font-bold border border-dashed border-gray-300 text-gray-500 hover:border-teal-400 hover:text-teal-600 flex items-center gap-1">
                                                 <Plus className="w-3.5 h-3.5" /> Custom
                                             </button>
                                         </div>
                                     </div>
-                                    {volumeVars.length > 0 && (
-                                        <div className="space-y-2">
-                                            <div className="grid grid-cols-[1fr_68px_84px_28px] gap-2 px-1 text-[10px] font-semibold text-gray-400">
-                                                <span>Volume · 용량</span>
-                                                <span className="text-center">Stock</span>
-                                                <span className="text-center">Price (opt)</span>
-                                                <span />
-                                            </div>
-                                            {volumeVars.map((vv, i) => (
-                                                <div key={i} className="grid grid-cols-[1fr_68px_84px_28px] gap-2 items-center bg-gray-50 p-2.5 rounded-xl border border-gray-100">
-                                                    <input value={vv.label}
-                                                        onChange={e => setVolumeVars(p => p.map((v, idx) => idx === i ? { ...v, label: e.target.value } : v))}
-                                                        placeholder="e.g. 100ml" className={`font-semibold ${vInp}`} />
-                                                    <input type="number" value={vv.stock}
-                                                        onChange={e => setVolumeVars(p => p.map((v, idx) => idx === i ? { ...v, stock: e.target.value } : v))}
-                                                        className={`text-center ${vInp}`} min="0" />
-                                                    <input type="number" step="0.01" value={vv.price}
-                                                        onChange={e => setVolumeVars(p => p.map((v, idx) => idx === i ? { ...v, price: e.target.value } : v))}
-                                                        placeholder="—" className={`text-center ${vInp}`} />
-                                                    <button type="button" onClick={() => setVolumeVars(p => p.filter((_, idx) => idx !== i))}
-                                                        className="p-1 text-red-400 hover:bg-red-50 rounded-lg">
-                                                        <X className="w-3.5 h-3.5" />
-                                                    </button>
-                                                </div>
-                                            ))}
+                                    <div className="space-y-2">
+                                        <div className="grid grid-cols-[1fr_68px_84px_28px] gap-2 px-1 text-[10px] font-semibold text-gray-400">
+                                            <span>Volume · 용량</span>
+                                            <span className="text-center">Stock</span>
+                                            <span className="text-center">Price (opt)</span>
+                                            <span />
                                         </div>
-                                    )}
-                                    {volumeVars.length === 0 && (
-                                        <p className="text-xs text-gray-400 italic">Click volume presets above to add. · 용량을 추가하세요.</p>
-                                    )}
+                                        {volumeVars.map((vv) => (
+                                            <div key={vv._k} className="grid grid-cols-[1fr_68px_84px_28px] gap-2 items-center bg-gray-50 p-2.5 rounded-xl border border-gray-100">
+                                                <input value={vv.label}
+                                                    onChange={e => setVolumeVars(p => p.map(x => x._k === vv._k ? { ...x, label: e.target.value } : x))}
+                                                    placeholder="e.g. 100ml" className={`font-semibold ${vInp}`} />
+                                                <input type="number" value={vv.stock}
+                                                    onChange={e => setVolumeVars(p => p.map(x => x._k === vv._k ? { ...x, stock: e.target.value } : x))}
+                                                    className={`text-center ${vInp}`} min="0" />
+                                                <input type="number" step="0.01" value={vv.price}
+                                                    onChange={e => setVolumeVars(p => p.map(x => x._k === vv._k ? { ...x, price: e.target.value } : x))}
+                                                    placeholder="—" className={`text-center ${vInp}`} />
+                                                <button type="button" onClick={() => setVolumeVars(p => p.filter(x => x._k !== vv._k))}
+                                                    className="p-1 text-red-400 hover:bg-red-50 rounded-lg">
+                                                    <X className="w-3.5 h-3.5" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             )}
 
                             {/* ── Custom ── */}
                             {enableCustom && (
-                                <div className="space-y-3">
+                                <div ref={customSectionRef} className="space-y-3">
                                     <p className="text-xs font-bold text-gray-700">🏷️ Custom Variants · 기타 옵션</p>
                                     <div className="grid grid-cols-[1fr_68px_84px_28px] gap-2 px-1 text-[10px] font-semibold text-gray-400">
                                         <span>Option name · 옵션명</span>
@@ -860,26 +946,26 @@ export default function SellerProductEditPage() {
                                         <span className="text-center">Price (opt)</span>
                                         <span />
                                     </div>
-                                    {customVars.map((cv, i) => (
-                                        <div key={i} className="grid grid-cols-[1fr_68px_84px_28px] gap-2 items-center bg-gray-50 p-2.5 rounded-xl border border-gray-100">
+                                    {customVars.map((cv) => (
+                                        <div key={cv._k} className="grid grid-cols-[1fr_68px_84px_28px] gap-2 items-center bg-gray-50 p-2.5 rounded-xl border border-gray-100">
                                             <input value={cv.label}
-                                                onChange={e => setCustomVars(p => p.map((c, idx) => idx === i ? { ...c, label: e.target.value } : c))}
+                                                onChange={e => setCustomVars(p => p.map(c => c._k === cv._k ? { ...c, label: e.target.value } : c))}
                                                 placeholder="e.g. Starter Kit, Lavender" className={vInp} />
                                             <input type="number" value={cv.stock}
-                                                onChange={e => setCustomVars(p => p.map((c, idx) => idx === i ? { ...c, stock: e.target.value } : c))}
+                                                onChange={e => setCustomVars(p => p.map(c => c._k === cv._k ? { ...c, stock: e.target.value } : c))}
                                                 className={`text-center ${vInp}`} min="0" />
                                             <input type="number" step="0.01" value={cv.price}
-                                                onChange={e => setCustomVars(p => p.map((c, idx) => idx === i ? { ...c, price: e.target.value } : c))}
+                                                onChange={e => setCustomVars(p => p.map(c => c._k === cv._k ? { ...c, price: e.target.value } : c))}
                                                 placeholder="—" className={`text-center ${vInp}`} />
                                             {customVars.length > 1 ? (
-                                                <button type="button" onClick={() => setCustomVars(p => p.filter((_, idx) => idx !== i))}
+                                                <button type="button" onClick={() => setCustomVars(p => p.filter(c => c._k !== cv._k))}
                                                     className="p-1 text-red-400 hover:bg-red-50 rounded-lg">
                                                     <X className="w-3.5 h-3.5" />
                                                 </button>
                                             ) : <span />}
                                         </div>
                                     ))}
-                                    <button type="button" onClick={() => setCustomVars(p => [...p, { label: '', stock: '0', price: '' }])}
+                                    <button type="button" onClick={() => setCustomVars(p => [...p, { _k: vk(), label: '', stock: '0', price: '' }])}
                                         className="text-sm font-bold text-teal-600 flex items-center gap-1.5 bg-teal-50 px-3 py-2 rounded-lg border border-teal-100 hover:text-teal-700 transition-colors">
                                         <Plus className="w-4 h-4" /> Add Option · 옵션 추가
                                     </button>
