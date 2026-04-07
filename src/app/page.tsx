@@ -304,7 +304,7 @@ function ProductGrid({ products, title, icon, viewAllHref, t }: {
         <section className="mb-6">
             <SectionHeader icon={icon} title={title} viewAllHref={viewAllHref} t={t} />
             <div className="px-3 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 sm:gap-3">
-                {products.slice(0, 6).map(p => (
+                {products.slice(0, 8).map(p => (
                     <ProductCard key={p.id} product={p} t={t} />
                 ))}
             </div>

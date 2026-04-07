@@ -208,7 +208,6 @@ export async function getProductsForSection(
             where.isHotSale = true;
             orderBy = [{ displayPriority: 'desc' }, { reviewCount: 'desc' }, { createdAt: 'desc' }];
         } else if (filter === 'new') {
-            where.isNew = true;
             orderBy = [{ displayPriority: 'desc' }, { createdAt: 'desc' }];
         } else if (filter === 'popular') {
             orderBy = [{ displayPriority: 'desc' }, { reviewAvg: 'desc' }, { reviewCount: 'desc' }, { createdAt: 'desc' }];
