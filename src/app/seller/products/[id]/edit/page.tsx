@@ -8,7 +8,7 @@ import { useTranslations } from '@/i18n/useTranslations';
 
 const SIZE_PRESETS   = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Free Size'];
 const VOLUME_PRESETS = ['30ml', '50ml', '100ml', '150ml', '200ml', '250ml', '300ml', '500ml', '1L'];
-const UNIT_LABELS    = ['개', 'box', 'pack', 'set', '병', '튜브', '매', '장', '캡슐'];
+const UNIT_LABELS    = ['pc', 'box', 'pack', 'set', 'bottle', 'tube', 'sheet', 'piece', 'capsule'];
 
 // Stable unique key generator for variant rows
 let _vseq = 0;
@@ -29,7 +29,7 @@ const EMPTY: ProductForm = {
     howToUse: '', benefits: '', priceUsd: '', stockQty: '0', volume: '', skinType: '', origin: '',
     brandName: '', expiryMonths: '', certifications: '',
     categoryId: '',
-    unitLabel: '개', unitsPerPkg: '',
+    unitLabel: 'pc', unitsPerPkg: '',
 };
 const BADGE: Record<string, string> = {
     PENDING:  'bg-yellow-100 text-yellow-700',
@@ -152,7 +152,7 @@ export default function SellerProductEditPage() {
                     expiryMonths:   data.expiryMonths  ? String(data.expiryMonths) : '',
                     certifications: data.certifications ?? '',
                     categoryId:     data.categoryId    ?? '',
-                    unitLabel:      data.unitLabel     ?? '개',
+                    unitLabel:      data.unitLabel     ?? 'pc',
                     unitsPerPkg:    data.unitsPerPkg   ? String(data.unitsPerPkg) : '',
                 });
                 setApprovalStatus(data.approvalStatus ?? 'PENDING');
@@ -597,24 +597,24 @@ export default function SellerProductEditPage() {
                         {/* Selling Unit */}
                         <div className="pt-1">
                             <p className="text-xs font-semibold text-gray-700 mb-2">
-                                Selling Unit <span className="text-gray-400 font-normal ml-1">판매 단위</span>
+                                Selling Unit
                             </p>
                             <div className="flex items-center gap-3">
                                 <select value={form.unitLabel} onChange={set('unitLabel')} className={`${inp} w-32`}>
                                     {UNIT_LABELS.map(u => <option key={u} value={u}>{u}</option>)}
                                 </select>
-                                {form.unitLabel !== '개' && (
+                                {form.unitLabel !== 'pc' && (
                                     <div className="flex items-center gap-2 flex-1">
                                         <span className="text-xs text-gray-400 whitespace-nowrap">1 {form.unitLabel} =</span>
                                         <input type="number" min="1" value={form.unitsPerPkg} onChange={set('unitsPerPkg')}
                                             placeholder="e.g. 12" className={`${inp} w-24`} />
-                                        <span className="text-xs text-gray-400">개</span>
+                                        <span className="text-xs text-gray-400">pcs</span>
                                     </div>
                                 )}
                             </div>
-                            {form.unitLabel !== '개' && form.unitsPerPkg && (
+                            {form.unitLabel !== 'pc' && form.unitsPerPkg && (
                                 <p className="text-[11px] text-teal-600 mt-1.5 ml-0.5">
-                                    Preview: 1 {form.unitLabel} = {form.unitsPerPkg} 개
+                                    Preview: 1 {form.unitLabel} = {form.unitsPerPkg} pcs
                                 </p>
                             )}
                         </div>

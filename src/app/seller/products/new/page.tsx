@@ -10,7 +10,7 @@ interface Category { id: string; slug: string; nameKo: string; nameEn?: string; 
 
 const SIZE_PRESETS = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Free Size'];
 const VOLUME_PRESETS = ['30ml', '50ml', '100ml', '150ml', '200ml', '250ml', '300ml', '500ml', '1L'];
-const UNIT_LABELS = ['개', 'box', 'pack', 'set', '병', '튜브', '매', '장', '캡슐'];
+const UNIT_LABELS = ['pc', 'box', 'pack', 'set', 'bottle', 'tube', 'sheet', 'piece', 'capsule'];
 
 // ── 스타일 상수 ────────────────────────────────────────────────────────────
 const inp  = "w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500";
@@ -106,7 +106,7 @@ export default function SellerProductNewPage() {
     const [form, setForm] = useState({
         sku: '', priceUsd: '', stockQty: '0', categoryId: '',
         brandName: '', volume: '', origin: '', skinType: '', expiryMonths: '', certifications: '',
-        unitLabel: '개', unitsPerPkg: '',
+        unitLabel: 'pc', unitsPerPkg: '',
         nameKo: '', shortDescKo: '', detailDescKo: '',
         ingredientsKo: '', howToUseKo: '', benefitsKo: '',
     });
@@ -423,32 +423,32 @@ export default function SellerProductNewPage() {
                             <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
                                 <div className="flex items-center gap-2 mb-3">
                                     <Package className="w-4 h-4 text-teal-600" />
-                                    <span className="text-sm font-bold text-gray-800">Selling Unit · 판매 단위</span>
-                                    <span className="text-xs text-gray-400">How is this product sold? · 어떤 단위로 판매하나요?</span>
+                                    <span className="text-sm font-bold text-gray-800">Selling Unit</span>
+                                    <span className="text-xs text-gray-400">How is this product sold?</span>
                                 </div>
                                 <div className="grid grid-cols-2 gap-3">
                                     <div>
-                                        <label className="block text-xs font-semibold text-gray-600 mb-1">Unit · 단위</label>
+                                        <label className="block text-xs font-semibold text-gray-600 mb-1">Unit</label>
                                         <select value={form.unitLabel} onChange={e => set('unitLabel', e.target.value)} className={inp}>
                                             {UNIT_LABELS.map(u => <option key={u} value={u}>{u}</option>)}
                                         </select>
                                     </div>
-                                    {form.unitLabel !== '개' && (
+                                    {form.unitLabel !== 'pc' && (
                                         <div>
                                             <label className="block text-xs font-semibold text-gray-600 mb-1">
-                                                Items per unit · 단위당 개수
+                                                Items per unit
                                             </label>
                                             <input
                                                 type="number"
                                                 value={form.unitsPerPkg}
                                                 onChange={e => set('unitsPerPkg', e.target.value)}
-                                                placeholder={`e.g. 1 ${form.unitLabel} = ? 개`}
+                                                placeholder={`e.g. 1 ${form.unitLabel} = ? pcs`}
                                                 className={inp}
                                                 min="1"
                                             />
                                             {form.unitsPerPkg && (
                                                 <p className="text-[10px] text-teal-600 mt-1">
-                                                    → 1 {form.unitLabel} = {form.unitsPerPkg} 개
+                                                    → 1 {form.unitLabel} = {form.unitsPerPkg} pcs
                                                 </p>
                                             )}
                                         </div>
