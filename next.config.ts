@@ -21,14 +21,9 @@ const withPWA = withPWAInit({
                 },
             },
             {
-                // 상품 목록 API — NetworkFirst (5분 캐시)
+                // 상품 목록 API — NetworkOnly (캐시 없음, 항상 최신 데이터)
                 urlPattern: /^\/api\/products(\/|$)/i,
-                handler: 'NetworkFirst',
-                options: {
-                    cacheName: 'api-products',
-                    expiration: { maxEntries: 100, maxAgeSeconds: 60 * 5 },
-                    cacheableResponse: { statuses: [0, 200] },
-                },
+                handler: 'NetworkOnly',
             },
             {
                 // 카테고리 API — StaleWhileRevalidate (1시간)
