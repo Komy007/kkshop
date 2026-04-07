@@ -164,8 +164,16 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
         if (status !== undefined) productData.status = status;
         if (approvalStatus !== undefined) {
             productData.approvalStatus = approvalStatus;
-            if (approvalStatus === 'REJECTED') productData.rejectionReason = body.rejectionReason?.trim() || null;
-            if (approvalStatus === 'APPROVED') productData.rejectionReason = null;
+            if (approvalStatus === 'REJECTED') {
+                productData.rejectionReason = body.rejectionReason?.trim() || null;
+                // Auto-deactivate when rejected (unless status was explicitly provided)
+                if (status === undefined) productData.status = 'INACTIVE';
+            }
+            if (approvalStatus === 'APPROVED') {
+                productData.rejectionReason = null;
+                // Auto-activate when approved (unless status was explicitly overridden)
+                if (status === undefined) productData.status = 'ACTIVE';
+            }
         }
         if (isNew !== undefined) productData.isNew = Boolean(isNew);
         if (isHotSale !== undefined) productData.isHotSale = Boolean(isHotSale);

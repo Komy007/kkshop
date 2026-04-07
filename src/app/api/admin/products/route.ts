@@ -24,6 +24,7 @@ export async function GET(req: Request) {
         const approvalStatus = searchParams.get('approvalStatus');
         const search = searchParams.get('search')?.trim() || '';
         const categorySlug = searchParams.get('category') || '';
+        const supplierId = searchParams.get('supplierId') || '';
         const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
 
         const where: any = {};
@@ -35,6 +36,7 @@ export async function GET(req: Request) {
         if (categorySlug && categorySlug !== 'all') {
             where.category = { slug: categorySlug };
         }
+        if (supplierId) where.supplierId = supplierId;
         if (search) {
             where.OR = [
                 { translations: { some: { langCode: 'ko', name: { contains: search, mode: 'insensitive' } } } },
@@ -176,8 +178,12 @@ export async function PATCH(req: Request) {
             // Save rejection reason when rejecting; clear it when approving
             if (approvalStatus === 'REJECTED') {
                 data.rejectionReason = rejectionReason?.trim() || null;
+                // Auto-deactivate when rejected (unless status was explicitly provided)
+                if (status === undefined) data.status = 'INACTIVE';
             } else if (approvalStatus === 'APPROVED') {
                 data.rejectionReason = null;
+                // Auto-activate when approved (unless status was explicitly provided)
+                if (status === undefined) data.status = 'ACTIVE';
             }
         }
         if (stockQty !== undefined) data.stockQty = parseInt(stockQty);
