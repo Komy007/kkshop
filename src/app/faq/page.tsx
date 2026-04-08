@@ -67,7 +67,8 @@ const faqData: Record<string, FaqCategory[]> = {
         {
             icon: ShieldCheck, title: 'Authenticity & Quality',
             items: [
-                { q: 'Are all products genuine?', a: 'Yes, 100%. Every product on KKShop is sourced directly from authorized Korean distributors and brands. We guarantee authenticity — if you ever suspect a product is not genuine, contact us for a full refund.' },
+                { q: 'Are all cosmetics 100% genuine Korean products?', a: 'Yes, without exception. Every cosmetic and K-Beauty product on KKShop is 100% authentic, sourced directly from Korea. We do not tolerate counterfeits of any kind. If you ever discover a fake or replica product, please report it to us immediately — we will provide significant compensation.' },
+                { q: 'What about household and lifestyle products?', a: 'For lifestyle products, the country of manufacture is not what matters — quality does. We exclusively carry products that have been chosen and trusted by Korean consumers, who are internationally renowned for their exceptionally high and discerning standards. Every lifestyle product on KKShop has passed that test.' },
                 { q: 'How are products stored and handled?', a: 'All products are stored in temperature-controlled environments and shipped with care. Skincare products are packaged with protective materials to prevent damage during transit.' },
                 { q: 'Can I become a seller on KKShop?', a: 'Yes! We welcome quality sellers. Go to the Seller Registration page to apply. Our team reviews applications and approved sellers can start listing products immediately.' },
             ],
@@ -130,7 +131,8 @@ const faqData: Record<string, FaqCategory[]> = {
         {
             icon: ShieldCheck, title: '정품 보증 및 품질',
             items: [
-                { q: '모든 상품이 정품인가요?', a: '네, 100%. KKShop의 모든 상품은 공인된 한국 유통업체와 브랜드에서 직접 소싱합니다. 정품을 보증합니다 — 만약 정품이 아닌 것으로 의심되면 전액 환불해 드립니다.' },
+                { q: '화장품은 모두 한국 정품 100%인가요?', a: '네, 예외 없이 100%입니다. KKShop의 모든 화장품·뷰티 제품은 한국에서 직접 소싱한 정품입니다. 가짜나 복제품은 절대 허용하지 않습니다. 만약 가짜 또는 복제품을 발견하셨다면 즉시 신고해 주세요 — 크게 보상해 드립니다.' },
+                { q: '생활용품은 어느 나라 제품인가요?', a: '생활용품은 제조 국가가 기준이 아닙니다 — 품질이 기준입니다. 까다롭기로 세계적으로 유명한 한국 소비자들이 직접 선택하고 검증한 제품만 제공합니다. KKShop의 모든 생활용품은 그 높은 기준을 통과한 제품입니다.' },
                 { q: '상품은 어떻게 보관되나요?', a: '모든 상품은 온도가 관리되는 환경에서 보관되며 주의를 기울여 배송됩니다. 스킨케어 제품은 운송 중 파손을 방지하기 위해 보호재로 포장됩니다.' },
                 { q: 'KKShop에서 판매자가 될 수 있나요?', a: '네! 우수한 판매자를 환영합니다. 셀러 등록 페이지에서 신청하세요. 검토 후 승인된 판매자는 즉시 상품 등록을 시작할 수 있습니다.' },
             ],
@@ -184,10 +186,11 @@ const faqData: Record<string, FaqCategory[]> = {
             ],
         },
         {
-            icon: ShieldCheck, title: 'ភាពពិតប្រាកដ',
+            icon: ShieldCheck, title: 'ភាពពិតប្រាកដ និងគុណភាព',
             items: [
-                { q: 'តើផលិតផលទាំងអស់ពិតប្រាកដទេ?', a: 'បាទ ១០០%។ រាល់ផលិតផលមកពីអ្នកចែកចាយកូរ៉េដែលមានការអនុញ្ញាត។' },
-                { q: 'តើខ្ញុំអាចក្លាយជាអ្នកលក់នៅ KKShop បានទេ?', a: 'បាទ! ចូលទៅទំព័រចុះឈ្មោះអ្នកលក់ដើម្បីដាក់ពាក្យ។' },
+                { q: 'តើផលិតផលគ្រឿងសម្អាងទាំងអស់ជាផលិតផលកូរ៉េពិតប្រាកដ ១០០% ទេ?', a: 'បាទ ១០០% គ្មានករណីលើកលែង។ ផលិតផលសម្រស់ និង K-Beauty ទាំងអស់នៅ KKShop មកត្រង់ពីប្រទេសកូរ៉េ។ យើងមិនអត់ឱនចំពោះផលិតផលក្លែងក្លាយឡើយ។ ប្រសិនបើអ្នករកឃើញផលិតផលក្លែងក្លាយ ឬចម្លង សូមរាយការណ៍ដល់យើងភ្លាមៗ — យើងនឹងផ្តល់សំណងយ៉ាងច្រើន។' },
+                { q: 'ចុះផលិតផលប្រើប្រាស់ប្រចាំថ្ងៃវិញ?', a: 'សម្រាប់ផលិតផលប្រើប្រាស់ប្រចាំថ្ងៃ ប្រទេសផលិតមិនមែនជាកត្តាកំណត់ទេ — គុណភាពទើបជាគោលការណ៍។ យើងផ្តល់តែផលិតផលដែលត្រូវបានជ្រើសរើស និងទុកចិត្តដោយអ្នកប្រើប្រាស់កូរ៉េ ដែលល្បីថាមានស្ដង់ដារខ្ពស់ណាស់ក្នុងការជ្រើសរើសផលិតផល។' },
+                { q: 'តើខ្ញុំអាចក្លាយជាអ្នកលក់នៅ KKShop បានទេ?', a: 'បាទ! ចូលទៅទំព័រចុះឈ្មោះអ្នកលក់ដើម្បីដាក់ពាក្យ។ ក្រោយពីត្រូវបានអនុម័ត អ្នកលក់អាចចាប់ផ្តើមបញ្ចូលផលិតផលបានភ្លាម។' },
             ],
         },
     ],
@@ -242,10 +245,12 @@ const faqData: Record<string, FaqCategory[]> = {
             ],
         },
         {
-            icon: ShieldCheck, title: '正品保证',
+            icon: ShieldCheck, title: '正品保证与品质',
             items: [
-                { q: '所有产品都是正品吗？', a: '是的，100%正品。所有产品直接从韩国授权经销商和品牌采购。我们保证正品——如有疑问可全额退款。' },
-                { q: '可以在KKShop成为卖家吗？', a: '可以！我们欢迎优质卖家。前往卖家注册页面申请。审核通过后即可开始上架商品。' },
+                { q: '所有化妆品都是100%正品韩国产品吗？', a: '是的，毫无例外，100%正品。KKShop上的所有化妆品及K-Beauty产品均直接从韩国采购，绝对保证正品。我们对假冒或仿制品零容忍。如果您发现任何假冒或仿制产品，请立即向我们举报——我们将给予丰厚赔偿。' },
+                { q: '生活用品呢？产地重要吗？', a: '生活用品的评判标准不是产地，而是品质。我们只提供经过以严苛著称的韩国消费者亲选并信赖的产品。韩国消费者的高标准举世公认，KKShop上的每一款生活用品都经过了这一严格检验。' },
+                { q: '产品如何存储和处理？', a: '所有产品在温控环境中存储，精心包装发货。护肤品采用防护材料包装，防止运输途中损坏。' },
+                { q: '可以在KKShop成为卖家吗？', a: '可以！我们欢迎优质卖家。前往卖家注册页面申请。审核通过后即可立即开始上架商品。' },
             ],
         },
     ],
