@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Mail, Phone, MessageCircle, Send, CheckCircle, Loader2, MapPin } from 'lucide-react';
+import { Mail, MessageCircle, Send, CheckCircle, Loader2, MapPin } from 'lucide-react';
 import { useSafeAppStore } from '@/store/useAppStore';
 import Footer from '@/components/Footer';
 
@@ -22,7 +22,7 @@ const t: Record<string, any> = {
         subjects: ['Order Issue', 'Product Inquiry', 'Shipping Question', 'Account Help', 'Seller Inquiry', 'Other'],
         infoTitle: 'Other Ways to Reach Us',
         emailLabel: 'Email',
-        phoneLabel: 'Phone / Telegram',
+        telegramLabel: 'Telegram',
         addressLabel: 'Address',
         address: 'Phnom Penh, Cambodia',
         hours: 'Mon–Sat, 9:00 AM – 6:00 PM (ICT)',
@@ -43,7 +43,7 @@ const t: Record<string, any> = {
         subjects: ['주문 문제', '상품 문의', '배송 문의', '계정 도움', '셀러 문의', '기타'],
         infoTitle: '다른 연락 방법',
         emailLabel: '이메일',
-        phoneLabel: '전화 / 텔레그램',
+        telegramLabel: '텔레그램',
         addressLabel: '주소',
         address: '캄보디아 프놈펜',
         hours: '월~토, 오전 9시 – 오후 6시 (캄보디아 시간)',
@@ -64,7 +64,7 @@ const t: Record<string, any> = {
         subjects: ['បញ្ហាការបញ្ជាទិញ', 'សំណួរផលិតផល', 'សំណួរដឹកជញ្ជូន', 'ជំនួយគណនី', 'សំណួរអ្នកលក់', 'ផ្សេងៗ'],
         infoTitle: 'វិធីផ្សេងក្នុងការទាក់ទងយើង',
         emailLabel: 'អ៊ីមែល',
-        phoneLabel: 'ទូរស័ព្ទ / Telegram',
+        telegramLabel: 'Telegram',
         addressLabel: 'អាសយដ្ឋាន',
         address: 'រាជធានីភ្នំពេញ កម្ពុជា',
         hours: 'ច័ន្ទ–សៅរ៍ ០៩:០០ – ១៨:០០',
@@ -85,7 +85,7 @@ const t: Record<string, any> = {
         subjects: ['订单问题', '产品咨询', '配送问题', '账户帮助', '卖家咨询', '其他'],
         infoTitle: '其他联系方式',
         emailLabel: '邮箱',
-        phoneLabel: '电话 / Telegram',
+        telegramLabel: 'Telegram',
         addressLabel: '地址',
         address: '柬埔寨金边',
         hours: '周一至周六 09:00–18:00',
@@ -199,8 +199,11 @@ export default function ContactPage() {
                                         <MessageCircle className="w-4 h-4 text-green-500" />
                                     </div>
                                     <div>
-                                        <p className="text-xs text-gray-500 font-medium mb-0.5">{tx.phoneLabel}</p>
-                                        <p className="text-sm font-bold text-gray-900">+855 12 345 678</p>
+                                        <p className="text-xs text-gray-500 font-medium mb-0.5">{tx.telegramLabel}</p>
+                                        <a href="https://t.me/kkshop_cc" target="_blank" rel="noopener noreferrer"
+                                            className="text-sm font-bold text-gray-900 hover:text-brand-primary transition-colors">
+                                            @kkshop_cc
+                                        </a>
                                         <p className="text-xs text-gray-400 mt-0.5">{tx.hours}</p>
                                     </div>
                                 </div>
