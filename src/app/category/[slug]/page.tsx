@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { ArrowLeft, Star, SlidersHorizontal, ChevronDown, X } from 'lucide-react';
 import { useSafeAppStore } from '@/store/useAppStore';
 import { type TranslatedProduct } from '@/lib/api';
@@ -17,15 +17,16 @@ const categoryTitles: Record<string, Record<string, string>> = {
 };
 
 const uiT: Record<LangKey, Record<string, string>> = {
-    ko: { empty: '상품이 없습니다.', backHome: '쇼핑 홈으로', sortDefault: '추천순', sortNewest: '최신순', sortPriceAsc: '낮은 가격순', sortPriceDesc: '높은 가격순', sortRating: '평점순', sortPopular: '인기순', filter: '필터', priceRange: '가격대', apply: '적용', reset: '초기화', items: '개 상품', loadMore: '더 보기', min: '최소', max: '최대' },
-    en: { empty: 'No products found.', backHome: 'Back to Home', sortDefault: 'Recommended', sortNewest: 'Newest', sortPriceAsc: 'Price: Low→High', sortPriceDesc: 'Price: High→Low', sortRating: 'Top Rated', sortPopular: 'Most Popular', filter: 'Filter', priceRange: 'Price Range', apply: 'Apply', reset: 'Reset', items: 'items', loadMore: 'Load More', min: 'Min', max: 'Max' },
-    km: { empty: 'រកមិនឃើញផលិតផល។', backHome: 'ត្រឡប់ទៅទំព័រដើម', sortDefault: 'ផ្សេងៗ', sortNewest: 'ថ្មីបំផុត', sortPriceAsc: 'តម្លៃទាប→ខ្ពស់', sortPriceDesc: 'តម្លៃខ្ពស់→ទាប', sortRating: 'ពិន្ទុខ្ពស់', sortPopular: 'ពេញនិយម', filter: 'តម្រង', priceRange: 'ជួរតម្លៃ', apply: 'អនុវត្ត', reset: 'កំណត់ឡើងវិញ', items: 'ផលិតផល', loadMore: 'ផ្ទុកបន្ថែម', min: 'អប្បបរមា', max: 'អតិបរមា' },
-    zh: { empty: '没有找到商品。', backHome: '返回首页', sortDefault: '推荐', sortNewest: '最新', sortPriceAsc: '价格低→高', sortPriceDesc: '价格高→低', sortRating: '评分最高', sortPopular: '最受欢迎', filter: '筛选', priceRange: '价格区间', apply: '应用', reset: '重置', items: '件商品', loadMore: '加载更多', min: '最低', max: '最高' },
+    ko: { empty: '상품이 없습니다.', backHome: '쇼핑 홈으로', sortDefault: '추천순', sortNewest: '최신순', sortHot: '핫딜순', sortPriceAsc: '낮은 가격순', sortPriceDesc: '높은 가격순', sortRating: '평점순', sortPopular: '인기순', filter: '필터', priceRange: '가격대', apply: '적용', reset: '초기화', items: '개 상품', loadMore: '더 보기', min: '최소', max: '최대' },
+    en: { empty: 'No products found.', backHome: 'Back to Home', sortDefault: 'Recommended', sortNewest: 'Newest', sortHot: 'Hot Deals', sortPriceAsc: 'Price: Low→High', sortPriceDesc: 'Price: High→Low', sortRating: 'Top Rated', sortPopular: 'Most Popular', filter: 'Filter', priceRange: 'Price Range', apply: 'Apply', reset: 'Reset', items: 'items', loadMore: 'Load More', min: 'Min', max: 'Max' },
+    km: { empty: 'រកមិនឃើញផលិតផល។', backHome: 'ត្រឡប់ទៅទំព័រដើម', sortDefault: 'ផ្សេងៗ', sortNewest: 'ថ្មីបំផុត', sortHot: 'ក្ដៅ', sortPriceAsc: 'តម្លៃទាប→ខ្ពស់', sortPriceDesc: 'តម្លៃខ្ពស់→ទាប', sortRating: 'ពិន្ទុខ្ពស់', sortPopular: 'ពេញនិយម', filter: 'តម្រង', priceRange: 'ជួរតម្លៃ', apply: 'អនុវត្ត', reset: 'កំណត់ឡើងវិញ', items: 'ផលិតផល', loadMore: 'ផ្ទុកបន្ថែម', min: 'អប្បបរមា', max: 'អតិបរមា' },
+    zh: { empty: '没有找到商品。', backHome: '返回首页', sortDefault: '推荐', sortNewest: '最新', sortHot: '热卖', sortPriceAsc: '价格低→高', sortPriceDesc: '价格高→低', sortRating: '评分最高', sortPopular: '最受欢迎', filter: '筛选', priceRange: '价格区间', apply: '应用', reset: '重置', items: '件商品', loadMore: '加载更多', min: '最低', max: '最高' },
 };
 
 const SORT_OPTIONS = [
     { key: '', label: 'sortDefault' },
     { key: 'newest', label: 'sortNewest' },
+    { key: 'hot', label: 'sortHot' },
     { key: 'price_asc', label: 'sortPriceAsc' },
     { key: 'price_desc', label: 'sortPriceDesc' },
     { key: 'rating', label: 'sortRating' },
@@ -44,12 +45,21 @@ export default function CategoryDetailPage() {
     const t = uiT[lang];
     const currentTitle = categoryTitles[lang]?.[slug] || slug.toUpperCase();
 
+    const searchParams = useSearchParams();
+
+    const accentMap: Record<string, { banner: string; label: string; icon: string }> = {
+        hot:     { banner: 'bg-red-50 border-red-200 text-red-700',    label: t.sortHot,     icon: '🔥' },
+        newest:  { banner: 'bg-blue-50 border-blue-200 text-blue-700', label: t.sortNewest,  icon: '✨' },
+        popular: { banner: 'bg-amber-50 border-amber-200 text-amber-700', label: t.sortPopular, icon: '👑' },
+        rating:  { banner: 'bg-purple-50 border-purple-200 text-purple-700', label: t.sortRating, icon: '⭐' },
+    };
+
     // State
     const [products, setProducts] = useState<TranslatedProduct[]>([]);
     const [total, setTotal] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
-    const [sort, setSort] = useState('');
+    const [sort, setSort] = useState(() => searchParams?.get('sort') ?? '');
     const [showSort, setShowSort] = useState(false);
     const [showFilter, setShowFilter] = useState(false);
     const [minPrice, setMinPrice] = useState('');
@@ -109,6 +119,7 @@ export default function CategoryDetailPage() {
 
     const hasMore = products.length < total;
     const hasFilter = !!(appliedMin || appliedMax);
+    const accent = sort ? accentMap[sort] : null;
 
     return (
         <main className="min-h-screen bg-gray-50 text-gray-900 pb-24">
@@ -198,6 +209,12 @@ export default function CategoryDetailPage() {
 
             {/* Product Grid */}
             <div className="max-w-7xl mx-auto px-3 pt-4">
+                {accent && (
+                    <div className={`mb-4 px-3 py-2 rounded-xl border text-sm font-bold flex items-center gap-2 ${accent.banner}`}>
+                        <span>{accent.icon}</span>
+                        <span>{accent.label}</span>
+                    </div>
+                )}
                 {isLoading ? (
                     <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                         {Array.from({ length: 8 }).map((_, i) => (

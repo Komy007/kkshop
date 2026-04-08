@@ -303,10 +303,18 @@ function ProductGrid({ products, title, icon, viewAllHref, t }: {
     return (
         <section className="mb-6">
             <SectionHeader icon={icon} title={title} viewAllHref={viewAllHref} t={t} />
-            <div className="px-3 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 sm:gap-3">
-                {products.slice(0, 8).map(p => (
-                    <ProductCard key={p.id} product={p} t={t} />
+            {/* Mobile: horizontal scroll / Desktop: grid */}
+            <div className="flex gap-3 overflow-x-auto px-3 pb-2 scrollbar-hide snap-x snap-mandatory md:grid md:grid-cols-4 lg:grid-cols-6 md:overflow-visible md:pb-0 md:flex-none md:snap-none">
+                {products.map(p => (
+                    <div key={p.id} className="flex-shrink-0 w-[116px] sm:w-[130px] snap-start md:w-auto md:flex-shrink">
+                        <ProductCard product={p} t={t} />
+                    </div>
                 ))}
+                {/* View All card at end of scroll (mobile only) */}
+                <Link href={viewAllHref} className="md:hidden flex-shrink-0 w-[72px] flex flex-col items-center justify-center gap-1.5 bg-gray-50 rounded-xl border border-dashed border-gray-200 text-[10px] font-bold text-gray-400 hover:text-gray-600 hover:border-gray-400 transition-colors snap-start">
+                    <ChevronRight className="w-5 h-5" />
+                    <span className="text-center leading-tight">{t.viewAll}</span>
+                </Link>
             </div>
         </section>
     );
@@ -456,7 +464,7 @@ export default function Home() {
                     products={showHot}
                     title={`🔥 ${t.hotSale}`}
                     icon={<span className="badge-3d bg-gradient-to-r from-red-500 to-orange-500 text-white"><Flame className="w-3.5 h-3.5" /></span>}
-                    viewAllHref="/category/all"
+                    viewAllHref="/category/all?sort=hot"
                     t={t}
                 />
 
@@ -465,7 +473,7 @@ export default function Home() {
                     products={showNew}
                     title={`✨ ${t.newArrival}`}
                     icon={<span className="badge-3d bg-gradient-to-r from-blue-500 to-cyan-500 text-white"><Sparkles className="w-3.5 h-3.5" /></span>}
-                    viewAllHref="/category/new"
+                    viewAllHref="/category/new?sort=newest"
                     t={t}
                 />
 
@@ -474,7 +482,7 @@ export default function Home() {
                     products={showPopular}
                     title={`👑 ${t.popular}`}
                     icon={<span className="badge-3d bg-gradient-to-r from-amber-500 to-yellow-500 text-white"><Crown className="w-3.5 h-3.5" /></span>}
-                    viewAllHref="/category/all"
+                    viewAllHref="/category/all?sort=popular"
                     t={t}
                 />
             </main>

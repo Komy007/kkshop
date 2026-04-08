@@ -166,6 +166,10 @@ export async function getProductsByLanguage(
             case 'newest':     orderBy = [{ createdAt: 'desc' }]; break;
             case 'rating':     orderBy = [{ reviewAvg: 'desc' }, { reviewCount: 'desc' }]; break;
             case 'popular':    orderBy = [{ reviewCount: 'desc' }, { reviewAvg: 'desc' }]; break;
+            case 'hot':
+                where.isHotSale = true;
+                orderBy = [{ displayPriority: 'desc' }, { hotSalePrice: 'asc' }, { createdAt: 'desc' }];
+                break;
             default:           orderBy = [{ displayPriority: 'desc' }, { isNew: 'desc' }, { createdAt: 'desc' }]; break;
         }
 
@@ -213,7 +217,9 @@ export async function getProductsForSection(
             orderBy = [{ displayPriority: 'desc' }, { reviewAvg: 'desc' }, { reviewCount: 'desc' }, { createdAt: 'desc' }];
         }
 
-        const products = await prisma.product.findMany({
+        // Fetch a larger pool for daily rotation (3x the display limit, max 24)
+        const poolSize = Math.min(limit * 3, 24);
+        const pool = await prisma.product.findMany({
             where,
             include: {
                 translations: { where: { langCode: { in: ['en', langCode] } } },
@@ -221,10 +227,18 @@ export async function getProductsForSection(
                 images: { orderBy: { sortOrder: 'asc' }, take: 1 },
             },
             orderBy,
-            take: limit,
+            take: poolSize,
         });
 
-        return products.map(p => serializeProduct(p, langCode));
+        if (pool.length <= limit) {
+            return pool.map(p => serializeProduct(p, langCode));
+        }
+
+        // Daily rotation: shift the window by 1 each day
+        const dayNum = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+        const maxStart = pool.length - limit;
+        const startIdx = dayNum % (maxStart + 1);
+        return pool.slice(startIdx, startIdx + limit).map(p => serializeProduct(p, langCode));
     } catch (error) {
         console.error('Error fetching products for section:', error);
         return [];

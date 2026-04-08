@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import { ChevronRight, Flame, TrendingUp, Eye } from 'lucide-react';
 import ProductCard from '@/components/ProductCard';
 import { useAppStore, useSafeAppStore } from '@/store/useAppStore';
@@ -56,10 +57,11 @@ interface SectionProps {
     title: string;
     subtitle: string;
     viewAllText: string;
+    viewAllHref: string;
     children: React.ReactNode;
 }
 
-function Section({ icon: Icon, iconColor, title, subtitle, viewAllText, children }: SectionProps) {
+function Section({ icon: Icon, iconColor, title, subtitle, viewAllText, viewAllHref, children }: SectionProps) {
     return (
         <div className="py-10">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -74,9 +76,9 @@ function Section({ icon: Icon, iconColor, title, subtitle, viewAllText, children
                             <p className="text-[14px] font-semibold text-gray-600 mt-1">{subtitle}</p>
                         </div>
                     </div>
-                    <button className="hidden sm:flex items-center gap-1 text-brand-primary font-semibold text-sm hover:text-brand-primary/80 transition-colors">
+                    <Link href={viewAllHref} className="hidden sm:flex items-center gap-1 text-brand-primary font-semibold text-sm hover:text-brand-primary/80 transition-colors">
                         {viewAllText} <ChevronRight className="w-4 h-4" />
-                    </button>
+                    </Link>
                 </div>
 
                 {/* Horizontal Scroll Product Row */}
@@ -140,6 +142,7 @@ export default function CurationSection({ products, todayPicks: curatedPicks = [
                     title={t?.todayPick ?? "Today's Picks"}
                     subtitle={t?.todayPickDesc ?? 'Curated just for you'}
                     viewAllText={t?.viewAll ?? 'View All'}
+                    viewAllHref="/category/all"
                 >
                     {todayPicks.map(renderCard)}
                 </Section>
@@ -153,6 +156,7 @@ export default function CurationSection({ products, todayPicks: curatedPicks = [
                     title={t?.categoryBest ?? 'Category Best'}
                     subtitle={t?.categoryBestDesc ?? 'Most popular products'}
                     viewAllText={t?.viewAll ?? 'View All'}
+                    viewAllHref="/category/all?sort=popular"
                 >
                     {categoryBest.map(renderCard)}
                 </Section>
@@ -166,6 +170,7 @@ export default function CurationSection({ products, todayPicks: curatedPicks = [
                     title={t?.alsoViewed ?? 'Also Viewed Together'}
                     subtitle={t?.alsoViewedDesc ?? 'Other customers also browsed these'}
                     viewAllText={t?.viewAll ?? 'View All'}
+                    viewAllHref="/category/all?sort=rating"
                 >
                     {alsoViewed.map(renderCard)}
                 </Section>
