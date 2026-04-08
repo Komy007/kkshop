@@ -14,7 +14,7 @@ const faqData: Record<string, FaqCategory[]> = {
         {
             icon: ShoppingBag, title: 'Shopping & Orders',
             items: [
-                { q: 'What products does KKShop sell?', a: 'KKShop specializes in authentic Korean beauty (K-Beauty) products — skincare, makeup, masks, serums, and more. We also offer quality Korean lifestyle products selected for great value. Every product is 100% genuine and sourced directly from Korea.' },
+                { q: 'What products does KKShop sell?', a: 'KKShop specializes in Korean Beauty (K-Beauty) products — skincare, makeup, masks, serums, and more. All cosmetics are 100% made in Korea, offering both great value and high-performance formulas with full quality guarantee. If you ever find a counterfeit or replica, report it to us and we will provide significant compensation. Beyond cosmetics, we also carry carefully selected everyday lifestyle products chosen by Korean consumers, who are world-renowned for their high and discerning standards. Please note that lifestyle products may be manufactured in various countries.' },
                 { q: 'How do I place an order?', a: 'Browse products, add items to your cart, then proceed to checkout. Fill in your delivery address (you can save multiple addresses), apply any coupon or points, and confirm your order. You\'ll receive an email confirmation with your order details.' },
                 { q: 'Can I modify or cancel my order?', a: 'You can cancel your order while it is in "Pending" status from your My Page → Orders. Once the order moves to "Confirmed" or "Shipping" status, cancellation is no longer available. Contact our support team for assistance.' },
                 { q: 'How can I track my order?', a: 'Go to My Page → Orders and click on any order to see the full status timeline. Once shipped, you\'ll see the carrier name, tracking number, and a link to track your package in real-time.' },
@@ -78,7 +78,7 @@ const faqData: Record<string, FaqCategory[]> = {
         {
             icon: ShoppingBag, title: '쇼핑 및 주문',
             items: [
-                { q: 'KKShop은 어떤 상품을 판매하나요?', a: 'KKShop은 정품 한국 뷰티(K-Beauty) 제품을 전문으로 합니다 — 스킨케어, 메이크업, 마스크, 세럼 등. 가성비 좋은 한국 생활용품도 함께 제공합니다. 모든 제품은 100% 정품이며 한국에서 직접 소싱합니다.' },
+                { q: 'KKShop은 어떤 상품을 판매하나요?', a: 'KKShop은 한국 뷰티(K-Beauty) 제품 — 스킨케어, 메이크업, 마스크, 세럼 등을 전문으로 합니다. 가성비 좋은 한국 화장품과 고기능 화장품 모두 100% 한국산으로 품질을 보증합니다. 만약 가짜나 복제품을 발견하시면 저희에게 신고해 주세요 — 크게 보상합니다. 그 외 생활용품은 까다롭기로 유명한 한국 소비자가 선택한 가성비 좋은 제품만 엄선합니다. 생활용품은 생산국이 다를 수 있습니다.' },
                 { q: '어떻게 주문하나요?', a: '상품을 둘러보고 장바구니에 담은 후 결제로 진행하세요. 배송지를 입력하고 쿠폰이나 포인트를 적용한 후 주문을 확인하세요. 주문 상세가 포함된 이메일 확인서를 받게 됩니다.' },
                 { q: '주문을 수정하거나 취소할 수 있나요?', a: '"대기중" 상태에서는 마이페이지 → 주문에서 취소할 수 있습니다. "확인됨" 또는 "배송중" 상태로 변경되면 취소가 불가합니다. 고객지원팀에 문의해 주세요.' },
                 { q: '주문을 어떻게 추적하나요?', a: '마이페이지 → 주문에서 주문을 클릭하면 전체 상태 타임라인을 확인할 수 있습니다. 배송이 시작되면 택배사, 운송장 번호, 실시간 추적 링크가 표시됩니다.' },
@@ -142,7 +142,7 @@ const faqData: Record<string, FaqCategory[]> = {
         {
             icon: ShoppingBag, title: 'ការទិញទំនិញ និងការបញ្ជាទិញ',
             items: [
-                { q: 'តើ KKShop លក់ផលិតផលអ្វីខ្លះ?', a: 'KKShop ឯកទេសក្នុងផលិតផលសម្រស់កូរ៉េពិត (K-Beauty) — ថែរក្សាស្បែក មេកអាប់ ម៉ាស់ សេរ៉ូម និងផ្សេងៗ។ យើងក៏ផ្តល់ផលិតផលជីវិតរស់នៅកូរ៉េដែលមានគុណភាពខ្ពស់។ រាល់ផលិតផលគឺពិតប្រាកដ ១០០% ពីកូរ៉េ។' },
+                { q: 'តើ KKShop លក់ផលិតផលអ្វីខ្លះ?', a: 'KKShop ឯកទេសក្នុងផលិតផល Korean Beauty (K-Beauty) — ថែរក្សាស្បែក មេកអាប់ ម៉ាស់ សេរ៉ូម និងច្រើនទៀត។ ផលិតផលសម្អាងទាំងអស់គឺ ១០០% ផលិតនៅប្រទេសកូរ៉េ ផ្តល់ទាំងតម្លៃសមរម្យ និងប្រសិទ្ធភាពខ្ពស់ ជាមួយការធានាគុណភាព។ ប្រសិនបើអ្នករកឃើញផលិតផលក្លែងក្លាយ ឬចម្លង សូមរាយការណ៍ដល់យើង — យើងនឹងផ្តល់សំណងយ៉ាងច្រើន។ លើសពីនេះ យើងក៏ផ្តល់ផលិតផលប្រើប្រាស់ប្រចាំថ្ងៃដែលបានជ្រើសរើសយ៉ាងតឹងរ៉ឹងដោយអ្នកប្រើប្រាស់កូរ៉េ ដែលល្បីថាមានស្ដង់ដារខ្ពស់ណាស់។ ផលិតផលប្រើប្រាស់ប្រចាំថ្ងៃអាចមានប្រទេសផលិតខុសៗគ្នា។' },
                 { q: 'តើខ្ញុំបញ្ជាទិញដោយរបៀបណា?', a: 'រកមើលផលិតផល បន្ថែមទៅកន្រ្តក ហើយបន្តទៅការទូទាត់។ បំពេញអាសយដ្ឋានដឹកជញ្ជូន អនុវត្តប័ណ្ណ ឬពិន្ទុ ហើយបញ្ជាក់ការបញ្ជាទិញ។' },
                 { q: 'តើខ្ញុំអាចលុបចោលការបញ្ជាទិញបានទេ?', a: 'អ្នកអាចលុបចោលការបញ្ជាទិញខណៈពេលស្ថិតក្នុងស្ថានភាព "កំពុងរង់ចាំ" ពីទំព័រ ការបញ្ជាទិញរបស់ខ្ញុំ។' },
                 { q: 'តើខ្ញុំតាមដានការបញ្ជាទិញដោយរបៀបណា?', a: 'ចូលទៅ ទំព័ររបស់ខ្ញុំ → ការបញ្ជាទិញ ហើយចុចលើការបញ្ជាទិញណាមួយដើម្បីមើលពេលវេលា។ ពេលបានដឹកជញ្ជូន អ្នកនឹងឃើញលេខតាមដាន។' },
@@ -198,7 +198,7 @@ const faqData: Record<string, FaqCategory[]> = {
         {
             icon: ShoppingBag, title: '购物与订单',
             items: [
-                { q: 'KKShop卖什么产品？', a: 'KKShop专注于正品韩国美妆(K-Beauty)产品——护肤品、化妆品、面膜、精华液等。我们还提供精选的高性价比韩国生活用品。所有产品100%正品，直接从韩国采购。' },
+                { q: 'KKShop卖什么产品？', a: 'KKShop专注于韩国美妆(K-Beauty)产品——护肤品、化妆品、面膜、精华液等。所有化妆品均为100%韩国制造，兼具高性价比与高功效，品质有充分保障。如发现假冒或仿制品，请向我们举报，我们将给予丰厚赔偿。此外，我们还精心挑选由以严苛著称的韩国消费者认可的高性价比生活用品。生活用品的生产国可能有所不同。' },
                 { q: '如何下单？', a: '浏览产品，加入购物车，然后结账。填写收货地址（可保存多个地址），使用优惠券或积分，确认订单。您将收到包含订单详情的确认邮件。' },
                 { q: '可以取消订单吗？', a: '在"待处理"状态下可以从我的页面→订单中取消。一旦变为"已确认"或"配送中"状态，则无法取消。' },
                 { q: '如何追踪订单？', a: '进入我的页面→订单，点击任何订单查看完整状态。发货后将显示快递公司、运单号和实时追踪链接。' },
