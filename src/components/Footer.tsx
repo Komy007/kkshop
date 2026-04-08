@@ -82,7 +82,6 @@ export default function Footer() {
                     <h3 className="text-gray-900 font-extrabold mb-4 text-base">{t.support}</h3>
                     <ul className="space-y-2 text-gray-600 font-medium">
                         <li>Email: help@kkshop.cc</li>
-                        <li>Tel: +85595 779 873</li>
                         <li>Telegram: @kkshop_cc</li>
                         <li>🛒 {t.orders}</li>
                     </ul>

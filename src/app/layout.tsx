@@ -144,7 +144,6 @@ export default async function RootLayout({
                             "contactPoint": {
                                 "@type": "ContactPoint",
                                 "email": "help@kkshop.cc",
-                                "telephone": "+855-95-779-873",
                                 "contactType": "customer service",
                                 "availableLanguage": ["Korean", "English", "Khmer", "Chinese"]
                             },
