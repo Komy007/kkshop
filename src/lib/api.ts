@@ -201,8 +201,94 @@ export async function getProductsForSection(
     filter: 'hot' | 'new' | 'popular' | 'todaypick',
     limit: number = 8,
 ): Promise<TranslatedProduct[]> {
+    const include = {
+        translations: { where: { langCode: { in: ['en', langCode] } } },
+        category: { select: { slug: true } },
+        images: { orderBy: { sortOrder: 'asc' } as any, take: 1 },
+    };
+    const baseWhere: any = { status: 'ACTIVE', approvalStatus: 'APPROVED' };
+    const dayNum = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+
     try {
-        const where: any = { status: 'ACTIVE', approvalStatus: 'APPROVED' };
+        // ── NEW ARRIVALS ──────────────────────────────────────────────────────
+        // Always guarantee the 3 most-recently approved products appear first,
+        // then fill the remaining slots with a daily-rotated pool of older ones.
+        // This ensures a brand-new product is always visible.
+        if (filter === 'new') {
+            const GUARANTEED = Math.min(3, limit);
+            const REST_SLOTS = limit - GUARANTEED;
+
+            // Top 3 newest (by approval/creation date)
+            const guaranteed = await prisma.product.findMany({
+                where: baseWhere,
+                include,
+                orderBy: [{ displayPriority: 'desc' }, { createdAt: 'desc' }],
+                take: GUARANTEED,
+            });
+
+            if (REST_SLOTS <= 0) return guaranteed.map(p => serializeProduct(p, langCode));
+
+            const guaranteedIds = guaranteed.map(p => p.id);
+            const poolSize = Math.min(REST_SLOTS * 4, 30);
+            const restPool = await prisma.product.findMany({
+                where: { ...baseWhere, id: { notIn: guaranteedIds } },
+                include,
+                orderBy: [{ displayPriority: 'desc' }, { createdAt: 'desc' }],
+                take: poolSize,
+            });
+
+            let rotated: typeof restPool;
+            if (restPool.length <= REST_SLOTS) {
+                rotated = restPool;
+            } else {
+                const maxStart = restPool.length - REST_SLOTS;
+                const startIdx = dayNum % (maxStart + 1);
+                rotated = restPool.slice(startIdx, startIdx + REST_SLOTS);
+            }
+
+            return [...guaranteed, ...rotated].map(p => serializeProduct(p, langCode));
+        }
+
+        // ── POPULAR ───────────────────────────────────────────────────────────
+        // Top reviewers fill most slots, but up to 2 slots reserved for
+        // products approved within the last 14 days that haven't built reviews yet.
+        if (filter === 'popular') {
+            const NEW_BOOST_SLOTS = 2;
+            const MAIN_SLOTS = limit - NEW_BOOST_SLOTS;
+            const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+
+            // Newly approved products (< 14 days, no/few reviews)
+            const boosted = await prisma.product.findMany({
+                where: { ...baseWhere, createdAt: { gte: fourteenDaysAgo } },
+                include,
+                orderBy: [{ displayPriority: 'desc' }, { createdAt: 'desc' }],
+                take: NEW_BOOST_SLOTS,
+            });
+
+            const boostedIds = boosted.map(p => p.id);
+            const poolSize = Math.min(MAIN_SLOTS * 3, 24);
+            const mainPool = await prisma.product.findMany({
+                where: { ...baseWhere, id: { notIn: boostedIds } },
+                include,
+                orderBy: [{ displayPriority: 'desc' }, { reviewAvg: 'desc' }, { reviewCount: 'desc' }, { createdAt: 'desc' }],
+                take: poolSize,
+            });
+
+            let mainSlice: typeof mainPool;
+            if (mainPool.length <= MAIN_SLOTS) {
+                mainSlice = mainPool;
+            } else {
+                const maxStart = mainPool.length - MAIN_SLOTS;
+                const startIdx = dayNum % (maxStart + 1);
+                mainSlice = mainPool.slice(startIdx, startIdx + MAIN_SLOTS);
+            }
+
+            return [...mainSlice, ...boosted].map(p => serializeProduct(p, langCode));
+        }
+
+        // ── HOT DEALS / TODAY'S PICKS ─────────────────────────────────────────
+        // Flag-based sections — daily rotation only
+        const where: any = { ...baseWhere };
         let orderBy: any[] = [{ createdAt: 'desc' }];
 
         if (filter === 'todaypick') {
@@ -211,34 +297,17 @@ export async function getProductsForSection(
         } else if (filter === 'hot') {
             where.isHotSale = true;
             orderBy = [{ displayPriority: 'desc' }, { reviewCount: 'desc' }, { createdAt: 'desc' }];
-        } else if (filter === 'new') {
-            orderBy = [{ displayPriority: 'desc' }, { createdAt: 'desc' }];
-        } else if (filter === 'popular') {
-            orderBy = [{ displayPriority: 'desc' }, { reviewAvg: 'desc' }, { reviewCount: 'desc' }, { createdAt: 'desc' }];
         }
 
-        // Fetch a larger pool for daily rotation (3x the display limit, max 24)
         const poolSize = Math.min(limit * 3, 24);
-        const pool = await prisma.product.findMany({
-            where,
-            include: {
-                translations: { where: { langCode: { in: ['en', langCode] } } },
-                category: { select: { slug: true } },
-                images: { orderBy: { sortOrder: 'asc' }, take: 1 },
-            },
-            orderBy,
-            take: poolSize,
-        });
+        const pool = await prisma.product.findMany({ where, include, orderBy, take: poolSize });
 
-        if (pool.length <= limit) {
-            return pool.map(p => serializeProduct(p, langCode));
-        }
+        if (pool.length <= limit) return pool.map(p => serializeProduct(p, langCode));
 
-        // Daily rotation: shift the window by 1 each day
-        const dayNum = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
         const maxStart = pool.length - limit;
         const startIdx = dayNum % (maxStart + 1);
         return pool.slice(startIdx, startIdx + limit).map(p => serializeProduct(p, langCode));
+
     } catch (error) {
         console.error('Error fetching products for section:', error);
         return [];
