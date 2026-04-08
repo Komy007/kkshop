@@ -155,7 +155,7 @@ export default function SellerLayout({ children }: { children: React.ReactNode }
     );
 
     return (
-        <div className="flex h-screen bg-slate-100 overflow-hidden">
+        <div className="flex h-[calc(100vh-6rem)] bg-slate-100 overflow-hidden">
             {/* Desktop sidebar */}
             <aside className="hidden md:flex flex-col w-64 bg-slate-800 flex-shrink-0 shadow-xl">
                 <SidebarContent />

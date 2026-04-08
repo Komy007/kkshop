@@ -413,7 +413,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     );
 
     return (
-        <div className="flex h-screen bg-slate-100 overflow-hidden">
+        <div className="flex h-[calc(100vh-6rem)] bg-slate-100 overflow-hidden">
             {/* Desktop Sidebar */}
             <aside className="hidden md:flex flex-col w-64 bg-slate-900 flex-shrink-0 shadow-xl">
                 <SidebarContent />
