@@ -92,6 +92,7 @@ export async function POST(req: Request) {
         sku, priceUsd, stockQty, categoryId, brandName, volume, origin, skinType, expiryMonths,
         certifications,
         unitLabel, unitsPerPkg,
+        weightGram, lengthCm, widthCm, heightCm,
         nameKo, shortDescKo, detailDescKo, ingredientsKo, howToUseKo, benefitsKo,
         imageUrls = [], options = [], variants = [],
     } = body;
@@ -180,6 +181,10 @@ export async function POST(req: Request) {
             certifications: certifications || null,
             unitLabel: unitLabel || null,
             unitsPerPkg: unitsPerPkg ? parseInt(unitsPerPkg) : null,
+            weightGram: weightGram ?? null,
+            lengthCm: lengthCm ?? null,
+            widthCm: widthCm ?? null,
+            heightCm: heightCm ?? null,
             status: 'INACTIVE',
             approvalStatus: 'PENDING',
             imageUrl: imageUrls[0] || null,

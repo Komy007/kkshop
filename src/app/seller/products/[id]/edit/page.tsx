@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Save, Loader2, ChevronLeft, AlertCircle, CheckCircle, Upload, X, ImagePlus, Plus, Sparkles } from 'lucide-react';
+import { Save, Loader2, ChevronLeft, AlertCircle, AlertTriangle, CheckCircle, Upload, X, ImagePlus, Plus, Sparkles, Truck } from 'lucide-react';
 import DraggableImageGrid from '@/components/DraggableImageGrid';
 import { useTranslations } from '@/i18n/useTranslations';
 
@@ -23,6 +23,7 @@ interface ProductForm {
     brandName: string; expiryMonths: string; certifications: string;
     categoryId: string;
     unitLabel: string; unitsPerPkg: string;
+    weightGram: string; lengthCm: string; widthCm: string; heightCm: string;
 }
 const EMPTY: ProductForm = {
     name: '', shortDesc: '', detailDesc: '', ingredients: '',
@@ -30,6 +31,7 @@ const EMPTY: ProductForm = {
     brandName: '', expiryMonths: '', certifications: '',
     categoryId: '',
     unitLabel: 'pc', unitsPerPkg: '',
+    weightGram: '', lengthCm: '', widthCm: '', heightCm: '',
 };
 const BADGE: Record<string, string> = {
     PENDING:  'bg-yellow-100 text-yellow-700',
@@ -82,8 +84,9 @@ export default function SellerProductEditPage() {
     const [loading,        setLoading]        = useState(true);
     const [saving,         setSaving]         = useState(false);
     const [uploading,      setUploading]      = useState(false);
-    const [approvalStatus, setApprovalStatus] = useState('');
-    const [message,        setMessage]        = useState<{ type: 'success' | 'error'; text: string; textKo: string } | null>(null);
+    const [approvalStatus,  setApprovalStatus]  = useState('');
+    const [rejectionReason, setRejectionReason] = useState<string | null>(null);
+    const [message,         setMessage]         = useState<{ type: 'success' | 'error'; text: string; textKo: string } | null>(null);
 
     // Category state
     const [categories, setCategories] = useState<Category[]>([]);
@@ -154,8 +157,13 @@ export default function SellerProductEditPage() {
                     categoryId:     data.categoryId    ?? '',
                     unitLabel:      data.unitLabel     ?? 'pc',
                     unitsPerPkg:    data.unitsPerPkg   ? String(data.unitsPerPkg) : '',
+                    weightGram:     data.weightGram    ? String(data.weightGram) : '',
+                    lengthCm:       data.lengthCm      ? String(data.lengthCm) : '',
+                    widthCm:        data.widthCm       ? String(data.widthCm) : '',
+                    heightCm:       data.heightCm      ? String(data.heightCm) : '',
                 });
                 setApprovalStatus(data.approvalStatus ?? 'PENDING');
+                setRejectionReason(data.rejectionReason ?? null);
                 setExistingImages(data.images ?? []);
 
                 // Load options
@@ -393,6 +401,10 @@ export default function SellerProductEditPage() {
                 body: JSON.stringify({
                     ...form,
                     unitsPerPkg:   form.unitsPerPkg ? parseInt(form.unitsPerPkg) : null,
+                    weightGram:    parseInt(form.weightGram) || null,
+                    lengthCm:      parseFloat(form.lengthCm) || null,
+                    widthCm:       parseFloat(form.widthCm) || null,
+                    heightCm:      parseFloat(form.heightCm) || null,
                     imageUrls:     uploadedUrls,
                     deleteImageIds,
                     options:       bulkDiscountEnabled ? options : [],
@@ -458,6 +470,18 @@ export default function SellerProductEditPage() {
                     <span className="block text-xs opacity-75 mt-0.5">수정 시 재검수 안내: 상품을 수정하면 검수 상태가 대기중으로 변경됩니다.</span>
                 </div>
             </div>
+
+            {/* Rejection reason banner */}
+            {approvalStatus === 'REJECTED' && rejectionReason && (
+                <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3">
+                    <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                    <div>
+                        <p className="text-sm font-bold text-red-700">Product Rejected</p>
+                        <p className="text-sm text-red-600 mt-1">{rejectionReason}</p>
+                        <p className="text-xs text-red-400 mt-2">Please fix the issues and resubmit for review.</p>
+                    </div>
+                </div>
+            )}
 
             {/* Message */}
             {message && (
@@ -617,6 +641,64 @@ export default function SellerProductEditPage() {
                                     Preview: 1 {form.unitLabel} = {form.unitsPerPkg} pcs
                                 </p>
                             )}
+                        </div>
+
+                        {/* Shipping Dimensions */}
+                        <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
+                            <div className="flex items-center gap-2 mb-3">
+                                <Truck className="w-4 h-4 text-teal-600" />
+                                <span className="text-sm font-bold text-gray-800">Shipping Dimensions</span>
+                                <span className="text-xs text-gray-400">Optional — helps calculate shipping cost</span>
+                            </div>
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-600 mb-1">Weight (g)</label>
+                                    <input
+                                        type="number"
+                                        value={form.weightGram}
+                                        onChange={set('weightGram')}
+                                        placeholder="e.g. 500"
+                                        className={inp}
+                                        min="0"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-600 mb-1">Length (cm)</label>
+                                    <input
+                                        type="number"
+                                        step="0.1"
+                                        value={form.lengthCm}
+                                        onChange={set('lengthCm')}
+                                        placeholder="e.g. 20"
+                                        className={inp}
+                                        min="0"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-600 mb-1">Width (cm)</label>
+                                    <input
+                                        type="number"
+                                        step="0.1"
+                                        value={form.widthCm}
+                                        onChange={set('widthCm')}
+                                        placeholder="e.g. 15"
+                                        className={inp}
+                                        min="0"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-600 mb-1">Height (cm)</label>
+                                    <input
+                                        type="number"
+                                        step="0.1"
+                                        value={form.heightCm}
+                                        onChange={set('heightCm')}
+                                        placeholder="e.g. 10"
+                                        className={inp}
+                                        min="0"
+                                    />
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </section>

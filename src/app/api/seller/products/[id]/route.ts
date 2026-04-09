@@ -58,6 +58,10 @@ export async function GET(
         expiryMonths: product.expiryMonths ?? null,
         unitLabel: product.unitLabel ?? null,
         unitsPerPkg: product.unitsPerPkg ?? null,
+        weightGram: product.weightGram ?? null,
+        lengthCm: product.lengthCm?.toString() ?? null,
+        widthCm: product.widthCm?.toString() ?? null,
+        heightCm: product.heightCm?.toString() ?? null,
         status: product.status,
         approvalStatus: product.approvalStatus,
         rejectionReason: product.rejectionReason ?? null,
@@ -135,6 +139,7 @@ export async function PATCH(
         name, shortDesc, detailDesc, ingredients, howToUse, benefits,
         priceUsd, stockQty, volume, skinType, origin, brandName, expiryMonths, certifications, categoryId,
         unitLabel, unitsPerPkg,
+        weightGram, lengthCm, widthCm, heightCm,
         imageUrls = [],      // new GCS URLs to add
         deleteImageIds = [], // existing image IDs to remove
         options,             // full options replacement (undefined = no change)
@@ -281,6 +286,10 @@ export async function PATCH(
         if (certifications !== undefined) updateData.certifications = certifications || null;
         if (unitLabel !== undefined)   updateData.unitLabel   = unitLabel || null;
         if (unitsPerPkg !== undefined) updateData.unitsPerPkg = unitsPerPkg ? parseInt(unitsPerPkg) : null;
+        if (weightGram !== undefined)  updateData.weightGram  = weightGram ?? null;
+        if (lengthCm !== undefined)    updateData.lengthCm    = lengthCm ?? null;
+        if (widthCm !== undefined)     updateData.widthCm     = widthCm ?? null;
+        if (heightCm !== undefined)    updateData.heightCm    = heightCm ?? null;
 
         await tx.product.update({
             where: { id: product.id },

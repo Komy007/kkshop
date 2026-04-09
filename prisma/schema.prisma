@@ -81,9 +81,17 @@ model Product {
   expiryMonths     Int?     @map("expiry_months")
   certifications   String?  @db.VarChar(255)
   brandName        String?  @map("brand_name") @db.VarChar(100)
+  // Shipping dimensions
+  weightGram       Int?     @map("weight_gram")
+  lengthCm         Decimal? @map("length_cm") @db.Decimal(6, 1)
+  widthCm          Decimal? @map("width_cm") @db.Decimal(6, 1)
+  heightCm         Decimal? @map("height_cm") @db.Decimal(6, 1)
+  // Hot sale scheduling
+  hotSaleStartAt   DateTime? @map("hot_sale_start_at")
+  hotSaleEndAt     DateTime? @map("hot_sale_end_at")
   // Selling unit fields
-  unitLabel        String?  @map("unit_label") @db.VarChar(20)    // 개/box/pack/set/병/튜브/매
-  unitsPerPkg      Int?     @map("units_per_pkg")                  // 1 box = N 개
+  unitLabel        String?  @map("unit_label") @db.VarChar(20)    // pc/box/pack/set/bottle/tube
+  unitsPerPkg      Int?     @map("units_per_pkg")                  // 1 box = N pcs
   // Inventory & Cost fields
   costPrice        Decimal? @map("cost_price") @db.Decimal(10, 2)
   stockAlertQty    Int      @default(10) @map("stock_alert_qty")

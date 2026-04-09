@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Upload, X, Loader2, Sparkles, Info, CheckCircle, Plus, Package } from 'lucide-react';
+import { Upload, X, Loader2, Sparkles, Info, CheckCircle, Plus, Package, Truck } from 'lucide-react';
 import DraggableImageGrid from '@/components/DraggableImageGrid';
 import { useTranslations } from '@/i18n/useTranslations';
 
@@ -109,6 +109,7 @@ export default function SellerProductNewPage() {
         unitLabel: 'pc', unitsPerPkg: '',
         nameKo: '', shortDescKo: '', detailDescKo: '',
         ingredientsKo: '', howToUseKo: '', benefitsKo: '',
+        weightGram: '', lengthCm: '', widthCm: '', heightCm: '',
     });
 
     const loadCategories = () => {
@@ -281,6 +282,10 @@ export default function SellerProductNewPage() {
         const payload = {
             ...form,
             unitsPerPkg: form.unitsPerPkg ? parseInt(form.unitsPerPkg) : null,
+            weightGram: parseInt(form.weightGram) || null,
+            lengthCm: parseFloat(form.lengthCm) || null,
+            widthCm: parseFloat(form.widthCm) || null,
+            heightCm: parseFloat(form.heightCm) || null,
             imageUrls,
             options: bulkDiscountEnabled ? options : [],
             variants: variantsPayload,
@@ -453,6 +458,66 @@ export default function SellerProductNewPage() {
                                             )}
                                         </div>
                                     )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* ── Shipping Dimensions ── */}
+                        <div className="col-span-2">
+                            <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
+                                <div className="flex items-center gap-2 mb-3">
+                                    <Truck className="w-4 h-4 text-teal-600" />
+                                    <span className="text-sm font-bold text-gray-800">Shipping Dimensions</span>
+                                    <span className="text-xs text-gray-400">Optional — helps calculate shipping cost</span>
+                                </div>
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                    <div>
+                                        <label className="block text-xs font-semibold text-gray-600 mb-1">Weight (g)</label>
+                                        <input
+                                            type="number"
+                                            value={form.weightGram}
+                                            onChange={e => set('weightGram', e.target.value)}
+                                            placeholder="e.g. 500"
+                                            className={inp}
+                                            min="0"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-semibold text-gray-600 mb-1">Length (cm)</label>
+                                        <input
+                                            type="number"
+                                            step="0.1"
+                                            value={form.lengthCm}
+                                            onChange={e => set('lengthCm', e.target.value)}
+                                            placeholder="e.g. 20"
+                                            className={inp}
+                                            min="0"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-semibold text-gray-600 mb-1">Width (cm)</label>
+                                        <input
+                                            type="number"
+                                            step="0.1"
+                                            value={form.widthCm}
+                                            onChange={e => set('widthCm', e.target.value)}
+                                            placeholder="e.g. 15"
+                                            className={inp}
+                                            min="0"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-semibold text-gray-600 mb-1">Height (cm)</label>
+                                        <input
+                                            type="number"
+                                            step="0.1"
+                                            value={form.heightCm}
+                                            onChange={e => set('heightCm', e.target.value)}
+                                            placeholder="e.g. 10"
+                                            className={inp}
+                                            min="0"
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         </div>

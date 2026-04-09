@@ -2,9 +2,10 @@
 
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
     Package, Plus, Loader2, RefreshCw, Clock, CheckCircle, XCircle,
-    Search, Edit3, AlertCircle, ChevronLeft, ChevronRight, Trash2,
+    Search, Edit3, AlertCircle, ChevronLeft, ChevronRight, Trash2, Copy,
 } from 'lucide-react';
 
 interface Product {
@@ -50,7 +51,9 @@ export default function SellerProductsPage() {
     const [tab,      setTab]        = useState<'ALL'|'PENDING'|'APPROVED'|'REJECTED'>('ALL');
     const [deletingId,   setDeletingId]   = useState<string | null>(null);
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+    const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
 
+    const router = useRouter();
     const searchTimer = useRef<NodeJS.Timeout | null>(null);
 
     const load = useCallback(async (p = 1, q = search, t = tab) => {
@@ -108,6 +111,26 @@ export default function SellerProductsPage() {
             alert('삭제 중 오류가 발생했습니다. · Error occurred during deletion.');
         }
         setDeletingId(null);
+    };
+
+    const handleDuplicate = async (id: string) => {
+        setDuplicatingId(id);
+        try {
+            const res = await fetch('/api/seller/products/duplicate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ productId: id }),
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                alert('Duplicate failed · 복제 실패: ' + (data?.error || 'Unknown error'));
+            } else {
+                router.push(`/seller/products/${data.productId}/edit`);
+            }
+        } catch {
+            alert('An error occurred while duplicating. · 복제 중 오류가 발생했습니다.');
+        }
+        setDuplicatingId(null);
     };
 
     return (
@@ -252,6 +275,16 @@ export default function SellerProductsPage() {
                                                         className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-gray-100 hover:bg-teal-50 hover:text-teal-700 text-gray-600 rounded-lg transition-colors">
                                                         <Edit3 className="w-3 h-3" /> Edit
                                                     </Link>
+                                                    {/* Duplicate button */}
+                                                    <button
+                                                        onClick={() => handleDuplicate(p.id)}
+                                                        disabled={duplicatingId === p.id}
+                                                        className="inline-flex items-center gap-1 px-2 py-1.5 text-xs font-semibold text-gray-500 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors disabled:opacity-30"
+                                                        title="Duplicate product · 상품 복제">
+                                                        {duplicatingId === p.id
+                                                            ? <Loader2 className="w-3 h-3 animate-spin" />
+                                                            : <Copy className="w-3 h-3" />}
+                                                    </button>
                                                     {/* Delete button — confirm inline */}
                                                     {confirmDeleteId === p.id ? (
                                                         <div className="flex items-center gap-1">
