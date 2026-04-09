@@ -53,6 +53,8 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
             isNew: product.isNew,
             isHotSale: product.isHotSale,
             hotSalePrice: product.hotSalePrice != null ? product.hotSalePrice.toString() : null,
+            hotSaleStartAt: product.hotSaleStartAt?.toISOString() ?? null,
+            hotSaleEndAt: product.hotSaleEndAt?.toISOString() ?? null,
             reviewAvg: product.reviewAvg.toString(),
             reviewCount: product.reviewCount,
             brandName: product.brandName ?? null,
@@ -138,7 +140,7 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
         const body = await req.json();
         const {
             sku, priceUsd, costPrice, stockAlertQty, stockQty, categoryId, supplierId,
-            status, approvalStatus, isNew, isHotSale, hotSalePrice,
+            status, approvalStatus, isNew, isHotSale, hotSalePrice, hotSaleStartAt, hotSaleEndAt,
             badgeAuthentic, badgeKoreanCertified, isTodayPick, displayPriority,
             brandName, volume, skinType, origin, expiryMonths, certifications, unitLabel, unitsPerPkg,
             baseLang, name, shortDesc, detailDesc, ingredients, howToUse, benefits, seoKeywords,
@@ -191,6 +193,8 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
             }
             productData.hotSalePrice = parsedHot;
         }
+        if (hotSaleStartAt !== undefined) productData.hotSaleStartAt = hotSaleStartAt ? new Date(hotSaleStartAt) : null;
+        if (hotSaleEndAt !== undefined) productData.hotSaleEndAt = hotSaleEndAt ? new Date(hotSaleEndAt) : null;
         if (brandName !== undefined) productData.brandName = brandName || null;
         if (volume !== undefined) productData.volume = volume || null;
         if (skinType !== undefined) productData.skinType = skinType || null;

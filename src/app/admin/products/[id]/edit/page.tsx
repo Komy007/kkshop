@@ -20,6 +20,7 @@ interface ProductData {
     categoryId: string | null; supplierId: string | null;
     status: string; approvalStatus: string; isNew: boolean;
     isHotSale: boolean; hotSalePrice: string | null;
+    hotSaleStartAt: string | null; hotSaleEndAt: string | null;
     brandName: string | null; volume: string | null; skinType: string | null;
     origin: string | null; expiryMonths: number | null; certifications: string | null;
     images: { id: string; url: string; sortOrder: number }[];
@@ -87,6 +88,7 @@ export default function EditProductPage() {
         categoryId: '', supplierId: '', status: 'ACTIVE', approvalStatus: 'APPROVED',
         rejectionReason: '',
         isNew: false, isHotSale: false, hotSalePrice: '',
+        hotSaleStartAt: '', hotSaleEndAt: '',
         badgeAuthentic: false, badgeKoreanCertified: false,
         isTodayPick: false,
         displayPriority: 0,
@@ -132,6 +134,8 @@ export default function EditProductPage() {
                     isNew: p.isNew ?? false,
                     isHotSale: p.isHotSale ?? false,
                     hotSalePrice: p.hotSalePrice ?? '',
+                    hotSaleStartAt: p.hotSaleStartAt ? new Date(p.hotSaleStartAt).toISOString().slice(0, 16) : '',
+                    hotSaleEndAt: p.hotSaleEndAt ? new Date(p.hotSaleEndAt).toISOString().slice(0, 16) : '',
                     badgeAuthentic: p.badgeAuthentic ?? false,
                     badgeKoreanCertified: p.badgeKoreanCertified ?? false,
                     isTodayPick: p.isTodayPick ?? false,
@@ -309,6 +313,8 @@ export default function EditProductPage() {
                     isNew: form.isNew,
                     isHotSale: form.isHotSale,
                     hotSalePrice: form.hotSalePrice || null,
+                    hotSaleStartAt: (form as any).hotSaleStartAt || null,
+                    hotSaleEndAt: (form as any).hotSaleEndAt || null,
                     costPrice: form.costPrice || null,
                     categoryId: form.categoryId || null,
                     supplierId: form.supplierId || null,
@@ -583,6 +589,32 @@ export default function EditProductPage() {
                                     <input type="number" step="0.01" name="hotSalePrice" value={form.hotSalePrice} onChange={handleChange}
                                         className="w-full border border-gray-200 rounded-lg py-2 pl-6 pr-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" />
                                 </div>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-gray-600 mb-1.5">Schedule (Optional)</label>
+                                <div className="flex gap-2">
+                                    <div className="flex-1">
+                                        <label className="block text-xs text-gray-500 mb-1">Start</label>
+                                        <input
+                                            type="datetime-local"
+                                            name="hotSaleStartAt"
+                                            value={(form as any).hotSaleStartAt}
+                                            onChange={handleChange}
+                                            className={`${vInp} w-full`}
+                                        />
+                                    </div>
+                                    <div className="flex-1">
+                                        <label className="block text-xs text-gray-500 mb-1">End</label>
+                                        <input
+                                            type="datetime-local"
+                                            name="hotSaleEndAt"
+                                            value={(form as any).hotSaleEndAt}
+                                            onChange={handleChange}
+                                            className={`${vInp} w-full`}
+                                        />
+                                    </div>
+                                </div>
+                                <p className="text-xs text-gray-400 mt-1">Leave empty for immediate activation. Set dates to auto-schedule.</p>
                             </div>
                         )}
                     {/* Trust Badges */}

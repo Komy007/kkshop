@@ -9,7 +9,7 @@ import {
     Settings, Store, ChevronDown, LogOut,
     Menu, X, Sparkles, ClipboardList, Globe, BarChart2,
     KeyRound, Shield, MessageSquare, RefreshCcw, Banknote,
-    Bell, Search,
+    Bell, Search, LayoutGrid,
 } from 'lucide-react';
 import { useAppStore, rehydrateLanguageStore } from '@/store/useAppStore';
 
@@ -67,6 +67,13 @@ const ADMIN_NAV: readonly NavItem[] = [
             { labelKo: '리뷰 관리',  labelEn: 'Reviews',         href: '/admin/reviews',               roles: ['SUPERADMIN', 'ADMIN'] },
             { labelKo: '카테고리',   labelEn: 'Categories',      href: '/admin/categories',            roles: ['SUPERADMIN', 'ADMIN'] },
         ],
+    },
+    {
+        key: 'homepage',
+        labelKo: '홈페이지 섹션', labelEn: 'Homepage Sections',
+        icon: LayoutGrid,
+        href: '/admin/homepage-sections',
+        roles: ['SUPERADMIN', 'ADMIN'],
     },
     {
         key: 'orders',
