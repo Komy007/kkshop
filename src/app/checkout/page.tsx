@@ -31,6 +31,11 @@ const checkoutTranslations: Record<string, any> = {
         pointsHint: '1,000 P = $1 USD discount',
         useAll: 'Use All',
         payment: 'Payment Method',
+        cod: 'Cash on Delivery',
+        codDesc: 'Pay when you receive your order',
+        khqr: 'Bank QR Code (KHQR)',
+        khqrDesc: 'ABA · ACLEDA · Wing · TrueMoney · Pi Pay',
+        khqrSoon: 'KHQR payment coming soon. Please use COD for now.',
         qrTitle: 'Bank QR Code (KHQR)',
         qrTestingEn: '⏳ Now Testing — Please wait when Opening Site',
         qrTestingKo: '현재 테스트 중입니다.',
@@ -72,6 +77,11 @@ const checkoutTranslations: Record<string, any> = {
         pointsHint: '1,000 P = $1 할인',
         useAll: '전액사용',
         payment: '결제 수단',
+        cod: '착불 결제',
+        codDesc: '상품 수령 시 결제',
+        khqr: '은행 QR 코드 (KHQR)',
+        khqrDesc: 'ABA · ACLEDA · Wing · TrueMoney · Pi Pay',
+        khqrSoon: 'KHQR 결제 준비 중. 현재는 착불만 가능합니다.',
         qrTitle: '은행 QR코드 결제 (KHQR)',
         qrTestingEn: '⏳ Now Testing — Please wait when Opening Site',
         qrTestingKo: '현재 테스트 중입니다.',
@@ -113,6 +123,11 @@ const checkoutTranslations: Record<string, any> = {
         pointsHint: '1,000 P = បញ្ចុះ $1',
         useAll: 'ប្រើទាំងអស់',
         payment: 'វិធីសាស្ត្រទូទាត់',
+        cod: 'បង់ប្រាក់ពេលទទួល',
+        codDesc: 'បង់ប្រាក់នៅពេលអ្នកទទួលការបញ្ជាទិញ',
+        khqr: 'កូដ QR ធនាគារ (KHQR)',
+        khqrDesc: 'ABA · ACLEDA · Wing · TrueMoney · Pi Pay',
+        khqrSoon: 'ការទូទាត់ KHQR នឹងមកដល់ឆាប់ៗ។',
         qrTitle: 'QR Code ធនាគារ (KHQR)',
         qrTestingEn: '⏳ Now Testing — Please wait when Opening Site',
         qrTestingKo: '현재 테스트 중입니다.',
@@ -154,6 +169,11 @@ const checkoutTranslations: Record<string, any> = {
         pointsHint: '1,000 P = $1折扣',
         useAll: '全部使用',
         payment: '付款方式',
+        cod: '货到付款',
+        codDesc: '收到商品时付款',
+        khqr: '银行二维码 (KHQR)',
+        khqrDesc: 'ABA · ACLEDA · Wing · TrueMoney · Pi Pay',
+        khqrSoon: 'KHQR支付即将上线，请暂时使用货到付款。',
         qrTitle: '银行二维码 (KHQR)',
         qrTestingEn: '⏳ Now Testing — Please wait when Opening Site',
         qrTestingKo: '현재 테스트 중입니다.',
@@ -218,7 +238,8 @@ export default function CheckoutPage() {
         detailAddress: '',
         notes: '',
         couponCode: '',
-        pointsUsed: '0'
+        pointsUsed: '0',
+        paymentMethod: 'COD'
     });
 
     const [couponStatus, setCouponStatus] = useState<{ id?: string, discount?: number, msg?: string, type?: string, ok?: boolean }>({});
@@ -363,6 +384,7 @@ export default function CheckoutPage() {
                 body: JSON.stringify({
                     ...form,
                     shippingFee,
+                    paymentMethod: form.paymentMethod,
                     items: cartItems.map(i => ({
                         productId: i.productId,
                         variantId: i.variantId || null,
@@ -590,36 +612,49 @@ export default function CheckoutPage() {
                                 {t.payment}
                             </h2>
 
-                            {/* Bank QR Card - Testing State */}
-                            <div className="border-2 border-dashed border-amber-300 rounded-2xl p-5 bg-amber-50">
-                                <div className="flex items-start gap-3 mb-4">
-                                    {/* QR Placeholder */}
-                                    <div className="w-20 h-20 flex-shrink-0 rounded-xl bg-white border border-amber-200 flex items-center justify-center shadow-sm">
-                                        <QrCode className="w-10 h-10 text-amber-400" />
+                            <div className="space-y-3">
+                                {/* COD Option */}
+                                <label className={`flex items-center gap-3 p-4 border-2 rounded-xl cursor-pointer transition-all ${form.paymentMethod === 'COD' ? 'border-brand-primary bg-brand-primary/5' : 'border-gray-200'}`}>
+                                    <input
+                                        type="radio"
+                                        name="paymentMethod"
+                                        value="COD"
+                                        checked={form.paymentMethod === 'COD'}
+                                        onChange={e => setForm({ ...form, paymentMethod: e.target.value })}
+                                        className="accent-brand-primary"
+                                    />
+                                    <span className="text-lg">💵</span>
+                                    <div>
+                                        <p className="text-sm font-bold text-gray-900">{t.cod}</p>
+                                        <p className="text-xs text-gray-500">{t.codDesc}</p>
                                     </div>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <span className="font-bold text-sm text-gray-900">{t.qrTitle}</span>
-                                            <span className="text-[10px] bg-amber-100 text-amber-700 font-bold px-2 py-0.5 rounded-full border border-amber-200">KHQR</span>
-                                        </div>
-                                        {/* Supported Banks */}
-                                        <div className="flex flex-wrap gap-1 mt-1">
-                                            {['ABA', 'ACLEDA', 'Wing', 'TrueMoney', 'Pi Pay'].map(b => (
-                                                <span key={b} className="text-[10px] bg-gray-100 text-gray-600 font-semibold px-1.5 py-0.5 rounded">{b}</span>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
+                                </label>
 
-                                {/* Testing Notice */}
-                                <div className="bg-white rounded-xl border border-amber-200 p-3 space-y-1">
-                                    <div className="flex items-center gap-2">
-                                        <Clock className="w-4 h-4 text-amber-500 flex-shrink-0" />
-                                        <p className="text-sm font-bold text-amber-700">{t.qrTestingEn}</p>
+                                {/* KHQR Option */}
+                                <label className={`flex items-center gap-3 p-4 border-2 rounded-xl cursor-pointer transition-all relative ${form.paymentMethod === 'KHQR' ? 'border-brand-primary bg-brand-primary/5' : 'border-gray-200'}`}>
+                                    <input
+                                        type="radio"
+                                        name="paymentMethod"
+                                        value="KHQR"
+                                        checked={form.paymentMethod === 'KHQR'}
+                                        onChange={e => setForm({ ...form, paymentMethod: e.target.value })}
+                                        className="accent-brand-primary"
+                                    />
+                                    <span className="text-lg">📱</span>
+                                    <div>
+                                        <p className="text-sm font-bold text-gray-900">{t.khqr}</p>
+                                        <p className="text-xs text-gray-500">{t.khqrDesc}</p>
                                     </div>
-                                    <p className="text-sm font-medium text-gray-600 pl-6">{t.qrTestingKo}</p>
-                                    <p className="text-xs text-gray-400 pl-6">{t.qrNote}</p>
-                                </div>
+                                    <span className="absolute top-2 right-2 text-[10px] font-bold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">Coming Soon</span>
+                                </label>
+
+                                {/* KHQR Coming Soon Notice */}
+                                {form.paymentMethod === 'KHQR' && (
+                                    <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-700 font-medium">
+                                        <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                                        <span>{t.khqrSoon}</span>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -692,8 +727,8 @@ export default function CheckoutPage() {
                                 </div>
                             )}
 
-                            <button type="submit" disabled={submitting}
-                                className="w-full py-4 bg-brand-primary text-white font-black text-base rounded-xl hover:bg-brand-primary/90 transition-all shadow-md shadow-brand-primary/20 disabled:opacity-50 flex justify-center items-center gap-2">
+                            <button type="submit" disabled={submitting || form.paymentMethod === 'KHQR'}
+                                className="w-full py-4 bg-brand-primary text-white font-black text-base rounded-xl hover:bg-brand-primary/90 transition-all shadow-md shadow-brand-primary/20 disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2">
                                 {submitting
                                     ? <><Loader2 className="w-5 h-5 animate-spin" />{t.processing}</>
                                     : t.placeOrder

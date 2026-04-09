@@ -40,6 +40,9 @@ export async function POST(request: Request) {
             couponCode, pointsUsed,
         } = parsed.data;
 
+        // Determine payment method — default to COD if not provided
+        const paymentMethod: string = (body.paymentMethod === 'KHQR') ? 'KHQR' : 'COD';
+
         const userId = session.user.id;
 
         // Verify User & Points + DB에서 포인트 설정 조회
@@ -239,8 +242,8 @@ export async function POST(request: Request) {
                     totalUsd,
                     couponId: appliedCouponId,
                     status: 'PENDING',
-                    paymentMethod: 'COD',    // Phase 7에서 ABA/KHQR로 교체
-                    paymentStatus: 'PENDING',
+                    paymentMethod,
+                    paymentStatus: paymentMethod === 'KHQR' ? 'AWAITING_PAYMENT' : 'PENDING',
                     items: {
                         create: verifiedItems.map((i: any) => ({
                             productId: BigInt(i.productId),
@@ -579,10 +582,16 @@ export async function POST(request: Request) {
         }
 
         // Convert BigInts before returning
-        return NextResponse.json({
+        const responsePayload: Record<string, unknown> = {
             success: true,
-            orderId: order.id
-        });
+            orderId: order.id,
+            paymentMethod,
+        };
+        if (paymentMethod === 'KHQR') {
+            responsePayload.paymentStatus = 'AWAITING_PAYMENT';
+            responsePayload.note = 'Please complete payment via KHQR. Your order will be confirmed once payment is received.';
+        }
+        return NextResponse.json(responsePayload);
 
     } catch (error) {
         console.error('Checkout error:', error);

@@ -72,5 +72,19 @@ export class MockPaymentGateway implements PaymentGateway {
     }
 }
 
+/**
+ * KHQR Payment Gateway — stub for future integration
+ * TODO: Connect to actual KHQR bank QR payment provider in Phase 7
+ */
+export class KHQRPaymentGateway implements PaymentGateway {
+    getName(): string {
+        return 'KHQR';
+    }
+
+    async processPayment(_request: PaymentRequest): Promise<PaymentResult> {
+        throw new Error('KHQR payment not implemented yet. Coming soon.');
+    }
+}
+
 // Singleton instance — swap this when integrating real payment
 export const paymentGateway: PaymentGateway = new MockPaymentGateway();
