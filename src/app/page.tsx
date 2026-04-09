@@ -5,10 +5,11 @@ import CategoryShortcuts from '@/components/CategoryShortcuts';
 import CurationSection from '@/components/CurationSection';
 import Footer from '@/components/Footer';
 import { useSafeAppStore } from '@/store/useAppStore';
-import { Search, Star, Flame, Sparkles, Crown, ChevronRight, ArrowRight, Zap, Clock } from 'lucide-react';
+import { Search, Star, Flame, Sparkles, Crown, ChevronRight, ArrowRight, Zap, Clock, Plus, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 import { type TranslatedProduct } from '@/lib/api';
 import TaegukgiIcon from '@/components/TaegukgiIcon';
+import { useCartStore } from '@/store/useCartStore';
 
 interface FlashSaleItem {
     id: string;
@@ -43,6 +44,7 @@ const homeT: Record<string, any> = {
         shopNow: '지금 쇼핑하기',
         outOfStock: '품절',
         soldCount: '판매',
+        recentlyViewed: '최근 본 상품',
     },
     en: {
         searchPlaceholder: 'Search products or brands',
@@ -63,6 +65,7 @@ const homeT: Record<string, any> = {
         shopNow: 'Shop Now',
         outOfStock: 'Sold Out',
         soldCount: 'sold',
+        recentlyViewed: 'Recently Viewed',
     },
     km: {
         searchPlaceholder: 'ស្វែងរកផលិតផល',
@@ -83,6 +86,7 @@ const homeT: Record<string, any> = {
         shopNow: 'ទិញឥឡូវ',
         outOfStock: 'អស់ស្តុក',
         soldCount: 'បានលក់',
+        recentlyViewed: 'បានមើលថ្មីៗ',
     },
     zh: {
         searchPlaceholder: '搜索商品或品牌',
@@ -103,6 +107,7 @@ const homeT: Record<string, any> = {
         shopNow: '立即购物',
         outOfStock: '已售罄',
         soldCount: '已售',
+        recentlyViewed: '最近浏览',
     }
 };
 
@@ -200,6 +205,21 @@ function ProductCard({ product, t }: { product: TranslatedProduct; t: any }) {
         ? Math.round((1 - effectivePrice / product.priceUsd) * 100)
         : 0;
     const rating = product.reviewAvg > 0 ? product.reviewAvg : null;
+    const [quickAdded, setQuickAdded] = useState(false);
+    const addItem = useCartStore((state) => state.addItem);
+
+    const handleQuickAdd = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        addItem({
+            productId: product.id,
+            name: product.name,
+            priceUsd: effectivePrice,
+            imageUrl: product.imageUrl || '',
+        });
+        setQuickAdded(true);
+        setTimeout(() => setQuickAdded(false), 800);
+    };
 
     return (
         <Link href={`/products/${product.id}`} className="group block flex-shrink-0">
@@ -229,6 +249,17 @@ function ProductCard({ product, t }: { product: TranslatedProduct; t: any }) {
                         {discountPct > 0 && (
                             <div className="absolute top-1.5 right-1.5 bg-rose-500 text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded shadow-sm">{discountPct}%</div>
                         )}
+                        {/* Quick Add Button */}
+                        <button
+                            onClick={handleQuickAdd}
+                            className={`absolute bottom-1.5 right-1.5 w-7 h-7 rounded-full flex items-center justify-center shadow-md transition-all duration-150 active:scale-95 hover:scale-110 ${quickAdded ? 'bg-green-500' : 'bg-brand-primary hover:bg-brand-primary/90'}`}
+                            aria-label="Add to cart"
+                        >
+                            {quickAdded
+                                ? <CheckCircle className="w-3.5 h-3.5 text-white" />
+                                : <Plus className="w-3.5 h-3.5 text-white" />
+                            }
+                        </button>
                     </>
                 )}
             </div>
@@ -315,6 +346,49 @@ function ProductGrid({ products, title, icon, viewAllHref, t }: {
                     <ChevronRight className="w-5 h-5" />
                     <span className="text-center leading-tight">{t.viewAll}</span>
                 </Link>
+            </div>
+        </section>
+    );
+}
+
+// ── Recently Viewed Section ───────────────────────────────────────────────────
+const RECENTLY_VIEWED_KEY = 'kkshop_recently_viewed';
+
+function RecentlyViewedSection({ t }: { t: any }) {
+    const [products, setProducts] = useState<TranslatedProduct[]>([]);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+        try {
+            const ids: string[] = JSON.parse(localStorage.getItem(RECENTLY_VIEWED_KEY) || '[]');
+            if (!ids.length) return;
+            const limitedIds = ids.slice(0, 6);
+            fetch(`/api/user/recently-viewed?ids=${limitedIds.join(',')}`)
+                .then(r => r.ok ? r.json() : [])
+                .then(data => { if (Array.isArray(data) && data.length > 0) setProducts(data as TranslatedProduct[]); })
+                .catch(() => {});
+        } catch {
+            // localStorage unavailable
+        }
+    }, []);
+
+    if (!mounted || products.length === 0) return null;
+
+    return (
+        <section className="mb-6">
+            <SectionHeader
+                icon={<span className="badge-3d bg-gradient-to-r from-slate-500 to-blue-500 text-white"><Clock className="w-3.5 h-3.5" /></span>}
+                title={t.recentlyViewed || 'Recently Viewed'}
+                viewAllHref="/recently-viewed"
+                t={t}
+            />
+            <div className="flex gap-3 overflow-x-auto px-3 pb-2 scrollbar-hide snap-x snap-mandatory md:grid md:grid-cols-4 lg:grid-cols-6 md:overflow-visible md:pb-0 md:flex-none md:snap-none">
+                {products.map(p => (
+                    <div key={p.id} className="flex-shrink-0 w-[116px] sm:w-[130px] snap-start md:w-auto md:flex-shrink">
+                        <ProductCard product={p} t={t} />
+                    </div>
+                ))}
             </div>
         </section>
     );
@@ -442,6 +516,9 @@ export default function Home() {
 
                 {/* ── Hero Banner ── */}
                 <HeroBanner t={t} />
+
+                {/* ── Recently Viewed ── */}
+                <RecentlyViewedSection t={t} />
 
                 {/* ── Flash Sale ── */}
                 <FlashSaleSection t={t} />

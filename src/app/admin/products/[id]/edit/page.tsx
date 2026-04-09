@@ -582,6 +582,7 @@ export default function EditProductPage() {
                             </label>
                         </div>
                         {form.isHotSale && (
+                            <>
                             <div>
                                 <label className="block text-xs font-medium text-gray-600 mb-1">{t.admin.edit.fields.hotPrice}</label>
                                 <div className="relative">
@@ -616,6 +617,7 @@ export default function EditProductPage() {
                                 </div>
                                 <p className="text-xs text-gray-400 mt-1">Leave empty for immediate activation. Set dates to auto-schedule.</p>
                             </div>
+                            </>
                         )}
                     {/* Trust Badges */}
                     <div className="md:col-span-2">
