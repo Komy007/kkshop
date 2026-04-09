@@ -1175,8 +1175,8 @@ export default function ProductDetailClient() {
                             );
                         })()}
 
-                        {/* CTA Buttons — Coupang Style */}
-                        <div className="flex gap-3 mt-4">
+                        {/* CTA Buttons — desktop only (mobile uses fixed bottom bar) */}
+                        <div className="hidden md:flex gap-3 mt-4">
                             <button
                                 onClick={handleAddToCart}
                                 disabled={product.stockQty <= 0}
