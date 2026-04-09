@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { CheckCircle, XCircle, Clock, Building2, ChevronDown, ChevronUp, Loader2, Plus, X, AlertCircle, KeyRound, Eye, EyeOff } from 'lucide-react';
+import Link from 'next/link';
+import { CheckCircle, XCircle, Clock, Building2, ChevronDown, ChevronUp, Loader2, Plus, X, AlertCircle, KeyRound, Eye, EyeOff, Package } from 'lucide-react';
 
 interface Supplier {
     id: string;
@@ -402,6 +403,21 @@ export default function AdminSuppliersPage() {
                                                 <KeyRound className="w-4 h-4" />
                                                 Reset Password <span className="opacity-70 font-normal">· 비밀번호 초기화</span>
                                             </button>
+                                            {/* 📋 View Detail Page */}
+                                            <Link href={`/admin/suppliers/${s.id}`}
+                                                className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-xl text-sm font-bold hover:bg-teal-700 transition-colors">
+                                                <Building2 className="w-4 h-4" />
+                                                Detail <span className="opacity-70 font-normal">· 상세 보기</span>
+                                            </Link>
+                                            {/* 📦 View Products Button */}
+                                            <Link href={`/admin/suppliers/${s.id}/products`}
+                                                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-colors">
+                                                <Package className="w-4 h-4" />
+                                                Products <span className="opacity-70 font-normal">· 상품 보기</span>
+                                                {s._count.products > 0 && (
+                                                    <span className="bg-white/20 px-1.5 py-0.5 rounded-full text-[11px]">{s._count.products}</span>
+                                                )}
+                                            </Link>
                                             <button onClick={() => setExpanded(null)}
                                                 className="ml-auto px-4 py-2 border border-gray-200 text-gray-500 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors">
                                                 Close <span className="opacity-60">· 닫기</span>
