@@ -286,18 +286,105 @@ export async function getProductsForSection(
             return [...mainSlice, ...boosted].map(p => serializeProduct(p, langCode));
         }
 
-        // ── HOT DEALS / TODAY'S PICKS ─────────────────────────────────────────
-        // Flag-based sections — daily rotation only
-        const where: any = { ...baseWhere };
-        let orderBy: any[] = [{ createdAt: 'desc' }];
-
+        // ── TODAY'S PICKS ─────────────────────────────────────────────────────
+        // Admin-curated first; auto-fill remaining slots by order/review activity.
         if (filter === 'todaypick') {
-            where.isTodayPick = true;
-            orderBy = [{ displayPriority: 'desc' }, { createdAt: 'desc' }];
-        } else if (filter === 'hot') {
-            where.isHotSale = true;
-            orderBy = [{ displayPriority: 'desc' }, { reviewCount: 'desc' }, { createdAt: 'desc' }];
+            // 1. Admin-curated picks first (always priority)
+            const curated = await prisma.product.findMany({
+                where: { ...baseWhere, isTodayPick: true },
+                include,
+                orderBy: [{ displayPriority: 'desc' }, { createdAt: 'desc' }],
+                take: limit,
+            });
+
+            if (curated.length >= limit) {
+                return curated.map(p => serializeProduct(p, langCode));
+            }
+
+            // 2. Auto-fill remaining slots
+            const curatedIds = curated.map(p => p.id);
+            const remaining = limit - curated.length;
+            const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+            // Priority A: Most ordered in last 7 days
+            let topOrderedIds: bigint[] = [];
+            try {
+                const orderCounts = await prisma.orderItem.groupBy({
+                    by: ['productId'],
+                    where: {
+                        product: { status: 'ACTIVE', approvalStatus: 'APPROVED' },
+                        order: { createdAt: { gte: sevenDaysAgo } },
+                    },
+                    _count: { id: true },
+                    orderBy: { _count: { id: 'desc' } },
+                    take: remaining * 3,
+                });
+                topOrderedIds = orderCounts
+                    .map(oc => oc.productId)
+                    .filter(id => !curatedIds.includes(id));
+            } catch { /* groupBy may fail if no orders */ }
+
+            // Priority B: Most reviewed in last 7 days
+            let topReviewedIds: bigint[] = [];
+            try {
+                const reviewCounts = await prisma.productReview.groupBy({
+                    by: ['productId'],
+                    where: {
+                        createdAt: { gte: sevenDaysAgo },
+                        status: 'APPROVED',
+                    },
+                    _count: { id: true },
+                    orderBy: { _count: { id: 'desc' } },
+                    take: remaining * 2,
+                });
+                topReviewedIds = reviewCounts
+                    .map(rc => rc.productId)
+                    .filter(id => !curatedIds.includes(id));
+            } catch { /* groupBy may fail if no reviews */ }
+
+            // Priority C: Recently approved (fallback)
+            const recentPool = await prisma.product.findMany({
+                where: { ...baseWhere, id: { notIn: curatedIds } },
+                include,
+                orderBy: [{ createdAt: 'desc' }],
+                take: remaining * 3,
+            });
+
+            // Merge with priority order, avoiding duplicates
+            const filledIds = new Set(curatedIds.map(id => id.toString()));
+            const filled: typeof curated = [];
+
+            // Helper to pick from recentPool by ID
+            const pickById = (targetId: bigint) => {
+                const idStr = targetId.toString();
+                if (filledIds.has(idStr)) return;
+                const prod = recentPool.find(p => p.id === targetId);
+                if (prod && filled.length < remaining) {
+                    filled.push(prod);
+                    filledIds.add(idStr);
+                }
+            };
+
+            // Apply priorities
+            topOrderedIds.forEach(pickById);
+            topReviewedIds.forEach(pickById);
+            // Fill rest from recent
+            for (const prod of recentPool) {
+                if (filled.length >= remaining) break;
+                const idStr = prod.id.toString();
+                if (!filledIds.has(idStr)) {
+                    filled.push(prod);
+                    filledIds.add(idStr);
+                }
+            }
+
+            return [...curated, ...filled].map(p => serializeProduct(p, langCode));
         }
+
+        // ── HOT DEALS ─────────────────────────────────────────────────────────
+        // Flag-based section — daily rotation from isHotSale pool
+        const where: any = { ...baseWhere, isHotSale: true };
+        const orderBy: any[] = [{ displayPriority: 'desc' }, { reviewCount: 'desc' }, { createdAt: 'desc' }];
 
         const poolSize = Math.min(limit * 3, 24);
         const pool = await prisma.product.findMany({ where, include, orderBy, take: poolSize });
