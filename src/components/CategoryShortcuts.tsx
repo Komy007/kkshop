@@ -3,7 +3,13 @@
 import React from 'react';
 import Link from 'next/link';
 import { useSafeAppStore } from '@/store/useAppStore';
+import {
+    Droplets, Palette, Bath, Sofa, HeartPulse,
+    UtensilsCrossed, Crown, Sparkles, Flame, LayoutGrid,
+    type LucideIcon,
+} from 'lucide-react';
 
+// ─── Translations ─────────────────────────────────────────────────────────────
 const shortcutTranslations: Record<string, Record<string, string>> = {
     ko: {
         skincare: '스킨케어',
@@ -55,97 +61,111 @@ const shortcutTranslations: Record<string, Record<string, string>> = {
     },
 };
 
+// ─── Shortcut Definition ──────────────────────────────────────────────────────
 interface Shortcut {
     key: string;
-    emoji: string;
+    icon: LucideIcon;
     href: string;
-    bg: string;          // circle background color
-    shadow: string;      // drop shadow color
-    badge?: string;      // optional top badge text
-    badgeBg?: string;    // badge background color
+    gradient: string;       // CSS gradient for the icon circle
+    iconColor: string;      // Tailwind text color for the icon
+    shadowColor: string;    // Tailwind shadow color
+    ring?: string;          // subtle ring glow
+    badge?: string;
+    badgeGradient?: string; // CSS gradient for badge
 }
 
 const shortcuts: Shortcut[] = [
     {
         key: 'skincare',
-        emoji: '🧴',
+        icon: Droplets,
         href: '/category/skincare',
-        bg: 'bg-[#FFD6E7]',
-        shadow: 'shadow-pink-300',
+        gradient: 'linear-gradient(135deg, #FFDEE9 0%, #F8B4D9 50%, #E879A8 100%)',
+        iconColor: 'text-pink-600',
+        shadowColor: 'shadow-pink-300/50',
     },
     {
         key: 'makeup',
-        emoji: '💄',
+        icon: Palette,
         href: '/category/makeup',
-        bg: 'bg-[#FFAFC5]',
-        shadow: 'shadow-rose-300',
+        gradient: 'linear-gradient(135deg, #FFC3D4 0%, #FF8FAB 50%, #E8527A 100%)',
+        iconColor: 'text-rose-700',
+        shadowColor: 'shadow-rose-300/50',
     },
     {
         key: 'hairBody',
-        emoji: '🧖',
+        icon: Bath,
         href: '/category/hair-body',
-        bg: 'bg-[#B8E8FF]',
-        shadow: 'shadow-sky-300',
+        gradient: 'linear-gradient(135deg, #C3F0FF 0%, #7DD3FC 50%, #38BDF8 100%)',
+        iconColor: 'text-sky-700',
+        shadowColor: 'shadow-sky-300/50',
     },
     {
         key: 'living',
-        emoji: '🏡',
+        icon: Sofa,
         href: '/category/living',
-        bg: 'bg-[#B8F0D8]',
-        shadow: 'shadow-emerald-300',
+        gradient: 'linear-gradient(135deg, #D1FAE5 0%, #6EE7B7 50%, #34D399 100%)',
+        iconColor: 'text-emerald-700',
+        shadowColor: 'shadow-emerald-300/50',
     },
     {
         key: 'health',
-        emoji: '💊',
+        icon: HeartPulse,
         href: '/category/health',
-        bg: 'bg-[#FFE4A0]',
-        shadow: 'shadow-amber-300',
+        gradient: 'linear-gradient(135deg, #FEF3C7 0%, #FCD34D 50%, #F59E0B 100%)',
+        iconColor: 'text-amber-700',
+        shadowColor: 'shadow-amber-300/50',
     },
     {
         key: 'fnb',
-        emoji: '🍜',
+        icon: UtensilsCrossed,
         href: '/category/fnb',
-        bg: 'bg-[#FFCBA4]',
-        shadow: 'shadow-orange-300',
+        gradient: 'linear-gradient(135deg, #FFEDD5 0%, #FDBA74 50%, #F97316 100%)',
+        iconColor: 'text-orange-700',
+        shadowColor: 'shadow-orange-300/50',
         badge: 'KOREA',
-        badgeBg: 'bg-[#E52528]',
+        badgeGradient: 'linear-gradient(135deg, #EF4444, #DC2626)',
     },
     {
         key: 'best',
-        emoji: '👑',
+        icon: Crown,
         href: '/category/best',
-        bg: 'bg-[#FFE566]',
-        shadow: 'shadow-yellow-300',
+        gradient: 'linear-gradient(135deg, #FEF9C3 0%, #FDE047 50%, #EAB308 100%)',
+        iconColor: 'text-yellow-700',
+        shadowColor: 'shadow-yellow-300/50',
         badge: 'BEST',
-        badgeBg: 'bg-[#FF6B00]',
+        badgeGradient: 'linear-gradient(135deg, #F97316, #EA580C)',
     },
     {
         key: 'newArrivals',
-        emoji: '✨',
+        icon: Sparkles,
         href: '/category/new',
-        bg: 'bg-[#DDD4FF]',
-        shadow: 'shadow-violet-300',
+        gradient: 'linear-gradient(135deg, #EDE9FE 0%, #C4B5FD 50%, #8B5CF6 100%)',
+        iconColor: 'text-violet-700',
+        shadowColor: 'shadow-violet-300/50',
         badge: 'NEW',
-        badgeBg: 'bg-[#7C3AED]',
+        badgeGradient: 'linear-gradient(135deg, #8B5CF6, #7C3AED)',
     },
     {
         key: 'sale',
-        emoji: '🔥',
+        icon: Flame,
         href: '/category/sale',
-        bg: 'bg-[#FFBABA]',
-        shadow: 'shadow-red-300',
+        gradient: 'linear-gradient(135deg, #FEE2E2 0%, #FCA5A5 50%, #EF4444 100%)',
+        iconColor: 'text-red-600',
+        shadowColor: 'shadow-red-300/50',
         badge: 'SALE',
-        badgeBg: 'bg-[#E52528]',
+        badgeGradient: 'linear-gradient(135deg, #EF4444, #B91C1C)',
     },
     {
         key: 'all',
-        emoji: '📦',
+        icon: LayoutGrid,
         href: '/search',
-        bg: 'bg-[#D4E4FF]',
-        shadow: 'shadow-blue-300',
+        gradient: 'linear-gradient(135deg, #DBEAFE 0%, #93C5FD 50%, #3B82F6 100%)',
+        iconColor: 'text-blue-700',
+        shadowColor: 'shadow-blue-300/50',
     },
 ];
 
+// ─── Component ────────────────────────────────────────────────────────────────
 export default function CategoryShortcuts() {
     const store = useSafeAppStore();
     const { language } = store || { language: 'en' };
@@ -153,54 +173,97 @@ export default function CategoryShortcuts() {
 
     return (
         <section className="py-4 px-3 bg-white" aria-label="Category shortcuts">
-            <div className="grid grid-cols-5 gap-y-4 gap-x-1">
-                {shortcuts.map((item) => (
-                    <Link
-                        key={item.key}
-                        href={item.href}
-                        className="group flex flex-col items-center gap-2"
-                    >
-                        {/* Icon circle */}
-                        <div className="relative">
-                            <div
-                                className={`
-                                    w-[60px] h-[60px] sm:w-[68px] sm:h-[68px]
-                                    rounded-2xl
-                                    ${item.bg}
-                                    icon-3d
-                                    flex items-center justify-center
-                                `}
-                            >
-                                <span
-                                    className="text-[28px] sm:text-[32px] leading-none select-none drop-shadow-sm"
+            <div className="grid grid-cols-5 gap-y-5 gap-x-1">
+                {shortcuts.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                        <Link
+                            key={item.key}
+                            href={item.href}
+                            className="group flex flex-col items-center gap-2"
+                        >
+                            {/* Icon circle with gradient + glass effect */}
+                            <div className="relative">
+                                {/* Glow ring (visible on hover) */}
+                                <div
+                                    className={`
+                                        absolute -inset-1 rounded-[22px] opacity-0
+                                        group-hover:opacity-40 group-active:opacity-50
+                                        transition-opacity duration-300 blur-md
+                                    `}
+                                    style={{ background: item.gradient }}
+                                />
+
+                                {/* Main icon container */}
+                                <div
+                                    className={`
+                                        relative
+                                        w-[60px] h-[60px] sm:w-[68px] sm:h-[68px]
+                                        rounded-2xl
+                                        flex items-center justify-center
+                                        shadow-lg ${item.shadowColor}
+                                        group-hover:scale-110 group-active:scale-95
+                                        transition-all duration-300 ease-out
+                                        overflow-hidden
+                                    `}
+                                    style={{ background: item.gradient }}
                                 >
-                                    {item.emoji}
-                                </span>
+                                    {/* Glass highlight overlay */}
+                                    <div
+                                        className="absolute inset-0 rounded-2xl"
+                                        style={{
+                                            background: 'linear-gradient(145deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.1) 40%, transparent 60%)',
+                                        }}
+                                    />
+
+                                    {/* Subtle inner border for glass depth */}
+                                    <div
+                                        className="absolute inset-[0.5px] rounded-2xl pointer-events-none"
+                                        style={{
+                                            border: '1px solid rgba(255,255,255,0.4)',
+                                        }}
+                                    />
+
+                                    {/* Icon */}
+                                    <Icon
+                                        className={`
+                                            relative z-10 w-6 h-6 sm:w-7 sm:h-7
+                                            ${item.iconColor}
+                                            drop-shadow-sm
+                                            group-hover:scale-110
+                                            transition-transform duration-300
+                                        `}
+                                        strokeWidth={2}
+                                    />
+                                </div>
+
+                                {/* Badge */}
+                                {item.badge && (
+                                    <span
+                                        className={`
+                                            absolute -bottom-1.5 left-1/2 -translate-x-1/2
+                                            text-white
+                                            text-[8px] sm:text-[9px] font-black tracking-wider
+                                            px-2 py-[3px] rounded-full
+                                            leading-none whitespace-nowrap
+                                            shadow-md
+                                            group-hover:scale-110
+                                            transition-transform duration-300
+                                        `}
+                                        style={{ background: item.badgeGradient }}
+                                    >
+                                        {item.badge}
+                                    </span>
+                                )}
                             </div>
 
-                            {/* Badge */}
-                            {item.badge && (
-                                <span
-                                    className={`
-                                        absolute -bottom-1 left-1/2 -translate-x-1/2
-                                        ${item.badgeBg} text-white
-                                        text-[9px] font-black tracking-wider
-                                        px-1.5 py-0.5 rounded-full
-                                        leading-none whitespace-nowrap
-                                        shadow-sm
-                                    `}
-                                >
-                                    {item.badge}
-                                </span>
-                            )}
-                        </div>
-
-                        {/* Label */}
-                        <span className="text-[11px] sm:text-[12px] font-bold text-gray-800 group-hover:text-brand-primary transition-colors text-center leading-tight line-clamp-1 w-full px-0.5">
-                            {t?.[item.key] ?? item.key}
-                        </span>
-                    </Link>
-                ))}
+                            {/* Label */}
+                            <span className="text-[11px] sm:text-[12px] font-bold text-gray-700 group-hover:text-gray-900 transition-colors duration-200 text-center leading-tight line-clamp-1 w-full px-0.5">
+                                {t?.[item.key] ?? item.key}
+                            </span>
+                        </Link>
+                    );
+                })}
             </div>
         </section>
     );

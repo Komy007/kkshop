@@ -223,6 +223,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const [userEmail, setUserEmail] = useState('');
     const [userRole, setUserRole] = useState<string>('');
 
+    // Prevent root layout body scroll — admin uses its own scroll container
+    useEffect(() => {
+        const html = document.documentElement;
+        const body = document.body;
+        html.style.overflow = 'hidden';
+        body.style.overflow = 'hidden';
+        return () => {
+            html.style.overflow = '';
+            body.style.overflow = '';
+        };
+    }, []);
+
     useEffect(() => {
         rehydrateLanguageStore();
         fetch('/api/auth/session').then(r => r.json()).then(s => {
