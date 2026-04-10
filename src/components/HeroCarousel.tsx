@@ -421,17 +421,60 @@ function BestSellersSlide({ slide, st }: { slide: SlideData; st: any }) {
     );
 }
 
+// ─── Transition Effects ───────────────────────────────────────────────────────
+// 4 premium transitions that cycle: slideUp → slideLeft → zoomBlur → flip3D
+type TransitionType = 'slideUp' | 'slideLeft' | 'zoomBlur' | 'flip3D';
+const TRANSITIONS: TransitionType[] = ['slideUp', 'slideLeft', 'zoomBlur', 'flip3D'];
+
+const TRANSITION_DURATION = 600; // ms
+
+// CSS for outgoing slide (exit)
+function getExitStyle(effect: TransitionType): React.CSSProperties {
+    switch (effect) {
+        case 'slideUp':
+            return { transform: 'translateY(-100%)', opacity: 0 };
+        case 'slideLeft':
+            return { transform: 'translateX(-100%)', opacity: 0 };
+        case 'zoomBlur':
+            return { transform: 'scale(1.3)', opacity: 0, filter: 'blur(20px)' };
+        case 'flip3D':
+            return { transform: 'perspective(800px) rotateY(90deg)', opacity: 0 };
+    }
+}
+
+// CSS for incoming slide (enter from)
+function getEnterFromStyle(effect: TransitionType): React.CSSProperties {
+    switch (effect) {
+        case 'slideUp':
+            return { transform: 'translateY(100%)', opacity: 0 };
+        case 'slideLeft':
+            return { transform: 'translateX(100%)', opacity: 0 };
+        case 'zoomBlur':
+            return { transform: 'scale(0.7)', opacity: 0, filter: 'blur(20px)' };
+        case 'flip3D':
+            return { transform: 'perspective(800px) rotateY(-90deg)', opacity: 0 };
+    }
+}
+
+// CSS for settled state
+function getSettledStyle(): React.CSSProperties {
+    return { transform: 'translateY(0) translateX(0) scale(1) perspective(800px) rotateY(0deg)', opacity: 1, filter: 'blur(0px)' };
+}
+
 // ─── Main Carousel ────────────────────────────────────────────────────────────
 export default function HeroCarousel({ t, language }: HeroCarouselProps) {
     const [slides, setSlides] = useState<SlideData[]>([{ type: 'brand' }]);
     const [currentIndex, setCurrentIndex] = useState(0);
-    const [isTransitioning, setIsTransitioning] = useState(false);
+    const [nextIndex, setNextIndex] = useState<number | null>(null);
+    const [phase, setPhase] = useState<'idle' | 'exit' | 'enter'>('idle');
+    const [transitionIdx, setTransitionIdx] = useState(0);
+    const [kenBurnsKey, setKenBurnsKey] = useState(0);
     const [touchStartX, setTouchStartX] = useState(0);
     const [isTouching, setIsTouching] = useState(false);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
-    const containerRef = useRef<HTMLDivElement>(null);
 
     const st = slideT[language] || slideT.en;
+    const currentEffect = TRANSITIONS[transitionIdx % TRANSITIONS.length];
 
     // Fetch carousel data
     useEffect(() => {
@@ -440,31 +483,43 @@ export default function HeroCarousel({ t, language }: HeroCarouselProps) {
             .then(data => {
                 if (data.slides?.length > 0) {
                     setSlides(data.slides);
-                    // Random start index on each visit
                     setCurrentIndex(Math.floor(Math.random() * data.slides.length));
                 }
             })
             .catch(() => {});
     }, [language]);
 
-    // Auto-advance
+    // Transition engine: idle → exit → enter → idle
     const goTo = useCallback((idx: number) => {
-        setIsTransitioning(true);
+        if (phase !== 'idle' || idx === currentIndex) return;
+        setNextIndex(idx);
+        setPhase('exit');
+
+        // After exit animation, swap slide and start enter
         setTimeout(() => {
             setCurrentIndex(idx);
-            setIsTransitioning(false);
-        }, 300);
-    }, []);
+            setNextIndex(null);
+            setPhase('enter');
+            setKenBurnsKey(k => k + 1);
+
+            // After enter animation, settle
+            setTimeout(() => {
+                setPhase('idle');
+                setTransitionIdx(i => i + 1);
+            }, TRANSITION_DURATION);
+        }, TRANSITION_DURATION);
+    }, [phase, currentIndex]);
 
     const goNext = useCallback(() => {
         goTo((currentIndex + 1) % slides.length);
     }, [currentIndex, slides.length, goTo]);
 
+    // Auto-advance every 5s
     useEffect(() => {
-        if (isTouching || slides.length <= 1) return;
+        if (isTouching || slides.length <= 1 || phase !== 'idle') return;
         timerRef.current = setInterval(goNext, 5000);
         return () => { if (timerRef.current) clearInterval(timerRef.current); };
-    }, [goNext, isTouching, slides.length]);
+    }, [goNext, isTouching, slides.length, phase]);
 
     // Touch handlers for swipe
     const handleTouchStart = (e: React.TouchEvent) => {
@@ -480,7 +535,7 @@ export default function HeroCarousel({ t, language }: HeroCarouselProps) {
         }
     };
 
-    // Render current slide
+    // Render slide content by type
     const renderSlide = (slide: SlideData) => {
         switch (slide.type) {
             case 'brand':
@@ -498,20 +553,74 @@ export default function HeroCarousel({ t, language }: HeroCarouselProps) {
         }
     };
 
+    // Current slide style based on phase
+    const slideStyle = useMemo((): React.CSSProperties => {
+        const base = {
+            transition: `all ${TRANSITION_DURATION}ms cubic-bezier(0.4, 0, 0.2, 1)`,
+            willChange: 'transform, opacity, filter',
+        };
+        if (phase === 'exit') return { ...base, ...getExitStyle(currentEffect) };
+        if (phase === 'enter') return { ...base, ...getEnterFromStyle(currentEffect) };
+        return { ...base, ...getSettledStyle() };
+    }, [phase, currentEffect]);
+
+    // On 'enter' phase, we need to start from enterFrom then animate to settled.
+    // We use a two-step approach: set enterFrom immediately, then settled on next frame
+    const [enterAnimStyle, setEnterAnimStyle] = useState<React.CSSProperties>({});
+    useEffect(() => {
+        if (phase === 'enter') {
+            // Start from enterFrom position
+            setEnterAnimStyle({
+                ...getEnterFromStyle(currentEffect),
+                transition: 'none',
+            });
+            // Next frame: animate to settled
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    setEnterAnimStyle({
+                        ...getSettledStyle(),
+                        transition: `all ${TRANSITION_DURATION}ms cubic-bezier(0.4, 0, 0.2, 1)`,
+                    });
+                });
+            });
+        } else if (phase === 'idle') {
+            setEnterAnimStyle({
+                ...getSettledStyle(),
+                transition: `all ${TRANSITION_DURATION}ms cubic-bezier(0.4, 0, 0.2, 1)`,
+            });
+        }
+    }, [phase, currentEffect]);
+
+    // Final style: exit phase uses slideStyle, enter/idle uses enterAnimStyle
+    const finalStyle = phase === 'exit' ? slideStyle : enterAnimStyle;
+
     return (
         <div className="mx-3 mt-2 mb-4">
             <div
-                ref={containerRef}
                 className="relative rounded-2xl overflow-hidden shadow-lg"
-                style={{ minHeight: '210px', height: '210px' }}
+                style={{ minHeight: '210px', height: '210px', perspective: '800px' }}
                 onTouchStart={handleTouchStart}
                 onTouchEnd={handleTouchEnd}
                 onMouseEnter={() => setIsTouching(true)}
                 onMouseLeave={() => setIsTouching(false)}
             >
-                {/* Slide content */}
-                <div className={`absolute inset-0 transition-opacity duration-300 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
-                    {slides[currentIndex] && renderSlide(slides[currentIndex])}
+                {/* Slide with Ken Burns + transition effects */}
+                <div
+                    className="absolute inset-0"
+                    style={{ ...finalStyle, transformStyle: 'preserve-3d' }}
+                >
+                    {/* Ken Burns: subtle slow zoom while slide is visible */}
+                    <div
+                        key={kenBurnsKey}
+                        className="w-full h-full"
+                        style={{
+                            animation: phase === 'idle' || phase === 'enter'
+                                ? 'kenBurns 6s ease-out forwards'
+                                : 'none',
+                        }}
+                    >
+                        {slides[currentIndex] && renderSlide(slides[currentIndex])}
+                    </div>
                 </div>
 
                 {/* Dot indicators */}
@@ -531,7 +640,20 @@ export default function HeroCarousel({ t, language }: HeroCarouselProps) {
                         ))}
                     </div>
                 )}
+
+                {/* Transition type indicator (subtle) */}
+                <div className="absolute top-2 right-2 z-20">
+                    <div className="w-1.5 h-1.5 rounded-full bg-white/20" />
+                </div>
             </div>
+
+            {/* Ken Burns keyframes */}
+            <style jsx>{`
+                @keyframes kenBurns {
+                    0% { transform: scale(1) translate(0, 0); }
+                    100% { transform: scale(1.06) translate(-1%, -1%); }
+                }
+            `}</style>
         </div>
     );
 }
