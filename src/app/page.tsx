@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import CategoryShortcuts from '@/components/CategoryShortcuts';
 import CurationSection from '@/components/CurationSection';
+import HeroCarousel from '@/components/HeroCarousel';
 import Footer from '@/components/Footer';
 import { useSafeAppStore } from '@/store/useAppStore';
 import { Search, Star, Flame, Sparkles, Crown, ChevronRight, ArrowRight, Zap, Clock, Plus, CheckCircle } from 'lucide-react';
@@ -514,8 +515,8 @@ export default function Home() {
                 {/* ── Category Shortcuts ── */}
                 <CategoryShortcuts />
 
-                {/* ── Hero Banner ── */}
-                <HeroBanner t={t} />
+                {/* ── Hero Carousel (Brand + Category Pairs + Hot Deal + New + Best) ── */}
+                <HeroCarousel t={t} language={language} />
 
                 {/* ── Recently Viewed ── */}
                 <RecentlyViewedSection t={t} />

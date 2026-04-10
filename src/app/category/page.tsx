@@ -2,8 +2,8 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Search } from 'lucide-react';
-import { useAppStore, useSafeAppStore } from '@/store/useAppStore';
+import { ArrowLeft, Search, Droplets, Palette, Bath, Sofa, HeartPulse, UtensilsCrossed, Crown, Sparkles, Flame, Package, type LucideIcon } from 'lucide-react';
+import { useSafeAppStore } from '@/store/useAppStore';
 import Footer from '@/components/Footer';
 
 const categoryTranslations: Record<string, any> = {
@@ -33,22 +33,81 @@ const categoryTranslations: Record<string, any> = {
     }
 };
 
-const categories = [
-    { key: 'skincare',    emoji: '🧴', href: '/category/skincare',  bg: 'bg-pink-50 text-pink-500' },
-    { key: 'makeup',      emoji: '💄', href: '/category/makeup',    bg: 'bg-rose-50 text-rose-500' },
-    { key: 'hairBody',    emoji: '🧖', href: '/category/hair-body', bg: 'bg-cyan-50 text-cyan-500' },
-    { key: 'living',      emoji: '🏠', href: '/category/living',    bg: 'bg-green-50 text-green-500' },
-    { key: 'health',      emoji: '💊', href: '/category/health',    bg: 'bg-amber-50 text-amber-500' },
-    { key: 'fnb',         emoji: '🍜', href: '/category/fnb',       bg: 'bg-orange-50 text-orange-500' },
-    { key: 'best',        emoji: '👑', href: '/category/best',      bg: 'bg-yellow-50 text-yellow-500' },
-    { key: 'newArrivals', emoji: '✨', href: '/category/new',       bg: 'bg-violet-50 text-violet-500' },
-    { key: 'sale',        emoji: '🔥', href: '/category/sale',      bg: 'bg-red-50 text-red-500' },
+interface CategoryItem {
+    key: string;
+    icon: LucideIcon;
+    href: string;
+    gradient: string;
+    iconColor: string;
+    shadowColor: string;
+    badge?: string;
+    badgeGradient?: string;
+}
+
+const categories: CategoryItem[] = [
+    {
+        key: 'skincare', icon: Droplets,
+        href: '/category/skincare',
+        gradient: 'linear-gradient(135deg, #FFDEE9 0%, #F8B4D9 50%, #E879A8 100%)',
+        iconColor: 'text-pink-600', shadowColor: 'shadow-pink-300/50',
+    },
+    {
+        key: 'makeup', icon: Palette,
+        href: '/category/makeup',
+        gradient: 'linear-gradient(135deg, #FFC3D4 0%, #FF8FAB 50%, #E8527A 100%)',
+        iconColor: 'text-rose-700', shadowColor: 'shadow-rose-300/50',
+    },
+    {
+        key: 'hairBody', icon: Bath,
+        href: '/category/hair-body',
+        gradient: 'linear-gradient(135deg, #C3F0FF 0%, #7DD3FC 50%, #38BDF8 100%)',
+        iconColor: 'text-sky-700', shadowColor: 'shadow-sky-300/50',
+    },
+    {
+        key: 'living', icon: Sofa,
+        href: '/category/living',
+        gradient: 'linear-gradient(135deg, #D1FAE5 0%, #6EE7B7 50%, #34D399 100%)',
+        iconColor: 'text-emerald-700', shadowColor: 'shadow-emerald-300/50',
+    },
+    {
+        key: 'health', icon: HeartPulse,
+        href: '/category/health',
+        gradient: 'linear-gradient(135deg, #FEF3C7 0%, #FCD34D 50%, #F59E0B 100%)',
+        iconColor: 'text-amber-700', shadowColor: 'shadow-amber-300/50',
+    },
+    {
+        key: 'fnb', icon: UtensilsCrossed,
+        href: '/category/fnb',
+        gradient: 'linear-gradient(135deg, #FFEDD5 0%, #FDBA74 50%, #F97316 100%)',
+        iconColor: 'text-orange-700', shadowColor: 'shadow-orange-300/50',
+        badge: 'KOREA', badgeGradient: 'linear-gradient(135deg, #EF4444, #DC2626)',
+    },
+    {
+        key: 'best', icon: Crown,
+        href: '/category/best',
+        gradient: 'linear-gradient(135deg, #FEF9C3 0%, #FDE047 50%, #EAB308 100%)',
+        iconColor: 'text-yellow-700', shadowColor: 'shadow-yellow-300/50',
+        badge: 'BEST', badgeGradient: 'linear-gradient(135deg, #F97316, #EA580C)',
+    },
+    {
+        key: 'newArrivals', icon: Sparkles,
+        href: '/category/new',
+        gradient: 'linear-gradient(135deg, #EDE9FE 0%, #C4B5FD 50%, #8B5CF6 100%)',
+        iconColor: 'text-violet-700', shadowColor: 'shadow-violet-300/50',
+        badge: 'NEW', badgeGradient: 'linear-gradient(135deg, #8B5CF6, #7C3AED)',
+    },
+    {
+        key: 'sale', icon: Flame,
+        href: '/category/sale',
+        gradient: 'linear-gradient(135deg, #FEE2E2 0%, #FCA5A5 50%, #EF4444 100%)',
+        iconColor: 'text-red-600', shadowColor: 'shadow-red-300/50',
+        badge: 'SALE', badgeGradient: 'linear-gradient(135deg, #EF4444, #B91C1C)',
+    },
 ];
 
 export default function CategoryIndexPage() {
     const store = useSafeAppStore();
     const { language } = store || { language: 'en' };
-    const [mounted, setMounted] = React.useState(false);
     const t = categoryTranslations[language] || categoryTranslations.en;
 
     return (
@@ -66,28 +125,76 @@ export default function CategoryIndexPage() {
                 </Link>
             </div>
 
-            {/* Content Array */}
+            {/* Content */}
             <div className="px-4 py-6 max-w-lg mx-auto">
                 <div className="grid grid-cols-3 gap-x-4 gap-y-6">
-                    {categories.map((item) => (
-                        <Link
-                            key={item.key}
-                            href={item.href}
-                            className="group flex flex-col items-center gap-2"
-                        >
-                            <div className={`w-20 h-20 sm:w-24 sm:h-24 rounded-2xl ${item.bg} flex items-center justify-center text-4xl group-hover:scale-105 group-active:scale-95 transition-all shadow-sm border border-gray-100`}>
-                                {item.emoji}
-                            </div>
-                            <span className="text-[13px] sm:text-[14px] font-bold text-gray-800 group-hover:text-brand-primary text-center">
-                                {t[item.key]}
-                            </span>
-                        </Link>
-                    ))}
+                    {categories.map((item) => {
+                        const Icon = item.icon;
+                        return (
+                            <Link
+                                key={item.key}
+                                href={item.href}
+                                className="group flex flex-col items-center gap-2.5"
+                            >
+                                <div className="relative">
+                                    {/* Glow ring on hover */}
+                                    <div
+                                        className="absolute -inset-1.5 rounded-[22px] opacity-0 group-hover:opacity-40 group-active:opacity-50 transition-opacity duration-300 blur-md"
+                                        style={{ background: item.gradient }}
+                                    />
+
+                                    {/* Icon container */}
+                                    <div
+                                        className={`
+                                            relative w-20 h-20 sm:w-24 sm:h-24
+                                            rounded-2xl
+                                            flex items-center justify-center
+                                            shadow-lg ${item.shadowColor}
+                                            group-hover:scale-110 group-active:scale-95
+                                            transition-all duration-300 ease-out
+                                            overflow-hidden
+                                        `}
+                                        style={{ background: item.gradient }}
+                                    >
+                                        {/* Glass highlight */}
+                                        <div
+                                            className="absolute inset-0 rounded-2xl"
+                                            style={{ background: 'linear-gradient(145deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.1) 40%, transparent 60%)' }}
+                                        />
+                                        {/* Inner border */}
+                                        <div
+                                            className="absolute inset-[0.5px] rounded-2xl pointer-events-none"
+                                            style={{ border: '1px solid rgba(255,255,255,0.4)' }}
+                                        />
+                                        <Icon
+                                            className={`relative z-10 w-8 h-8 sm:w-10 sm:h-10 ${item.iconColor} drop-shadow-sm group-hover:scale-110 transition-transform duration-300`}
+                                            strokeWidth={2}
+                                        />
+                                    </div>
+
+                                    {/* Badge */}
+                                    {item.badge && (
+                                        <span
+                                            className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 text-white text-[9px] font-black tracking-wider px-2 py-[3px] rounded-full leading-none whitespace-nowrap shadow-md group-hover:scale-110 transition-transform duration-300"
+                                            style={{ background: item.badgeGradient }}
+                                        >
+                                            {item.badge}
+                                        </span>
+                                    )}
+                                </div>
+
+                                <span className="text-[13px] sm:text-[14px] font-bold text-gray-800 group-hover:text-gray-900 transition-colors text-center">
+                                    {t[item.key]}
+                                </span>
+                            </Link>
+                        );
+                    })}
                 </div>
 
                 <div className="mt-8 pt-6 border-t border-gray-200">
-                    <Link href="/category/all" className="w-full flex items-center justify-center p-4 bg-white border border-gray-300 rounded-xl font-bold text-gray-900 shadow-sm active:bg-gray-50 hover:bg-gray-50 transition-colors">
-                        📦 {t.all}
+                    <Link href="/category/all" className="w-full flex items-center justify-center gap-2 p-4 bg-white border border-gray-300 rounded-xl font-bold text-gray-900 shadow-sm active:bg-gray-50 hover:bg-gray-50 transition-colors">
+                        <Package className="w-5 h-5 text-blue-500" />
+                        {t.all}
                     </Link>
                 </div>
             </div>
