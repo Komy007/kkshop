@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import {
     ArrowRight, Flame, Sparkles, Crown, Star,
     Droplets, Palette, Bath, Sofa, HeartPulse,
@@ -131,24 +130,34 @@ const MINI_CATEGORIES = [
 function ProductCard({ product, size = 'md', fadeIn }: {
     product: CarouselProduct; size?: 'sm' | 'md'; fadeIn?: boolean;
 }) {
-    const sizeMap = { sm: 'w-[85px] h-[85px]', md: 'w-[125px] h-[125px] sm:w-[145px] sm:h-[145px]' };
+    const sizeMap = { sm: 'w-[88px] h-[88px]', md: 'w-[130px] h-[130px] sm:w-[148px] sm:h-[148px]' };
     const hasDiscount = product.isHotSale && product.hotSalePrice && product.hotSalePrice < product.priceUsd;
     const price = hasDiscount ? product.hotSalePrice! : product.priceUsd;
 
     return (
         <Link href={`/products/${product.id}`}
-            className={`group flex flex-col items-center gap-1 ${fadeIn ? 'animate-productFadeIn' : ''}`}>
-            <div className={`${sizeMap[size]} rounded-xl overflow-hidden bg-white/10 backdrop-blur-sm border border-white/20 shadow-lg group-hover:scale-105 transition-transform duration-200`}>
+            className={`group flex flex-col items-center gap-1 ${fadeIn ? 'carousel-product-enter' : ''}`}>
+            {/* Image box */}
+            <div className={`${sizeMap[size]} rounded-2xl overflow-hidden bg-white/15 backdrop-blur-sm border border-white/25 shadow-xl group-hover:scale-105 group-active:scale-95 transition-transform duration-200`}>
                 {product.imageUrl ? (
-                    <Image src={product.imageUrl} alt={product.name} width={200} height={200} className="w-full h-full object-cover" />
+                    <img
+                        src={product.imageUrl}
+                        alt={product.name}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                    />
                 ) : (
-                    <div className="w-full h-full flex items-center justify-center text-white/30 text-[10px]">No Image</div>
+                    /* Placeholder gradient when no image */
+                    <div className="w-full h-full bg-gradient-to-br from-white/20 to-white/5 flex items-center justify-center">
+                        <span className="text-white/40 text-2xl">🛍</span>
+                    </div>
                 )}
             </div>
-            <p className="text-[10px] text-white font-semibold text-center line-clamp-1 max-w-[125px]">{product.name}</p>
+            <p className="text-[10px] sm:text-[11px] text-white font-semibold text-center line-clamp-2 max-w-[130px] leading-tight">{product.name}</p>
             <div className="flex items-center gap-1">
                 {hasDiscount && <span className="text-[9px] text-white/50 line-through">${product.priceUsd.toFixed(2)}</span>}
-                <span className={`text-xs font-black ${hasDiscount ? 'text-yellow-300' : 'text-white'}`}>${price.toFixed(2)}</span>
+                <span className={`text-[11px] font-black ${hasDiscount ? 'text-yellow-300' : 'text-white'}`}>${price.toFixed(2)}</span>
             </div>
         </Link>
     );
@@ -245,15 +254,15 @@ function HotDealSlide({ slide, st }: { slide: ResolvedSlide; st: any }) {
             <div className="absolute inset-0 opacity-15"
                 style={{ backgroundImage: 'radial-gradient(circle at 30% 70%, #fff 0%, transparent 40%), radial-gradient(circle at 70% 30%, #fff 0%, transparent 40%)' }} />
             <div className="relative z-10 flex h-full items-center px-4 gap-3">
-                <Link href={`/products/${product.id}`} className="flex-shrink-0 group animate-productFadeIn">
+                <Link href={`/products/${product.id}`} className="flex-shrink-0 group carousel-product-enter">
                     <div className="w-[140px] h-[140px] sm:w-[165px] sm:h-[165px] rounded-2xl overflow-hidden bg-white shadow-2xl group-hover:scale-105 transition-transform duration-200 ring-2 ring-white/30">
                         {product.imageUrl
-                            ? <Image src={product.imageUrl} alt={product.name} width={200} height={200} className="w-full h-full object-cover" />
-                            : <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-400 text-xs">No Image</div>
+                            ? <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" loading="lazy" onError={(e) => { (e.target as HTMLImageElement).style.display='none'; }} />
+                            : <div className="w-full h-full bg-gradient-to-br from-white/20 to-white/5 flex items-center justify-center text-2xl">🛍</div>
                         }
                     </div>
                 </Link>
-                <div className="flex-1 min-w-0 animate-productFadeIn">
+                <div className="flex-1 min-w-0 carousel-product-enter">
                     <div className="flex items-center gap-1.5 mb-1.5">
                         <Flame className="w-4 h-4 text-yellow-200" />
                         <span className="text-xs font-black text-white uppercase tracking-wider">{st.hotDeal}</span>
@@ -319,13 +328,13 @@ function BestSellersSlide({ slide, st }: { slide: ResolvedSlide; st: any }) {
                         const price = hasDiscount ? p.hotSalePrice! : p.priceUsd;
                         return (
                             <Link key={p.id} href={`/products/${p.id}`}
-                                className="flex items-center gap-2.5 bg-white/10 backdrop-blur-sm rounded-xl p-2 hover:bg-white/15 transition-colors border border-white/5 animate-productFadeIn">
+                                className="flex items-center gap-2.5 bg-white/10 backdrop-blur-sm rounded-xl p-2 hover:bg-white/15 transition-colors border border-white/5 carousel-product-enter">
                                 <div className={`w-7 h-7 rounded-lg bg-gradient-to-br ${rankColors[idx] || rankColors[2]} flex items-center justify-center flex-shrink-0 shadow`}>
                                     <span className="text-xs font-black text-white">{idx + 1}</span>
                                 </div>
                                 <div className="w-10 h-10 rounded-lg overflow-hidden bg-white/10 flex-shrink-0">
                                     {p.imageUrl
-                                        ? <Image src={p.imageUrl} alt={p.name} width={40} height={40} className="w-full h-full object-cover" />
+                                        ? <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover" loading="lazy" onError={(e) => { (e.target as HTMLImageElement).style.display='none'; }} />
                                         : <div className="w-full h-full bg-white/5" />}
                                 </div>
                                 <div className="flex-1 min-w-0">
@@ -350,27 +359,34 @@ function BestSellersSlide({ slide, st }: { slide: ResolvedSlide; st: any }) {
 }
 
 // ─── Transition Engine ────────────────────────────────────────────────────────
-type TransitionType = 'slideUp' | 'slideLeft' | 'zoomBlur' | 'flip3D';
-const TRANSITIONS: TransitionType[] = ['slideUp', 'slideLeft', 'zoomBlur', 'flip3D'];
-const TRANSITION_MS = 600;
+// 4 premium effects — avoid flip3D (CSS cannot interpolate between typed ↔ 'none')
+type TransitionType = 'slideUp' | 'slideLeft' | 'zoomBlur' | 'crossFade';
+const TRANSITIONS: TransitionType[] = ['slideUp', 'slideLeft', 'zoomBlur', 'crossFade'];
+const TRANSITION_MS = 550;
+
+// Neutral "settled" uses explicit typed transforms so CSS can interpolate cleanly
+const SETTLED: React.CSSProperties = {
+    transform: 'translateY(0px) translateX(0px) scale(1)',
+    opacity: 1,
+    filter: 'blur(0px)',
+};
 
 function exitStyle(fx: TransitionType): React.CSSProperties {
     switch (fx) {
-        case 'slideUp':   return { transform: 'translateY(-105%)', opacity: 0 };
-        case 'slideLeft': return { transform: 'translateX(-105%)', opacity: 0 };
-        case 'zoomBlur':  return { transform: 'scale(1.3)', opacity: 0, filter: 'blur(18px)' };
-        case 'flip3D':    return { transform: 'perspective(900px) rotateY(90deg)', opacity: 0 };
+        case 'slideUp':   return { transform: 'translateY(-108%) translateX(0px) scale(1)',     opacity: 0, filter: 'blur(0px)' };
+        case 'slideLeft': return { transform: 'translateY(0px) translateX(-108%) scale(1)',     opacity: 0, filter: 'blur(0px)' };
+        case 'zoomBlur':  return { transform: 'translateY(0px) translateX(0px) scale(1.28)',   opacity: 0, filter: 'blur(16px)' };
+        case 'crossFade': return { transform: 'translateY(0px) translateX(0px) scale(1.05)',   opacity: 0, filter: 'blur(4px)' };
     }
 }
 function enterFromStyle(fx: TransitionType): React.CSSProperties {
     switch (fx) {
-        case 'slideUp':   return { transform: 'translateY(105%)', opacity: 0 };
-        case 'slideLeft': return { transform: 'translateX(105%)', opacity: 0 };
-        case 'zoomBlur':  return { transform: 'scale(0.7)', opacity: 0, filter: 'blur(18px)' };
-        case 'flip3D':    return { transform: 'perspective(900px) rotateY(-90deg)', opacity: 0 };
+        case 'slideUp':   return { transform: 'translateY(108%) translateX(0px) scale(1)',     opacity: 0, filter: 'blur(0px)' };
+        case 'slideLeft': return { transform: 'translateY(0px) translateX(108%) scale(1)',     opacity: 0, filter: 'blur(0px)' };
+        case 'zoomBlur':  return { transform: 'translateY(0px) translateX(0px) scale(0.72)',   opacity: 0, filter: 'blur(16px)' };
+        case 'crossFade': return { transform: 'translateY(0px) translateX(0px) scale(0.95)',   opacity: 0, filter: 'blur(4px)' };
     }
 }
-const SETTLED: React.CSSProperties = { transform: 'none', opacity: 1, filter: 'none' };
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function HeroCarousel({ t, language }: HeroCarouselProps) {
@@ -472,31 +488,35 @@ export default function HeroCarousel({ t, language }: HeroCarouselProps) {
     return (
         <div className="mx-3 mt-2 mb-4">
             <div
-                className="relative rounded-2xl overflow-hidden shadow-lg"
-                style={{ height: '210px', perspective: '900px' }}
+                className="relative rounded-2xl overflow-hidden shadow-xl"
+                style={{ height: '230px' }}
                 onTouchStart={onTouchStart}
                 onTouchEnd={onTouchEnd}
                 onMouseEnter={() => setIsTouching(true)}
                 onMouseLeave={() => setIsTouching(false)}
             >
-                {/* Slide with multi-transition + Ken Burns */}
-                <div className="absolute inset-0" style={{ ...slideStyle, transformStyle: 'preserve-3d' }}>
-                    {/* Ken Burns: slow zoom while idle */}
-                    <div key={kenKey} className="w-full h-full"
-                        style={{ animation: phase !== 'exit' ? 'kenBurns 6s ease-out forwards' : 'none' }}>
+                {/* Slide wrapper — multi-transition applied here */}
+                <div className="absolute inset-0" style={slideStyle}>
+                    {/* Ken Burns inner wrapper — uses globals.css class (NOT style jsx) */}
+                    <div
+                        key={kenKey}
+                        className={`w-full h-full ${phase !== 'exit' ? 'carousel-ken-burns' : ''}`}
+                    >
                         {renderResolved(resolved)}
                     </div>
                 </div>
 
-                {/* Dot indicators */}
+                {/* Dot indicators — larger tap target for mobile */}
                 {rawSlides.length > 1 && (
-                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-20">
+                    <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 flex items-center gap-2 z-20">
                         {rawSlides.map((_, idx) => (
-                            <button key={idx} onClick={() => goTo(idx)}
+                            <button
+                                key={idx}
+                                onClick={() => goTo(idx)}
                                 className={`rounded-full transition-all duration-300 ${
                                     idx === currentIdx
-                                        ? 'w-5 h-1.5 bg-white shadow-sm'
-                                        : 'w-1.5 h-1.5 bg-white/40 hover:bg-white/60'
+                                        ? 'w-6 h-2 bg-white shadow-md'
+                                        : 'w-2 h-2 bg-white/40 hover:bg-white/70'
                                 }`}
                                 aria-label={`Slide ${idx + 1}`}
                             />
@@ -504,20 +524,6 @@ export default function HeroCarousel({ t, language }: HeroCarouselProps) {
                     </div>
                 )}
             </div>
-
-            <style jsx>{`
-                @keyframes kenBurns {
-                    0%   { transform: scale(1) translate(0, 0); }
-                    100% { transform: scale(1.07) translate(-1%, -0.5%); }
-                }
-                @keyframes productFadeIn {
-                    from { opacity: 0; transform: translateY(8px); }
-                    to   { opacity: 1; transform: translateY(0); }
-                }
-                :global(.animate-productFadeIn) {
-                    animation: productFadeIn 0.5s ease-out 0.3s both;
-                }
-            `}</style>
         </div>
     );
 }

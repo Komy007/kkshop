@@ -595,6 +595,30 @@ html[data-lang="km"] .font-bold {
   font-weight: 700 !important;
 }
 
+/* ──────────────────────────────────────────────────────────────
+   Hero Carousel — global keyframes & utility classes
+   (styled-jsx is NOT supported in Next.js App Router;
+    all carousel animations must live here)
+   ────────────────────────────────────────────────────────────── */
+
+@keyframes kenBurns {
+  0%   { transform: scale(1) translate(0, 0); }
+  100% { transform: scale(1.07) translate(-1%, -0.5%); }
+}
+
+@keyframes productFadeIn {
+  from { opacity: 0; transform: translateY(10px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+
+.carousel-ken-burns {
+  animation: kenBurns 6s ease-out forwards;
+}
+
+.carousel-product-enter {
+  animation: productFadeIn 0.45s cubic-bezier(0.4, 0, 0.2, 1) 0.25s both;
+}
+
 html[data-lang="km"] .font-extrabold {
   font-weight: 900 !important;
 }
