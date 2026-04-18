@@ -130,7 +130,7 @@ const MINI_CATEGORIES = [
 function ProductCard({ product, size = 'md', fadeIn }: {
     product: CarouselProduct; size?: 'sm' | 'md'; fadeIn?: boolean;
 }) {
-    const sizeMap = { sm: 'w-[88px] h-[88px]', md: 'w-[130px] h-[130px] sm:w-[148px] sm:h-[148px]' };
+    const sizeMap = { sm: 'w-[108px] h-[108px]', md: 'w-[158px] h-[158px] sm:w-[178px] sm:h-[178px]' };
     const hasDiscount = product.isHotSale && product.hotSalePrice && product.hotSalePrice < product.priceUsd;
     const price = hasDiscount ? product.hotSalePrice! : product.priceUsd;
 
@@ -138,7 +138,7 @@ function ProductCard({ product, size = 'md', fadeIn }: {
         <Link href={`/products/${product.id}`}
             className={`group flex flex-col items-center gap-1 ${fadeIn ? 'carousel-product-enter' : ''}`}>
             {/* Image box */}
-            <div className={`${sizeMap[size]} rounded-2xl overflow-hidden bg-white/15 backdrop-blur-sm border border-white/25 shadow-xl group-hover:scale-105 group-active:scale-95 transition-transform duration-200`}>
+            <div className={`${sizeMap[size]} rounded-2xl overflow-hidden bg-white/10 backdrop-blur-sm border border-white/30 shadow-2xl group-hover:scale-105 group-active:scale-95 transition-transform duration-200`}>
                 {product.imageUrl ? (
                     <img
                         src={product.imageUrl}
@@ -167,28 +167,31 @@ function ProductCard({ product, size = 'md', fadeIn }: {
 
 function BrandSlide({ t }: { t: any }) {
     return (
-        <div className="relative w-full h-full flex items-center bg-gradient-to-br from-[#1a1a2e] via-[#16213e] to-[#0f3460]">
-            <div className="absolute inset-0 opacity-20"
-                style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, #e94560 0%, transparent 60%), radial-gradient(circle at 80% 20%, #6366f1 0%, transparent 50%)' }} />
-            <div className="absolute right-4 top-4 w-14 sm:w-18 opacity-80 select-none drop-shadow-lg">
+        <div className="relative w-full h-full flex items-center bg-gradient-to-br from-[#1a1a2e] via-[#16213e] to-[#0f3460] overflow-hidden">
+            <div className="absolute inset-0 opacity-25"
+                style={{ backgroundImage: 'radial-gradient(circle at 18% 55%, #e94560 0%, transparent 55%), radial-gradient(circle at 80% 15%, #6366f1 0%, transparent 50%), radial-gradient(circle at 60% 80%, #0891b2 0%, transparent 40%)' }} />
+            {/* Korean flag — larger, more prominent */}
+            <div className="absolute right-3 top-3 w-20 sm:w-24 opacity-85 select-none drop-shadow-xl">
                 <TaegukgiIcon />
             </div>
-            <div className="relative z-10 px-5 py-4 flex flex-col justify-between h-full w-full">
-                <div className="max-w-[70%]">
-                    <span className="inline-flex items-center gap-1.5 text-[9px] sm:text-[10px] font-extrabold text-white/70 bg-white/10 border border-white/20 px-2 py-0.5 rounded-full mb-1.5 uppercase tracking-wider">
-                        <TaegukgiIcon className="w-3.5 h-[10px] flex-shrink-0" />
+            <div className="relative z-10 px-5 flex flex-col justify-between h-full w-full py-4">
+                {/* Top: branding */}
+                <div className="max-w-[72%]">
+                    <span className="inline-flex items-center gap-1.5 text-[9px] sm:text-[11px] font-extrabold text-white/75 bg-white/10 border border-white/20 px-2.5 py-1 rounded-full mb-2 uppercase tracking-widest">
+                        <TaegukgiIcon className="w-4 h-[10px] flex-shrink-0" />
                         {t.heroBadge}
                     </span>
-                    <h2 className="text-[15px] sm:text-xl font-black text-white leading-tight mb-1 whitespace-pre-line">{t.heroTitle}</h2>
-                    <p className="text-[10px] sm:text-xs text-white/55 mb-2 line-clamp-2">{t.heroSub}</p>
-                    <Link href="/category" className="inline-flex items-center gap-1.5 bg-white text-gray-900 text-[10px] sm:text-xs font-extrabold px-3 py-1.5 rounded-full hover:bg-gray-100 transition-colors shadow-sm">
-                        {t.shopNow} <ArrowRight className="w-3 h-3" />
+                    <h2 className="text-[17px] sm:text-2xl font-black text-white leading-tight mb-1.5 whitespace-pre-line drop-shadow">{t.heroTitle}</h2>
+                    <p className="text-[11px] sm:text-[13px] text-white/60 mb-3 line-clamp-2 leading-relaxed">{t.heroSub}</p>
+                    <Link href="/category" className="inline-flex items-center gap-1.5 bg-white text-gray-900 text-[11px] sm:text-xs font-extrabold px-4 py-2 rounded-full hover:bg-gray-100 transition-colors shadow-md">
+                        {t.shopNow} <ArrowRight className="w-3.5 h-3.5" />
                     </Link>
                 </div>
-                <div className="flex items-center justify-center gap-2 mt-2 pt-2 border-t border-white/10">
+                {/* Bottom: category shortcut icons */}
+                <div className="flex items-center justify-around pt-2.5 border-t border-white/10">
                     {MINI_CATEGORIES.map(({ slug, icon: Icon, color }) => (
-                        <Link key={slug} href={`/category/${slug}`} className="hover:scale-125 transition-transform duration-200">
-                            <Icon className={`w-4 h-4 ${color} drop-shadow-sm`} strokeWidth={2} />
+                        <Link key={slug} href={`/category/${slug}`} className="hover:scale-125 transition-transform duration-200 p-1">
+                            <Icon className={`w-5 h-5 ${color} drop-shadow-sm`} strokeWidth={1.8} />
                         </Link>
                     ))}
                 </div>
@@ -209,30 +212,41 @@ function CategoryPairSlide({ slide, language, st }: { slide: ResolvedSlide; lang
         <div className={`relative w-full h-full bg-gradient-to-br ${meta1.gradient} overflow-hidden`}>
             <div className={`absolute right-0 top-0 w-1/2 h-full bg-gradient-to-br ${meta2.gradient} opacity-90`}
                 style={{ clipPath: 'polygon(15% 0, 100% 0, 100% 100%, 0% 100%)' }} />
-            <div className="absolute inset-0 bg-black/20" />
-            <div className="relative z-10 flex h-full px-3 py-3">
-                <div className="flex-1 flex flex-col items-center justify-center">
-                    <Link href={`/category/${slug1}`} className="flex items-center gap-1.5 mb-2 hover:scale-105 transition-transform">
-                        <Icon1 className="w-4 h-4 text-white drop-shadow" strokeWidth={2.5} />
-                        <span className="text-xs font-black text-white drop-shadow">{getCategoryLabel(slug1, language)}</span>
-                        <ArrowRight className="w-3 h-3 text-white/70" />
+            <div className="absolute inset-0 bg-black/25" />
+            <div className="relative z-10 flex h-full px-2 pt-2 pb-3">
+                {/* Left category */}
+                <div className="flex-1 flex flex-col items-center justify-between">
+                    <Link href={`/category/${slug1}`} className="flex items-center gap-1 self-start ml-1 hover:scale-105 transition-transform">
+                        <div className="bg-white/20 rounded-full p-0.5">
+                            <Icon1 className="w-3.5 h-3.5 text-white drop-shadow" strokeWidth={2.5} />
+                        </div>
+                        <span className="text-[11px] font-black text-white drop-shadow">{getCategoryLabel(slug1, language)}</span>
+                        <ArrowRight className="w-2.5 h-2.5 text-white/60" />
                     </Link>
-                    {products[0]
-                        ? <ProductCard product={products[0]} size="md" fadeIn />
-                        : <Link href={`/category/${slug1}`} className="text-[10px] text-white/70 bg-white/10 px-3 py-1 rounded-full">{st.viewCategory}</Link>
-                    }
+                    <div className="flex-1 flex items-center justify-center mt-1">
+                        {products[0]
+                            ? <ProductCard product={products[0]} size="md" fadeIn />
+                            : <Link href={`/category/${slug1}`} className="text-[10px] text-white/70 bg-white/10 px-3 py-1 rounded-full">{st.viewCategory}</Link>
+                        }
+                    </div>
                 </div>
-                <div className="w-px bg-white/20 mx-1 self-stretch" />
-                <div className="flex-1 flex flex-col items-center justify-center">
-                    <Link href={`/category/${slug2}`} className="flex items-center gap-1.5 mb-2 hover:scale-105 transition-transform">
-                        <Icon2 className="w-4 h-4 text-white drop-shadow" strokeWidth={2.5} />
-                        <span className="text-xs font-black text-white drop-shadow">{getCategoryLabel(slug2, language)}</span>
-                        <ArrowRight className="w-3 h-3 text-white/70" />
+                {/* Divider */}
+                <div className="w-px bg-white/25 mx-1.5 self-stretch" />
+                {/* Right category */}
+                <div className="flex-1 flex flex-col items-center justify-between">
+                    <Link href={`/category/${slug2}`} className="flex items-center gap-1 self-start ml-1 hover:scale-105 transition-transform">
+                        <div className="bg-white/20 rounded-full p-0.5">
+                            <Icon2 className="w-3.5 h-3.5 text-white drop-shadow" strokeWidth={2.5} />
+                        </div>
+                        <span className="text-[11px] font-black text-white drop-shadow">{getCategoryLabel(slug2, language)}</span>
+                        <ArrowRight className="w-2.5 h-2.5 text-white/60" />
                     </Link>
-                    {products[1]
-                        ? <ProductCard product={products[1]} size="md" fadeIn />
-                        : <Link href={`/category/${slug2}`} className="text-[10px] text-white/70 bg-white/10 px-3 py-1 rounded-full">{st.viewCategory}</Link>
-                    }
+                    <div className="flex-1 flex items-center justify-center mt-1">
+                        {products[1]
+                            ? <ProductCard product={products[1]} size="md" fadeIn />
+                            : <Link href={`/category/${slug2}`} className="text-[10px] text-white/70 bg-white/10 px-3 py-1 rounded-full">{st.viewCategory}</Link>
+                        }
+                    </div>
                 </div>
             </div>
         </div>
@@ -251,36 +265,38 @@ function HotDealSlide({ slide, st }: { slide: ResolvedSlide; st: any }) {
 
     return (
         <div className="relative w-full h-full bg-gradient-to-br from-red-600 via-orange-500 to-amber-500 overflow-hidden">
-            <div className="absolute inset-0 opacity-15"
-                style={{ backgroundImage: 'radial-gradient(circle at 30% 70%, #fff 0%, transparent 40%), radial-gradient(circle at 70% 30%, #fff 0%, transparent 40%)' }} />
-            <div className="relative z-10 flex h-full items-center px-4 gap-3">
+            <div className="absolute inset-0 opacity-20"
+                style={{ backgroundImage: 'radial-gradient(circle at 25% 75%, #fff 0%, transparent 45%), radial-gradient(circle at 75% 25%, #fff 0%, transparent 45%)' }} />
+            <div className="relative z-10 flex h-full items-center px-3 gap-3">
+                {/* Product image — dominant left side */}
                 <Link href={`/products/${product.id}`} className="flex-shrink-0 group carousel-product-enter">
-                    <div className="w-[140px] h-[140px] sm:w-[165px] sm:h-[165px] rounded-2xl overflow-hidden bg-white shadow-2xl group-hover:scale-105 transition-transform duration-200 ring-2 ring-white/30">
+                    <div className="w-[175px] h-[175px] sm:w-[210px] sm:h-[210px] rounded-2xl overflow-hidden bg-white shadow-2xl group-hover:scale-105 transition-transform duration-200 ring-2 ring-white/40">
                         {product.imageUrl
                             ? <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" loading="lazy" onError={(e) => { (e.target as HTMLImageElement).style.display='none'; }} />
-                            : <div className="w-full h-full bg-gradient-to-br from-white/20 to-white/5 flex items-center justify-center text-2xl">🛍</div>
+                            : <div className="w-full h-full bg-gradient-to-br from-white/20 to-white/5 flex items-center justify-center text-3xl">🛍</div>
                         }
                     </div>
                 </Link>
-                <div className="flex-1 min-w-0 carousel-product-enter">
-                    <div className="flex items-center gap-1.5 mb-1.5">
-                        <Flame className="w-4 h-4 text-yellow-200" />
-                        <span className="text-xs font-black text-white uppercase tracking-wider">{st.hotDeal}</span>
+                {/* Text info — right side */}
+                <div className="flex-1 min-w-0 carousel-product-enter flex flex-col justify-center gap-1.5">
+                    <div className="flex items-center gap-1">
+                        <Flame className="w-3.5 h-3.5 text-yellow-200" />
+                        <span className="text-[10px] font-black text-white/90 uppercase tracking-widest">{st.hotDeal}</span>
                     </div>
                     <Link href={`/products/${product.id}`}>
-                        <p className="text-sm font-bold text-white line-clamp-2 mb-2 hover:underline">{product.name}</p>
+                        <p className="text-[13px] sm:text-sm font-bold text-white line-clamp-3 leading-snug hover:underline">{product.name}</p>
                     </Link>
                     {hasDiscount && (
-                        <span className="inline-block bg-yellow-300 text-red-700 text-xs font-black px-2 py-0.5 rounded-lg shadow mb-1">
+                        <span className="inline-flex items-center gap-0.5 self-start bg-yellow-300 text-red-700 text-[11px] font-black px-2 py-0.5 rounded-lg shadow">
                             -{discount}% {st.off}
                         </span>
                     )}
-                    <div className="flex items-baseline gap-2">
-                        {hasDiscount && <span className="text-sm text-white/50 line-through">${product.priceUsd.toFixed(2)}</span>}
-                        <span className="text-xl font-black text-yellow-200">${(hasDiscount ? product.hotSalePrice! : product.priceUsd).toFixed(2)}</span>
+                    <div className="flex items-baseline gap-1.5 flex-wrap">
+                        {hasDiscount && <span className="text-xs text-white/50 line-through">${product.priceUsd.toFixed(2)}</span>}
+                        <span className="text-[22px] font-black text-yellow-200 leading-none">${(hasDiscount ? product.hotSalePrice! : product.priceUsd).toFixed(2)}</span>
                     </div>
                     {product.reviewCount > 0 && (
-                        <div className="flex items-center gap-1 mt-1">
+                        <div className="flex items-center gap-0.5">
                             <Star className="w-3 h-3 text-yellow-300 fill-yellow-300" />
                             <span className="text-[10px] text-white/70">{product.reviewAvg.toFixed(1)} ({product.reviewCount})</span>
                         </div>
@@ -295,12 +311,12 @@ function NewArrivalsSlide({ slide, st }: { slide: ResolvedSlide; st: any }) {
     const products = (slide.products || []).filter(Boolean) as CarouselProduct[];
     return (
         <div className="relative w-full h-full bg-gradient-to-br from-violet-600 via-purple-500 to-fuchsia-500 overflow-hidden">
-            <div className="absolute inset-0 opacity-10"
-                style={{ backgroundImage: 'radial-gradient(circle at 50% 50%, #fff 0%, transparent 60%)' }} />
-            <div className="relative z-10 flex flex-col h-full px-4 py-3">
-                <div className="flex items-center gap-2 mb-2">
-                    <Sparkles className="w-4 h-4 text-yellow-200" />
-                    <span className="text-xs font-black text-white uppercase tracking-wider">{st.newArrivals}</span>
+            <div className="absolute inset-0 opacity-15"
+                style={{ backgroundImage: 'radial-gradient(circle at 50% 40%, #fff 0%, transparent 65%)' }} />
+            <div className="relative z-10 flex flex-col h-full px-2 pt-2 pb-2">
+                <div className="flex items-center gap-1.5 mb-1 px-1">
+                    <Sparkles className="w-3.5 h-3.5 text-yellow-200" />
+                    <span className="text-[11px] font-black text-white uppercase tracking-widest">{st.newArrivals}</span>
                 </div>
                 <div className="flex-1 flex items-center justify-center gap-2 sm:gap-3">
                     {products.map((p) => <ProductCard key={p.id} product={p} size="sm" fadeIn />)}
@@ -315,39 +331,43 @@ function BestSellersSlide({ slide, st }: { slide: ResolvedSlide; st: any }) {
     const rankColors = ['from-yellow-400 to-amber-500', 'from-gray-300 to-gray-400', 'from-orange-400 to-orange-600'];
     return (
         <div className="relative w-full h-full bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 overflow-hidden">
-            <div className="absolute inset-0 opacity-10"
-                style={{ backgroundImage: 'radial-gradient(circle at 80% 20%, #f59e0b 0%, transparent 50%)' }} />
-            <div className="relative z-10 flex flex-col h-full px-4 py-3">
-                <div className="flex items-center gap-2 mb-2">
-                    <Crown className="w-4 h-4 text-yellow-300" />
-                    <span className="text-xs font-black text-white uppercase tracking-wider">{st.bestSellers}</span>
+            <div className="absolute inset-0 opacity-15"
+                style={{ backgroundImage: 'radial-gradient(circle at 85% 15%, #f59e0b 0%, transparent 55%)' }} />
+            <div className="relative z-10 flex flex-col h-full px-3 pt-2 pb-2">
+                <div className="flex items-center gap-1.5 mb-1.5">
+                    <Crown className="w-3.5 h-3.5 text-yellow-300" />
+                    <span className="text-[11px] font-black text-white uppercase tracking-widest">{st.bestSellers}</span>
                 </div>
-                <div className="flex-1 flex flex-col justify-center gap-1.5">
+                <div className="flex-1 flex flex-col justify-center gap-2">
                     {products.map((p, idx) => {
                         const hasDiscount = p.isHotSale && p.hotSalePrice && p.hotSalePrice < p.priceUsd;
                         const price = hasDiscount ? p.hotSalePrice! : p.priceUsd;
                         return (
                             <Link key={p.id} href={`/products/${p.id}`}
-                                className="flex items-center gap-2.5 bg-white/10 backdrop-blur-sm rounded-xl p-2 hover:bg-white/15 transition-colors border border-white/5 carousel-product-enter">
-                                <div className={`w-7 h-7 rounded-lg bg-gradient-to-br ${rankColors[idx] || rankColors[2]} flex items-center justify-center flex-shrink-0 shadow`}>
-                                    <span className="text-xs font-black text-white">{idx + 1}</span>
+                                className="flex items-center gap-2.5 bg-white/10 backdrop-blur-sm rounded-xl px-2 py-1.5 hover:bg-white/18 transition-colors border border-white/8 carousel-product-enter">
+                                {/* Rank badge */}
+                                <div className={`w-8 h-8 rounded-xl bg-gradient-to-br ${rankColors[idx] || rankColors[2]} flex items-center justify-center flex-shrink-0 shadow-lg`}>
+                                    <span className="text-[13px] font-black text-white">{idx + 1}</span>
                                 </div>
-                                <div className="w-10 h-10 rounded-lg overflow-hidden bg-white/10 flex-shrink-0">
+                                {/* Thumbnail — bigger */}
+                                <div className="w-14 h-14 rounded-xl overflow-hidden bg-white/10 flex-shrink-0 border border-white/10">
                                     {p.imageUrl
                                         ? <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover" loading="lazy" onError={(e) => { (e.target as HTMLImageElement).style.display='none'; }} />
-                                        : <div className="w-full h-full bg-white/5" />}
+                                        : <div className="w-full h-full bg-white/5 flex items-center justify-center text-lg">🛍</div>}
                                 </div>
+                                {/* Product info */}
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-[11px] font-bold text-white truncate">{p.name}</p>
+                                    <p className="text-xs font-bold text-white truncate mb-0.5">{p.name}</p>
                                     <div className="flex items-center gap-1.5">
-                                        <span className="text-xs font-black text-yellow-300">${price.toFixed(2)}</span>
-                                        {p.reviewCount > 0 && (
-                                            <span className="flex items-center gap-0.5">
-                                                <Star className="w-2.5 h-2.5 text-yellow-300 fill-yellow-300" />
-                                                <span className="text-[9px] text-white/50">{p.reviewAvg.toFixed(1)}</span>
-                                            </span>
-                                        )}
+                                        <span className="text-sm font-black text-yellow-300">${price.toFixed(2)}</span>
+                                        {hasDiscount && <span className="text-[10px] text-white/40 line-through">${p.priceUsd.toFixed(2)}</span>}
                                     </div>
+                                    {p.reviewCount > 0 && (
+                                        <span className="flex items-center gap-0.5 mt-0.5">
+                                            <Star className="w-2.5 h-2.5 text-yellow-300 fill-yellow-300" />
+                                            <span className="text-[9px] text-white/55">{p.reviewAvg.toFixed(1)}</span>
+                                        </span>
+                                    )}
                                 </div>
                             </Link>
                         );
@@ -489,7 +509,7 @@ export default function HeroCarousel({ t, language }: HeroCarouselProps) {
         <div className="mx-3 mt-2 mb-4">
             <div
                 className="relative rounded-2xl overflow-hidden shadow-xl"
-                style={{ height: '230px' }}
+                style={{ height: '280px' }}
                 onTouchStart={onTouchStart}
                 onTouchEnd={onTouchEnd}
                 onMouseEnter={() => setIsTouching(true)}

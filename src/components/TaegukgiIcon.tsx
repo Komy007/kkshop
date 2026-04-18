@@ -25,16 +25,17 @@ export default function TaegukgiIcon({ className, style }: TaegukgiIconProps) {
 
             {/* ── Taeguk (Yin-Yang) ──
                 Centered at (450,300), outer R=150, inner r=75, rotated 56°
-                Layered paint approach: red circle → blue left half → blue/red inner circles */}
+                Official orientation: yang(red) upper-left, yin(blue) lower-right.
+                Layered paint approach: blue base → red left half → red/blue inner circles */}
             <g transform="translate(450,300) rotate(56)">
-                {/* Base: full red disc */}
-                <circle r="150" fill="#CD2E3A" />
-                {/* Blue left half (overwrites red) */}
-                <path d="M0,-150 A150,150 0 0,0 0,150 Z" fill="#003478" />
-                {/* Blue lower inner bulge */}
-                <circle cy="75" r="75" fill="#003478" />
-                {/* Red upper inner bulge */}
-                <circle cy="-75" r="75" fill="#CD2E3A" />
+                {/* Base: full blue disc (yin) */}
+                <circle r="150" fill="#003478" />
+                {/* Red left half (yang) — overwrites blue, becomes upper-left after rotation */}
+                <path d="M0,-150 A150,150 0 0,0 0,150 Z" fill="#CD2E3A" />
+                {/* Red lower inner bulge — yang dot within yin area */}
+                <circle cy="75" r="75" fill="#CD2E3A" />
+                {/* Blue upper inner bulge — yin dot within yang area */}
+                <circle cy="-75" r="75" fill="#003478" />
             </g>
 
             {/* ── Trigrams ──
