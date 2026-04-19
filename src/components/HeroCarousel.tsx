@@ -7,7 +7,6 @@ import {
     Droplets, Palette, Bath, Sofa, HeartPulse,
     UtensilsCrossed, LayoutGrid,
 } from 'lucide-react';
-import TaegukgiIcon from '@/components/TaegukgiIcon';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface CarouselProduct {
@@ -130,7 +129,7 @@ const MINI_CATEGORIES = [
 function ProductCard({ product, size = 'md', fadeIn }: {
     product: CarouselProduct; size?: 'sm' | 'md'; fadeIn?: boolean;
 }) {
-    const sizeMap = { sm: 'w-[108px] h-[108px]', md: 'w-[158px] h-[158px] sm:w-[178px] sm:h-[178px]' };
+    const sizeMap = { sm: 'w-[115px] h-[115px]', md: 'w-[162px] h-[162px] sm:w-[180px] sm:h-[180px]' };
     const hasDiscount = product.isHotSale && product.hotSalePrice && product.hotSalePrice < product.priceUsd;
     const price = hasDiscount ? product.hotSalePrice! : product.priceUsd;
 
@@ -165,20 +164,55 @@ function ProductCard({ product, size = 'md', fadeIn }: {
 
 // ─── Slide renderers ──────────────────────────────────────────────────────────
 
+/** Inline "한국 K-BEAUTY" badge — replaces the flag SVG */
+function KoreaBadge() {
+    return (
+        <div className="relative select-none" aria-label="Korean Products">
+            {/* Soft glow halo */}
+            <div className="absolute -inset-2 bg-gradient-to-b from-red-500/25 to-blue-700/25 blur-xl rounded-full pointer-events-none" />
+            {/* Glass card */}
+            <div className="relative flex flex-col items-center bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl px-3.5 pt-2 pb-1.5 shadow-2xl overflow-hidden">
+                {/* Top colour stripe */}
+                <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-red-500 via-white/50 to-blue-600 rounded-t-2xl" />
+                {/* Korean text */}
+                <span className="text-[26px] font-black text-white leading-none tracking-tight mt-0.5"
+                      style={{ textShadow: '0 2px 12px rgba(255,255,255,0.3)' }}>
+                    한국
+                </span>
+                {/* Sub-label */}
+                <div className="flex items-center gap-1 mt-0.5 mb-0.5">
+                    <div className="h-px w-3 bg-white/30" />
+                    <span className="text-[7px] font-bold text-white/55 tracking-[0.22em] uppercase">K-BEAUTY</span>
+                    <div className="h-px w-3 bg-white/30" />
+                </div>
+            </div>
+        </div>
+    );
+}
+
+/** Tiny "K" pill used inline in the heroBadge text */
+function KPill() {
+    return (
+        <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-gradient-to-br from-red-500 to-blue-700 text-[8px] font-black text-white flex-shrink-0 shadow-sm">
+            K
+        </span>
+    );
+}
+
 function BrandSlide({ t }: { t: any }) {
     return (
         <div className="relative w-full h-full flex items-center bg-gradient-to-br from-[#1a1a2e] via-[#16213e] to-[#0f3460] overflow-hidden">
             <div className="absolute inset-0 opacity-25"
                 style={{ backgroundImage: 'radial-gradient(circle at 18% 55%, #e94560 0%, transparent 55%), radial-gradient(circle at 80% 15%, #6366f1 0%, transparent 50%), radial-gradient(circle at 60% 80%, #0891b2 0%, transparent 40%)' }} />
-            {/* Korean flag — larger, more prominent */}
-            <div className="absolute right-3 top-3 w-20 sm:w-24 opacity-85 select-none drop-shadow-xl">
-                <TaegukgiIcon />
+            {/* Korea identity badge — top right */}
+            <div className="absolute right-3 top-3 z-10">
+                <KoreaBadge />
             </div>
             <div className="relative z-10 px-5 flex flex-col justify-between h-full w-full py-4">
                 {/* Top: branding */}
-                <div className="max-w-[72%]">
+                <div className="max-w-[66%]">
                     <span className="inline-flex items-center gap-1.5 text-[9px] sm:text-[11px] font-extrabold text-white/75 bg-white/10 border border-white/20 px-2.5 py-1 rounded-full mb-2 uppercase tracking-widest">
-                        <TaegukgiIcon className="w-4 h-[10px] flex-shrink-0" />
+                        <KPill />
                         {t.heroBadge}
                     </span>
                     <h2 className="text-[17px] sm:text-2xl font-black text-white leading-tight mb-1.5 whitespace-pre-line drop-shadow">{t.heroTitle}</h2>
@@ -208,46 +242,78 @@ function CategoryPairSlide({ slide, language, st }: { slide: ResolvedSlide; lang
     const Icon2 = meta2.icon;
     const products = slide.products || [];
 
+    // Full-bleed column: image fills entire column height, overlays for category+price
+    const renderCol = (
+        slug: string,
+        meta: typeof meta1,
+        Icon: React.ElementType,
+        product: CarouselProduct | null | undefined,
+    ) => {
+        const hasDiscount = product?.isHotSale && product?.hotSalePrice && product.hotSalePrice < product.priceUsd;
+        const price = product ? (hasDiscount ? product.hotSalePrice! : product.priceUsd) : null;
+
+        return (
+            <div className={`flex-1 relative rounded-2xl overflow-hidden carousel-product-enter bg-gradient-to-br ${meta.gradient}`}>
+                {/* Full-bleed product image */}
+                {product?.imageUrl && (
+                    <Link href={`/products/${product.id}`} className="absolute inset-0 z-0">
+                        <img
+                            src={product.imageUrl}
+                            alt={product.name}
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                        />
+                    </Link>
+                )}
+                {/* Gradient vignette for text legibility */}
+                <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-transparent to-black/70 pointer-events-none z-10" />
+
+                {/* ── Top overlay: category label ── */}
+                <Link
+                    href={`/category/${slug}`}
+                    className="absolute top-0 left-0 right-0 z-20 flex items-center gap-1 px-2 pt-2 pb-2"
+                >
+                    <div className="bg-white/25 backdrop-blur-sm rounded-full p-[3px] flex-shrink-0">
+                        <Icon className="w-3 h-3 text-white" strokeWidth={2.5} />
+                    </div>
+                    <span className="text-[11px] font-black text-white drop-shadow flex-1 truncate">{getCategoryLabel(slug, language)}</span>
+                    <ArrowRight className="w-2.5 h-2.5 text-white/70 flex-shrink-0" />
+                </Link>
+
+                {/* ── Bottom overlay: name + price ── */}
+                {product ? (
+                    <Link href={`/products/${product.id}`} className="absolute bottom-0 left-0 right-0 z-20 px-2 pt-5 pb-2">
+                        <p className="text-[10px] text-white/90 font-semibold truncate leading-tight mb-0.5">{product.name}</p>
+                        <div className="flex items-center gap-1">
+                            {hasDiscount && <span className="text-[9px] text-white/45 line-through">${product.priceUsd.toFixed(2)}</span>}
+                            <span className={`text-[13px] font-black leading-none ${hasDiscount ? 'text-yellow-300' : 'text-white'}`}>
+                                ${price!.toFixed(2)}
+                            </span>
+                            {product.reviewCount > 0 && (
+                                <span className="flex items-center gap-0.5 ml-auto">
+                                    <Star className="w-2.5 h-2.5 text-yellow-300 fill-yellow-300" />
+                                    <span className="text-[9px] text-white/60">{product.reviewAvg.toFixed(1)}</span>
+                                </span>
+                            )}
+                        </div>
+                    </Link>
+                ) : (
+                    <div className="absolute inset-0 z-20 flex items-center justify-center">
+                        <Link href={`/category/${slug}`} className="text-[10px] text-white/80 bg-white/10 border border-white/20 px-3 py-1.5 rounded-full">
+                            {st.viewCategory}
+                        </Link>
+                    </div>
+                )}
+            </div>
+        );
+    };
+
     return (
-        <div className={`relative w-full h-full bg-gradient-to-br ${meta1.gradient} overflow-hidden`}>
-            <div className={`absolute right-0 top-0 w-1/2 h-full bg-gradient-to-br ${meta2.gradient} opacity-90`}
-                style={{ clipPath: 'polygon(15% 0, 100% 0, 100% 100%, 0% 100%)' }} />
-            <div className="absolute inset-0 bg-black/25" />
-            <div className="relative z-10 flex h-full px-2 pt-2 pb-3">
-                {/* Left category */}
-                <div className="flex-1 flex flex-col items-center justify-between">
-                    <Link href={`/category/${slug1}`} className="flex items-center gap-1 self-start ml-1 hover:scale-105 transition-transform">
-                        <div className="bg-white/20 rounded-full p-0.5">
-                            <Icon1 className="w-3.5 h-3.5 text-white drop-shadow" strokeWidth={2.5} />
-                        </div>
-                        <span className="text-[11px] font-black text-white drop-shadow">{getCategoryLabel(slug1, language)}</span>
-                        <ArrowRight className="w-2.5 h-2.5 text-white/60" />
-                    </Link>
-                    <div className="flex-1 flex items-center justify-center mt-1">
-                        {products[0]
-                            ? <ProductCard product={products[0]} size="md" fadeIn />
-                            : <Link href={`/category/${slug1}`} className="text-[10px] text-white/70 bg-white/10 px-3 py-1 rounded-full">{st.viewCategory}</Link>
-                        }
-                    </div>
-                </div>
-                {/* Divider */}
-                <div className="w-px bg-white/25 mx-1.5 self-stretch" />
-                {/* Right category */}
-                <div className="flex-1 flex flex-col items-center justify-between">
-                    <Link href={`/category/${slug2}`} className="flex items-center gap-1 self-start ml-1 hover:scale-105 transition-transform">
-                        <div className="bg-white/20 rounded-full p-0.5">
-                            <Icon2 className="w-3.5 h-3.5 text-white drop-shadow" strokeWidth={2.5} />
-                        </div>
-                        <span className="text-[11px] font-black text-white drop-shadow">{getCategoryLabel(slug2, language)}</span>
-                        <ArrowRight className="w-2.5 h-2.5 text-white/60" />
-                    </Link>
-                    <div className="flex-1 flex items-center justify-center mt-1">
-                        {products[1]
-                            ? <ProductCard product={products[1]} size="md" fadeIn />
-                            : <Link href={`/category/${slug2}`} className="text-[10px] text-white/70 bg-white/10 px-3 py-1 rounded-full">{st.viewCategory}</Link>
-                        }
-                    </div>
-                </div>
+        <div className="relative w-full h-full bg-gray-900 overflow-hidden">
+            <div className="relative z-10 flex h-full gap-1.5 p-1.5">
+                {renderCol(slug1, meta1, Icon1, products[0])}
+                {renderCol(slug2, meta2, Icon2, products[1])}
             </div>
         </div>
     );
@@ -270,7 +336,7 @@ function HotDealSlide({ slide, st }: { slide: ResolvedSlide; st: any }) {
             <div className="relative z-10 flex h-full items-center px-3 gap-3">
                 {/* Product image — dominant left side */}
                 <Link href={`/products/${product.id}`} className="flex-shrink-0 group carousel-product-enter">
-                    <div className="w-[175px] h-[175px] sm:w-[210px] sm:h-[210px] rounded-2xl overflow-hidden bg-white shadow-2xl group-hover:scale-105 transition-transform duration-200 ring-2 ring-white/40">
+                    <div className="w-[192px] h-[192px] sm:w-[220px] sm:h-[220px] rounded-2xl overflow-hidden bg-white shadow-2xl group-hover:scale-105 transition-transform duration-200 ring-2 ring-white/40">
                         {product.imageUrl
                             ? <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" loading="lazy" onError={(e) => { (e.target as HTMLImageElement).style.display='none'; }} />
                             : <div className="w-full h-full bg-gradient-to-br from-white/20 to-white/5 flex items-center justify-center text-3xl">🛍</div>
