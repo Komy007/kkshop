@@ -49,6 +49,14 @@ jobs:
           npm install --legacy-peer-deps
           npx prisma db push --skip-generate
 
+      # ── 5b. Apply security hardening (RLS) ──────────────────────────────
+      - name: Apply Row Level Security on all tables
+        env:
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+        run: |
+          npx prisma db execute --file prisma/sql/enable_rls.sql --url "$DIRECT_URL"
+          echo "✅ RLS applied to all public tables"
+
       # ── 6. Build Docker image ────────────────────────────────────────────
       - name: Build Docker image
         run: |
