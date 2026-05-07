@@ -6,39 +6,24 @@ export const dynamic = 'force-dynamic';
 /**
  * POST /api/cron/expire-new
  * Marks products older than 30 days as isNew=false.
- * Call daily via Cloud Scheduler or any cron service.
- * Secured by CRON_SECRET env variable (set Authorization: Bearer <secret>).
+ * SECURITY: CRON_SECRET env var is REQUIRED. Requests without a valid
+ *           Authorization: Bearer <secret> header are rejected.
+ *           GET handler is intentionally removed to prevent secret leaking via URL params.
  */
-export async function POST(req: Request) {
+
+function verifyCronSecret(req: Request): boolean {
     const cronSecret = process.env.CRON_SECRET;
-    if (cronSecret) {
-        const auth = req.headers.get('authorization');
-        if (auth !== `Bearer ${cronSecret}`) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-        }
+    if (!cronSecret) {
+        // No secret configured → endpoint is locked down entirely
+        console.error('[cron/expire-new] CRON_SECRET is not set — rejecting all requests');
+        return false;
     }
-
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-    try {
-        const result = await prisma.product.updateMany({
-            where: { isNew: true, createdAt: { lt: thirtyDaysAgo } },
-            data: { isNew: false },
-        });
-        return NextResponse.json({ success: true, expired: result.count });
-    } catch (error) {
-        console.error('expire-new cron error:', error);
-        return NextResponse.json({ error: 'Internal error' }, { status: 500 });
-    }
+    const auth = req.headers.get('authorization');
+    return auth === `Bearer ${cronSecret}`;
 }
 
-// Also allow GET for easy manual trigger from browser (admin only)
-export async function GET(req: Request) {
-    const { searchParams } = new URL(req.url);
-    const key = searchParams.get('key');
-    const cronSecret = process.env.CRON_SECRET;
-    if (cronSecret && key !== cronSecret) {
+export async function POST(req: Request) {
+    if (!verifyCronSecret(req)) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -52,7 +37,7 @@ export async function GET(req: Request) {
         });
         return NextResponse.json({ success: true, expired: result.count });
     } catch (error) {
-        console.error('expire-new cron error:', error);
+        console.error('[cron/expire-new] error:', error);
         return NextResponse.json({ error: 'Internal error' }, { status: 500 });
     }
 }
