@@ -1,0 +1,119 @@
+name: Weekly GCP Cleanup
+
+# Runs every Sunday 02:00 UTC (= Sunday 09:00 Cambodia time).
+# Manual trigger also available via "Run workflow" button.
+# Backstop in case nothing has been deployed for a while —
+# the deploy.yml workflow already runs the same prune on every push to main.
+on:
+  schedule:
+    - cron: '0 2 * * 0'
+  workflow_dispatch:
+
+env:
+  PROJECT_ID: kkshop-487905
+  SERVICE_NAME: kkshop
+  REGION: asia-southeast1
+  IMAGE: gcr.io/kkshop-487905/kkshop
+  CLOUDBUILD_BUCKET: kkshop-487905_cloudbuild
+
+jobs:
+  cleanup:
+    name: Prune unused GCP resources
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      # ── 1. Delete old GCR images (keep latest 5) ─────────────────────────
+      - name: Prune old GCR images
+        run: |
+          DIGESTS=$(gcloud container images list-tags ${{ env.IMAGE }} \
+            --format='get(digest)' --sort-by='~TIMESTAMP' --limit=999 2>/dev/null | tail -n +6)
+          DELETED=0
+          if [ -n "$DIGESTS" ]; then
+            while IFS= read -r DIGEST; do
+              D=$(echo "$DIGEST" | tr -d '\r\n ')
+              if [ -n "$D" ]; then
+                gcloud container images delete "${{ env.IMAGE }}@${D}" \
+                  --force-delete-tags --quiet 2>/dev/null && DELETED=$((DELETED+1)) || true
+              fi
+            done <<< "$DIGESTS"
+          fi
+          echo "✅ GCR: deleted $DELETED old images, kept latest 5"
+
+      # ── 2. Delete old Cloud Run revisions (keep latest 5) ───────────────
+      - name: Prune old Cloud Run revisions
+        run: |
+          REVISIONS=$(gcloud run revisions list \
+            --service=${{ env.SERVICE_NAME }} \
+            --region=${{ env.REGION }} \
+            --format='get(name)' \
+            --sort-by='~createTime' --limit=999 2>/dev/null | tail -n +6)
+          DELETED=0
+          if [ -n "$REVISIONS" ]; then
+            while IFS= read -r REV; do
+              R=$(echo "$REV" | tr -d '\r\n ')
+              if [ -n "$R" ]; then
+                gcloud run revisions delete "$R" \
+                  --region=${{ env.REGION }} --quiet 2>/dev/null && DELETED=$((DELETED+1)) || true
+              fi
+            done <<< "$REVISIONS"
+          fi
+          echo "✅ Cloud Run: deleted $DELETED old revisions, kept latest 5"
+
+      # ── 3. Ensure Cloud Build bucket has 30-day lifecycle rule ──────────
+      # This is idempotent — applying the same rule does nothing.
+      # Once applied, GCS auto-deletes objects > 30 days old at no cost.
+      - name: Apply 30-day lifecycle rule on Cloud Build bucket
+        run: |
+          cat > /tmp/lifecycle.json <<'EOF'
+          {
+            "lifecycle": {
+              "rule": [
+                {
+                  "action": { "type": "Delete" },
+                  "condition": { "age": 30 }
+                }
+              ]
+            }
+          }
+          EOF
+          gcloud storage buckets update gs://${{ env.CLOUDBUILD_BUCKET }} \
+            --lifecycle-file=/tmp/lifecycle.json
+          echo "✅ Cloud Build bucket: lifecycle rule = delete after 30 days"
+
+      # ── 4. Final inventory report ────────────────────────────────────────
+      - name: Inventory report
+        run: |
+          echo "::group::📦 GCR images (kept)"
+          gcloud container images list-tags ${{ env.IMAGE }} \
+            --format='table(tags,timestamp.date(tz=LOCAL))' \
+            --sort-by='~TIMESTAMP' || true
+          echo "::endgroup::"
+
+          echo "::group::🚀 Cloud Run revisions (kept)"
+          gcloud run revisions list \
+            --service=${{ env.SERVICE_NAME }} \
+            --region=${{ env.REGION }} \
+            --format='table(name,creationTimestamp.date(tz=LOCAL))' \
+            --sort-by='~createTime' || true
+          echo "::endgroup::"
+
+          echo "::group::🪣 GCS bucket sizes"
+          for B in kkshop-images ${{ env.CLOUDBUILD_BUCKET }} run-sources-kkshop-487905-asia-southeast1; do
+            SIZE_BYTES=$(gcloud storage du "gs://$B" --summarize 2>/dev/null | awk '{print $1}' || echo 0)
+            SIZE_MB=$(awk "BEGIN {printf \"%.2f\", ${SIZE_BYTES:-0}/1024/1024}")
+            echo "  $B: ${SIZE_MB} MB"
+          done
+          echo "::endgroup::"
+
+          echo "✅ Weekly cleanup complete — $(date -u)"
