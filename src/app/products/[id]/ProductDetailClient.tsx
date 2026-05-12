@@ -257,6 +257,7 @@ interface ProductDetail {
     ingredients?: string | null;
     imageUrl?: string;
     images?: ProductImage[];
+    detailImages?: ProductImage[];
     variants?: ProductVariant[];
     rating?: number;
     reviewCount?: number;
@@ -626,6 +627,11 @@ export default function ProductDetailClient() {
     const galleryImages: ProductImage[] = product.images && product.images.length > 0
         ? product.images
         : product.imageUrl ? [{ id: 'main', url: product.imageUrl, altText: null, sortOrder: 0 }] : [];
+    // Detail page images shown in the Description tab — fall back to remaining gallery images
+    // (excluding the cover) for backward compatibility with products created before this feature.
+    const detailGalleryImages: ProductImage[] = (product.detailImages && product.detailImages.length > 0)
+        ? product.detailImages
+        : galleryImages.slice(1);
     const selectedVariant = product.variants?.find(v => v.id === selectedVariantId);
     const effectiveStock = selectedVariant ? selectedVariant.stockQty : product.stockQty;
 
@@ -1308,16 +1314,17 @@ export default function ProductDetailClient() {
                     <div className="min-h-[200px] animate-fade-in text-gray-700">
                         {activeTab === 'desc' && (
                             <div className="space-y-6">
-                                {/* Continuous product image gallery */}
-                                {galleryImages.length > 1 && (
+                                {/* Continuous detail-page image gallery — Coupang/Tmall style storytelling */}
+                                {detailGalleryImages.length > 0 && (
                                     <div className="space-y-2">
-                                        {galleryImages.map((img, idx) => (
+                                        {detailGalleryImages.map((img, idx) => (
                                             <img
                                                 key={img.id}
                                                 src={img.url}
-                                                alt={img.altText || `${product.name} ${idx + 1}`}
+                                                alt={img.altText || `${product.name} detail ${idx + 1}`}
                                                 className="w-full rounded-xl"
                                                 loading="lazy"
+                                                decoding="async"
                                             />
                                         ))}
                                     </div>

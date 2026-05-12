@@ -5,12 +5,27 @@ import { useRouter, useParams } from 'next/navigation';
 import {
     Save, Loader2, Globe, Upload, X, ImagePlus, Package, Tag, Leaf,
     Droplets, Star, Sparkles, RefreshCw, DollarSign, AlertTriangle, ArrowLeft,
-    Flame, CheckCircle, Plus,
+    Flame, CheckCircle, Plus, FileText, ChevronDown, ChevronUp,
 } from 'lucide-react';
 import DraggableImageGrid from '@/components/DraggableImageGrid';
 import { useTranslations } from '@/i18n/useTranslations';
 
+/**
+ * Unified image item — either an existing DB row OR a new local-file upload.
+ * - existing: has `existingId` + `url` (GCS URL used as both preview and final URL)
+ * - new:      has `file` + `preview` (blob: URL); `url` is set after upload at submit time
+ */
+interface EditImageItem {
+    existingId?: string;
+    url?: string;
+    file?: File;
+    preview: string;
+    alt?: string;
+}
+
 interface ImageItem { id?: string; url: string; isNew?: boolean; file?: File; preview?: string; }
+const MAX_MAIN_IMAGES = 10;
+const MAX_DETAIL_IMAGES = 50;
 interface Category { id: string; slug: string; nameKo: string; isSystem?: boolean; }
 interface Supplier { id: string; companyName: string; brandName?: string | null; }
 
@@ -64,11 +79,14 @@ export default function EditProductPage() {
     const [suppliers, setSuppliers] = useState<Supplier[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // Images state: existing + new
-    const [existingImages, setExistingImages] = useState<{ id: string; url: string }[]>([]);
-    const [deleteImageIds, setDeleteImageIds] = useState<string[]>([]);
-    const [newImages, setNewImages] = useState<{ file: File; preview: string }[]>([]);
+    // ── Unified image state (new model: full-replace sync) ──
+    // Each list is the authoritative source — both existing DB rows and new uploads live in one array.
+    const [mainImageList, setMainImageList] = useState<EditImageItem[]>([]);
+    const [detailImageList, setDetailImageList] = useState<EditImageItem[]>([]);
+    const [showAltEditor, setShowAltEditor] = useState(false);
     const [dragActive, setDragActive] = useState(false);
+    const [dragActiveDetail, setDragActiveDetail] = useState(false);
+    const detailFileInputRef = useRef<HTMLInputElement>(null);
 
     const [bulkDiscountEnabled, setBulkDiscountEnabled] = useState(false);
     const [options, setOptions] = useState<any[]>([]);
@@ -158,7 +176,23 @@ export default function EditProductPage() {
                     seoKeywords: koTrans.seoKeywords ?? '',
                 });
                 setAllTranslations(p.translations ?? []);
-                setExistingImages(p.images ?? []);
+                // Initialize unified image lists from API response
+                setMainImageList(
+                    (p.images ?? []).map((img: any) => ({
+                        existingId: img.id,
+                        url: img.url,
+                        preview: img.url,
+                        alt: img.altText ?? '',
+                    }))
+                );
+                setDetailImageList(
+                    (p.detailImages ?? []).map((img: any) => ({
+                        existingId: img.id,
+                        url: img.url,
+                        preview: img.url,
+                        alt: img.altText ?? '',
+                    }))
+                );
 
                 // Initialize 4-language direct edit state from API
                 const langs = ['ko', 'en', 'km', 'zh'];
@@ -215,16 +249,29 @@ export default function EditProductPage() {
         setForm(prev => ({ ...prev, [target.name]: value }));
     };
 
-    const addNewFiles = useCallback((files: FileList | File[]) => {
+    const addMainFiles = useCallback((files: FileList | File[]) => {
         const arr = Array.from(files).filter(f => f.type.startsWith('image/'));
-        const totalImages = existingImages.length - deleteImageIds.length + newImages.length;
-        const toAdd = arr.slice(0, Math.max(0, 10 - totalImages));
-        setNewImages(prev => [...prev, ...toAdd.map(file => ({ file, preview: URL.createObjectURL(file) }))]);
-    }, [existingImages.length, deleteImageIds.length, newImages.length]);
+        const toAdd = arr.slice(0, Math.max(0, MAX_MAIN_IMAGES - mainImageList.length));
+        setMainImageList(prev => [
+            ...prev,
+            ...toAdd.map(file => ({ file, preview: URL.createObjectURL(file) })),
+        ]);
+    }, [mainImageList.length]);
 
-    // Global paste handler — Ctrl+V anywhere on the page adds image
+    const addDetailFiles = useCallback((files: FileList | File[]) => {
+        const arr = Array.from(files).filter(f => f.type.startsWith('image/'));
+        const toAdd = arr.slice(0, Math.max(0, MAX_DETAIL_IMAGES - detailImageList.length));
+        setDetailImageList(prev => [
+            ...prev,
+            ...toAdd.map(file => ({ file, preview: URL.createObjectURL(file) })),
+        ]);
+    }, [detailImageList.length]);
+
+    // Global paste handler — Ctrl+V adds image (defaults to main; falls through to detail when main is full)
     useEffect(() => {
         const handlePaste = (e: ClipboardEvent) => {
+            const target = e.target as HTMLElement;
+            if (target && /^(INPUT|TEXTAREA)$/.test(target.tagName)) return;
             const items = e.clipboardData?.items;
             if (!items) return;
             const imageFiles: File[] = [];
@@ -234,61 +281,78 @@ export default function EditProductPage() {
                     if (file) imageFiles.push(file);
                 }
             }
-            if (imageFiles.length > 0) addNewFiles(imageFiles);
+            if (imageFiles.length === 0) return;
+            if (mainImageList.length < MAX_MAIN_IMAGES) addMainFiles(imageFiles);
+            else addDetailFiles(imageFiles);
         };
         window.addEventListener('paste', handlePaste);
         return () => window.removeEventListener('paste', handlePaste);
-    }, [addNewFiles]);
+    }, [addMainFiles, addDetailFiles, mainImageList.length]);
 
-    const removeExistingImage = (imgId: string) => {
-        setDeleteImageIds(prev => [...prev, imgId]);
-    };
-
-    const removeNewImage = (idx: number) => {
-        setNewImages(prev => {
+    const removeMainImage = (idx: number) => {
+        setMainImageList(prev => {
             const item = prev[idx];
-            if (item) URL.revokeObjectURL(item.preview);
+            if (item?.file) URL.revokeObjectURL(item.preview);
             return prev.filter((_, i) => i !== idx);
         });
     };
-
-    const reorderExistingImages = (from: number, to: number) => {
-        setExistingImages(prev => {
-            const visible = prev.filter(img => !deleteImageIds.includes(img.id));
-            const [moved] = visible.splice(from, 1);
-            visible.splice(to, 0, moved);
-            // Re-insert deleted items at original positions isn't needed; just rebuild full list
-            const deletedItems = prev.filter(img => deleteImageIds.includes(img.id));
-            return [...visible, ...deletedItems];
+    const removeDetailImage = (idx: number) => {
+        setDetailImageList(prev => {
+            const item = prev[idx];
+            if (item?.file) URL.revokeObjectURL(item.preview);
+            return prev.filter((_, i) => i !== idx);
         });
     };
-
-    const reorderNewImages = (from: number, to: number) => {
-        setNewImages(prev => {
+    const reorderMain = (from: number, to: number) => {
+        setMainImageList(prev => {
             const arr = [...prev];
-            const [moved] = arr.splice(from, 1);
-            arr.splice(to, 0, moved);
+            const [m] = arr.splice(from, 1);
+            arr.splice(to, 0, m);
             return arr;
         });
     };
+    const reorderDetail = (from: number, to: number) => {
+        setDetailImageList(prev => {
+            const arr = [...prev];
+            const [m] = arr.splice(from, 1);
+            arr.splice(to, 0, m);
+            return arr;
+        });
+    };
+    const setMainAlt = (idx: number, alt: string) =>
+        setMainImageList(prev => prev.map((it, i) => i === idx ? { ...it, alt } : it));
+    const setDetailAlt = (idx: number, alt: string) =>
+        setDetailImageList(prev => prev.map((it, i) => i === idx ? { ...it, alt } : it));
 
-    const uploadNewImages = async (): Promise<string[]> => {
-        const uploaded: string[] = [];
-        for (const img of newImages) {
-            const fd = new FormData();
-            fd.append('file', img.file);
-            const res = await fetch('/api/upload', { method: 'POST', body: fd });
-            const data = await res.json();
-            if (data.url) uploaded.push(data.url);
+    // Upload any items that don't yet have a remote URL.
+    // Returns the resolved [{id?, url, alt?}] payload format ready for the API.
+    const resolveList = async (list: EditImageItem[]): Promise<Array<{ id?: string; url: string; alt?: string }>> => {
+        const out: Array<{ id?: string; url: string; alt?: string }> = [];
+        for (const it of list) {
+            if (it.existingId && it.url) {
+                out.push({ id: it.existingId, url: it.url, alt: it.alt });
+                continue;
+            }
+            if (it.file) {
+                const fd = new FormData();
+                fd.append('file', it.file);
+                const res = await fetch('/api/upload', { method: 'POST', body: fd });
+                const data = await res.json();
+                if (data.url) out.push({ url: data.url, alt: it.alt });
+            } else if (it.url) {
+                out.push({ url: it.url, alt: it.alt });
+            }
         }
-        return uploaded;
+        return out;
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true); setErrorMsg(''); setSuccessMsg('');
         try {
-            const newImageUrls = newImages.length > 0 ? await uploadNewImages() : [];
+            // Resolve both image lists — upload new files, build {id?, url, alt?} arrays
+            const mainImagesPayload   = await resolveList(mainImageList);
+            const detailImagesPayload = await resolveList(detailImageList);
             // Build directTranslations for all 4 languages
             // If retranslate is true, we use KO as base and server will auto-translate
             // If false, we send all 4 language fields directly
@@ -321,8 +385,8 @@ export default function EditProductPage() {
                     expiryMonths: form.expiryMonths ? parseInt(form.expiryMonths) : null,
                     retranslate,
                     directTranslations,
-                    imageUrls: newImageUrls,
-                    deleteImageIds,
+                    mainImages: mainImagesPayload,
+                    detailImages: detailImagesPayload,
                     unitLabel: form.unitLabel,
                     unitsPerPkg: (form as any).unitsPerPkg ? parseInt((form as any).unitsPerPkg) : null,
                     options: bulkDiscountEnabled ? options.map((o, i) => ({ ...o, sortOrder: i })) : [],
@@ -339,11 +403,18 @@ export default function EditProductPage() {
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Fail');
             setSuccessMsg(retranslate ? 'Auto-translated & Saved · 자동번역 완료' : 'Saved successfully · 저장 완료');
-            setDeleteImageIds([]);
-            setNewImages([]);
-            // Refresh images + translations (minimal refresh before redirect)
+            // Refresh images + translations from server
             const fresh = await fetch(`/api/admin/products/${productId}`).then(r => r.json());
-            setExistingImages(fresh.images ?? []);
+            setMainImageList(
+                (fresh.images ?? []).map((img: any) => ({
+                    existingId: img.id, url: img.url, preview: img.url, alt: img.altText ?? '',
+                }))
+            );
+            setDetailImageList(
+                (fresh.detailImages ?? []).map((img: any) => ({
+                    existingId: img.id, url: img.url, preview: img.url, alt: img.altText ?? '',
+                }))
+            );
             setAllTranslations(fresh.translations ?? []);
             // Update lang translations state from fresh data
             const freshLangs: Record<string, LangFields> = {};
@@ -402,59 +473,148 @@ export default function EditProductPage() {
 
             <form onSubmit={handleSubmit} className="space-y-5">
 
-                {/* ① 이미지 관리 */}
+                {/* ① Main Gallery — top of product page (thumbnails + swipe) */}
                 <div className="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-100">
-                    <Sec icon={<ImagePlus className="w-5 h-5 text-blue-500" />} title={t.admin.edit.sections.images} desc="Max 10 images" />
-                    <div className="p-5 space-y-4">
-                        {/* Existing images */}
-                        {existingImages.filter(img => !deleteImageIds.includes(img.id)).length > 0 && (
-                            <div>
-                                <p className="text-xs text-gray-500 mb-2">현재 이미지 (드래그하여 순서 변경)</p>
-                                <DraggableImageGrid
-                                    images={existingImages.filter(img => !deleteImageIds.includes(img.id)).map(img => ({
-                                        id: img.id,
-                                        src: img.url.startsWith('http') || img.url.startsWith('/') ? img.url : `/${img.url}`,
-                                    }))}
-                                    onReorder={reorderExistingImages}
-                                    onRemove={(idx) => {
-                                        const visible = existingImages.filter(img => !deleteImageIds.includes(img.id));
-                                        if (visible[idx]) removeExistingImage(visible[idx].id);
-                                    }}
-                                    coverLabel={t.common.confirm === '확인' ? '대표' : 'Main'}
-                                    layout="grid4"
-                                />
-                            </div>
-                        )}
-                        {/* New images to upload */}
-                        {newImages.length > 0 && (
-                            <div>
-                                <p className="text-xs text-blue-500 mb-2">추가할 이미지 (드래그하여 순서 변경)</p>
-                                <DraggableImageGrid
-                                    images={newImages.map((img) => ({
-                                        id: img.preview,
-                                        src: img.preview,
-                                        borderColor: 'border-blue-200',
-                                    }))}
-                                    onReorder={reorderNewImages}
-                                    onRemove={removeNewImage}
-                                    layout="grid4"
-                                />
-                            </div>
-                        )}
-                        {/* Upload area */}
-                        <div className={`border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-all ${dragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-400'}`}
-                            onDragEnter={() => setDragActive(true)}
-                            onDragLeave={() => setDragActive(false)}
-                            onDragOver={e => e.preventDefault()}
-                            onDrop={e => { e.preventDefault(); setDragActive(false); addNewFiles(e.dataTransfer.files); }}
-                            onClick={() => fileInputRef.current?.click()}>
-                            <Upload className="w-6 h-6 text-gray-300 mx-auto mb-1" />
-                            <p className="text-sm text-gray-500">클릭 · 드래그 · Ctrl+V 붙여넣기</p>
-                            <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden"
-                                onChange={e => e.target.files && addNewFiles(e.target.files)} />
+                    <div className="px-6 py-4 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
+                        <div>
+                            <h3 className="text-base font-semibold text-gray-900 flex items-center gap-2">
+                                <ImagePlus className="w-5 h-5 text-blue-500" />
+                                Main Gallery <span className="text-xs text-gray-400 font-normal">메인 썸네일</span>
+                            </h3>
+                            <p className="text-xs text-gray-500 mt-0.5">상품 상세 페이지 상단 + 목록 썸네일</p>
                         </div>
+                        <span className={`text-xs font-bold tabular-nums ${mainImageList.length >= MAX_MAIN_IMAGES ? 'text-red-500' : 'text-gray-500'}`}>
+                            {mainImageList.length} / {MAX_MAIN_IMAGES}
+                        </span>
+                    </div>
+                    <div className="p-5 space-y-4">
+                        {mainImageList.length > 0 && (
+                            <DraggableImageGrid
+                                images={mainImageList.map((img, i) => ({
+                                    id: img.existingId ?? img.preview,
+                                    src: img.preview,
+                                    borderColor: img.file ? 'border-blue-200' : 'border-gray-200',
+                                    badge: img.file ? 'NEW' : undefined,
+                                    badgeColor: img.file ? 'bg-blue-500' : undefined,
+                                }))}
+                                onReorder={reorderMain}
+                                onRemove={removeMainImage}
+                                coverLabel={t.common.confirm === '확인' ? '대표' : 'Main'}
+                                layout="grid4"
+                            />
+                        )}
+                        {mainImageList.length < MAX_MAIN_IMAGES && (
+                            <div className={`border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-all ${dragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-400'}`}
+                                onDragEnter={() => setDragActive(true)}
+                                onDragLeave={() => setDragActive(false)}
+                                onDragOver={e => e.preventDefault()}
+                                onDrop={e => { e.preventDefault(); setDragActive(false); addMainFiles(e.dataTransfer.files); }}
+                                onClick={() => fileInputRef.current?.click()}>
+                                <Upload className="w-6 h-6 text-gray-300 mx-auto mb-1" />
+                                <p className="text-sm text-gray-500">클릭 · 드래그 · Ctrl+V 붙여넣기</p>
+                                <p className="text-xs text-gray-400 mt-0.5">자동 WebP 변환 · 최대 1600px</p>
+                                <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden"
+                                    onChange={e => e.target.files && addMainFiles(e.target.files)} />
+                            </div>
+                        )}
                     </div>
                 </div>
+
+                {/* ①-B Detail Page Images — long-form story in Description tab */}
+                <div className="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-100">
+                    <div className="px-6 py-4 bg-purple-50 border-b border-purple-100 flex items-center justify-between">
+                        <div>
+                            <h3 className="text-base font-semibold text-gray-900 flex items-center gap-2">
+                                <FileText className="w-5 h-5 text-purple-500" />
+                                Detail Page Images <span className="text-xs text-gray-400 font-normal">상세 페이지 이미지</span>
+                            </h3>
+                            <p className="text-xs text-purple-700 mt-0.5">Description 탭에 세로로 연속 표시 (Coupang/Tmall 스타일)</p>
+                        </div>
+                        <span className={`text-xs font-bold tabular-nums whitespace-nowrap ml-3 ${detailImageList.length >= MAX_DETAIL_IMAGES ? 'text-red-500' : 'text-purple-600'}`}>
+                            {detailImageList.length} / {MAX_DETAIL_IMAGES}
+                        </span>
+                    </div>
+                    <div className="p-5 space-y-4">
+                        {detailImageList.length > 0 && (
+                            <DraggableImageGrid
+                                images={detailImageList.map((img) => ({
+                                    id: img.existingId ?? img.preview,
+                                    src: img.preview,
+                                    borderColor: img.file ? 'border-purple-200' : 'border-gray-200',
+                                    badge: img.file ? 'NEW' : undefined,
+                                    badgeColor: img.file ? 'bg-purple-500' : undefined,
+                                }))}
+                                onReorder={reorderDetail}
+                                onRemove={removeDetailImage}
+                                layout="grid4"
+                            />
+                        )}
+                        {detailImageList.length < MAX_DETAIL_IMAGES && (
+                            <div className={`border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-all ${dragActiveDetail ? 'border-purple-500 bg-purple-50' : 'border-gray-200 hover:border-purple-400'}`}
+                                onDragEnter={() => setDragActiveDetail(true)}
+                                onDragLeave={() => setDragActiveDetail(false)}
+                                onDragOver={e => e.preventDefault()}
+                                onDrop={e => { e.preventDefault(); setDragActiveDetail(false); addDetailFiles(e.dataTransfer.files); }}
+                                onClick={() => detailFileInputRef.current?.click()}>
+                                <Upload className="w-6 h-6 text-gray-300 mx-auto mb-1" />
+                                <p className="text-sm text-gray-500">최대 50장 · K-뷰티 스토리텔링</p>
+                                <input ref={detailFileInputRef} type="file" accept="image/*" multiple className="hidden"
+                                    onChange={e => e.target.files && addDetailFiles(e.target.files)} />
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* ①-C Alt Text editor — optional SEO/accessibility */}
+                {(mainImageList.length > 0 || detailImageList.length > 0) && (
+                    <div className="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-100">
+                        <button type="button" onClick={() => setShowAltEditor(p => !p)}
+                            className="w-full px-6 py-3 bg-gray-50 border-b border-gray-100 flex items-center justify-between hover:bg-gray-100 transition-colors">
+                            <div className="text-left">
+                                <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                                    <Globe className="w-4 h-4 text-gray-500" />
+                                    Alt Text (Optional · SEO/접근성)
+                                </h3>
+                                <p className="text-xs text-gray-500 mt-0.5">비워두면 상품명 기반으로 자동 생성됩니다.</p>
+                            </div>
+                            {showAltEditor ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+                        </button>
+                        {showAltEditor && (
+                            <div className="p-5 space-y-4">
+                                {mainImageList.length > 0 && (
+                                    <div>
+                                        <p className="text-xs font-bold text-gray-600 mb-2">Main Gallery</p>
+                                        <div className="space-y-2">
+                                            {mainImageList.map((img, i) => (
+                                                <div key={img.existingId ?? img.preview} className="flex items-center gap-3">
+                                                    <img src={img.preview} className="w-12 h-12 object-cover rounded-lg border border-gray-200 flex-shrink-0" />
+                                                    <input type="text" value={img.alt || ''} onChange={e => setMainAlt(i, e.target.value)}
+                                                        placeholder={`${langTranslations.ko.name || form.name || 'Product'} - ${i + 1}`} maxLength={255}
+                                                        className="flex-1 border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                                {detailImageList.length > 0 && (
+                                    <div>
+                                        <p className="text-xs font-bold text-purple-600 mb-2">Detail Images</p>
+                                        <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                                            {detailImageList.map((img, i) => (
+                                                <div key={img.existingId ?? img.preview} className="flex items-center gap-3">
+                                                    <img src={img.preview} className="w-12 h-12 object-cover rounded-lg border border-gray-200 flex-shrink-0" />
+                                                    <input type="text" value={img.alt || ''} onChange={e => setDetailAlt(i, e.target.value)}
+                                                        placeholder={`${langTranslations.ko.name || form.name || 'Product'} detail ${i + 1}`} maxLength={255}
+                                                        className="flex-1 border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none" />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 {/* ② 기본 정보 & 판매 설정 */}
                 <div className="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-100">

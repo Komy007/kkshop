@@ -93,12 +93,23 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
                 howToUse: t.howToUse ?? null,
                 benefits: t.benefits ?? null,
             })),
-            images: product.images.map(img => ({
-                id: img.id.toString(),
-                url: img.url,
-                altText: img.altText ?? null,
-                sortOrder: img.sortOrder,
-            })),
+            // Split into MAIN gallery vs DETAIL (long-form story) images
+            images: product.images
+                .filter(img => (img.imageType ?? 'MAIN') === 'MAIN')
+                .map(img => ({
+                    id: img.id.toString(),
+                    url: img.url,
+                    altText: img.altText ?? null,
+                    sortOrder: img.sortOrder,
+                })),
+            detailImages: product.images
+                .filter(img => img.imageType === 'DETAIL')
+                .map(img => ({
+                    id: img.id.toString(),
+                    url: img.url,
+                    altText: img.altText ?? null,
+                    sortOrder: img.sortOrder,
+                })),
             options: product.options.map(opt => ({
                 id: opt.id.toString(),
                 minQty: opt.minQty,
@@ -146,8 +157,14 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
             baseLang, name, shortDesc, detailDesc, ingredients, howToUse, benefits, seoKeywords,
             retranslate = false,
             directTranslations, // [{ langCode, name, shortDesc, ... }] — direct per-language edit, no Google Translate
-            imageUrls = [], // new image URLs to add
-            deleteImageIds = [], // image IDs to delete
+            imageUrls = [], // [legacy] new MAIN image URLs to add
+            deleteImageIds = [], // [legacy] image IDs to delete
+            // NEW: full-replacement sync arrays — each item is { id?, url, alt? }
+            //   id present  → keep existing image (update alt+sortOrder)
+            //   id missing  → create new image record
+            //   any DB image NOT listed → deleted (incl. from GCS)
+            mainImages,    // when defined, replaces all MAIN images
+            detailImages,  // when defined, replaces all DETAIL images (max 50)
             options = [], // full options replacement
             variants, // full variants replacement (undefined = no change, [] = delete all, [...] = replace)
         } = body;
@@ -375,6 +392,63 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
                         data: { imageUrl: firstImg.url },
                     });
                 }
+            }
+
+            // 4b. NEW image sync — full replace for MAIN and/or DETAIL galleries
+            // Each `syncGallery` call: keep listed existing IDs (update alt/sortOrder),
+            //                         create new entries for items without ID,
+            //                         delete DB rows of this type not present in the list.
+            const syncGallery = async (type: 'MAIN' | 'DETAIL', list: Array<{ id?: string; url: string; alt?: string | null }>, max: number) => {
+                const capped = list.slice(0, max);
+                const keepIds = new Set(
+                    capped.filter(it => it.id).map(it => BigInt(it.id as string).toString())
+                );
+
+                // Find existing rows of this type that need deletion (not in keepIds)
+                const existing = await tx.productImage.findMany({
+                    where: { productId, imageType: type },
+                    select: { id: true, url: true },
+                });
+                const toDelete = existing.filter(e => !keepIds.has(e.id.toString()));
+                if (toDelete.length > 0) {
+                    await tx.productImage.deleteMany({
+                        where: { id: { in: toDelete.map(d => d.id) } },
+                    });
+                    deleteGCSFiles(toDelete.map(d => d.url)).catch(err =>
+                        console.error('[GCS] Delete failed:', err)
+                    );
+                }
+
+                // Upsert each item with the new sortOrder
+                for (let idx = 0; idx < capped.length; idx++) {
+                    const it = capped[idx];
+                    const alt = it.alt?.trim() || null;
+                    if (it.id) {
+                        await tx.productImage.update({
+                            where: { id: BigInt(it.id) },
+                            data: { altText: alt, sortOrder: idx, imageType: type },
+                        });
+                    } else {
+                        await tx.productImage.create({
+                            data: { productId, url: it.url, altText: alt, sortOrder: idx, imageType: type },
+                        });
+                    }
+                }
+            };
+
+            if (Array.isArray(mainImages))   await syncGallery('MAIN',   mainImages,   10);
+            if (Array.isArray(detailImages)) await syncGallery('DETAIL', detailImages, 50);
+
+            // After main-gallery sync, refresh thumbnail field
+            if (Array.isArray(mainImages)) {
+                const firstMain = await tx.productImage.findFirst({
+                    where: { productId, imageType: 'MAIN' },
+                    orderBy: { sortOrder: 'asc' },
+                });
+                await tx.product.update({
+                    where: { id: productId },
+                    data: { imageUrl: firstMain?.url ?? null },
+                });
             }
 
             // 5. Replace options if provided (labels pre-translated above)

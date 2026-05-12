@@ -27,6 +27,9 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=8080
 
+# libc6-compat: required for prebuilt native modules (sharp's libvips binary)
+RUN apk add --no-cache libc6-compat
+
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
@@ -36,6 +39,10 @@ COPY --from=builder /app/public ./public
 # Copy standalone output
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+# sharp is marked as serverExternalPackages — copy its node_modules so it's loadable at runtime
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/sharp ./node_modules/sharp
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@img ./node_modules/@img
 
 USER nextjs
 

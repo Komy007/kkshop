@@ -228,6 +228,9 @@ export async function POST(req: Request) {
             benefits,
             seoKeywords,
             imageUrls = [],
+            detailImageUrls = [],
+            imageAlts = [],       // alt text for MAIN gallery, aligned by index with imageUrls
+            detailImageAlts = [], // alt text for DETAIL gallery, aligned by index with detailImageUrls
             supplierId = null,
             brandName = null,
             volume = null,
@@ -375,13 +378,28 @@ export async function POST(req: Request) {
                 }
             });
 
-            // Save all images to ProductImage table
+            // Save MAIN gallery images (max 10, shown at top of product page)
             if (imageUrls.length > 0) {
                 await tx.productImage.createMany({
-                    data: imageUrls.map((url: string, idx: number) => ({
+                    data: imageUrls.slice(0, 10).map((url: string, idx: number) => ({
                         productId: product.id,
                         url,
+                        altText: imageAlts[idx]?.trim() || null,
                         sortOrder: idx,
+                        imageType: 'MAIN',
+                    })),
+                });
+            }
+
+            // Save DETAIL gallery images (max 50, shown stacked in Description tab)
+            if (detailImageUrls.length > 0) {
+                await tx.productImage.createMany({
+                    data: detailImageUrls.slice(0, 50).map((url: string, idx: number) => ({
+                        productId: product.id,
+                        url,
+                        altText: detailImageAlts[idx]?.trim() || null,
+                        sortOrder: idx,
+                        imageType: 'DETAIL',
                     })),
                 });
             }

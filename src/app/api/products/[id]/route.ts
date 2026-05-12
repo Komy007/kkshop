@@ -57,13 +57,18 @@ export async function GET(
         const localTrans: any = translations.find(t => t.langCode === lang) || enTrans;
 
 
-        // All gallery images
-        const allImages = (product.images ?? []).map(img => ({
+        // Split images by type: MAIN (gallery thumbnails) vs DETAIL (long-form story images)
+        const allImagesRaw = product.images ?? [];
+        const mapImg = (img: any) => ({
             id: img.id.toString(),
             url: img.url,
             altText: img.altText ?? null,
             sortOrder: img.sortOrder,
-        }));
+        });
+        const mainImages = allImagesRaw.filter((i: any) => (i.imageType ?? 'MAIN') === 'MAIN').map(mapImg);
+        const detailImages = allImagesRaw.filter((i: any) => i.imageType === 'DETAIL').map(mapImg);
+        // Backward-compat: `images` always contains the MAIN gallery (legacy code expects this)
+        const allImages = mainImages;
 
         // Variants (color / size)
         const serializedVariants = (product.variants ?? []).map((v: any) => ({
@@ -85,6 +90,7 @@ export async function GET(
             status: product.status,
             imageUrl: product.imageUrl || allImages[0]?.url || null,
             images: allImages,
+            detailImages,
             variants: serializedVariants,
             categoryId: product.categoryId?.toString() || null,
             name: localTrans.name || enTrans.name || product.sku,

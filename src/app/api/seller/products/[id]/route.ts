@@ -80,12 +80,22 @@ export async function GET(
             benefits: t.benefits ?? null,
             seoKeywords: t.seoKeywords ?? null,
         })),
-        images: product.images.map(img => ({
-            id: img.id.toString(),
-            url: img.url,
-            altText: img.altText ?? null,
-            sortOrder: img.sortOrder,
-        })),
+        images: product.images
+            .filter(img => (img.imageType ?? 'MAIN') === 'MAIN')
+            .map(img => ({
+                id: img.id.toString(),
+                url: img.url,
+                altText: img.altText ?? null,
+                sortOrder: img.sortOrder,
+            })),
+        detailImages: product.images
+            .filter(img => img.imageType === 'DETAIL')
+            .map(img => ({
+                id: img.id.toString(),
+                url: img.url,
+                altText: img.altText ?? null,
+                sortOrder: img.sortOrder,
+            })),
         options: (product as any).options?.map((o: any) => ({
             id: o.id.toString(),
             minQty: o.minQty,
@@ -140,8 +150,10 @@ export async function PATCH(
         priceUsd, stockQty, volume, skinType, origin, brandName, expiryMonths, certifications, categoryId,
         unitLabel, unitsPerPkg,
         weightGram, lengthCm, widthCm, heightCm,
-        imageUrls = [],      // new GCS URLs to add
-        deleteImageIds = [], // existing image IDs to remove
+        imageUrls = [],      // [legacy] new GCS URLs to add
+        deleteImageIds = [], // [legacy] existing image IDs to remove
+        mainImages,    // NEW: full-replacement sync for MAIN gallery [{id?, url, alt?}]
+        detailImages,  // NEW: full-replacement sync for DETAIL gallery [{id?, url, alt?}]
         options,             // full options replacement (undefined = no change)
         variants,            // full variants replacement (undefined = no change)
     } = body;
@@ -264,9 +276,39 @@ export async function PATCH(
             });
         }
 
-        // Update main imageUrl to first remaining image
+        // NEW: full-replace sync for MAIN + DETAIL galleries (only if provided)
+        const syncGallery = async (type: 'MAIN' | 'DETAIL', list: Array<{ id?: string; url: string; alt?: string | null }>, max: number) => {
+            const capped = list.slice(0, max);
+            const keepIds = new Set(capped.filter(it => it.id).map(it => BigInt(it.id as string).toString()));
+            const existing = await tx.productImage.findMany({
+                where: { productId: product.id, imageType: type },
+                select: { id: true },
+            });
+            const toDelete = existing.filter(e => !keepIds.has(e.id.toString())).map(d => d.id);
+            if (toDelete.length > 0) {
+                await tx.productImage.deleteMany({ where: { id: { in: toDelete } } });
+            }
+            for (let idx = 0; idx < capped.length; idx++) {
+                const it = capped[idx];
+                const alt = it.alt?.trim() || null;
+                if (it.id) {
+                    await tx.productImage.update({
+                        where: { id: BigInt(it.id) },
+                        data: { altText: alt, sortOrder: idx, imageType: type },
+                    });
+                } else {
+                    await tx.productImage.create({
+                        data: { productId: product.id, url: it.url, altText: alt, sortOrder: idx, imageType: type },
+                    });
+                }
+            }
+        };
+        if (Array.isArray(mainImages))   await syncGallery('MAIN',   mainImages,   10);
+        if (Array.isArray(detailImages)) await syncGallery('DETAIL', detailImages, 50);
+
+        // Update main imageUrl to first remaining MAIN image
         const firstImg = await tx.productImage.findFirst({
-            where: { productId: product.id },
+            where: { productId: product.id, imageType: 'MAIN' },
             orderBy: { sortOrder: 'asc' },
         });
 

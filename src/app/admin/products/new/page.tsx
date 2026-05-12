@@ -2,14 +2,15 @@
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Save, Loader2, Globe, Upload, X, ImagePlus, Package, Tag, Leaf, Droplets, Star, Sparkles, RefreshCw, Plus } from 'lucide-react';
+import { Save, Loader2, Globe, Upload, X, ImagePlus, Package, Tag, Leaf, Droplets, Star, Sparkles, RefreshCw, Plus, FileText, ChevronDown, ChevronUp } from 'lucide-react';
 import DraggableImageGrid from '@/components/DraggableImageGrid';
 import { useTranslations } from '@/i18n/useTranslations';
 
-interface ImageItem { file: File; preview: string; url?: string; }
+interface ImageItem { file: File; preview: string; url?: string; alt?: string; }
 interface Category { id: string; slug: string; nameKo: string; nameEn?: string; parentId?: string | null; }
 
 const MAX_IMAGES = 10;
+const MAX_DETAIL_IMAGES = 50;
 const SIZE_PRESETS   = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Free Size'];
 const VOLUME_PRESETS = ['30ml', '50ml', '100ml', '150ml', '200ml', '250ml', '300ml', '500ml', '1L'];
 const UNIT_LABELS    = ['개', 'box', 'pack', 'set', '병', '튜브', '매', '장', '캡슐'];
@@ -25,9 +26,13 @@ export default function NewProductPage() {
     const [errorMsg, setErrorMsg] = useState('');
     const [successMsg, setSuccessMsg] = useState('');
     const [images, setImages] = useState<ImageItem[]>([]);
+    const [detailImages, setDetailImages] = useState<ImageItem[]>([]);
+    const [showAltEditor, setShowAltEditor] = useState(false);
     const [dragActive, setDragActive] = useState(false);
+    const [dragActiveDetail, setDragActiveDetail] = useState(false);
     const [categories, setCategories] = useState<Category[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const detailFileInputRef = useRef<HTMLInputElement>(null);
 
     const [doTranslate, setDoTranslate] = useState(false);
     const [bulkDiscountEnabled, setBulkDiscountEnabled] = useState(false);
@@ -116,8 +121,17 @@ export default function NewProductPage() {
         setImages(prev => [...prev, ...toAdd.map(file => ({ file, preview: URL.createObjectURL(file) }))]);
     }, [images.length]);
 
+    const addDetailFiles = useCallback((files: FileList | File[]) => {
+        const arr = Array.from(files).filter(f => f.type.startsWith('image/'));
+        const toAdd = arr.slice(0, MAX_DETAIL_IMAGES - detailImages.length);
+        setDetailImages(prev => [...prev, ...toAdd.map(file => ({ file, preview: URL.createObjectURL(file) }))]);
+    }, [detailImages.length]);
+
     useEffect(() => {
         const handlePaste = (e: ClipboardEvent) => {
+            // Don't hijack paste when user is typing in a text input/textarea
+            const target = e.target as HTMLElement;
+            if (target && /^(INPUT|TEXTAREA)$/.test(target.tagName)) return;
             const items = e.clipboardData?.items;
             if (!items) return;
             const imageFiles: File[] = [];
@@ -127,14 +141,25 @@ export default function NewProductPage() {
                     if (file) imageFiles.push(file);
                 }
             }
-            if (imageFiles.length > 0) addFiles(imageFiles);
+            // Default paste-target: main gallery if not full, otherwise detail gallery
+            if (imageFiles.length === 0) return;
+            if (images.length < MAX_IMAGES) addFiles(imageFiles);
+            else addDetailFiles(imageFiles);
         };
         window.addEventListener('paste', handlePaste);
         return () => window.removeEventListener('paste', handlePaste);
-    }, [addFiles]);
+    }, [addFiles, addDetailFiles, images.length]);
 
     const removeImage = (idx: number) => {
         setImages(prev => {
+            const item = prev[idx];
+            if (item) URL.revokeObjectURL(item.preview);
+            return prev.filter((_, i) => i !== idx);
+        });
+    };
+
+    const removeDetailImage = (idx: number) => {
+        setDetailImages(prev => {
             const item = prev[idx];
             if (item) URL.revokeObjectURL(item.preview);
             return prev.filter((_, i) => i !== idx);
@@ -150,9 +175,26 @@ export default function NewProductPage() {
         });
     };
 
-    const uploadImages = async (): Promise<string[]> => {
+    const reorderDetailImages = (from: number, to: number) => {
+        setDetailImages(prev => {
+            const arr = [...prev];
+            const [moved] = arr.splice(from, 1);
+            arr.splice(to, 0, moved);
+            return arr;
+        });
+    };
+
+    const setImageAlt = (idx: number, alt: string) => {
+        setImages(prev => prev.map((img, i) => i === idx ? { ...img, alt } : img));
+    };
+    const setDetailImageAlt = (idx: number, alt: string) => {
+        setDetailImages(prev => prev.map((img, i) => i === idx ? { ...img, alt } : img));
+    };
+
+    // Upload helper: returns uploaded URL list, preserving order
+    const uploadList = async (list: ImageItem[]): Promise<string[]> => {
         const uploaded: string[] = [];
-        for (const img of images) {
+        for (const img of list) {
             if (!img) continue;
             if (img.url) { uploaded.push(img.url); continue; }
             const fd = new FormData(); fd.append('file', img.file);
@@ -167,7 +209,12 @@ export default function NewProductPage() {
         e.preventDefault();
         setIsLoading(true); setErrorMsg(''); setSuccessMsg('');
         try {
-            const imageUrls = images.length > 0 ? await uploadImages() : [];
+            const imageUrls = images.length > 0 ? await uploadList(images) : [];
+            const detailImageUrls = detailImages.length > 0 ? await uploadList(detailImages) : [];
+
+            // Build alt-text arrays aligned by index. Empty string → server falls back to auto-generated.
+            const imageAlts       = images.map(i => i.alt || '');
+            const detailImageAlts = detailImages.map(i => i.alt || '');
 
             // ── Build multi-type variants payload ──
             const variantsPayload: any[] = [];
@@ -182,6 +229,9 @@ export default function NewProductPage() {
                 body: JSON.stringify({
                     ...form,
                     imageUrls,
+                    detailImageUrls,
+                    imageAlts,
+                    detailImageAlts,
                     isNew: form.isNew,
                     categoryId: form.categoryId || null,
                     expiryMonths: form.expiryMonths ? parseInt(form.expiryMonths) : null,
@@ -222,9 +272,20 @@ export default function NewProductPage() {
             {successMsg && <div className="p-4 bg-green-50 border-l-4 border-green-500 text-green-700 rounded-md text-sm font-bold">{successMsg}</div>}
 
             <form onSubmit={handleSubmit} className="space-y-5">
-                {/* ① Images */}
+                {/* ① Main Gallery — top of product page (thumbnails + swipe) */}
                 <div className="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-100">
-                    <Sec icon={<ImagePlus className="w-5 h-5 text-blue-500" />} title={n.images.title} desc={n.images.desc} />
+                    <div className="px-6 py-4 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
+                        <div>
+                            <h3 className="text-base font-semibold text-gray-900 flex items-center gap-2">
+                                <ImagePlus className="w-5 h-5 text-blue-500" />
+                                Main Gallery <span className="text-xs text-gray-400 font-normal">메인 썸네일</span>
+                            </h3>
+                            <p className="text-xs text-gray-500 mt-0.5">{n.images.desc} · 상품 상세 페이지 상단 + 카테고리 목록 썸네일로 사용됩니다.</p>
+                        </div>
+                        <span className={`text-xs font-bold tabular-nums ${images.length >= MAX_IMAGES ? 'text-red-500' : 'text-gray-500'}`}>
+                            {images.length} / {MAX_IMAGES}
+                        </span>
+                    </div>
                     <div className="p-5">
                         {images.length < MAX_IMAGES && (
                             <div className={`border-2 border-dashed rounded-xl p-7 text-center cursor-pointer transition-all ${dragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-400'}`}
@@ -233,7 +294,7 @@ export default function NewProductPage() {
                                 onClick={() => fileInputRef.current?.click()}>
                                 <Upload className="w-8 h-8 text-gray-300 mx-auto mb-2" />
                                 <p className="text-sm font-medium text-gray-600">{n.images.uploadHint}</p>
-                                <p className="text-xs text-gray-400 mt-1">{n.images.uploadTypes}</p>
+                                <p className="text-xs text-gray-400 mt-1">{n.images.uploadTypes} · auto WebP 변환 (캄보디아 모바일 최적화)</p>
                                 <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={e => e.target.files && addFiles(e.target.files)} />
                             </div>
                         )}
@@ -250,6 +311,111 @@ export default function NewProductPage() {
                         )}
                     </div>
                 </div>
+
+                {/* ①-B Detail Images — long-form story shown in Description tab */}
+                <div className="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-100">
+                    <div className="px-6 py-4 bg-purple-50 border-b border-purple-100 flex items-center justify-between">
+                        <div>
+                            <h3 className="text-base font-semibold text-gray-900 flex items-center gap-2">
+                                <FileText className="w-5 h-5 text-purple-500" />
+                                Detail Page Images <span className="text-xs text-gray-400 font-normal">상세 페이지 이미지</span>
+                            </h3>
+                            <p className="text-xs text-purple-700 mt-0.5">
+                                상품 페이지의 <strong>"Description" 탭에 세로로 길게</strong> 표시됩니다. K-뷰티 스토리텔링용 (성분·사용법·전후 비교·인증서 등 30~50장 권장).
+                            </p>
+                        </div>
+                        <span className={`text-xs font-bold tabular-nums whitespace-nowrap ml-3 ${detailImages.length >= MAX_DETAIL_IMAGES ? 'text-red-500' : 'text-purple-600'}`}>
+                            {detailImages.length} / {MAX_DETAIL_IMAGES}
+                        </span>
+                    </div>
+                    <div className="p-5">
+                        {detailImages.length < MAX_DETAIL_IMAGES && (
+                            <div className={`border-2 border-dashed rounded-xl p-7 text-center cursor-pointer transition-all ${dragActiveDetail ? 'border-purple-500 bg-purple-50' : 'border-gray-200 hover:border-purple-400'}`}
+                                onDragEnter={() => setDragActiveDetail(true)} onDragLeave={() => setDragActiveDetail(false)}
+                                onDragOver={e => e.preventDefault()} onDrop={e => { e.preventDefault(); setDragActiveDetail(false); addDetailFiles(e.dataTransfer.files); }}
+                                onClick={() => detailFileInputRef.current?.click()}>
+                                <Upload className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                                <p className="text-sm font-medium text-gray-600">Drag or click — 최대 50장</p>
+                                <p className="text-xs text-gray-400 mt-1">세로로 긴 이미지 권장 (Coupang/Tmall 스타일)</p>
+                                <input ref={detailFileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={e => e.target.files && addDetailFiles(e.target.files)} />
+                            </div>
+                        )}
+                        {detailImages.length > 0 && (
+                            <div className={detailImages.length < MAX_DETAIL_IMAGES ? 'mt-4' : ''}>
+                                <DraggableImageGrid
+                                    images={detailImages.map((img) => ({ id: img.preview, src: img.preview }))}
+                                    onReorder={reorderDetailImages}
+                                    onRemove={removeDetailImage}
+                                    layout="grid4"
+                                />
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* ①-C Alt text editor — collapsed by default, optional SEO field */}
+                {(images.length > 0 || detailImages.length > 0) && (
+                    <div className="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-100">
+                        <button
+                            type="button"
+                            onClick={() => setShowAltEditor(p => !p)}
+                            className="w-full px-6 py-3 bg-gray-50 border-b border-gray-100 flex items-center justify-between hover:bg-gray-100 transition-colors"
+                        >
+                            <div className="text-left">
+                                <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                                    <Globe className="w-4 h-4 text-gray-500" />
+                                    Alt Text (Optional · SEO/접근성용)
+                                </h3>
+                                <p className="text-xs text-gray-500 mt-0.5">비워두면 상품명으로 자동 생성됩니다.</p>
+                            </div>
+                            {showAltEditor ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+                        </button>
+                        {showAltEditor && (
+                            <div className="p-5 space-y-4">
+                                {images.length > 0 && (
+                                    <div>
+                                        <p className="text-xs font-bold text-gray-600 mb-2">Main Gallery</p>
+                                        <div className="space-y-2">
+                                            {images.map((img, i) => (
+                                                <div key={img.preview} className="flex items-center gap-3">
+                                                    <img src={img.preview} className="w-12 h-12 object-cover rounded-lg border border-gray-200 flex-shrink-0" />
+                                                    <input
+                                                        type="text"
+                                                        value={img.alt || ''}
+                                                        onChange={e => setImageAlt(i, e.target.value)}
+                                                        placeholder={`${form.name || 'Product'} - ${i + 1}`}
+                                                        maxLength={255}
+                                                        className="flex-1 border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                                    />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                                {detailImages.length > 0 && (
+                                    <div>
+                                        <p className="text-xs font-bold text-purple-600 mb-2">Detail Images</p>
+                                        <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                                            {detailImages.map((img, i) => (
+                                                <div key={img.preview} className="flex items-center gap-3">
+                                                    <img src={img.preview} className="w-12 h-12 object-cover rounded-lg border border-gray-200 flex-shrink-0" />
+                                                    <input
+                                                        type="text"
+                                                        value={img.alt || ''}
+                                                        onChange={e => setDetailImageAlt(i, e.target.value)}
+                                                        placeholder={`${form.name || 'Product'} detail ${i + 1}`}
+                                                        maxLength={255}
+                                                        className="flex-1 border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                                                    />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 {/* ② Bulk Discount Options */}
                 <div className="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-100">

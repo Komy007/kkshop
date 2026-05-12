@@ -4,6 +4,19 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Save, Loader2, ChevronLeft, AlertCircle, AlertTriangle, CheckCircle, Upload, X, ImagePlus, Plus, Sparkles, Truck } from 'lucide-react';
 import DraggableImageGrid from '@/components/DraggableImageGrid';
+import { FileText, ChevronDown, ChevronUp, Globe } from 'lucide-react';
+
+const MAX_MAIN_IMAGES = 10;
+const MAX_DETAIL_IMAGES = 50;
+
+/** Unified image item — existing DB row OR new local upload */
+interface EditImageItem {
+    existingId?: string;
+    url?: string;
+    file?: File;
+    preview: string;
+    alt?: string;
+}
 import { useTranslations } from '@/i18n/useTranslations';
 
 const SIZE_PRESETS   = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Free Size'];
@@ -93,10 +106,13 @@ export default function SellerProductEditPage() {
     const [catLoading, setCatLoading] = useState(true);
     const [catError,   setCatError]   = useState(false);
 
-    // Image state
-    const [existingImages, setExistingImages] = useState<{ id: string; url: string }[]>([]);
-    const [deleteImageIds, setDeleteImageIds] = useState<string[]>([]);
-    const [newImages,      setNewImages]      = useState<{ file: File; preview: string }[]>([]);
+    // Image state (unified: each list is the source of truth — full replace on save)
+    const [mainImageList,   setMainImageList]   = useState<EditImageItem[]>([]);
+    const [detailImageList, setDetailImageList] = useState<EditImageItem[]>([]);
+    const [showAltEditor,   setShowAltEditor]   = useState(false);
+    const [dragActiveMain,   setDragActiveMain]   = useState(false);
+    const [dragActiveDetail, setDragActiveDetail] = useState(false);
+    const detailFileRef = useRef<HTMLInputElement>(null);
 
     // Bulk discount toggle + options
     const [bulkDiscountEnabled, setBulkDiscountEnabled] = useState(false);
@@ -164,7 +180,16 @@ export default function SellerProductEditPage() {
                 });
                 setApprovalStatus(data.approvalStatus ?? 'PENDING');
                 setRejectionReason(data.rejectionReason ?? null);
-                setExistingImages(data.images ?? []);
+                setMainImageList(
+                    (data.images ?? []).map((img: any) => ({
+                        existingId: img.id, url: img.url, preview: img.url, alt: img.altText ?? '',
+                    }))
+                );
+                setDetailImageList(
+                    (data.detailImages ?? []).map((img: any) => ({
+                        existingId: img.id, url: img.url, preview: img.url, alt: img.altText ?? '',
+                    }))
+                );
 
                 // Load options
                 const rawOptions = data.options ?? [];
@@ -231,18 +256,28 @@ export default function SellerProductEditPage() {
             .finally(() => setLoading(false));
     }, [productId, router]);
 
-    const addFiles = useCallback((files: FileList | File[]) => {
+    const addMainFiles = useCallback((files: FileList | File[]) => {
         const arr = Array.from(files).filter(f => f.type.startsWith('image/'));
-        const visibleCount = existingImages.filter(img => !deleteImageIds.includes(img.id)).length + newImages.length;
-        const toAdd = arr.slice(0, Math.max(0, 10 - visibleCount));
-        setNewImages(prev => [
+        const toAdd = arr.slice(0, Math.max(0, MAX_MAIN_IMAGES - mainImageList.length));
+        setMainImageList(prev => [
             ...prev,
             ...toAdd.map(file => ({ file, preview: URL.createObjectURL(file) })),
         ]);
-    }, [existingImages, deleteImageIds, newImages.length]);
+    }, [mainImageList.length]);
+
+    const addDetailFiles = useCallback((files: FileList | File[]) => {
+        const arr = Array.from(files).filter(f => f.type.startsWith('image/'));
+        const toAdd = arr.slice(0, Math.max(0, MAX_DETAIL_IMAGES - detailImageList.length));
+        setDetailImageList(prev => [
+            ...prev,
+            ...toAdd.map(file => ({ file, preview: URL.createObjectURL(file) })),
+        ]);
+    }, [detailImageList.length]);
 
     useEffect(() => {
         const handlePaste = (e: ClipboardEvent) => {
+            const target = e.target as HTMLElement;
+            if (target && /^(INPUT|TEXTAREA)$/.test(target.tagName)) return;
             const items = e.clipboardData?.items;
             if (!items) return;
             const imgs: File[] = [];
@@ -252,32 +287,59 @@ export default function SellerProductEditPage() {
                     if (f) imgs.push(f);
                 }
             }
-            if (imgs.length > 0) addFiles(imgs);
+            if (imgs.length === 0) return;
+            if (mainImageList.length < MAX_MAIN_IMAGES) addMainFiles(imgs);
+            else addDetailFiles(imgs);
         };
         window.addEventListener('paste', handlePaste);
         return () => window.removeEventListener('paste', handlePaste);
-    }, [addFiles]);
+    }, [addMainFiles, addDetailFiles, mainImageList.length]);
 
-    const removeExisting = (id: string) => setDeleteImageIds(prev => [...prev, id]);
-    const removeNew = (idx: number) => {
-        setNewImages(prev => {
-            URL.revokeObjectURL(prev[idx].preview);
+    const removeMainImage = (idx: number) => {
+        setMainImageList(prev => {
+            const it = prev[idx];
+            if (it?.file) URL.revokeObjectURL(it.preview);
+            return prev.filter((_, i) => i !== idx);
+        });
+    };
+    const removeDetailImage = (idx: number) => {
+        setDetailImageList(prev => {
+            const it = prev[idx];
+            if (it?.file) URL.revokeObjectURL(it.preview);
             return prev.filter((_, i) => i !== idx);
         });
     };
 
-    const reorderExistingImages = (from: number, to: number) => {
-        setExistingImages(prev => {
-            const visible = prev.filter(img => !deleteImageIds.includes(img.id));
-            const [moved] = visible.splice(from, 1);
-            visible.splice(to, 0, moved);
-            const deleted = prev.filter(img => deleteImageIds.includes(img.id));
-            return [...visible, ...deleted];
-        });
+    const reorderMain = (from: number, to: number) => {
+        setMainImageList(prev => { const a = [...prev]; const [m] = a.splice(from, 1); a.splice(to, 0, m); return a; });
+    };
+    const reorderDetail = (from: number, to: number) => {
+        setDetailImageList(prev => { const a = [...prev]; const [m] = a.splice(from, 1); a.splice(to, 0, m); return a; });
     };
 
-    const reorderNewImages = (from: number, to: number) => {
-        setNewImages(prev => { const a = [...prev]; const [m] = a.splice(from, 1); a.splice(to, 0, m); return a; });
+    const setMainAlt = (idx: number, alt: string) =>
+        setMainImageList(prev => prev.map((it, i) => i === idx ? { ...it, alt } : it));
+    const setDetailAlt = (idx: number, alt: string) =>
+        setDetailImageList(prev => prev.map((it, i) => i === idx ? { ...it, alt } : it));
+
+    const resolveList = async (list: EditImageItem[]): Promise<Array<{ id?: string; url: string; alt?: string }>> => {
+        const out: Array<{ id?: string; url: string; alt?: string }> = [];
+        for (const it of list) {
+            if (it.existingId && it.url) {
+                out.push({ id: it.existingId, url: it.url, alt: it.alt });
+                continue;
+            }
+            if (it.file) {
+                const fd = new FormData();
+                fd.append('file', it.file);
+                const res = await fetch('/api/upload', { method: 'POST', body: fd });
+                const data = await res.json();
+                if (data.url) out.push({ url: data.url, alt: it.alt });
+            } else if (it.url) {
+                out.push({ url: it.url, alt: it.alt });
+            }
+        }
+        return out;
     };
 
     const set = (field: keyof ProductForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
@@ -340,17 +402,13 @@ export default function SellerProductEditPage() {
         setSaving(true);
         setMessage(null);
         try {
-            // 1. Upload new images
-            let uploadedUrls: string[] = [];
-            if (newImages.length > 0) {
-                setUploading(true);
-                const fd = new FormData();
-                newImages.forEach(img => fd.append('files', img.file));
-                const up = await fetch('/api/upload', { method: 'POST', body: fd });
-                const upData = await up.json();
-                uploadedUrls = upData.urls || [];
-                setUploading(false);
-            }
+            // 1. Resolve both image lists — upload new files, build {id?, url, alt?} payload
+            setUploading(true);
+            const [mainImagesPayload, detailImagesPayload] = await Promise.all([
+                resolveList(mainImageList),
+                resolveList(detailImageList),
+            ]);
+            setUploading(false);
 
             // 2. Build multi-type variants payload
             const variantsPayload: any[] = [];
@@ -405,8 +463,8 @@ export default function SellerProductEditPage() {
                     lengthCm:      parseFloat(form.lengthCm) || null,
                     widthCm:       parseFloat(form.widthCm) || null,
                     heightCm:      parseFloat(form.heightCm) || null,
-                    imageUrls:     uploadedUrls,
-                    deleteImageIds,
+                    mainImages:   mainImagesPayload,
+                    detailImages: detailImagesPayload,
                     options:       bulkDiscountEnabled ? options : [],
                     variants:      variantsPayload,
                 }),
@@ -415,8 +473,6 @@ export default function SellerProductEditPage() {
             if (res.ok) {
                 setMessage({ type: 'success', text: 'Changes saved! Redirecting…', textKo: '수정 완료. 재검수 대기 중입니다.' });
                 setApprovalStatus('PENDING');
-                setDeleteImageIds([]);
-                setNewImages([]);
                 setTimeout(() => router.push('/seller/products'), 2000);
             } else {
                 setMessage({ type: 'error', text: 'Failed to save changes.', textKo: data.error ?? '저장에 실패했습니다.' });
@@ -438,8 +494,8 @@ export default function SellerProductEditPage() {
     }
 
     const badgeInfo       = BADGE_LABEL[approvalStatus];
-    const visibleExisting = existingImages.filter(img => !deleteImageIds.includes(img.id));
-    const totalImages     = visibleExisting.length + newImages.length;
+    const totalMainImages = mainImageList.length;
+    const totalDetailImages = detailImageList.length;
     const anyVariant      = variantEnabled && (enableColor || enableSize || enableVolume || enableCustom);
 
     return (
@@ -498,49 +554,49 @@ export default function SellerProductEditPage() {
 
             <form onSubmit={handleSubmit} className="space-y-5">
 
-                {/* ── Product Images ── */}
+                {/* ── Main Gallery ── */}
                 <section className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
                     <h2 className="text-sm font-bold text-gray-900 mb-0.5 flex items-center gap-2">
                         <span className="w-1.5 h-4 bg-teal-500 rounded-full inline-block" />
-                        Product Images
-                        <span className="text-[10px] font-normal text-gray-400 ml-1">{totalImages}/10 · 상품 이미지</span>
+                        Main Gallery
+                        <span className={`text-[10px] font-normal ml-1 ${totalMainImages >= MAX_MAIN_IMAGES ? 'text-red-500' : 'text-gray-400'}`}>{totalMainImages}/{MAX_MAIN_IMAGES} · 메인 썸네일</span>
                     </h2>
-                    <p className="text-[11px] text-gray-400 mb-4 ml-3.5">Drag to reorder · Hover × to remove · 상품 이미지 최대 10장</p>
-                    <div className="flex gap-3 flex-wrap items-start">
-                        {visibleExisting.length > 0 && (
-                            <DraggableImageGrid
-                                images={visibleExisting.map(img => ({ id: img.id, src: img.url }))}
-                                onReorder={reorderExistingImages}
-                                onRemove={(idx) => { if (visibleExisting[idx]) removeExisting(visibleExisting[idx].id); }}
-                                coverLabel="Main"
-                                layout="flex"
-                            />
-                        )}
-                        {newImages.length > 0 && (
-                            <DraggableImageGrid
-                                images={newImages.map((img) => ({
-                                    id: img.preview,
-                                    src: img.preview,
-                                    badge: 'New · 신규',
-                                    badgeColor: 'bg-teal-600',
-                                    borderColor: 'border-teal-300 border-2',
-                                }))}
-                                onReorder={reorderNewImages}
-                                onRemove={removeNew}
-                                layout="flex"
-                            />
-                        )}
-                        {totalImages < 10 && (
-                            <button type="button" onClick={() => fileRef.current?.click()}
-                                className="w-24 h-24 border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center text-gray-400 hover:border-teal-400 hover:text-teal-600 transition-colors">
-                                <ImagePlus className="w-5 h-5 mb-1" />
-                                <span className="text-xs font-medium">Add</span>
-                                <span className="text-[9px] opacity-60 mt-0.5">or Ctrl+V</span>
-                            </button>
-                        )}
+                    <p className="text-[11px] text-gray-400 mb-4 ml-3.5">Drag to reorder · 상품 상단/목록 썸네일 · auto WebP</p>
+                    <div
+                        className={`rounded-xl p-2 transition-colors ${dragActiveMain ? 'bg-teal-50 border-2 border-dashed border-teal-300' : ''}`}
+                        onDragEnter={() => setDragActiveMain(true)}
+                        onDragLeave={() => setDragActiveMain(false)}
+                        onDragOver={e => e.preventDefault()}
+                        onDrop={e => { e.preventDefault(); setDragActiveMain(false); addMainFiles(e.dataTransfer.files); }}
+                    >
+                        <div className="flex gap-3 flex-wrap items-start">
+                            {mainImageList.length > 0 && (
+                                <DraggableImageGrid
+                                    images={mainImageList.map((img) => ({
+                                        id: img.existingId ?? img.preview,
+                                        src: img.preview,
+                                        badge: img.file ? 'New · 신규' : undefined,
+                                        badgeColor: img.file ? 'bg-teal-600' : undefined,
+                                        borderColor: img.file ? 'border-teal-300 border-2' : undefined,
+                                    }))}
+                                    onReorder={reorderMain}
+                                    onRemove={removeMainImage}
+                                    coverLabel="Main"
+                                    layout="flex"
+                                />
+                            )}
+                            {totalMainImages < MAX_MAIN_IMAGES && (
+                                <button type="button" onClick={() => fileRef.current?.click()}
+                                    className="w-24 h-24 border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center text-gray-400 hover:border-teal-400 hover:text-teal-600 transition-colors">
+                                    <ImagePlus className="w-5 h-5 mb-1" />
+                                    <span className="text-xs font-medium">Add</span>
+                                    <span className="text-[9px] opacity-60 mt-0.5">or drop / Ctrl+V</span>
+                                </button>
+                            )}
+                        </div>
                     </div>
                     <input ref={fileRef} type="file" accept="image/*" multiple className="hidden"
-                        onChange={e => e.target.files && addFiles(e.target.files)} />
+                        onChange={e => e.target.files && addMainFiles(e.target.files)} />
                     {uploading && (
                         <div className="mt-3 flex items-center gap-2 text-xs text-teal-600">
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -548,6 +604,101 @@ export default function SellerProductEditPage() {
                         </div>
                     )}
                 </section>
+
+                {/* ── Detail Page Images ── */}
+                <section className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+                    <h2 className="text-sm font-bold text-gray-900 mb-0.5 flex items-center gap-2">
+                        <span className="w-1.5 h-4 bg-purple-500 rounded-full inline-block" />
+                        Detail Page Images
+                        <span className={`text-[10px] font-normal ml-1 ${totalDetailImages >= MAX_DETAIL_IMAGES ? 'text-red-500' : 'text-purple-600'}`}>{totalDetailImages}/{MAX_DETAIL_IMAGES} · 상세 페이지</span>
+                    </h2>
+                    <p className="text-[11px] text-purple-700 mb-4 ml-3.5">Description 탭에 세로로 연속 표시 (Coupang/Tmall 스타일)</p>
+                    <div
+                        className={`rounded-xl p-2 transition-colors ${dragActiveDetail ? 'bg-purple-50 border-2 border-dashed border-purple-300' : ''}`}
+                        onDragEnter={() => setDragActiveDetail(true)}
+                        onDragLeave={() => setDragActiveDetail(false)}
+                        onDragOver={e => e.preventDefault()}
+                        onDrop={e => { e.preventDefault(); setDragActiveDetail(false); addDetailFiles(e.dataTransfer.files); }}
+                    >
+                        <div className="flex gap-3 flex-wrap items-start">
+                            {detailImageList.length > 0 && (
+                                <DraggableImageGrid
+                                    images={detailImageList.map((img) => ({
+                                        id: img.existingId ?? img.preview,
+                                        src: img.preview,
+                                        badge: img.file ? 'New · 신규' : undefined,
+                                        badgeColor: img.file ? 'bg-purple-600' : undefined,
+                                        borderColor: img.file ? 'border-purple-300 border-2' : undefined,
+                                    }))}
+                                    onReorder={reorderDetail}
+                                    onRemove={removeDetailImage}
+                                    layout="flex"
+                                />
+                            )}
+                            {totalDetailImages < MAX_DETAIL_IMAGES && (
+                                <button type="button" onClick={() => detailFileRef.current?.click()}
+                                    className="w-24 h-24 border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center text-gray-400 hover:border-purple-400 hover:text-purple-600 transition-colors">
+                                    <ImagePlus className="w-5 h-5 mb-1" />
+                                    <span className="text-xs font-medium">Add</span>
+                                    <span className="text-[9px] opacity-60 mt-0.5">K-beauty story</span>
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                    <input ref={detailFileRef} type="file" accept="image/*" multiple className="hidden"
+                        onChange={e => e.target.files && addDetailFiles(e.target.files)} />
+                </section>
+
+                {/* ── Alt Text (optional) ── */}
+                {(mainImageList.length > 0 || detailImageList.length > 0) && (
+                    <section className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                        <button type="button" onClick={() => setShowAltEditor(p => !p)}
+                            className="w-full px-5 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors">
+                            <div className="text-left">
+                                <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                                    <Globe className="w-4 h-4 text-gray-500" />
+                                    Alt Text (Optional · SEO/접근성)
+                                </h3>
+                                <p className="text-xs text-gray-500 mt-0.5">비워두면 상품명 기반으로 자동 생성됩니다.</p>
+                            </div>
+                            {showAltEditor ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+                        </button>
+                        {showAltEditor && (
+                            <div className="px-5 pb-5 space-y-4 border-t border-gray-100 pt-4">
+                                {mainImageList.length > 0 && (
+                                    <div>
+                                        <p className="text-xs font-bold text-gray-600 mb-2">Main Gallery</p>
+                                        <div className="space-y-2">
+                                            {mainImageList.map((img, i) => (
+                                                <div key={img.existingId ?? img.preview} className="flex items-center gap-3">
+                                                    <img src={img.preview} className="w-12 h-12 object-cover rounded-lg border border-gray-200 flex-shrink-0" />
+                                                    <input type="text" value={img.alt || ''} onChange={e => setMainAlt(i, e.target.value)}
+                                                        placeholder={`${form.name || 'Product'} - ${i + 1}`} maxLength={255}
+                                                        className="flex-1 border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-teal-500 focus:outline-none" />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                                {detailImageList.length > 0 && (
+                                    <div>
+                                        <p className="text-xs font-bold text-purple-600 mb-2">Detail Images</p>
+                                        <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                                            {detailImageList.map((img, i) => (
+                                                <div key={img.existingId ?? img.preview} className="flex items-center gap-3">
+                                                    <img src={img.preview} className="w-12 h-12 object-cover rounded-lg border border-gray-200 flex-shrink-0" />
+                                                    <input type="text" value={img.alt || ''} onChange={e => setDetailAlt(i, e.target.value)}
+                                                        placeholder={`${form.name || 'Product'} detail ${i + 1}`} maxLength={255}
+                                                        className="flex-1 border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none" />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </section>
+                )}
 
                 {/* ── Basic Info ── */}
                 <section className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">

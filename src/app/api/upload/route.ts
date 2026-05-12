@@ -1,5 +1,6 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { Storage } from '@google-cloud/storage';
+import sharp from 'sharp';
 import { auth } from '@/auth';
 
 const GCS_BUCKET = process.env.GCS_BUCKET_NAME || 'kkshop-images';
@@ -10,6 +11,10 @@ const bucket = storage.bucket(GCS_BUCKET);
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/jpg'];
 const MAX_SIZE_MB = 10;
+// Max output width — anything larger is resized down. 1600px covers retina mobile + desktop.
+const MAX_OUTPUT_WIDTH = 1600;
+// WebP quality — 82 is the sweet spot (visually identical to 90, ~25% smaller files).
+const WEBP_QUALITY = 82;
 
 // Magic byte signatures for real image validation
 const MAGIC_BYTES: Record<string, number[][]> = {
@@ -24,6 +29,26 @@ function isValidMagicBytes(buffer: Buffer, mimeType: string): boolean {
     const signatures = MAGIC_BYTES[mimeType];
     if (!signatures) return false;
     return signatures.some(sig => sig.every((byte, i) => buffer[i] === byte));
+}
+
+/**
+ * Convert any input image to optimized WebP.
+ * - Strips EXIF/GPS metadata (privacy)
+ * - Resizes to MAX_OUTPUT_WIDTH if larger (preserves aspect ratio)
+ * - Quality 82 WebP — typically 70–85% smaller than original JPEG
+ * GIF special case: keep as-is (sharp can lose animation frames easily).
+ */
+async function processImage(buffer: Buffer, mimeType: string): Promise<{ buffer: Buffer; ext: string; contentType: string }> {
+    // GIF: pass through (preserve animation)
+    if (mimeType === 'image/gif') {
+        return { buffer, ext: 'gif', contentType: 'image/gif' };
+    }
+    const optimized = await sharp(buffer, { failOn: 'truncated' })
+        .rotate() // auto-rotate based on EXIF then strip metadata
+        .resize({ width: MAX_OUTPUT_WIDTH, withoutEnlargement: true })
+        .webp({ quality: WEBP_QUALITY, effort: 4 })
+        .toBuffer();
+    return { buffer: optimized, ext: 'webp', contentType: 'image/webp' };
 }
 
 export async function POST(request: NextRequest) {
@@ -47,6 +72,7 @@ export async function POST(request: NextRequest) {
         }
 
         const uploadedUrls: string[] = [];
+        let totalSavedBytes = 0;
 
         for (const file of filesToUpload) {
             // Validate file type
@@ -60,33 +86,50 @@ export async function POST(request: NextRequest) {
             }
 
             const bytes = await file.arrayBuffer();
-            const buffer = Buffer.from(bytes);
+            const inputBuffer = Buffer.from(bytes);
 
             // Verify actual file content matches declared MIME type (magic bytes)
-            if (!isValidMagicBytes(buffer, file.type)) {
+            if (!isValidMagicBytes(inputBuffer, file.type)) {
                 return NextResponse.json({ success: false, error: 'File content does not match declared type. Upload a real image.' }, { status: 400 });
             }
 
-            // Build unique filename — e.g. products/1709123456789_product.jpg
+            // ── Optimize: resize + WebP convert (Cambodia mobile = slow 4G/3G) ──
+            let processed: { buffer: Buffer; ext: string; contentType: string };
+            try {
+                processed = await processImage(inputBuffer, file.type);
+            } catch (procErr: any) {
+                console.error('[Upload] Image processing failed:', procErr?.message);
+                return NextResponse.json({ success: false, error: 'Image could not be processed. The file may be corrupt.' }, { status: 400 });
+            }
+
+            const savedBytes = inputBuffer.length - processed.buffer.length;
+            totalSavedBytes += savedBytes;
+
+            // Build unique filename — strip original extension, use webp/gif
             const timestamp = Date.now();
-            const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-            const gcsFilename = `products/${timestamp}_${safeName}`;
+            const rand = Math.random().toString(36).slice(2, 8);
+            const baseName = file.name.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9-]/g, '_').slice(0, 40);
+            const gcsFilename = `products/${timestamp}_${rand}_${baseName}.${processed.ext}`;
 
             // Upload to GCS
             const gcsFile = bucket.file(gcsFilename);
-            await gcsFile.save(buffer, {
-                contentType: file.type,
-                metadata: { cacheControl: 'public, max-age=31536000' },
+            await gcsFile.save(processed.buffer, {
+                contentType: processed.contentType,
+                metadata: { cacheControl: 'public, max-age=31536000, immutable' },
             });
 
             const publicUrl = `https://storage.googleapis.com/${GCS_BUCKET}/${gcsFilename}`;
             uploadedUrls.push(publicUrl);
-            console.log(`[Upload] Saved to GCS: ${publicUrl}`);
+            console.log(`[Upload] ${file.name}: ${inputBuffer.length}B → ${processed.buffer.length}B (saved ${Math.round((savedBytes / inputBuffer.length) * 100)}%) → ${publicUrl}`);
         }
 
-        // Public URL (bucket has allUsers read access)
         const publicUrl = uploadedUrls[0];
-        return NextResponse.json({ success: true, url: publicUrl, urls: uploadedUrls });
+        return NextResponse.json({
+            success: true,
+            url: publicUrl,
+            urls: uploadedUrls,
+            savedBytes: totalSavedBytes,
+        });
 
     } catch (error: any) {
         console.error('[Upload] Error:', error);

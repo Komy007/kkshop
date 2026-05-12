@@ -94,7 +94,9 @@ export async function POST(req: Request) {
         unitLabel, unitsPerPkg,
         weightGram, lengthCm, widthCm, heightCm,
         nameKo, shortDescKo, detailDescKo, ingredientsKo, howToUseKo, benefitsKo,
-        imageUrls = [], options = [], variants = [],
+        imageUrls = [], detailImageUrls = [],
+        imageAlts = [], detailImageAlts = [],
+        options = [], variants = [],
     } = body;
 
     if (!sku || !priceUsd || !nameKo) return NextResponse.json({ error: '필수 값 누락' }, { status: 400 });
@@ -189,8 +191,23 @@ export async function POST(req: Request) {
             approvalStatus: 'PENDING',
             imageUrl: imageUrls[0] || null,
             translations: { create: [trKo, trEn, trKm, trZh] },
-            ...(imageUrls.length > 0 && {
-                images: { create: imageUrls.map((url: string, i: number) => ({ url, sortOrder: i })) },
+            ...((imageUrls.length > 0 || detailImageUrls.length > 0) && {
+                images: {
+                    create: [
+                        ...imageUrls.slice(0, 10).map((url: string, i: number) => ({
+                            url,
+                            altText: imageAlts[i]?.trim() || null,
+                            sortOrder: i,
+                            imageType: 'MAIN',
+                        })),
+                        ...detailImageUrls.slice(0, 50).map((url: string, i: number) => ({
+                            url,
+                            altText: detailImageAlts[i]?.trim() || null,
+                            sortOrder: i,
+                            imageType: 'DETAIL',
+                        })),
+                    ],
+                },
             }),
             ...(optionsData.length > 0 && {
                 options: { create: optionsData },

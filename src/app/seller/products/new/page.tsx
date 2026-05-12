@@ -2,11 +2,14 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Upload, X, Loader2, Sparkles, Info, CheckCircle, Plus, Package, Truck } from 'lucide-react';
+import { Upload, X, Loader2, Sparkles, Info, CheckCircle, Plus, Package, Truck, FileText, ChevronDown, ChevronUp, Globe } from 'lucide-react';
 import DraggableImageGrid from '@/components/DraggableImageGrid';
 import { useTranslations } from '@/i18n/useTranslations';
 
 interface Category { id: string; slug: string; nameKo: string; nameEn?: string; parentId?: string | null; }
+
+const MAX_MAIN_IMAGES = 10;
+const MAX_DETAIL_IMAGES = 50;
 
 const SIZE_PRESETS = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Free Size'];
 const VOLUME_PRESETS = ['30ml', '50ml', '100ml', '150ml', '200ml', '250ml', '300ml', '500ml', '1L'];
@@ -68,9 +71,17 @@ function ToggleSwitch({ checked, onChange, label, sub }: { checked: boolean; onC
 export default function SellerProductNewPage() {
     const router  = useRouter();
     const t       = useTranslations();
-    const fileRef = useRef<HTMLInputElement>(null);
-    const [images,      setImages]     = useState<File[]>([]);
-    const [previews,    setPreviews]   = useState<string[]>([]);
+    const fileRef       = useRef<HTMLInputElement>(null);
+    const detailFileRef = useRef<HTMLInputElement>(null);
+    const [images,         setImages]         = useState<File[]>([]);
+    const [previews,       setPreviews]       = useState<string[]>([]);
+    const [imageAlts,      setImageAlts]      = useState<string[]>([]);
+    const [detailImages,   setDetailImages]   = useState<File[]>([]);
+    const [detailPreviews, setDetailPreviews] = useState<string[]>([]);
+    const [detailImageAlts, setDetailImageAlts] = useState<string[]>([]);
+    const [showAltEditor,  setShowAltEditor]  = useState(false);
+    const [dragActive,        setDragActive]        = useState(false);
+    const [dragActiveDetail,  setDragActiveDetail]  = useState(false);
     const [categories,  setCategories] = useState<Category[]>([]);
     const [catLoading,  setCatLoading] = useState(true);
     const [catError,    setCatError]   = useState(false);
@@ -135,27 +146,36 @@ export default function SellerProductNewPage() {
                 }
             }
             if (!imageFiles.length) return;
-            const added = imageFiles.slice(0, 10 - images.length);
-            setImages(p => [...p, ...added].slice(0, 10));
-            added.forEach(f => {
-                const reader = new FileReader();
-                reader.onload = ev => setPreviews(p => [...p, ev.target?.result as string].slice(0, 10));
-                reader.readAsDataURL(f);
-            });
+            // Default paste-target: main gallery if not full, then detail
+            if (images.length < MAX_MAIN_IMAGES) addImages(imageFiles as any);
+            else addDetailImages(imageFiles as any);
         };
         window.addEventListener('paste', handlePaste);
         return () => window.removeEventListener('paste', handlePaste);
-    }, [images.length]);
+    }, [images.length, detailImages.length]);
 
     const set = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }));
 
-    const addImages = (files: FileList | null) => {
+    const addImages = (files: FileList | File[] | null) => {
         if (!files) return;
-        const added = Array.from(files).slice(0, 10 - images.length);
-        setImages(p => [...p, ...added].slice(0, 10));
+        const arr = Array.from(files as any) as File[];
+        const added = arr.slice(0, MAX_MAIN_IMAGES - images.length);
+        setImages(p => [...p, ...added].slice(0, MAX_MAIN_IMAGES));
         added.forEach(f => {
             const reader = new FileReader();
-            reader.onload = e => setPreviews(p => [...p, e.target?.result as string].slice(0, 10));
+            reader.onload = e => setPreviews(p => [...p, e.target?.result as string].slice(0, MAX_MAIN_IMAGES));
+            reader.readAsDataURL(f);
+        });
+    };
+
+    const addDetailImages = (files: FileList | File[] | null) => {
+        if (!files) return;
+        const arr = Array.from(files as any) as File[];
+        const added = arr.slice(0, MAX_DETAIL_IMAGES - detailImages.length);
+        setDetailImages(p => [...p, ...added].slice(0, MAX_DETAIL_IMAGES));
+        added.forEach(f => {
+            const reader = new FileReader();
+            reader.onload = e => setDetailPreviews(p => [...p, e.target?.result as string].slice(0, MAX_DETAIL_IMAGES));
             reader.readAsDataURL(f);
         });
     };
@@ -163,11 +183,42 @@ export default function SellerProductNewPage() {
     const removeImage = (i: number) => {
         setImages(p => p.filter((_, idx) => idx !== i));
         setPreviews(p => p.filter((_, idx) => idx !== i));
+        setImageAlts(p => p.filter((_, idx) => idx !== i));
+    };
+
+    const removeDetailImage = (i: number) => {
+        setDetailImages(p => p.filter((_, idx) => idx !== i));
+        setDetailPreviews(p => p.filter((_, idx) => idx !== i));
+        setDetailImageAlts(p => p.filter((_, idx) => idx !== i));
     };
 
     const reorderImages = (from: number, to: number) => {
         setImages(prev => { const a = [...prev]; const [m] = a.splice(from, 1); a.splice(to, 0, m); return a; });
         setPreviews(prev => { const a = [...prev]; const [m] = a.splice(from, 1); a.splice(to, 0, m); return a; });
+        setImageAlts(prev => { const a = [...prev]; const [m] = a.splice(from, 1); a.splice(to, 0, m); return a; });
+    };
+
+    const reorderDetailImages = (from: number, to: number) => {
+        setDetailImages(prev => { const a = [...prev]; const [m] = a.splice(from, 1); a.splice(to, 0, m); return a; });
+        setDetailPreviews(prev => { const a = [...prev]; const [m] = a.splice(from, 1); a.splice(to, 0, m); return a; });
+        setDetailImageAlts(prev => { const a = [...prev]; const [m] = a.splice(from, 1); a.splice(to, 0, m); return a; });
+    };
+
+    const setMainAltAt = (idx: number, alt: string) => {
+        setImageAlts(prev => {
+            const arr = [...prev];
+            while (arr.length <= idx) arr.push('');
+            arr[idx] = alt;
+            return arr;
+        });
+    };
+    const setDetailAltAt = (idx: number, alt: string) => {
+        setDetailImageAlts(prev => {
+            const arr = [...prev];
+            while (arr.length <= idx) arr.push('');
+            arr[idx] = alt;
+            return arr;
+        });
     };
 
     // ── Variant toggle handlers — auto-add first empty row on enable ──────
@@ -216,17 +267,23 @@ export default function SellerProductNewPage() {
 
         setSubmitting(true); setTranslating(true);
 
-        /* Upload images */
+        /* Upload images — main + detail in parallel */
         let imageUrls: string[] = [];
-        if (images.length > 0) {
-            try {
+        let detailImageUrls: string[] = [];
+        try {
+            const uploadOne = async (list: File[]): Promise<string[]> => {
+                if (list.length === 0) return [];
                 const fd = new FormData();
-                images.forEach(f => fd.append('files', f));
+                list.forEach(f => fd.append('files', f));
                 const up = await fetch('/api/upload', { method: 'POST', body: fd });
                 const upData = await up.json();
-                imageUrls = upData.urls || [];
-            } catch { /* ignore */ }
-        }
+                return upData.urls || [];
+            };
+            [imageUrls, detailImageUrls] = await Promise.all([
+                uploadOne(images),
+                uploadOne(detailImages),
+            ]);
+        } catch { /* swallow — empty arrays leave product image-less but won't block save */ }
         setTranslating(false);
 
         // ── Build variants payload (multi-type) ─────────────────────────
@@ -287,6 +344,9 @@ export default function SellerProductNewPage() {
             widthCm: parseFloat(form.widthCm) || null,
             heightCm: parseFloat(form.heightCm) || null,
             imageUrls,
+            detailImageUrls,
+            imageAlts,
+            detailImageAlts,
             options: bulkDiscountEnabled ? options : [],
             variants: variantsPayload,
             approvalStatus: 'PENDING',
@@ -345,29 +405,125 @@ export default function SellerProductNewPage() {
 
             <form onSubmit={handleSubmit} className="space-y-4">
 
-                {/* ── Images ── */}
-                <Section title="📸 Product Images" sub="상품 이미지 — max 10 photos · 최대 10장 · drag to reorder">
-                    <div className="flex gap-3 flex-wrap items-start">
-                        {previews.length > 0 && (
-                            <DraggableImageGrid
-                                images={previews.map((src) => ({ id: src, src }))}
-                                onReorder={reorderImages}
-                                onRemove={removeImage}
-                                coverLabel="Main"
-                                layout="flex"
-                            />
-                        )}
-                        {images.length < 10 && (
-                            <button type="button" onClick={() => fileRef.current?.click()}
-                                className="w-24 h-24 border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center text-gray-400 hover:border-teal-400 hover:text-teal-600 transition-colors">
-                                <Upload className="w-5 h-5 mb-1" />
-                                <span className="text-xs font-medium">Add</span>
-                                <span className="text-[9px] opacity-60 mt-0.5">or Ctrl+V</span>
-                            </button>
-                        )}
+                {/* ── Main Gallery (썸네일 + 스와이프) ── */}
+                <Section
+                    title={`📸 Main Gallery (${previews.length}/${MAX_MAIN_IMAGES})`}
+                    sub="메인 썸네일 · 상품 상단/목록에 표시 · drag to reorder · auto WebP"
+                >
+                    <div
+                        className={`rounded-xl p-2 transition-colors ${dragActive ? 'bg-teal-50 border-2 border-dashed border-teal-300' : ''}`}
+                        onDragEnter={() => setDragActive(true)}
+                        onDragLeave={() => setDragActive(false)}
+                        onDragOver={e => e.preventDefault()}
+                        onDrop={e => { e.preventDefault(); setDragActive(false); addImages(e.dataTransfer.files); }}
+                    >
+                        <div className="flex gap-3 flex-wrap items-start">
+                            {previews.length > 0 && (
+                                <DraggableImageGrid
+                                    images={previews.map((src) => ({ id: src, src }))}
+                                    onReorder={reorderImages}
+                                    onRemove={removeImage}
+                                    coverLabel="Main"
+                                    layout="flex"
+                                />
+                            )}
+                            {images.length < MAX_MAIN_IMAGES && (
+                                <button type="button" onClick={() => fileRef.current?.click()}
+                                    className="w-24 h-24 border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center text-gray-400 hover:border-teal-400 hover:text-teal-600 transition-colors">
+                                    <Upload className="w-5 h-5 mb-1" />
+                                    <span className="text-xs font-medium">Add</span>
+                                    <span className="text-[9px] opacity-60 mt-0.5">or drop / Ctrl+V</span>
+                                </button>
+                            )}
+                        </div>
                     </div>
                     <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={e => addImages(e.target.files)} />
                 </Section>
+
+                {/* ── Detail Page Images (스토리텔링) ── */}
+                <Section
+                    title={`📄 Detail Page Images (${detailPreviews.length}/${MAX_DETAIL_IMAGES})`}
+                    sub="상세 페이지 이미지 · Description 탭에 세로로 연속 표시 · 최대 50장"
+                >
+                    <div
+                        className={`rounded-xl p-2 transition-colors ${dragActiveDetail ? 'bg-purple-50 border-2 border-dashed border-purple-300' : ''}`}
+                        onDragEnter={() => setDragActiveDetail(true)}
+                        onDragLeave={() => setDragActiveDetail(false)}
+                        onDragOver={e => e.preventDefault()}
+                        onDrop={e => { e.preventDefault(); setDragActiveDetail(false); addDetailImages(e.dataTransfer.files); }}
+                    >
+                        <div className="flex gap-3 flex-wrap items-start">
+                            {detailPreviews.length > 0 && (
+                                <DraggableImageGrid
+                                    images={detailPreviews.map((src) => ({ id: src, src }))}
+                                    onReorder={reorderDetailImages}
+                                    onRemove={removeDetailImage}
+                                    layout="flex"
+                                />
+                            )}
+                            {detailImages.length < MAX_DETAIL_IMAGES && (
+                                <button type="button" onClick={() => detailFileRef.current?.click()}
+                                    className="w-24 h-24 border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center text-gray-400 hover:border-purple-400 hover:text-purple-600 transition-colors">
+                                    <Upload className="w-5 h-5 mb-1" />
+                                    <span className="text-xs font-medium">Add</span>
+                                    <span className="text-[9px] opacity-60 mt-0.5">K-beauty story</span>
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                    <input ref={detailFileRef} type="file" accept="image/*" multiple className="hidden" onChange={e => addDetailImages(e.target.files)} />
+                </Section>
+
+                {/* ── Alt Text editor (optional) ── */}
+                {(previews.length > 0 || detailPreviews.length > 0) && (
+                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm mb-4 overflow-hidden">
+                        <button type="button" onClick={() => setShowAltEditor(p => !p)}
+                            className="w-full px-6 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors">
+                            <div className="text-left">
+                                <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                                    <Globe className="w-4 h-4 text-gray-500" />
+                                    Alt Text (Optional · SEO/접근성)
+                                </h3>
+                                <p className="text-xs text-gray-500 mt-0.5">비워두면 상품명 기반으로 자동 생성됩니다.</p>
+                            </div>
+                            {showAltEditor ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+                        </button>
+                        {showAltEditor && (
+                            <div className="px-6 pb-5 space-y-4 border-t border-gray-100 pt-4">
+                                {previews.length > 0 && (
+                                    <div>
+                                        <p className="text-xs font-bold text-gray-600 mb-2">Main Gallery</p>
+                                        <div className="space-y-2">
+                                            {previews.map((src, i) => (
+                                                <div key={src} className="flex items-center gap-3">
+                                                    <img src={src} className="w-12 h-12 object-cover rounded-lg border border-gray-200 flex-shrink-0" />
+                                                    <input type="text" value={imageAlts[i] || ''} onChange={e => setMainAltAt(i, e.target.value)}
+                                                        placeholder={`${form.nameKo || 'Product'} - ${i + 1}`} maxLength={255}
+                                                        className="flex-1 border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-teal-500 focus:outline-none" />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                                {detailPreviews.length > 0 && (
+                                    <div>
+                                        <p className="text-xs font-bold text-purple-600 mb-2">Detail Images</p>
+                                        <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                                            {detailPreviews.map((src, i) => (
+                                                <div key={src} className="flex items-center gap-3">
+                                                    <img src={src} className="w-12 h-12 object-cover rounded-lg border border-gray-200 flex-shrink-0" />
+                                                    <input type="text" value={detailImageAlts[i] || ''} onChange={e => setDetailAltAt(i, e.target.value)}
+                                                        placeholder={`${form.nameKo || 'Product'} detail ${i + 1}`} maxLength={255}
+                                                        className="flex-1 border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none" />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 {/* ── Basic info ── */}
                 <Section title="📦 Basic Information" sub="기본 정보">
