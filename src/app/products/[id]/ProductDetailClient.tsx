@@ -1,12 +1,30 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { useParams } from 'next/navigation';
+import DOMPurify from 'isomorphic-dompurify';
 import { useSafeAppStore } from '@/store/useAppStore';
 import { Star, Heart, ChevronLeft, Check, Minus, Plus, Loader2, MessageCircle, Lock } from 'lucide-react';
 import TrustBadges from '@/components/TrustBadges';
 import Footer from '@/components/Footer';
 import { useCartStore } from '@/store/useCartStore';
+
+// Strict allowlist for rich-text HTML rendered from user/seller input.
+// Blocks scripts, iframes, event handlers, javascript: URLs, etc.
+const SANITIZE_CONFIG: DOMPurify.Config = {
+    ALLOWED_TAGS: [
+        'p', 'br', 'strong', 'b', 'em', 'i', 'u', 's', 'code', 'pre', 'blockquote',
+        'h2', 'h3', 'h4', 'ul', 'ol', 'li',
+        'a', 'img',
+        'table', 'thead', 'tbody', 'tr', 'th', 'td',
+        'div', 'span', 'hr',
+    ],
+    ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'class', 'style', 'colspan', 'rowspan'],
+    ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto):|[^a-z]|[a-z+.-]+(?:[^a-z+.\-:]|$))/i,
+    FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'form', 'input', 'button'],
+    FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover', 'formaction'],
+    ADD_ATTR: ['target', 'rel'],
+};
 
 const pdpTranslations: Record<string, any> = {
     ko: {
@@ -1329,9 +1347,9 @@ export default function ProductDetailClient() {
                                         ))}
                                     </div>
                                 )}
-                                <div className="prose max-w-none">
+                                <div className="prose max-w-none prose-table:my-3 prose-img:rounded-lg">
                                     {product.detailDesc ? (
-                                        <div dangerouslySetInnerHTML={{ __html: product.detailDesc }} />
+                                        <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(product.detailDesc, SANITIZE_CONFIG) as unknown as string }} />
                                     ) : (
                                         <p className="text-gray-500">{product.shortDesc || 'No description available.'}</p>
                                     )}

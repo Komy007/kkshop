@@ -18,11 +18,16 @@ export interface ProductFields {
 /**
  * Translate a single text to a target language.
  * Returns the original text if translation fails.
+ * Auto-detects HTML and uses html-mode translation so tags survive intact.
  */
 export async function translate(text: string, targetLang: string): Promise<string> {
     if (!text || !text.trim()) return text;
+    const isHtml = /<[a-z][\s\S]*>/i.test(text);
     try {
-        const [result] = await client.translate(text, targetLang);
+        const [result] = await client.translate(text, {
+            to: targetLang,
+            format: isHtml ? 'html' : 'text',
+        } as any);
         return result;
     } catch (err) {
         console.warn(`[translate] Failed to translate to ${targetLang}:`, err);

@@ -4,7 +4,18 @@ import { auth } from '@/auth';
 import { Translate } from '@google-cloud/translate/build/src/v2';
 import { detectLanguage } from '@/lib/translate';
 
-const translate = new Translate();
+const translateClient = new Translate();
+
+// HTML-aware translation: preserves rich-text tags through Google Translate
+async function smartTranslate(text: string, targetLang: string): Promise<[string]> {
+    const isHtml = /<[a-z][\s\S]*>/i.test(text);
+    const [result] = await translateClient.translate(text, {
+        to: targetLang,
+        format: isHtml ? 'html' : 'text',
+    } as any);
+    return [result];
+}
+const translate = { translate: smartTranslate };
 
 export const dynamic = 'force-dynamic';
 

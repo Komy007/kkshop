@@ -4,6 +4,8 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Save, Loader2, ChevronLeft, AlertCircle, AlertTriangle, CheckCircle, Upload, X, ImagePlus, Plus, Sparkles, Truck } from 'lucide-react';
 import DraggableImageGrid from '@/components/DraggableImageGrid';
+import RichTextEditor from '@/components/RichTextEditor';
+import ImportFromUrlsButton from '@/components/ImportFromUrlsButton';
 import { FileText, ChevronDown, ChevronUp, Globe } from 'lucide-react';
 
 const MAX_MAIN_IMAGES = 10;
@@ -322,8 +324,9 @@ export default function SellerProductEditPage() {
     const setDetailAlt = (idx: number, alt: string) =>
         setDetailImageList(prev => prev.map((it, i) => i === idx ? { ...it, alt } : it));
 
-    const resolveList = async (list: EditImageItem[]): Promise<Array<{ id?: string; url: string; alt?: string }>> => {
+    const resolveList = async (list: EditImageItem[], square = false): Promise<Array<{ id?: string; url: string; alt?: string }>> => {
         const out: Array<{ id?: string; url: string; alt?: string }> = [];
+        const endpoint = square ? '/api/upload?crop=square' : '/api/upload';
         for (const it of list) {
             if (it.existingId && it.url) {
                 out.push({ id: it.existingId, url: it.url, alt: it.alt });
@@ -332,7 +335,7 @@ export default function SellerProductEditPage() {
             if (it.file) {
                 const fd = new FormData();
                 fd.append('file', it.file);
-                const res = await fetch('/api/upload', { method: 'POST', body: fd });
+                const res = await fetch(endpoint, { method: 'POST', body: fd });
                 const data = await res.json();
                 if (data.url) out.push({ url: data.url, alt: it.alt });
             } else if (it.url) {
@@ -403,10 +406,11 @@ export default function SellerProductEditPage() {
         setMessage(null);
         try {
             // 1. Resolve both image lists — upload new files, build {id?, url, alt?} payload
+            // Main: 1:1 square · Detail: aspect-preserving
             setUploading(true);
             const [mainImagesPayload, detailImagesPayload] = await Promise.all([
-                resolveList(mainImageList),
-                resolveList(detailImageList),
+                resolveList(mainImageList, true),
+                resolveList(detailImageList, false),
             ]);
             setUploading(false);
 
@@ -560,8 +564,21 @@ export default function SellerProductEditPage() {
                         <span className="w-1.5 h-4 bg-teal-500 rounded-full inline-block" />
                         Main Gallery
                         <span className={`text-[10px] font-normal ml-1 ${totalMainImages >= MAX_MAIN_IMAGES ? 'text-red-500' : 'text-gray-400'}`}>{totalMainImages}/{MAX_MAIN_IMAGES} · 메인 썸네일</span>
+                        <span className="ml-auto">
+                            <ImportFromUrlsButton
+                                target="main"
+                                remaining={MAX_MAIN_IMAGES - mainImageList.length}
+                                accent="teal"
+                                onImported={(urls) => {
+                                    setMainImageList(prev => [
+                                        ...prev,
+                                        ...urls.slice(0, MAX_MAIN_IMAGES - prev.length).map(url => ({ url, preview: url })),
+                                    ]);
+                                }}
+                            />
+                        </span>
                     </h2>
-                    <p className="text-[11px] text-gray-400 mb-4 ml-3.5">Drag to reorder · 상품 상단/목록 썸네일 · auto WebP</p>
+                    <p className="text-[11px] text-gray-400 mb-4 ml-3.5">Drag to reorder · 상품 상단/목록 썸네일 · <span className="text-teal-600 font-semibold">1:1 자동 크롭</span> · auto WebP</p>
                     <div
                         className={`rounded-xl p-2 transition-colors ${dragActiveMain ? 'bg-teal-50 border-2 border-dashed border-teal-300' : ''}`}
                         onDragEnter={() => setDragActiveMain(true)}
@@ -611,6 +628,19 @@ export default function SellerProductEditPage() {
                         <span className="w-1.5 h-4 bg-purple-500 rounded-full inline-block" />
                         Detail Page Images
                         <span className={`text-[10px] font-normal ml-1 ${totalDetailImages >= MAX_DETAIL_IMAGES ? 'text-red-500' : 'text-purple-600'}`}>{totalDetailImages}/{MAX_DETAIL_IMAGES} · 상세 페이지</span>
+                        <span className="ml-auto">
+                            <ImportFromUrlsButton
+                                target="detail"
+                                remaining={MAX_DETAIL_IMAGES - detailImageList.length}
+                                accent="purple"
+                                onImported={(urls) => {
+                                    setDetailImageList(prev => [
+                                        ...prev,
+                                        ...urls.slice(0, MAX_DETAIL_IMAGES - prev.length).map(url => ({ url, preview: url })),
+                                    ]);
+                                }}
+                            />
+                        </span>
                     </h2>
                     <p className="text-[11px] text-purple-700 mb-4 ml-3.5">Description 탭에 세로로 연속 표시 (Coupang/Tmall 스타일)</p>
                     <div
@@ -765,8 +795,12 @@ export default function SellerProductEditPage() {
                                 placeholder="1–2 line summary shown on product cards · 상품 요약 설명" className={ta} />
                         </Field>
                         <Field en="Detailed Description" ko="상세 설명">
-                            <textarea value={form.detailDesc} onChange={set('detailDesc')} rows={5}
-                                placeholder="Product features, effects, detailed information · 상품 상세 설명" className={`${ta} resize-y`} />
+                            <RichTextEditor
+                                value={form.detailDesc}
+                                onChange={(html) => setForm(prev => ({ ...prev, detailDesc: html }))}
+                                placeholder="Brand story, key features, ingredient tables, comparison charts… · 표·리스트·강조 지원"
+                                minHeight={200}
+                            />
                         </Field>
 
                         {/* Selling Unit */}

@@ -4,6 +4,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Upload, X, Loader2, Sparkles, Info, CheckCircle, Plus, Package, Truck, FileText, ChevronDown, ChevronUp, Globe } from 'lucide-react';
 import DraggableImageGrid from '@/components/DraggableImageGrid';
+import RichTextEditor from '@/components/RichTextEditor';
+import ImportFromUrlsButton from '@/components/ImportFromUrlsButton';
 import { useTranslations } from '@/i18n/useTranslations';
 
 interface Category { id: string; slug: string; nameKo: string; nameEn?: string; parentId?: string | null; }
@@ -24,11 +26,11 @@ const vInp = "px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-
 let _vseq = 0;
 const vk = () => `vk${++_vseq}_${Date.now()}`;
 
-function Section({ title, sub, children }: { title: string; sub?: string; children: React.ReactNode }) {
+function Section({ title, sub, children }: { title: string; sub?: React.ReactNode; children: React.ReactNode }) {
     return (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-4">
             <h2 className="font-extrabold text-gray-900 text-base leading-tight">{title}</h2>
-            {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
+            {sub && <div className="text-xs text-gray-400 mt-0.5">{sub}</div>}
             <div className="mt-4">{children}</div>
         </div>
     );
@@ -73,10 +75,11 @@ export default function SellerProductNewPage() {
     const t       = useTranslations();
     const fileRef       = useRef<HTMLInputElement>(null);
     const detailFileRef = useRef<HTMLInputElement>(null);
-    const [images,         setImages]         = useState<File[]>([]);
+    // Each item is either a File (to be uploaded) or a string (already-uploaded GCS URL from "Import from URLs")
+    const [images,         setImages]         = useState<Array<File | string>>([]);
     const [previews,       setPreviews]       = useState<string[]>([]);
     const [imageAlts,      setImageAlts]      = useState<string[]>([]);
-    const [detailImages,   setDetailImages]   = useState<File[]>([]);
+    const [detailImages,   setDetailImages]   = useState<Array<File | string>>([]);
     const [detailPreviews, setDetailPreviews] = useState<string[]>([]);
     const [detailImageAlts, setDetailImageAlts] = useState<string[]>([]);
     const [showAltEditor,  setShowAltEditor]  = useState(false);
@@ -268,20 +271,31 @@ export default function SellerProductNewPage() {
         setSubmitting(true); setTranslating(true);
 
         /* Upload images — main + detail in parallel */
+        // Main: 1:1 square crop · Detail: aspect-preserving
+        // Pre-uploaded URLs (from "Import from URLs") pass through unchanged at their list position.
         let imageUrls: string[] = [];
         let detailImageUrls: string[] = [];
         try {
-            const uploadOne = async (list: File[]): Promise<string[]> => {
-                if (list.length === 0) return [];
-                const fd = new FormData();
-                list.forEach(f => fd.append('files', f));
-                const up = await fetch('/api/upload', { method: 'POST', body: fd });
-                const upData = await up.json();
-                return upData.urls || [];
+            const resolveGallery = async (list: Array<File | string>, square: boolean): Promise<string[]> => {
+                // Bulk-upload all File entries in a single multipart request
+                const files = list.filter((it): it is File => it instanceof File);
+                let uploadedUrls: string[] = [];
+                if (files.length > 0) {
+                    const fd = new FormData();
+                    files.forEach(f => fd.append('files', f));
+                    const endpoint = square ? '/api/upload?crop=square' : '/api/upload';
+                    const up = await fetch(endpoint, { method: 'POST', body: fd });
+                    const upData = await up.json();
+                    uploadedUrls = upData.urls || [];
+                }
+                // Reconstruct the final URL list in original order
+                let fileIdx = 0;
+                return list.map(it => typeof it === 'string' ? it : (uploadedUrls[fileIdx++] ?? ''))
+                           .filter(u => Boolean(u));
             };
             [imageUrls, detailImageUrls] = await Promise.all([
-                uploadOne(images),
-                uploadOne(detailImages),
+                resolveGallery(images, true),
+                resolveGallery(detailImages, false),
             ]);
         } catch { /* swallow — empty arrays leave product image-less but won't block save */ }
         setTranslating(false);
@@ -408,7 +422,22 @@ export default function SellerProductNewPage() {
                 {/* ── Main Gallery (썸네일 + 스와이프) ── */}
                 <Section
                     title={`📸 Main Gallery (${previews.length}/${MAX_MAIN_IMAGES})`}
-                    sub="메인 썸네일 · 상품 상단/목록에 표시 · drag to reorder · auto WebP"
+                    sub={
+                        <div className="flex items-center justify-between gap-2">
+                            <span>메인 썸네일 · 상품 상단/목록 표시 · 1:1 자동 크롭 · auto WebP</span>
+                            <ImportFromUrlsButton
+                                target="main"
+                                remaining={MAX_MAIN_IMAGES - images.length}
+                                accent="teal"
+                                onImported={(urls) => {
+                                    const room = MAX_MAIN_IMAGES - images.length;
+                                    const toAdd = urls.slice(0, room);
+                                    setImages(prev => [...prev, ...toAdd]);
+                                    setPreviews(prev => [...prev, ...toAdd]);
+                                }}
+                            />
+                        </div>
+                    }
                 >
                     <div
                         className={`rounded-xl p-2 transition-colors ${dragActive ? 'bg-teal-50 border-2 border-dashed border-teal-300' : ''}`}
@@ -443,7 +472,22 @@ export default function SellerProductNewPage() {
                 {/* ── Detail Page Images (스토리텔링) ── */}
                 <Section
                     title={`📄 Detail Page Images (${detailPreviews.length}/${MAX_DETAIL_IMAGES})`}
-                    sub="상세 페이지 이미지 · Description 탭에 세로로 연속 표시 · 최대 50장"
+                    sub={
+                        <div className="flex items-center justify-between gap-2">
+                            <span>상세 페이지 이미지 · Description 탭 세로 연속 표시 · 원본 비율 유지 · 최대 50장</span>
+                            <ImportFromUrlsButton
+                                target="detail"
+                                remaining={MAX_DETAIL_IMAGES - detailImages.length}
+                                accent="purple"
+                                onImported={(urls) => {
+                                    const room = MAX_DETAIL_IMAGES - detailImages.length;
+                                    const toAdd = urls.slice(0, room);
+                                    setDetailImages(prev => [...prev, ...toAdd]);
+                                    setDetailPreviews(prev => [...prev, ...toAdd]);
+                                }}
+                            />
+                        </div>
+                    }
                 >
                     <div
                         className={`rounded-xl p-2 transition-colors ${dragActiveDetail ? 'bg-purple-50 border-2 border-dashed border-purple-300' : ''}`}
@@ -984,8 +1028,12 @@ export default function SellerProductNewPage() {
                                 placeholder="1–2 line summary shown on product cards" rows={2} className={ta} />
                         </Field>
                         <Field en="Detailed Description" ko="상세 설명">
-                            <textarea value={form.detailDescKo} onChange={e => set('detailDescKo', e.target.value)}
-                                placeholder="Product features, effects, detailed information" rows={5} className={ta} />
+                            <RichTextEditor
+                                value={form.detailDescKo}
+                                onChange={(html) => set('detailDescKo', html)}
+                                placeholder="Brand story, key features, ingredient tables, comparison charts… · 표·리스트·강조 지원"
+                                minHeight={200}
+                            />
                         </Field>
                         <Field en="Key Ingredients" ko="주요 성분">
                             <textarea value={form.ingredientsKo} onChange={e => set('ingredientsKo', e.target.value)}

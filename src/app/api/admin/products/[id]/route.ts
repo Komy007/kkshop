@@ -7,8 +7,19 @@ import { logAudit, getIpFromRequest } from '@/lib/audit';
 
 export const dynamic = 'force-dynamic';
 
-const translate = new Translate();
+const translateClient = new Translate();
 const TARGET_LANGS = ['ko', 'en', 'km', 'zh'];
+
+// HTML-aware translation: preserves <p>, <table>, <strong>, etc. through Google Translate
+async function smartTranslate(text: string, targetLang: string): Promise<[string]> {
+    const isHtml = /<[a-z][\s\S]*>/i.test(text);
+    const [result] = await translateClient.translate(text, {
+        to: targetLang,
+        format: isHtml ? 'html' : 'text',
+    } as any);
+    return [result];
+}
+const translate = { translate: smartTranslate };
 
 // ── GET: single product detail (with all translations, images, options) ─────
 export async function GET(req: Request, context: { params: Promise<{ id: string }> }) {

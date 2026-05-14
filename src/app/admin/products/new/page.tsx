@@ -4,6 +4,8 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Save, Loader2, Globe, Upload, X, ImagePlus, Package, Tag, Leaf, Droplets, Star, Sparkles, RefreshCw, Plus, FileText, ChevronDown, ChevronUp } from 'lucide-react';
 import DraggableImageGrid from '@/components/DraggableImageGrid';
+import RichTextEditor from '@/components/RichTextEditor';
+import ImportFromUrlsButton from '@/components/ImportFromUrlsButton';
 import { useTranslations } from '@/i18n/useTranslations';
 
 interface ImageItem { file: File; preview: string; url?: string; alt?: string; }
@@ -192,13 +194,15 @@ export default function NewProductPage() {
     };
 
     // Upload helper: returns uploaded URL list, preserving order
-    const uploadList = async (list: ImageItem[]): Promise<string[]> => {
+    // `square=true` → server center-crops to 1:1 (used for main gallery thumbnails only)
+    const uploadList = async (list: ImageItem[], square = false): Promise<string[]> => {
         const uploaded: string[] = [];
+        const endpoint = square ? '/api/upload?crop=square' : '/api/upload';
         for (const img of list) {
             if (!img) continue;
             if (img.url) { uploaded.push(img.url); continue; }
             const fd = new FormData(); fd.append('file', img.file);
-            const res = await fetch('/api/upload', { method: 'POST', body: fd });
+            const res = await fetch(endpoint, { method: 'POST', body: fd });
             const data = await res.json();
             if (data.url) uploaded.push(data.url);
         }
@@ -209,8 +213,10 @@ export default function NewProductPage() {
         e.preventDefault();
         setIsLoading(true); setErrorMsg(''); setSuccessMsg('');
         try {
-            const imageUrls = images.length > 0 ? await uploadList(images) : [];
-            const detailImageUrls = detailImages.length > 0 ? await uploadList(detailImages) : [];
+            // Main gallery → square-cropped to 1:1 for uniform thumbnails
+            // Detail gallery → aspect-preserving (tall storytelling images)
+            const imageUrls = images.length > 0 ? await uploadList(images, true) : [];
+            const detailImageUrls = detailImages.length > 0 ? await uploadList(detailImages, false) : [];
 
             // Build alt-text arrays aligned by index. Empty string → server falls back to auto-generated.
             const imageAlts       = images.map(i => i.alt || '');
@@ -280,11 +286,24 @@ export default function NewProductPage() {
                                 <ImagePlus className="w-5 h-5 text-blue-500" />
                                 Main Gallery <span className="text-xs text-gray-400 font-normal">메인 썸네일</span>
                             </h3>
-                            <p className="text-xs text-gray-500 mt-0.5">{n.images.desc} · 상품 상세 페이지 상단 + 카테고리 목록 썸네일로 사용됩니다.</p>
+                            <p className="text-xs text-gray-500 mt-0.5">{n.images.desc} · 상품 상세 페이지 상단 + 카테고리 목록 썸네일로 사용됩니다. <span className="text-blue-600 font-semibold">1:1 정사각형으로 자동 크롭</span>됩니다.</p>
                         </div>
-                        <span className={`text-xs font-bold tabular-nums ${images.length >= MAX_IMAGES ? 'text-red-500' : 'text-gray-500'}`}>
-                            {images.length} / {MAX_IMAGES}
-                        </span>
+                        <div className="flex items-center gap-2">
+                            <ImportFromUrlsButton
+                                target="main"
+                                remaining={MAX_IMAGES - images.length}
+                                accent="blue"
+                                onImported={(urls) => {
+                                    setImages(prev => [
+                                        ...prev,
+                                        ...urls.slice(0, MAX_IMAGES - prev.length).map(url => ({ file: new File([], url.split('/').pop() || 'imported'), preview: url, url })),
+                                    ]);
+                                }}
+                            />
+                            <span className={`text-xs font-bold tabular-nums ${images.length >= MAX_IMAGES ? 'text-red-500' : 'text-gray-500'}`}>
+                                {images.length} / {MAX_IMAGES}
+                            </span>
+                        </div>
                     </div>
                     <div className="p-5">
                         {images.length < MAX_IMAGES && (
@@ -321,12 +340,25 @@ export default function NewProductPage() {
                                 Detail Page Images <span className="text-xs text-gray-400 font-normal">상세 페이지 이미지</span>
                             </h3>
                             <p className="text-xs text-purple-700 mt-0.5">
-                                상품 페이지의 <strong>"Description" 탭에 세로로 길게</strong> 표시됩니다. K-뷰티 스토리텔링용 (성분·사용법·전후 비교·인증서 등 30~50장 권장).
+                                상품 페이지의 <strong>"Description" 탭에 세로로 길게</strong> 표시됩니다. K-뷰티 스토리텔링용 (성분·사용법·전후 비교·인증서 등 30~50장 권장). <span className="font-semibold">원본 비율 유지</span>.
                             </p>
                         </div>
-                        <span className={`text-xs font-bold tabular-nums whitespace-nowrap ml-3 ${detailImages.length >= MAX_DETAIL_IMAGES ? 'text-red-500' : 'text-purple-600'}`}>
-                            {detailImages.length} / {MAX_DETAIL_IMAGES}
-                        </span>
+                        <div className="flex items-center gap-2 ml-3">
+                            <ImportFromUrlsButton
+                                target="detail"
+                                remaining={MAX_DETAIL_IMAGES - detailImages.length}
+                                accent="purple"
+                                onImported={(urls) => {
+                                    setDetailImages(prev => [
+                                        ...prev,
+                                        ...urls.slice(0, MAX_DETAIL_IMAGES - prev.length).map(url => ({ file: new File([], url.split('/').pop() || 'imported'), preview: url, url })),
+                                    ]);
+                                }}
+                            />
+                            <span className={`text-xs font-bold tabular-nums whitespace-nowrap ${detailImages.length >= MAX_DETAIL_IMAGES ? 'text-red-500' : 'text-purple-600'}`}>
+                                {detailImages.length} / {MAX_DETAIL_IMAGES}
+                            </span>
+                        </div>
                     </div>
                     <div className="p-5">
                         {detailImages.length < MAX_DETAIL_IMAGES && (
@@ -677,7 +709,13 @@ export default function NewProductPage() {
                         </div>
                         <div>
                             <label className="block text-xs font-medium text-gray-600 mb-1">{n.content.detailDesc}</label>
-                            <textarea name="detailDesc" rows={4} value={form.detailDesc} onChange={handleChange} className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none" placeholder="Brand story, product development background, key differentiators..." />
+                            <RichTextEditor
+                                value={form.detailDesc}
+                                onChange={(html) => setForm(prev => ({ ...prev, detailDesc: html }))}
+                                placeholder="Brand story, product development background, key differentiators..."
+                                minHeight={180}
+                            />
+                            <p className="text-[11px] text-gray-400 mt-1">상품 상세 페이지 "Description" 탭 하단에 표시됩니다. 표 / 리스트 / 강조 등 풍부한 서식을 지원합니다.</p>
                         </div>
                         <div>
                             <label className="block text-xs font-medium text-gray-600 mb-1">{n.content.seoKeywords}</label>

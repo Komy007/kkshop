@@ -6,8 +6,25 @@ import { deleteGCSFiles } from '@/lib/gcs';
 
 export const dynamic = 'force-dynamic';
 
-const translate = new Translate();
+const translateClient = new Translate();
 const TARGET_LANGS = ['ko', 'en', 'km', 'zh'];
+
+/**
+ * HTML-aware translation wrapper.
+ * Detects HTML markup and tells Google Translate to preserve tags during translation.
+ * Returns [translatedText] tuple to keep the same shape as translate.translate().
+ */
+async function smartTranslate(text: string, targetLang: string): Promise<[string]> {
+    const isHtml = /<[a-z][\s\S]*>/i.test(text);
+    const [result] = await translateClient.translate(text, {
+        to: targetLang,
+        format: isHtml ? 'html' : 'text',
+    } as any);
+    return [result];
+}
+
+// Back-compat shim — old code does `translate.translate(text, lang)`
+const translate = { translate: smartTranslate };
 
 const PAGE_SIZE = 50;
 

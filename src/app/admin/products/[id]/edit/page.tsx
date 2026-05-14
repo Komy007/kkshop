@@ -8,6 +8,8 @@ import {
     Flame, CheckCircle, Plus, FileText, ChevronDown, ChevronUp,
 } from 'lucide-react';
 import DraggableImageGrid from '@/components/DraggableImageGrid';
+import RichTextEditor from '@/components/RichTextEditor';
+import ImportFromUrlsButton from '@/components/ImportFromUrlsButton';
 import { useTranslations } from '@/i18n/useTranslations';
 
 /**
@@ -326,8 +328,9 @@ export default function EditProductPage() {
 
     // Upload any items that don't yet have a remote URL.
     // Returns the resolved [{id?, url, alt?}] payload format ready for the API.
-    const resolveList = async (list: EditImageItem[]): Promise<Array<{ id?: string; url: string; alt?: string }>> => {
+    const resolveList = async (list: EditImageItem[], square = false): Promise<Array<{ id?: string; url: string; alt?: string }>> => {
         const out: Array<{ id?: string; url: string; alt?: string }> = [];
+        const endpoint = square ? '/api/upload?crop=square' : '/api/upload';
         for (const it of list) {
             if (it.existingId && it.url) {
                 out.push({ id: it.existingId, url: it.url, alt: it.alt });
@@ -336,7 +339,7 @@ export default function EditProductPage() {
             if (it.file) {
                 const fd = new FormData();
                 fd.append('file', it.file);
-                const res = await fetch('/api/upload', { method: 'POST', body: fd });
+                const res = await fetch(endpoint, { method: 'POST', body: fd });
                 const data = await res.json();
                 if (data.url) out.push({ url: data.url, alt: it.alt });
             } else if (it.url) {
@@ -351,8 +354,9 @@ export default function EditProductPage() {
         setIsLoading(true); setErrorMsg(''); setSuccessMsg('');
         try {
             // Resolve both image lists — upload new files, build {id?, url, alt?} arrays
-            const mainImagesPayload   = await resolveList(mainImageList);
-            const detailImagesPayload = await resolveList(detailImageList);
+            // Main: 1:1 square crop · Detail: aspect-preserving
+            const mainImagesPayload   = await resolveList(mainImageList, true);
+            const detailImagesPayload = await resolveList(detailImageList, false);
             // Build directTranslations for all 4 languages
             // If retranslate is true, we use KO as base and server will auto-translate
             // If false, we send all 4 language fields directly
@@ -481,11 +485,24 @@ export default function EditProductPage() {
                                 <ImagePlus className="w-5 h-5 text-blue-500" />
                                 Main Gallery <span className="text-xs text-gray-400 font-normal">메인 썸네일</span>
                             </h3>
-                            <p className="text-xs text-gray-500 mt-0.5">상품 상세 페이지 상단 + 목록 썸네일</p>
+                            <p className="text-xs text-gray-500 mt-0.5">상품 상세 페이지 상단 + 목록 썸네일 · <span className="text-blue-600 font-semibold">1:1 자동 크롭</span></p>
                         </div>
-                        <span className={`text-xs font-bold tabular-nums ${mainImageList.length >= MAX_MAIN_IMAGES ? 'text-red-500' : 'text-gray-500'}`}>
-                            {mainImageList.length} / {MAX_MAIN_IMAGES}
-                        </span>
+                        <div className="flex items-center gap-2">
+                            <ImportFromUrlsButton
+                                target="main"
+                                remaining={MAX_MAIN_IMAGES - mainImageList.length}
+                                accent="blue"
+                                onImported={(urls) => {
+                                    setMainImageList(prev => [
+                                        ...prev,
+                                        ...urls.slice(0, MAX_MAIN_IMAGES - prev.length).map(url => ({ url, preview: url })),
+                                    ]);
+                                }}
+                            />
+                            <span className={`text-xs font-bold tabular-nums ${mainImageList.length >= MAX_MAIN_IMAGES ? 'text-red-500' : 'text-gray-500'}`}>
+                                {mainImageList.length} / {MAX_MAIN_IMAGES}
+                            </span>
+                        </div>
                     </div>
                     <div className="p-5 space-y-4">
                         {mainImageList.length > 0 && (
@@ -528,11 +545,24 @@ export default function EditProductPage() {
                                 <FileText className="w-5 h-5 text-purple-500" />
                                 Detail Page Images <span className="text-xs text-gray-400 font-normal">상세 페이지 이미지</span>
                             </h3>
-                            <p className="text-xs text-purple-700 mt-0.5">Description 탭에 세로로 연속 표시 (Coupang/Tmall 스타일)</p>
+                            <p className="text-xs text-purple-700 mt-0.5">Description 탭에 세로로 연속 표시 (Coupang/Tmall 스타일) · 원본 비율 유지</p>
                         </div>
-                        <span className={`text-xs font-bold tabular-nums whitespace-nowrap ml-3 ${detailImageList.length >= MAX_DETAIL_IMAGES ? 'text-red-500' : 'text-purple-600'}`}>
-                            {detailImageList.length} / {MAX_DETAIL_IMAGES}
-                        </span>
+                        <div className="flex items-center gap-2 ml-3">
+                            <ImportFromUrlsButton
+                                target="detail"
+                                remaining={MAX_DETAIL_IMAGES - detailImageList.length}
+                                accent="purple"
+                                onImported={(urls) => {
+                                    setDetailImageList(prev => [
+                                        ...prev,
+                                        ...urls.slice(0, MAX_DETAIL_IMAGES - prev.length).map(url => ({ url, preview: url })),
+                                    ]);
+                                }}
+                            />
+                            <span className={`text-xs font-bold tabular-nums whitespace-nowrap ${detailImageList.length >= MAX_DETAIL_IMAGES ? 'text-red-500' : 'text-purple-600'}`}>
+                                {detailImageList.length} / {MAX_DETAIL_IMAGES}
+                            </span>
+                        </div>
                     </div>
                     <div className="p-5 space-y-4">
                         {detailImageList.length > 0 && (
@@ -1081,6 +1111,20 @@ export default function EditProductPage() {
                                             disabled={retranslate && activeLangTab !== 'ko'}
                                             className="w-full border border-gray-200 rounded-lg py-2.5 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none disabled:bg-gray-50 disabled:text-gray-400"
                                         />
+                                    ) : field === 'detailDesc' ? (
+                                        // Rich-text editor for detail description (supports tables, lists, formatting, embedded images)
+                                        retranslate && activeLangTab !== 'ko' ? (
+                                            <div className="border border-gray-200 rounded-xl bg-gray-50 px-4 py-3 text-sm text-gray-400 min-h-[180px]">
+                                                Auto-translated from Korean on save · 저장 시 한국어에서 자동번역
+                                            </div>
+                                        ) : (
+                                            <RichTextEditor
+                                                value={val}
+                                                onChange={onChange}
+                                                placeholder="상세 설명 · brand story, key features, comparisons, ingredients tables…"
+                                                minHeight={200}
+                                            />
+                                        )
                                     ) : (
                                         <textarea
                                             rows={rows}

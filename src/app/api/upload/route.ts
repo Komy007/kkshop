@@ -36,18 +36,29 @@ function isValidMagicBytes(buffer: Buffer, mimeType: string): boolean {
  * - Strips EXIF/GPS metadata (privacy)
  * - Resizes to MAX_OUTPUT_WIDTH if larger (preserves aspect ratio)
  * - Quality 82 WebP — typically 70–85% smaller than original JPEG
+ * - When `square=true`: center-crops to 1600×1600 (main gallery thumbnails)
  * GIF special case: keep as-is (sharp can lose animation frames easily).
  */
-async function processImage(buffer: Buffer, mimeType: string): Promise<{ buffer: Buffer; ext: string; contentType: string }> {
+async function processImage(
+    buffer: Buffer,
+    mimeType: string,
+    square: boolean,
+): Promise<{ buffer: Buffer; ext: string; contentType: string }> {
     // GIF: pass through (preserve animation)
     if (mimeType === 'image/gif') {
         return { buffer, ext: 'gif', contentType: 'image/gif' };
     }
-    const optimized = await sharp(buffer, { failOn: 'truncated' })
-        .rotate() // auto-rotate based on EXIF then strip metadata
-        .resize({ width: MAX_OUTPUT_WIDTH, withoutEnlargement: true })
-        .webp({ quality: WEBP_QUALITY, effort: 4 })
-        .toBuffer();
+    const pipeline = sharp(buffer, { failOn: 'truncated' }).rotate(); // auto-rotate via EXIF then strip metadata
+    const resized = square
+        ? pipeline.resize({
+              width: MAX_OUTPUT_WIDTH,
+              height: MAX_OUTPUT_WIDTH,
+              fit: 'cover',
+              position: 'center',
+              withoutEnlargement: false, // upscale small images so all gallery thumbs match
+          })
+        : pipeline.resize({ width: MAX_OUTPUT_WIDTH, withoutEnlargement: true });
+    const optimized = await resized.webp({ quality: WEBP_QUALITY, effort: 4 }).toBuffer();
     return { buffer: optimized, ext: 'webp', contentType: 'image/webp' };
 }
 
@@ -59,6 +70,11 @@ export async function POST(request: NextRequest) {
         if (!session?.user || !['ADMIN', 'SUPERADMIN', 'SUPPLIER'].includes(role ?? '')) {
             return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
         }
+
+        // ?crop=square → main-gallery thumbnails (1:1 center crop)
+        // (no param)   → detail-page images (keep aspect ratio)
+        const url = new URL(request.url);
+        const cropSquare = url.searchParams.get('crop') === 'square';
 
         const data = await request.formData();
 
@@ -96,7 +112,7 @@ export async function POST(request: NextRequest) {
             // ── Optimize: resize + WebP convert (Cambodia mobile = slow 4G/3G) ──
             let processed: { buffer: Buffer; ext: string; contentType: string };
             try {
-                processed = await processImage(inputBuffer, file.type);
+                processed = await processImage(inputBuffer, file.type, cropSquare);
             } catch (procErr: any) {
                 console.error('[Upload] Image processing failed:', procErr?.message);
                 return NextResponse.json({ success: false, error: 'Image could not be processed. The file may be corrupt.' }, { status: 400 });
