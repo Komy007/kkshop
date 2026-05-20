@@ -410,7 +410,18 @@ export default function CategoriesPage() {
         setLoading(true);
         const res  = await fetch('/api/admin/categories');
         const data = await res.json();
-        setCats(Array.isArray(data) ? data : []);
+        if (Array.isArray(data)) {
+            setCats(data);
+            // Auto-expand all parent categories so sub-categories are visible
+            const parentIds = new Set<string>(
+                data
+                    .filter((c: Category) => c.parentId)
+                    .map((c: Category) => c.parentId as string)
+            );
+            setExpanded(prev => new Set([...prev, ...parentIds]));
+        } else {
+            setCats([]);
+        }
         setLoading(false);
     }, []);
 
