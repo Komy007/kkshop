@@ -619,12 +619,17 @@ export default function NewProductPage() {
                             <input type="number" name="stockQty" value={form.stockQty} onChange={handleChange} className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" />
                         </div>
 
-                        {/* New Arrival toggle */}
+                        {/* New Arrival toggle — uses button (not label+checkbox) to prevent sr-only focus from triggering scrollIntoView */}
                         <div className="md:col-span-2">
-                            <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl border-2 transition-all select-none hover:border-yellow-300 hover:bg-yellow-50 group"
-                                style={{ borderColor: form.isNew ? '#F59E0B' : '#E5E7EB', background: form.isNew ? '#FFFBEB' : '' }}>
-                                <input type="checkbox" name="isNew" checked={form.isNew} onChange={handleChange} className="sr-only" />
-                                <div className={`w-10 h-6 rounded-full transition-colors flex items-center px-0.5 ${form.isNew ? 'bg-yellow-400' : 'bg-gray-200'}`}>
+                            <button
+                                type="button"
+                                role="switch"
+                                aria-checked={form.isNew}
+                                onClick={() => setForm(prev => ({ ...prev, isNew: !prev.isNew }))}
+                                className="w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all select-none text-left hover:border-yellow-300 hover:bg-yellow-50"
+                                style={{ borderColor: form.isNew ? '#F59E0B' : '#E5E7EB', background: form.isNew ? '#FFFBEB' : '' }}
+                            >
+                                <div className={`w-10 h-6 rounded-full transition-colors flex items-center px-0.5 flex-shrink-0 ${form.isNew ? 'bg-yellow-400' : 'bg-gray-200'}`}>
                                     <div className={`w-5 h-5 bg-white rounded-full shadow transition-transform ${form.isNew ? 'translate-x-4' : 'translate-x-0'}`} />
                                 </div>
                                 <div>
@@ -633,7 +638,7 @@ export default function NewProductPage() {
                                     </div>
                                     <div className="text-xs text-gray-500 mt-0.5">{n.basic.isNewDesc}</div>
                                 </div>
-                            </label>
+                            </button>
                         </div>
                     </div>
                 </div>

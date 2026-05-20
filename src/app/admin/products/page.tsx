@@ -98,26 +98,31 @@ export default function AdminProductsPage() {
     }, []);
 
     // Restore scroll position after products finish loading
+    // Admin layout uses overflow-y-auto on its own <main> — NOT window.scrollY.
+    // We target the nearest overflow-y-auto ancestor to restore scroll correctly.
     useEffect(() => {
         if (!loading && products.length > 0) {
             const savedScroll = sessionStorage.getItem('admin_products_scroll');
             if (savedScroll) {
                 requestAnimationFrame(() => {
-                    setTimeout(() => {
-                        window.scrollTo({ top: parseInt(savedScroll, 10), behavior: 'instant' });
-                    }, 50);
+                    const scrollEl = document.querySelector('main.overflow-y-auto, [data-scroll="admin"]') as HTMLElement | null;
+                    if (scrollEl) {
+                        scrollEl.scrollTop = parseInt(savedScroll, 10);
+                    }
                 });
             }
         }
     }, [loading, products.length]);
 
-    // Save scroll position continuously while browsing
+    // Save scroll position of the admin scroll container (not window)
     useEffect(() => {
+        const scrollEl = document.querySelector('main.overflow-y-auto, [data-scroll="admin"]') as HTMLElement | null;
+        if (!scrollEl) return;
         const handleScroll = () => {
-            sessionStorage.setItem('admin_products_scroll', window.scrollY.toString());
+            sessionStorage.setItem('admin_products_scroll', scrollEl.scrollTop.toString());
         };
-        window.addEventListener('scroll', handleScroll, { passive: true });
-        return () => window.removeEventListener('scroll', handleScroll);
+        scrollEl.addEventListener('scroll', handleScroll, { passive: true });
+        return () => scrollEl.removeEventListener('scroll', handleScroll);
     }, []);
 
     // Fetch when page/search/category/approvalFilter changes (but not on initial mount)
@@ -145,8 +150,9 @@ export default function AdminProductsPage() {
     };
 
     const handleEdit = (id: string) => {
-        // Explicitly save scroll position before navigating to edit page
-        sessionStorage.setItem('admin_products_scroll', window.scrollY.toString());
+        // Save scroll position of the admin scroll container before navigating
+        const scrollEl = document.querySelector('main.overflow-y-auto, [data-scroll="admin"]') as HTMLElement | null;
+        if (scrollEl) sessionStorage.setItem('admin_products_scroll', scrollEl.scrollTop.toString());
         router.push(`/admin/products/${id}/edit`);
     };
 

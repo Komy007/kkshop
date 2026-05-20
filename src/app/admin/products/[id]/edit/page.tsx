@@ -748,28 +748,38 @@ export default function EditProductPage() {
                                     className="w-full border border-red-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-red-400 focus:outline-none bg-red-50/30 resize-none" />
                             </div>
                         )}
-                        {/* isNew */}
+                        {/* isNew / isHotSale — buttons (not label+checkbox) prevent sr-only focus from triggering scrollIntoView */}
                         <div className="flex gap-3">
-                            <label className="flex-1 flex items-center gap-3 cursor-pointer p-3 rounded-xl border-2 transition-all select-none hover:border-yellow-300 hover:bg-yellow-50"
-                                style={{ borderColor: form.isNew ? '#F59E0B' : '#E5E7EB', background: form.isNew ? '#FFFBEB' : '' }}>
-                                <input type="checkbox" name="isNew" checked={form.isNew} onChange={handleChange} className="sr-only" />
-                                <div className={`w-9 h-5 rounded-full transition-colors flex items-center px-0.5 ${form.isNew ? 'bg-yellow-400' : 'bg-gray-200'}`}>
+                            <button
+                                type="button"
+                                role="switch"
+                                aria-checked={form.isNew}
+                                onClick={() => setForm(prev => ({ ...prev, isNew: !prev.isNew }))}
+                                className="flex-1 flex items-center gap-3 p-3 rounded-xl border-2 transition-all select-none text-left hover:border-yellow-300 hover:bg-yellow-50"
+                                style={{ borderColor: form.isNew ? '#F59E0B' : '#E5E7EB', background: form.isNew ? '#FFFBEB' : '' }}
+                            >
+                                <div className={`w-9 h-5 rounded-full transition-colors flex items-center px-0.5 flex-shrink-0 ${form.isNew ? 'bg-yellow-400' : 'bg-gray-200'}`}>
                                     <div className={`w-4 h-4 bg-white rounded-full shadow transition-transform ${form.isNew ? 'translate-x-4' : 'translate-x-0'}`} />
                                 </div>
                                 <span className="text-sm font-semibold text-gray-700 flex items-center gap-1">
                                     <Sparkles className={`w-3.5 h-3.5 ${form.isNew ? 'text-yellow-500' : 'text-gray-400'}`} /> NEW
                                 </span>
-                            </label>
-                            <label className="flex-1 flex items-center gap-3 cursor-pointer p-3 rounded-xl border-2 transition-all select-none hover:border-red-300 hover:bg-red-50"
-                                style={{ borderColor: form.isHotSale ? '#EF4444' : '#E5E7EB', background: form.isHotSale ? '#FEF2F2' : '' }}>
-                                <input type="checkbox" name="isHotSale" checked={form.isHotSale} onChange={handleChange} className="sr-only" />
-                                <div className={`w-9 h-5 rounded-full transition-colors flex items-center px-0.5 ${form.isHotSale ? 'bg-red-500' : 'bg-gray-200'}`}>
+                            </button>
+                            <button
+                                type="button"
+                                role="switch"
+                                aria-checked={form.isHotSale}
+                                onClick={() => setForm(prev => ({ ...prev, isHotSale: !prev.isHotSale }))}
+                                className="flex-1 flex items-center gap-3 p-3 rounded-xl border-2 transition-all select-none text-left hover:border-red-300 hover:bg-red-50"
+                                style={{ borderColor: form.isHotSale ? '#EF4444' : '#E5E7EB', background: form.isHotSale ? '#FEF2F2' : '' }}
+                            >
+                                <div className={`w-9 h-5 rounded-full transition-colors flex items-center px-0.5 flex-shrink-0 ${form.isHotSale ? 'bg-red-500' : 'bg-gray-200'}`}>
                                     <div className={`w-4 h-4 bg-white rounded-full shadow transition-transform ${form.isHotSale ? 'translate-x-4' : 'translate-x-0'}`} />
                                 </div>
                                 <span className="text-sm font-semibold text-gray-700 flex items-center gap-1">
                                     <Flame className={`w-3.5 h-3.5 ${form.isHotSale ? 'text-red-500' : 'text-gray-400'}`} /> HOT
                                 </span>
-                            </label>
+                            </button>
                         </div>
                         {form.isHotSale && (
                             <>
