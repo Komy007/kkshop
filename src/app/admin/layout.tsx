@@ -213,6 +213,51 @@ const SELLER_NAV: readonly NavItem[] = [
     },
 ] as const;
 
+// ─── Page title map ────────────────────────────────────────────────────────────
+const PAGE_TITLES: Record<string, string> = {
+    '/admin': 'Dashboard',
+    '/admin/products': 'Products',
+    '/admin/products/new': 'New Product',
+    '/admin/products/bulk-import': 'Bulk Import',
+    '/admin/products/review': 'Review Products',
+    '/admin/reviews': 'Reviews',
+    '/admin/categories': 'Categories',
+    '/admin/homepage-sections': 'Homepage Sections',
+    '/admin/orders': 'Orders',
+    '/admin/orders/returns': 'Returns & Refunds',
+    '/admin/inventory': 'Inventory',
+    '/admin/customers': 'Customers',
+    '/admin/coupons': 'Coupons',
+    '/admin/suppliers': 'Sellers',
+    '/admin/suppliers/commission': 'Commission',
+    '/admin/suppliers/payouts': 'Payouts',
+    '/admin/analytics': 'Analytics',
+    '/admin/support': 'CS Support',
+    '/admin/marketing/banners': 'Banners & Ads',
+    '/admin/marketing/email': 'Email Campaign',
+    '/admin/marketing/flash-sale': 'Flash Sale',
+    '/admin/marketing/notifications': 'Notifications',
+    '/admin/settings/payment': 'Payment Settings',
+    '/admin/settings/email': 'Email Config',
+    '/admin/settings/shipping': 'Shipping & Zones',
+    '/admin/settings/seo': 'SEO Settings',
+    '/admin/settings/security': 'Security / 2FA',
+    '/admin/settings/points': 'Points & Rewards',
+    '/admin/settings/roles': 'Roles & Accounts',
+    '/admin/landing-settings': 'Landing Page',
+    '/admin/audit-logs': 'Audit Logs',
+    '/admin/change-password': 'Change Password',
+};
+
+function getPageTitle(pathname: string): string {
+    if (PAGE_TITLES[pathname]) return PAGE_TITLES[pathname];
+    // supplier detail page: /admin/suppliers/[id]
+    if (/^\/admin\/suppliers\/[^/]+$/.test(pathname)) return 'Seller Detail';
+    if (/^\/admin\/suppliers\/[^/]+\/products/.test(pathname)) return 'Seller Products';
+    if (/^\/admin\/products\/[^/]+\/edit/.test(pathname)) return 'Edit Product';
+    return 'Admin';
+}
+
 // ─── Main Layout ───────────────────────────────────────────────────────────────
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
@@ -431,6 +476,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
     );
 
+    const pageTitle = getPageTitle(pathname);
+
     return (
         <div className="flex h-[calc(100vh-6rem)] bg-slate-100 overflow-hidden">
             {/* Desktop Sidebar */}
@@ -452,13 +499,44 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             )}
 
             {/* Main */}
-            <div className="flex-1 flex flex-col overflow-hidden">
-                <header className="md:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-slate-200 shadow-sm">
-                    <button onClick={() => setSidebarOpen(true)} className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
+            <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+                {/* ── Top header bar — visible on ALL screen sizes ── */}
+                <header className="flex-shrink-0 flex items-center justify-between px-4 sm:px-6 h-12 bg-white border-b border-slate-200 shadow-sm">
+                    {/* Mobile: sidebar toggle */}
+                    <button
+                        onClick={() => setSidebarOpen(true)}
+                        className="md:hidden p-2 -ml-2 text-gray-500 hover:bg-gray-100 rounded-lg"
+                    >
                         <Menu className="w-5 h-5" />
                     </button>
-                    <div className="font-bold text-gray-900 text-sm">KKShop Admin</div>
-                    <Link href="/" className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg text-xs">Store</Link>
+
+                    {/* Desktop: breadcrumb */}
+                    <div className="hidden md:flex items-center gap-1.5 text-sm min-w-0">
+                        <span className="text-slate-400 font-medium flex-shrink-0">KKShop</span>
+                        <span className="text-slate-300 flex-shrink-0">/</span>
+                        <span className="font-semibold text-slate-700 truncate">{pageTitle}</span>
+                    </div>
+
+                    {/* Mobile: page title */}
+                    <span className="md:hidden font-bold text-gray-900 text-sm">{pageTitle}</span>
+
+                    {/* Right actions */}
+                    <div className="flex items-center gap-2">
+                        <Link
+                            href="/"
+                            target="_blank"
+                            className="hidden md:flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+                        >
+                            <Globe className="w-3.5 h-3.5" />
+                            View Store
+                        </Link>
+                        <Link
+                            href="/"
+                            className="md:hidden p-2 text-gray-500 hover:bg-gray-100 rounded-lg text-xs font-medium"
+                        >
+                            <Globe className="w-4 h-4" />
+                        </Link>
+                    </div>
                 </header>
 
                 <main className="flex-1 overflow-y-auto overflow-x-auto min-w-0">

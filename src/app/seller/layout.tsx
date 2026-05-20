@@ -175,17 +175,48 @@ export default function SellerLayout({ children }: { children: React.ReactNode }
             )}
 
             {/* Main content */}
-            <div className="flex-1 flex flex-col overflow-hidden">
-                <header className="md:hidden flex items-center justify-between px-4 py-3 bg-white border-b shadow-sm">
-                    <button onClick={() => setSidebarOpen(true)} className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
+            <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+                {/* ── Top header bar — visible on ALL screen sizes ── */}
+                <header className="flex-shrink-0 flex items-center justify-between px-4 sm:px-6 h-12 bg-white border-b border-slate-200 shadow-sm">
+                    {/* Mobile: sidebar toggle */}
+                    <button
+                        onClick={() => setSidebarOpen(true)}
+                        className="md:hidden p-2 -ml-2 text-gray-500 hover:bg-gray-100 rounded-lg"
+                    >
                         <Menu className="w-5 h-5" />
                     </button>
-                    <div className="text-center">
-                        <div className="font-bold text-gray-900 text-sm leading-tight">Seller Portal</div>
-                        <div className="text-[10px] text-gray-400">셀러 포털</div>
+
+                    {/* Desktop: breadcrumb */}
+                    <div className="hidden md:flex items-center gap-1.5 text-sm min-w-0">
+                        <span className="text-slate-400 font-medium flex-shrink-0">{companyName || 'Seller Portal'}</span>
+                        <span className="text-slate-300 flex-shrink-0">/</span>
+                        <span className="font-semibold text-slate-700 truncate">
+                            {pathname === '/seller' ? 'Dashboard' :
+                             pathname === '/seller/products' ? 'My Products' :
+                             pathname === '/seller/products/new' ? 'New Product' :
+                             pathname === '/seller/orders' ? 'My Orders' :
+                             pathname === '/seller/payouts' ? 'My Payouts' :
+                             pathname === '/seller/change-password' ? 'Change Password' :
+                             /\/seller\/products\/.+/.test(pathname) ? 'Edit Product' : 'Seller Portal'}
+                        </span>
                     </div>
-                    <div />
+
+                    {/* Mobile: title */}
+                    <span className="md:hidden font-bold text-gray-900 text-sm">Seller Portal</span>
+
+                    {/* Right: store link */}
+                    <div className="flex items-center">
+                        <a
+                            href="/"
+                            target="_blank"
+                            className="hidden md:flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+                        >
+                            <Store className="w-3.5 h-3.5" />
+                            View Store
+                        </a>
+                    </div>
                 </header>
+
                 <main className="flex-1 overflow-y-auto overflow-x-auto min-w-0">{children}</main>
             </div>
         </div>
