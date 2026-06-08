@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Clock, ShoppingCart, Trash2, Loader2, ArrowLeft, Star } from 'lucide-react';
 import { useSafeAppStore } from '@/store/useAppStore';
@@ -158,7 +159,7 @@ export default function RecentlyViewedPage() {
                                 <div key={item.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden group">
                                     <Link href={`/products/${item.id}`} className="block relative aspect-square bg-gray-100 overflow-hidden">
                                         {item.imageUrl ? (
-                                            <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                                            <Image src={item.imageUrl} alt={item.name} fill sizes="(max-width: 1024px) 50vw, 25vw" className="object-cover group-hover:scale-105 transition-transform duration-300" />
                                         ) : (
                                             <div className="w-full h-full flex items-center justify-center text-gray-300">
                                                 <Clock className="w-10 h-10" />

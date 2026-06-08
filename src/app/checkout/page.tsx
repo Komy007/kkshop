@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useCartStore, selectSelectedItems, selectSelectedTotalPrice } from '@/store/useCartStore';
 import { useSafeAppStore } from '@/store/useAppStore';
@@ -670,7 +671,13 @@ export default function CheckoutPage() {
                                 {cartItems.map((item, idx) => (
                                     <div key={item.variantId ? `${item.productId}-${item.variantId}` : `${item.productId}-${idx}`} className="flex gap-3 items-center">
                                         <div className="w-14 h-14 bg-gray-100 rounded-lg flex-shrink-0 overflow-hidden border border-gray-200">
-                                            <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
+                                            <Image
+                                                src={item.imageUrl || 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&q=80&w=200'}
+                                                alt={item.name}
+                                                width={56}
+                                                height={56}
+                                                className="w-full h-full object-cover"
+                                            />
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <p className="text-xs font-bold text-gray-900 line-clamp-2 leading-tight">{item.name}</p>

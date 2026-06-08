@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Package, Heart, Clock, LogOut, ChevronRight, ShoppingBag, Loader2, Truck, MapPin, Gift, UserPlus, Share2, Plus, Pencil, Trash2, Check, X, Mail, KeyRound, Eye, EyeOff } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import { useTranslations } from '@/i18n/useTranslations';
@@ -119,11 +120,12 @@ function ProductMiniCard({
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col">
             <a href={`/products/${id}`} className="block relative aspect-square bg-gray-100 overflow-hidden">
                 {imageUrl ? (
-                    <img
+                    <Image
                         src={imageUrl}
                         alt={name}
-                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                        loading="lazy"
+                        fill
+                        sizes="(max-width: 1024px) 50vw, 25vw"
+                        className="object-cover hover:scale-105 transition-transform duration-300"
                     />
                 ) : (
                     <div className="w-full h-full flex items-center justify-center bg-gray-100">

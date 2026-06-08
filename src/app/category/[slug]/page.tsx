@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useParams, useSearchParams } from 'next/navigation';
 import { ArrowLeft, Star, SlidersHorizontal, ChevronDown, X } from 'lucide-react';
 import { useSafeAppStore } from '@/store/useAppStore';
@@ -243,12 +244,12 @@ export default function CategoryDetailPage() {
                                 <Link key={product.id} href={`/products/${product.id}`} className="group flex flex-col bg-white rounded-2xl overflow-hidden hover:shadow-lg transition-all border border-gray-200">
                                     <div className="aspect-[4/5] relative w-full bg-gray-100 overflow-hidden">
                                         {product.imageUrl ? (
-                                            <img
+                                            <Image
                                                 src={product.imageUrl}
                                                 alt={product.name}
-                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 will-change-transform"
-                                                loading="lazy"
-                                                onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&q=80&w=500'; }}
+                                                fill
+                                                sizes="(max-width: 1024px) 50vw, 20vw"
+                                                className="object-cover group-hover:scale-105 transition-transform duration-500 will-change-transform"
                                             />
                                         ) : (
                                             <div className="w-full h-full flex items-center justify-center text-4xl opacity-50">✨</div>

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { useParams } from 'next/navigation';
+import Image from 'next/image';
 import DOMPurify from 'isomorphic-dompurify';
 import { useSafeAppStore } from '@/store/useAppStore';
 import { Star, Heart, ChevronLeft, Check, Minus, Plus, Loader2, MessageCircle, Lock, ZoomIn, ZoomOut, X as XIcon, ChevronRight as ChevronRightIcon } from 'lucide-react';
@@ -470,7 +471,9 @@ export default function ProductDetailClient() {
     const [cartAdded, setCartAdded] = useState(false);
     const [mounted, setMounted] = useState(false);
     const [lightboxOpen, setLightboxOpen] = useState(false);
+    const [mainImgError, setMainImgError] = useState(false);
     const contentRef = useRef<HTMLDivElement>(null);
+    const PRODUCT_PLACEHOLDER = 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&q=80&w=800';
 
     // Reviews state
     const [reviews, setReviews] = useState<any[]>([]);
@@ -902,15 +905,15 @@ export default function ProductDetailClient() {
                                 }
                             }}
                         >
-                            <img
-                                src={productImage}
+                            <Image
+                                src={mainImgError ? PRODUCT_PLACEHOLDER : productImage}
                                 alt={product.name}
                                 onClick={() => setLightboxOpen(true)}
-                                className="w-full h-full object-cover transition-all duration-500 cursor-zoom-in"
-                                loading="eager"
-                                onError={(e) => {
-                                    (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&q=80&w=800';
-                                }}
+                                fill
+                                sizes="(max-width: 1024px) 100vw, 50vw"
+                                priority
+                                className="object-cover transition-all duration-500 cursor-zoom-in"
+                                onError={() => setMainImgError(true)}
                             />
                             {/* Zoom hint */}
                             <div className="absolute top-3 left-3 bg-black/40 text-white rounded-full p-1.5 pointer-events-none lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
@@ -949,17 +952,18 @@ export default function ProductDetailClient() {
                                         key={img.id}
                                         type="button"
                                         onClick={() => setSelectedImageUrl(img.url)}
-                                        className={`flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-all ${
+                                        className={`relative flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-all ${
                                             (selectedImageUrl || galleryImages[0]?.url) === img.url
                                                 ? 'border-brand-primary shadow-md scale-105'
                                                 : 'border-gray-200 hover:border-gray-400 opacity-70 hover:opacity-100'
                                         }`}
                                     >
-                                        <img
+                                        <Image
                                             src={img.url}
                                             alt={img.altText || `${product.name} ${idx + 1}`}
-                                            className="w-full h-full object-cover"
-                                            loading="lazy"
+                                            fill
+                                            sizes="64px"
+                                            className="object-cover"
                                         />
                                     </button>
                                 ))}
@@ -973,17 +977,18 @@ export default function ProductDetailClient() {
                                         key={img.id}
                                         type="button"
                                         onClick={() => setSelectedImageUrl(img.url)}
-                                        className={`flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden border-2 snap-start transition-all ${
+                                        className={`relative flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden border-2 snap-start transition-all ${
                                             (selectedImageUrl || galleryImages[0]?.url) === img.url
                                                 ? 'border-brand-primary shadow-md scale-105'
                                                 : 'border-gray-200 opacity-60'
                                         }`}
                                     >
-                                        <img
+                                        <Image
                                             src={img.url}
                                             alt={img.altText || `${product.name} ${idx + 1}`}
-                                            className="w-full h-full object-cover"
-                                            loading="lazy"
+                                            fill
+                                            sizes="56px"
+                                            className="object-cover"
                                         />
                                     </button>
                                 ))}

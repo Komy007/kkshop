@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
     useCartStore,
     selectSelectedTotalPrice,
@@ -268,9 +269,11 @@ export default function CartPage() {
 
                                             {/* Image */}
                                             <Link href={`/products/${item.productId}`} className="flex-shrink-0">
-                                                <img
+                                                <Image
                                                     src={item.imageUrl || 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&q=80&w=200'}
                                                     alt={item.name}
+                                                    width={80}
+                                                    height={80}
                                                     className="w-20 h-20 rounded-xl object-cover border border-gray-100"
                                                 />
                                             </Link>

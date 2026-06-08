@@ -8,9 +8,12 @@ import Footer from '@/components/Footer';
 import { useSafeAppStore } from '@/store/useAppStore';
 import { Search, Star, Flame, Sparkles, Crown, ChevronRight, ArrowRight, Zap, Clock, Plus, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { type TranslatedProduct } from '@/lib/api';
 import TaegukgiIcon from '@/components/TaegukgiIcon';
 import { useCartStore } from '@/store/useCartStore';
+
+const PLACEHOLDER_IMG = 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&q=80&w=400';
 
 interface FlashSaleItem {
     id: string;
@@ -135,14 +138,17 @@ function FlashSaleCard({ item, t }: { item: FlashSaleItem; t: any }) {
     const time = useCountdown(item.endAt);
     const discountPct = Math.round((1 - item.salePriceUsd / item.originalPriceUsd) * 100);
     const pad = (n: number) => String(n).padStart(2, '0');
+    const [imgError, setImgError] = useState(false);
     return (
         <Link href={`/products/${item.productId}`} className="flex-shrink-0 w-36 sm:w-40 group block">
             <div className="relative rounded-xl overflow-hidden bg-gray-100 aspect-square mb-1.5 border border-gray-100">
-                <img
-                    src={item.productImage || 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&q=80&w=400'}
+                <Image
+                    src={imgError || !item.productImage ? PLACEHOLDER_IMG : item.productImage}
                     alt={item.productName}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    loading="lazy"
+                    fill
+                    sizes="160px"
+                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+                    onError={() => setImgError(true)}
                 />
                 {discountPct > 0 && (
                     <div className="absolute top-1.5 right-1.5 bg-red-500 text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded shadow">
@@ -207,6 +213,7 @@ function ProductCard({ product, t }: { product: TranslatedProduct; t: any }) {
         : 0;
     const rating = product.reviewAvg > 0 ? product.reviewAvg : null;
     const [quickAdded, setQuickAdded] = useState(false);
+    const [imgError, setImgError] = useState(false);
     const addItem = useCartStore((state) => state.addItem);
 
     const handleQuickAdd = (e: React.MouseEvent) => {
@@ -226,11 +233,13 @@ function ProductCard({ product, t }: { product: TranslatedProduct; t: any }) {
         <Link href={`/products/${product.id}`} className="group block flex-shrink-0">
             {/* Image */}
             <div className="relative aspect-square rounded-xl overflow-hidden bg-gray-100 mb-1.5 border border-gray-100">
-                <img
-                    src={product.imageUrl || 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&q=80&w=400'}
+                <Image
+                    src={imgError || !product.imageUrl ? PLACEHOLDER_IMG : product.imageUrl}
                     alt={product.name}
-                    className={`w-full h-full object-cover transition-transform duration-300 ${isSoldOut ? 'opacity-60' : 'group-hover:scale-105'}`}
-                    loading="lazy"
+                    fill
+                    sizes="(max-width: 768px) 130px, 16vw"
+                    className={`object-cover transition-transform duration-300 ${isSoldOut ? 'opacity-60' : 'group-hover:scale-105'}`}
+                    onError={() => setImgError(true)}
                 />
                 {/* Badges */}
                 {isSoldOut ? (

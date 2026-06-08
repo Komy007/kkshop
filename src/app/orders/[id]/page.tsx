@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
     Package, ChevronLeft, Truck, MapPin, Clock, CheckCircle,
     XCircle, Loader2, ExternalLink, Tag, Gift, Star
@@ -263,9 +264,11 @@ export default function OrderDetailPage() {
                             {order.items.map((item: any) => (
                                 <div key={item.id} className="flex items-start gap-3 p-4">
                                     <Link href={`/products/${item.productId}`} className="flex-shrink-0">
-                                        <img
+                                        <Image
                                             src={item.imageUrl || 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&q=80&w=200'}
                                             alt={item.name}
+                                            width={64}
+                                            height={64}
                                             className="w-16 h-16 rounded-xl object-cover border border-gray-100"
                                         />
                                     </Link>

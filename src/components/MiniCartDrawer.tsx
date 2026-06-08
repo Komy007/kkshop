@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import { X, Minus, Plus, Trash2, ShoppingBag } from 'lucide-react';
 import { useCartStore, selectTotalItems, selectTotalPrice } from '@/store/useCartStore';
 import { useAppStore, useSafeAppStore } from '@/store/useAppStore';
@@ -131,11 +132,12 @@ export default function MiniCartDrawer() {
                                 >
                                     {/* Image */}
                                     <div className="w-24 h-24 rounded-xl bg-gray-100 border border-gray-100 overflow-hidden flex-shrink-0 relative">
-                                        <img
-                                            src={item.imageUrl}
+                                        <Image
+                                            src={item.imageUrl || 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&q=80&w=200'}
                                             alt={item.name}
-                                            className="w-full h-full object-cover"
-                                            loading="lazy"
+                                            fill
+                                            sizes="96px"
+                                            className="object-cover"
                                         />
                                     </div>
 

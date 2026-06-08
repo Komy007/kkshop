@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import TaegukgiIcon from "@/components/TaegukgiIcon";
 import Link from "next/link";
+import Image from "next/image";
 import { Globe, User, ShoppingCart, Menu, X, LogOut, Settings, Heart, Store } from "lucide-react";
 import { useSafeMarketStore, rehydrateLanguageStore } from "@/store/useAppStore";
 import { useCartStore, selectTotalItems } from "@/store/useCartStore";
@@ -160,7 +161,7 @@ export default function GNB() {
                                 className="flex items-center gap-2 px-3 py-2 rounded-full bg-white border border-gray-200 hover:border-brand-primary/40 hover:text-brand-primary transition-all text-gray-700 shadow-sm"
                             >
                                 {session?.user?.image ? (
-                                    <img src={session.user.image} alt="" className="w-6 h-6 rounded-full object-cover" />
+                                    <Image src={session.user.image} alt="" width={24} height={24} className="w-6 h-6 rounded-full object-cover" />
                                 ) : (
                                     <User className="w-4 h-4" />
                                 )}

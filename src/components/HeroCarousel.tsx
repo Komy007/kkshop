@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
     ArrowRight, Flame, Sparkles, Crown, Star,
     Droplets, Palette, Bath, Sofa, HeartPulse,
@@ -137,14 +138,14 @@ function ProductCard({ product, size = 'md', fadeIn }: {
         <Link href={`/products/${product.id}`}
             className={`group flex flex-col items-center gap-1 ${fadeIn ? 'carousel-product-enter' : ''}`}>
             {/* Image box */}
-            <div className={`${sizeMap[size]} rounded-2xl overflow-hidden bg-white/10 backdrop-blur-sm border border-white/30 shadow-2xl group-hover:scale-105 group-active:scale-95 transition-transform duration-200`}>
+            <div className={`relative ${sizeMap[size]} rounded-2xl overflow-hidden bg-white/10 backdrop-blur-sm border border-white/30 shadow-2xl group-hover:scale-105 group-active:scale-95 transition-transform duration-200`}>
                 {product.imageUrl ? (
-                    <img
+                    <Image
                         src={product.imageUrl}
                         alt={product.name}
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                        fill
+                        sizes="120px"
+                        className="object-cover"
                     />
                 ) : (
                     /* Placeholder gradient when no image */
@@ -257,12 +258,12 @@ function CategoryPairSlide({ slide, language, st }: { slide: ResolvedSlide; lang
                 {/* Full-bleed product image */}
                 {product?.imageUrl && (
                     <Link href={`/products/${product.id}`} className="absolute inset-0 z-0">
-                        <img
+                        <Image
                             src={product.imageUrl}
                             alt={product.name}
-                            className="w-full h-full object-cover"
-                            loading="lazy"
-                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                            fill
+                            sizes="(max-width: 640px) 100vw, 50vw"
+                            className="object-cover"
                         />
                     </Link>
                 )}
@@ -336,9 +337,9 @@ function HotDealSlide({ slide, st }: { slide: ResolvedSlide; st: any }) {
             <div className="relative z-10 flex h-full items-center px-3 gap-3">
                 {/* Product image — dominant left side */}
                 <Link href={`/products/${product.id}`} className="flex-shrink-0 group carousel-product-enter">
-                    <div className="w-[192px] h-[192px] sm:w-[220px] sm:h-[220px] rounded-2xl overflow-hidden bg-white shadow-2xl group-hover:scale-105 transition-transform duration-200 ring-2 ring-white/40">
+                    <div className="relative w-[192px] h-[192px] sm:w-[220px] sm:h-[220px] rounded-2xl overflow-hidden bg-white shadow-2xl group-hover:scale-105 transition-transform duration-200 ring-2 ring-white/40">
                         {product.imageUrl
-                            ? <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" loading="lazy" onError={(e) => { (e.target as HTMLImageElement).style.display='none'; }} />
+                            ? <Image src={product.imageUrl} alt={product.name} fill sizes="(max-width: 640px) 192px, 220px" className="object-cover" />
                             : <div className="w-full h-full bg-gradient-to-br from-white/20 to-white/5 flex items-center justify-center text-3xl">🛍</div>
                         }
                     </div>
@@ -416,9 +417,9 @@ function BestSellersSlide({ slide, st }: { slide: ResolvedSlide; st: any }) {
                                     <span className="text-[13px] font-black text-white">{idx + 1}</span>
                                 </div>
                                 {/* Thumbnail — bigger */}
-                                <div className="w-14 h-14 rounded-xl overflow-hidden bg-white/10 flex-shrink-0 border border-white/10">
+                                <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-white/10 flex-shrink-0 border border-white/10">
                                     {p.imageUrl
-                                        ? <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover" loading="lazy" onError={(e) => { (e.target as HTMLImageElement).style.display='none'; }} />
+                                        ? <Image src={p.imageUrl} alt={p.name} fill sizes="56px" className="object-cover" />
                                         : <div className="w-full h-full bg-white/5 flex items-center justify-center text-lg">🛍</div>}
                                 </div>
                                 {/* Product info */}
