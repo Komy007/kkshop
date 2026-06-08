@@ -4,7 +4,7 @@ import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import DOMPurify from 'isomorphic-dompurify';
 import { useSafeAppStore } from '@/store/useAppStore';
-import { Star, Heart, ChevronLeft, Check, Minus, Plus, Loader2, MessageCircle, Lock } from 'lucide-react';
+import { Star, Heart, ChevronLeft, Check, Minus, Plus, Loader2, MessageCircle, Lock, ZoomIn, ZoomOut, X as XIcon, ChevronRight as ChevronRightIcon } from 'lucide-react';
 import TrustBadges from '@/components/TrustBadges';
 import Footer from '@/components/Footer';
 import { useCartStore } from '@/store/useCartStore';
@@ -293,6 +293,166 @@ interface ProductDetail {
     badgeKoreanCertified?: boolean;
 }
 
+// ── Fullscreen image lightbox: pinch-zoom (mobile), wheel-zoom (desktop), drag-pan, swipe-navigate ──
+function ImageLightbox({
+    images, startUrl, productName, onClose,
+}: {
+    images: { url: string; altText?: string | null }[];
+    startUrl: string;
+    productName: string;
+    onClose: () => void;
+}) {
+    const startIdx = Math.max(0, images.findIndex(i => i.url === startUrl));
+    const [index, setIndex] = useState(startIdx >= 0 ? startIdx : 0);
+    const [scale, setScale] = useState(1);
+    const [tx, setTx] = useState(0);
+    const [ty, setTy] = useState(0);
+
+    const gesture = useRef<any>({});
+
+    const reset = () => { setScale(1); setTx(0); setTy(0); };
+    const goTo = (i: number) => {
+        if (i < 0 || i >= images.length) return;
+        setIndex(i); reset();
+    };
+
+    useEffect(() => {
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') onClose();
+            else if (e.key === 'ArrowRight') goTo(index + 1);
+            else if (e.key === 'ArrowLeft') goTo(index - 1);
+        };
+        window.addEventListener('keydown', onKey);
+        // Lock body scroll while open
+        const prevOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        return () => {
+            window.removeEventListener('keydown', onKey);
+            document.body.style.overflow = prevOverflow;
+        };
+    }, [index]);
+
+    const dist = (t: TouchList) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+
+    const onTouchStart = (e: React.TouchEvent) => {
+        const t = e.touches;
+        if (t.length === 2) {
+            gesture.current = { mode: 'pinch', startDist: dist(t), startScale: scale };
+        } else if (t.length === 1) {
+            gesture.current = { mode: scale > 1 ? 'pan' : 'swipe', startX: t[0].clientX, startY: t[0].clientY, startTx: tx, startTy: ty };
+        }
+    };
+    const onTouchMove = (e: React.TouchEvent) => {
+        const g = gesture.current;
+        const t = e.touches;
+        if (g.mode === 'pinch' && t.length === 2) {
+            const ratio = dist(t) / (g.startDist || 1);
+            setScale(Math.min(4, Math.max(1, g.startScale * ratio)));
+        } else if (g.mode === 'pan' && t.length === 1) {
+            setTx(g.startTx + (t[0].clientX - g.startX));
+            setTy(g.startTy + (t[0].clientY - g.startY));
+        } else if (g.mode === 'swipe' && t.length === 1) {
+            g.dx = t[0].clientX - g.startX;
+        }
+    };
+    const onTouchEnd = () => {
+        const g = gesture.current;
+        if (g.mode === 'swipe' && Math.abs(g.dx || 0) > 50) {
+            goTo(index + (g.dx < 0 ? 1 : -1));
+        }
+        if (scale < 1.05) reset();
+        gesture.current = {};
+    };
+
+    // Double-tap / double-click to toggle zoom
+    const lastTap = useRef(0);
+    const onDoubleToggle = () => {
+        if (scale > 1) reset(); else setScale(2.5);
+    };
+    const onImgClick = () => {
+        const now = Date.now();
+        if (now - lastTap.current < 300) onDoubleToggle();
+        lastTap.current = now;
+    };
+
+    // Desktop mouse drag to pan when zoomed
+    const onMouseDown = (e: React.MouseEvent) => {
+        if (scale <= 1) return;
+        gesture.current = { mode: 'mpan', startX: e.clientX, startY: e.clientY, startTx: tx, startTy: ty };
+    };
+    const onMouseMove = (e: React.MouseEvent) => {
+        if (gesture.current.mode !== 'mpan') return;
+        setTx(gesture.current.startTx + (e.clientX - gesture.current.startX));
+        setTy(gesture.current.startTy + (e.clientY - gesture.current.startY));
+    };
+    const onMouseUp = () => { if (gesture.current.mode === 'mpan') gesture.current = {}; };
+    const onWheel = (e: React.WheelEvent) => {
+        const next = Math.min(4, Math.max(1, scale - e.deltaY * 0.002));
+        setScale(next);
+        if (next <= 1) { setTx(0); setTy(0); }
+    };
+
+    const cur = images[index];
+
+    return (
+        <div className="fixed inset-0 z-[100] bg-black/95 flex flex-col select-none" role="dialog" aria-modal="true">
+            {/* Top bar */}
+            <div className="flex items-center justify-between px-4 py-3 text-white">
+                <span className="text-sm font-semibold tabular-nums">{index + 1} / {images.length}</span>
+                <div className="flex items-center gap-2">
+                    <button onClick={() => setScale(s => Math.max(1, s - 0.5))} className="p-2 rounded-full hover:bg-white/10" aria-label="Zoom out"><ZoomOut className="w-5 h-5" /></button>
+                    <button onClick={() => setScale(s => Math.min(4, s + 0.5))} className="p-2 rounded-full hover:bg-white/10" aria-label="Zoom in"><ZoomIn className="w-5 h-5" /></button>
+                    <button onClick={onClose} className="p-2 rounded-full hover:bg-white/10" aria-label="Close"><XIcon className="w-6 h-6" /></button>
+                </div>
+            </div>
+
+            {/* Image stage */}
+            <div
+                className="flex-1 overflow-hidden flex items-center justify-center relative touch-none"
+                onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}
+                onMouseDown={onMouseDown} onMouseMove={onMouseMove} onMouseUp={onMouseUp} onMouseLeave={onMouseUp}
+                onWheel={onWheel}
+                onClick={onImgClick}
+            >
+                <img
+                    src={cur?.url}
+                    alt={cur?.altText || productName}
+                    draggable={false}
+                    className="max-w-full max-h-full object-contain transition-transform duration-100"
+                    style={{ transform: `translate(${tx}px, ${ty}px) scale(${scale})`, cursor: scale > 1 ? 'grab' : 'zoom-in' }}
+                />
+
+                {/* Desktop nav arrows */}
+                {images.length > 1 && (
+                    <>
+                        <button onClick={(e) => { e.stopPropagation(); goTo(index - 1); }} disabled={index === 0}
+                            className="hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 text-white hover:bg-white/20 disabled:opacity-20">
+                            <ChevronLeft className="w-6 h-6" />
+                        </button>
+                        <button onClick={(e) => { e.stopPropagation(); goTo(index + 1); }} disabled={index === images.length - 1}
+                            className="hidden md:flex absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 text-white hover:bg-white/20 disabled:opacity-20">
+                            <ChevronRightIcon className="w-6 h-6" />
+                        </button>
+                    </>
+                )}
+            </div>
+
+            {/* Thumbnail strip */}
+            {images.length > 1 && (
+                <div className="flex gap-2 overflow-x-auto px-4 py-3 scrollbar-hide justify-center">
+                    {images.map((img, i) => (
+                        <button key={img.url + i} onClick={() => goTo(i)}
+                            className={`flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden border-2 transition-all ${i === index ? 'border-white' : 'border-white/20 opacity-50'}`}>
+                            <img src={img.url} alt="" className="w-full h-full object-cover" />
+                        </button>
+                    ))}
+                </div>
+            )}
+            <p className="text-center text-white/40 text-[11px] pb-3">Double-tap or pinch to zoom · 두 번 탭/핀치로 확대</p>
+        </div>
+    );
+}
+
 export default function ProductDetailClient() {
     const params = useParams();
     const store = useSafeAppStore();
@@ -309,6 +469,7 @@ export default function ProductDetailClient() {
     const [selectedImageUrl, setSelectedImageUrl] = useState<string>('');
     const [cartAdded, setCartAdded] = useState(false);
     const [mounted, setMounted] = useState(false);
+    const [lightboxOpen, setLightboxOpen] = useState(false);
     const contentRef = useRef<HTMLDivElement>(null);
 
     // Reviews state
@@ -744,12 +905,17 @@ export default function ProductDetailClient() {
                             <img
                                 src={productImage}
                                 alt={product.name}
-                                className="w-full h-full object-cover transition-all duration-500"
+                                onClick={() => setLightboxOpen(true)}
+                                className="w-full h-full object-cover transition-all duration-500 cursor-zoom-in"
                                 loading="eager"
                                 onError={(e) => {
                                     (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&q=80&w=800';
                                 }}
                             />
+                            {/* Zoom hint */}
+                            <div className="absolute top-3 left-3 bg-black/40 text-white rounded-full p-1.5 pointer-events-none lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
+                                <ZoomIn className="w-4 h-4" />
+                            </div>
                             {effectiveStock <= 0 && (
                                 <div className="absolute inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center">
                                     <span className="bg-gray-900 text-white font-bold py-2 px-6 rounded-full text-lg">{t.outOfStock}</span>
@@ -1609,6 +1775,16 @@ export default function ProductDetailClient() {
             </div>
 
             <Footer />
+
+            {/* Fullscreen image lightbox */}
+            {lightboxOpen && galleryImages.length > 0 && (
+                <ImageLightbox
+                    images={galleryImages}
+                    startUrl={productImage}
+                    productName={product.name}
+                    onClose={() => setLightboxOpen(false)}
+                />
+            )}
         </>
     );
 }

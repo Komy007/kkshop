@@ -26,6 +26,9 @@ const vInp = "px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-
 let _vseq = 0;
 const vk = () => `vk${++_vseq}_${Date.now()}`;
 
+// localStorage key for autosaving the text form (images are not saved — File objects can't be serialized)
+const DRAFT_KEY = 'kkshop_seller_product_draft';
+
 function Section({ title, sub, children }: { title: string; sub?: React.ReactNode; children: React.ReactNode }) {
     return (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-4">
@@ -135,6 +138,63 @@ export default function SellerProductNewPage() {
     };
 
     useEffect(() => { loadCategories(); }, []);
+
+    // ── Draft autosave: restore on mount ──────────────────────────────────────
+    const [draftRestored, setDraftRestored] = useState(false);
+    useEffect(() => {
+        try {
+            const raw = localStorage.getItem(DRAFT_KEY);
+            if (!raw) return;
+            const d = JSON.parse(raw);
+            if (d?.form && typeof d.form === 'object') {
+                setForm(prev => ({ ...prev, ...d.form }));
+                if (d.bulkDiscountEnabled) setBulkDiscountEnabled(true);
+                if (Array.isArray(d.options) && d.options.length) setOptions(d.options);
+                setDraftRestored(true);
+            }
+        } catch { /* ignore corrupt draft */ }
+    }, []);
+
+    // ── Draft autosave: persist text fields whenever they change ──────────────
+    useEffect(() => {
+        // Only save if the user has typed something meaningful
+        if (!form.nameKo && !form.sku && !form.priceUsd && !form.detailDescKo) return;
+        const id = setTimeout(() => {
+            try {
+                localStorage.setItem(DRAFT_KEY, JSON.stringify({ form, bulkDiscountEnabled, options, savedAt: Date.now() }));
+            } catch { /* quota / serialization issues ignored */ }
+        }, 600);
+        return () => clearTimeout(id);
+    }, [form, bulkDiscountEnabled, options]);
+
+    // ── Warn before leaving with unsaved content ──────────────────────────────
+    useEffect(() => {
+        const hasContent = Boolean(form.nameKo || form.sku || form.priceUsd || form.detailDescKo || images.length);
+        const handler = (e: BeforeUnloadEvent) => {
+            if (hasContent && !submitting && !success) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        };
+        window.addEventListener('beforeunload', handler);
+        return () => window.removeEventListener('beforeunload', handler);
+    }, [form, images.length, submitting, success]);
+
+    const clearDraft = () => { try { localStorage.removeItem(DRAFT_KEY); } catch {} };
+    const discardDraft = () => {
+        clearDraft();
+        setForm({
+            sku: '', priceUsd: '', stockQty: '0', categoryId: '',
+            brandName: '', volume: '', origin: '', skinType: '', expiryMonths: '', certifications: '',
+            unitLabel: 'pc', unitsPerPkg: '',
+            nameKo: '', shortDescKo: '', detailDescKo: '',
+            ingredientsKo: '', howToUseKo: '', benefitsKo: '',
+            weightGram: '', lengthCm: '', widthCm: '', heightCm: '',
+        });
+        setBulkDiscountEnabled(false);
+        setOptions([{ minQty: '3', maxQty: '', discountPct: '5', freeShipping: false, labelKo: '' }]);
+        setDraftRestored(false);
+    };
 
     /* Global Ctrl+V image paste */
     useEffect(() => {
@@ -375,6 +435,7 @@ export default function SellerProductNewPage() {
 
         setSubmitting(false);
         if (res.ok) {
+            clearDraft();
             setSuccess(true);
             setTimeout(() => router.push('/seller/products'), 2200);
         } else {
@@ -416,6 +477,19 @@ export default function SellerProductNewPage() {
                     </span>
                 </div>
             </div>
+
+            {/* Draft restored notice */}
+            {draftRestored && (
+                <div className="mb-4 flex items-center justify-between gap-3 p-3 bg-blue-50 border border-blue-200 rounded-xl text-sm text-blue-700">
+                    <span className="flex items-center gap-2">
+                        <Info className="w-4 h-4 flex-shrink-0" />
+                        Restored your unsaved draft · 임시 저장된 내용을 복원했습니다 <span className="text-xs opacity-60">(이미지 제외)</span>
+                    </span>
+                    <button type="button" onClick={discardDraft} className="flex-shrink-0 text-xs font-bold underline hover:text-blue-900">
+                        Discard · 초기화
+                    </button>
+                </div>
+            )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
 

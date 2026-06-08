@@ -34,7 +34,7 @@ export async function POST(req: Request) {
     try {
         // --- 1. Rate Limiting (공통 유틸 사용 — 분당 5회) ---
         const ip = getClientIp(req);
-        const rl = checkRateLimit(ip, 'register', 5, 60_000);
+        const rl = await checkRateLimit(ip, 'register', 5, 60_000);
         if (!rl.allowed) {
             return NextResponse.json(
                 { error: '너무 많은 요청이 발생했습니다. 잠시 후 다시 시도해주세요.' },

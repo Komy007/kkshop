@@ -63,7 +63,7 @@ export async function POST(req: Request) {
     try {
         // Rate limiting: IP당 1시간에 최대 3회 재발송
         const ip = getClientIp(req);
-        const { allowed } = checkRateLimit(ip, 'verify-resend', 3, 60 * 60 * 1000);
+        const { allowed } = await checkRateLimit(ip, 'verify-resend', 3, 60 * 60 * 1000);
         if (!allowed) {
             return NextResponse.json(
                 { error: 'Too many requests. Please try again later.' },

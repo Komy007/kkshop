@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useCartStore, selectTotalPrice } from '@/store/useCartStore';
+import { useCartStore, selectSelectedItems, selectSelectedTotalPrice } from '@/store/useCartStore';
 import { useSafeAppStore } from '@/store/useAppStore';
 import { ShoppingBag, ChevronDown, Loader2, MapPin, Ticket, Coins, CheckCircle2, QrCode, AlertCircle, Clock, BookmarkCheck } from 'lucide-react';
 import Footer from '@/components/Footer';
@@ -216,9 +216,10 @@ export default function CheckoutPage() {
     const t = checkoutTranslations[language] || checkoutTranslations.en;
 
     const router = useRouter();
-    const cartItems = useCartStore(state => state.items);
-    const subtotal = useCartStore(selectTotalPrice);
-    const clearCart = useCartStore(state => state.clearCart);
+    // Only selected cart items proceed to checkout
+    const cartItems = useCartStore(selectSelectedItems);
+    const subtotal = useCartStore(selectSelectedTotalPrice);
+    const removeSelected = useCartStore(state => state.removeSelected);
 
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
@@ -395,7 +396,7 @@ export default function CheckoutPage() {
             });
             const data = await res.json();
             if (res.ok) {
-                clearCart();
+                removeSelected(); // remove only the items that were ordered; keep unselected ones
                 router.push(`/order-complete?orderId=${data.orderId}`);
             } else {
                 setSubmitError(data.error || 'Order failed. Please try again.');

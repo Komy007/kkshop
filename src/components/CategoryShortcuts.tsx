@@ -174,13 +174,14 @@ export default function CategoryShortcuts() {
     return (
         <section className="py-4 px-3 bg-white" aria-label="Category shortcuts">
             <div className="grid grid-cols-5 gap-y-5 gap-x-1">
-                {shortcuts.map((item) => {
+                {shortcuts.map((item, i) => {
                     const Icon = item.icon;
                     return (
                         <Link
                             key={item.key}
                             href={item.href}
-                            className="group flex flex-col items-center gap-2"
+                            className="group flex flex-col items-center gap-2 cat-tile-enter"
+                            style={{ animationDelay: `${i * 45}ms` }}
                         >
                             {/* Icon circle with gradient + glass effect */}
                             <div className="relative">
@@ -194,9 +195,10 @@ export default function CategoryShortcuts() {
                                     style={{ background: item.gradient }}
                                 />
 
-                                {/* Main icon container */}
+                                {/* Main icon container — animated aurora gradient + shine sweep */}
                                 <div
                                     className={`
+                                        cat-tile cat-shine
                                         relative
                                         w-[60px] h-[60px] sm:w-[68px] sm:h-[68px]
                                         rounded-2xl
@@ -224,10 +226,10 @@ export default function CategoryShortcuts() {
                                         }}
                                     />
 
-                                    {/* Icon */}
+                                    {/* Icon — gentle float, springs on hover */}
                                     <Icon
                                         className={`
-                                            relative z-10 w-6 h-6 sm:w-7 sm:h-7
+                                            relative z-20 w-6 h-6 sm:w-7 sm:h-7
                                             ${item.iconColor}
                                             drop-shadow-sm
                                             group-hover:scale-110

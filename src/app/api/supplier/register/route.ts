@@ -9,7 +9,7 @@ import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 export async function POST(req: NextRequest) {
     // Rate limit: 5 requests per 10 minutes per IP
     const ip = getClientIp(req);
-    const rl = checkRateLimit(ip, 'supplier-register', 5, 10 * 60_000);
+    const rl = await checkRateLimit(ip, 'supplier-register', 5, 10 * 60_000);
     if (!rl.allowed) {
         return NextResponse.json({ error: '요청이 너무 많습니다. 잠시 후 다시 시도하세요.' }, { status: 429 });
     }

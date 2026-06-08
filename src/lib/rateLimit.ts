@@ -1,47 +1,48 @@
 /**
- * In-process Rate Limiter (IP별, 메모리 Map 기반)
- * ─ Cloud Run 단일 인스턴스에서 정상 동작
- * ─ 멀티 인스턴스 확장 시 Redis/Upstash 로 교체 권장
+ * Rate Limiter — Upstash Redis (multi-instance safe) with in-memory fallback.
+ *
+ * ─ When UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN are set, uses a
+ *   distributed fixed-window counter via the Upstash REST API. This works
+ *   correctly across multiple Cloud Run instances.
+ * ─ When those env vars are absent, falls back to an in-process Map (single
+ *   instance only — fine for dev / low traffic).
+ *
+ * checkRateLimit is async so the same call site works for both backends.
  */
 
 interface RateLimitEntry {
-    count:   number;
+    count: number;
     resetAt: number;
 }
 
+// ── In-memory fallback store ──────────────────────────────────────────────────
 const store = new Map<string, RateLimitEntry>();
 const MAX_STORE_SIZE = 50_000; // DDoS OOM 방지 — 엔트리 상한
 
-// 5분마다 만료된 엔트리 정리 (메모리 누수 방지)
 const cleanup = setInterval(() => {
     const now = Date.now();
     for (const [key, entry] of store.entries()) {
         if (now > entry.resetAt) store.delete(key);
     }
 }, 5 * 60_000);
-
-// 테스트 환경에서 타이머가 프로세스를 붙잡지 않도록
 if (cleanup.unref) cleanup.unref();
 
-/**
- * Rate limit 확인
- * @param ip      클라이언트 IP
- * @param route   구분용 키 (e.g. 'register', 'orders')
- * @param limit   허용 횟수
- * @param windowMs 윈도우 시간 (ms)
- */
-export function checkRateLimit(
-    ip:       string,
-    route:    string,
-    limit:    number,
-    windowMs: number,
-): { allowed: boolean; remaining: number; resetAt: number } {
-    const key = `${route}:${ip}`;
+// ── Upstash config ────────────────────────────────────────────────────────────
+const UPSTASH_URL = process.env.UPSTASH_REDIS_REST_URL;
+const UPSTASH_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
+const useUpstash = Boolean(UPSTASH_URL && UPSTASH_TOKEN);
+
+interface RateLimitResult {
+    allowed: boolean;
+    remaining: number;
+    resetAt: number;
+}
+
+function checkInMemory(key: string, limit: number, windowMs: number): RateLimitResult {
     const now = Date.now();
     const entry = store.get(key);
 
     if (!entry || now > entry.resetAt) {
-        // 상한 초과 시 가장 오래된 엔트리 제거 (긴급 방어)
         if (store.size >= MAX_STORE_SIZE) {
             const firstKey = store.keys().next().value;
             if (firstKey !== undefined) store.delete(firstKey);
@@ -49,13 +50,66 @@ export function checkRateLimit(
         store.set(key, { count: 1, resetAt: now + windowMs });
         return { allowed: true, remaining: limit - 1, resetAt: now + windowMs };
     }
-
     if (entry.count >= limit) {
         return { allowed: false, remaining: 0, resetAt: entry.resetAt };
     }
-
     entry.count++;
     return { allowed: true, remaining: limit - entry.count, resetAt: entry.resetAt };
+}
+
+async function checkUpstash(key: string, limit: number, windowMs: number): Promise<RateLimitResult> {
+    const now = Date.now();
+    // Fixed window: bucket the key by window start so counters auto-expire cleanly
+    const windowStart = Math.floor(now / windowMs) * windowMs;
+    const redisKey = `rl:${key}:${windowStart}`;
+    const resetAt = windowStart + windowMs;
+
+    try {
+        // Pipeline: INCR then set expiry only if newly created (NX)
+        const res = await fetch(`${UPSTASH_URL}/pipeline`, {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${UPSTASH_TOKEN}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify([
+                ['INCR', redisKey],
+                ['PEXPIRE', redisKey, String(windowMs), 'NX'],
+            ]),
+            // Don't let a slow Redis hang the request
+            signal: AbortSignal.timeout(2000),
+        });
+        if (!res.ok) throw new Error(`Upstash HTTP ${res.status}`);
+        const data = await res.json();
+        const count = Number(data?.[0]?.result ?? 0);
+        if (!Number.isFinite(count) || count <= 0) throw new Error('Bad Upstash response');
+
+        if (count > limit) {
+            return { allowed: false, remaining: 0, resetAt };
+        }
+        return { allowed: true, remaining: limit - count, resetAt };
+    } catch (err) {
+        // Fail-open to in-memory so a Redis outage never takes down checkout/login
+        console.warn('[rateLimit] Upstash unavailable, falling back to in-memory:', (err as Error)?.message);
+        return checkInMemory(key, limit, windowMs);
+    }
+}
+
+/**
+ * Rate limit 확인 (async — Upstash 또는 메모리)
+ * @param ip       클라이언트 IP
+ * @param route    구분용 키 (e.g. 'register', 'orders')
+ * @param limit    허용 횟수
+ * @param windowMs 윈도우 시간 (ms)
+ */
+export async function checkRateLimit(
+    ip: string,
+    route: string,
+    limit: number,
+    windowMs: number,
+): Promise<RateLimitResult> {
+    const key = `${route}:${ip}`;
+    return useUpstash ? checkUpstash(key, limit, windowMs) : checkInMemory(key, limit, windowMs);
 }
 
 /**
@@ -66,7 +120,6 @@ export function getClientIp(req: Request): string {
     const forwarded = req.headers.get('x-forwarded-for');
     if (forwarded) {
         const first = forwarded.split(',')[0].trim();
-        // IPv4 또는 IPv6 형식 검증
         if (/^[\d.]+$/.test(first) || /^[a-f0-9:]+$/i.test(first)) return first;
     }
     return req.headers.get('x-real-ip') ?? 'unknown';

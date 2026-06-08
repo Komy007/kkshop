@@ -19,7 +19,7 @@ function esc(s: string): string {
 export async function POST(request: Request) {
     // Rate limit: 5 contact form submissions per IP per 10 minutes
     const ip = getClientIp(request);
-    const rl = checkRateLimit(ip, 'contact', 5, 10 * 60_000);
+    const rl = await checkRateLimit(ip, 'contact', 5, 10 * 60_000);
     if (!rl.allowed) {
         return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 });
     }

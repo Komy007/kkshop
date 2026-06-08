@@ -14,7 +14,7 @@ function escHtml(s: string | null | undefined): string {
 export async function POST(request: Request) {
     // --- Rate Limiting (IP당 분당 10회) ---
     const ip = getClientIp(request);
-    const rl = checkRateLimit(ip, 'orders', 10, 60_000);
+    const rl = await checkRateLimit(ip, 'orders', 10, 60_000);
     if (!rl.allowed) {
         return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 });
     }

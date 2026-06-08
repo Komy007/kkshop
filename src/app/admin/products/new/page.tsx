@@ -18,6 +18,9 @@ const VOLUME_PRESETS = ['30ml', '50ml', '100ml', '150ml', '200ml', '250ml', '300
 const UNIT_LABELS    = ['개', 'box', 'pack', 'set', '병', '튜브', '매', '장', '캡슐'];
 const vInp = "px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500";
 
+// localStorage key for autosaving the text form (images are not saved — File objects can't be serialized)
+const DRAFT_KEY = 'kkshop_admin_product_draft';
+
 export default function NewProductPage() {
     const router = useRouter();
     const t = useTranslations();
@@ -110,6 +113,50 @@ export default function NewProductPage() {
             } catch { /* ignore parse errors */ }
         }
     }, []);
+
+    // ── Draft autosave: restore on mount ──────────────────────────────────────
+    const [draftRestored, setDraftRestored] = useState(false);
+    useEffect(() => {
+        // Skip draft restore when cloning a product
+        if (typeof window !== 'undefined' && window.location.search.includes('clone=1')) return;
+        try {
+            const raw = localStorage.getItem(DRAFT_KEY);
+            if (!raw) return;
+            const d = JSON.parse(raw);
+            if (d?.form && typeof d.form === 'object') {
+                setForm(prev => ({ ...prev, ...d.form }));
+                if (d.bulkDiscountEnabled) setBulkDiscountEnabled(true);
+                if (Array.isArray(d.options) && d.options.length) setOptions(d.options);
+                setDraftRestored(true);
+            }
+        } catch { /* ignore corrupt draft */ }
+    }, []);
+
+    // ── Draft autosave: persist text fields whenever they change ──────────────
+    useEffect(() => {
+        if (!form.name && !form.sku && !form.priceUsd && !form.detailDesc) return;
+        const id = setTimeout(() => {
+            try {
+                localStorage.setItem(DRAFT_KEY, JSON.stringify({ form, bulkDiscountEnabled, options, savedAt: Date.now() }));
+            } catch { /* quota / serialization ignored */ }
+        }, 600);
+        return () => clearTimeout(id);
+    }, [form, bulkDiscountEnabled, options]);
+
+    // ── Warn before leaving with unsaved content ──────────────────────────────
+    useEffect(() => {
+        const hasContent = Boolean(form.name || form.sku || form.priceUsd || form.detailDesc || images.length);
+        const handler = (e: BeforeUnloadEvent) => {
+            if (hasContent && !isLoading && !successMsg) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        };
+        window.addEventListener('beforeunload', handler);
+        return () => window.removeEventListener('beforeunload', handler);
+    }, [form, images.length, isLoading, successMsg]);
+
+    const clearDraft = () => { try { localStorage.removeItem(DRAFT_KEY); } catch {} };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const target = e.target;
@@ -249,6 +296,7 @@ export default function NewProductPage() {
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Save failed');
+            clearDraft();
             setSuccessMsg(doTranslate ? n.success.withTranslate : n.success.withoutTranslate);
             setTimeout(() => router.push('/admin/products'), 1800);
         } catch (err: any) {
@@ -273,6 +321,18 @@ export default function NewProductPage() {
                 </h1>
                 <p className="text-sm text-gray-500 mt-1">{n.subtitle}</p>
             </div>
+
+            {draftRestored && (
+                <div className="flex items-center justify-between gap-3 p-3 bg-blue-50 border border-blue-200 rounded-xl text-sm text-blue-700">
+                    <span className="flex items-center gap-2">
+                        <FileText className="w-4 h-4 flex-shrink-0" />
+                        임시 저장된 내용을 복원했습니다 · Restored unsaved draft <span className="text-xs opacity-60">(이미지 제외)</span>
+                    </span>
+                    <button type="button" onClick={() => { clearDraft(); window.location.reload(); }} className="flex-shrink-0 text-xs font-bold underline hover:text-blue-900">
+                        초기화 · Discard
+                    </button>
+                </div>
+            )}
 
             {errorMsg && <div className="p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-md text-sm">{errorMsg}</div>}
             {successMsg && <div className="p-4 bg-green-50 border-l-4 border-green-500 text-green-700 rounded-md text-sm font-bold">{successMsg}</div>}

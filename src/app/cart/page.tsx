@@ -2,7 +2,12 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { useCartStore, selectTotalPrice, selectTotalItems } from '@/store/useCartStore';
+import {
+    useCartStore,
+    selectSelectedTotalPrice,
+    selectSelectedCount,
+    isSelected,
+} from '@/store/useCartStore';
 import { useSafeAppStore } from '@/store/useAppStore';
 import { Trash2, Minus, Plus, ShoppingBag, ArrowRight, ChevronLeft, AlertTriangle } from 'lucide-react';
 import Footer from '@/components/Footer';
@@ -20,6 +25,11 @@ const cartT: Record<string, any> = {
         continueShopping: 'Continue Shopping',
         freeShippingNote: 'Free shipping on orders over $30',
         itemsCount: (n: number) => `${n} item${n !== 1 ? 's' : ''}`,
+        selectAll: 'Select all',
+        deleteSelected: 'Delete selected',
+        clearAll: 'Clear cart',
+        selectItemsHint: 'Select items to check out',
+        maxStock: 'Max stock reached',
     },
     ko: {
         title: '장바구니',
@@ -33,6 +43,11 @@ const cartT: Record<string, any> = {
         continueShopping: '쇼핑 계속하기',
         freeShippingNote: '$30 이상 무료 배송',
         itemsCount: (n: number) => `${n}개`,
+        selectAll: '전체 선택',
+        deleteSelected: '선택 삭제',
+        clearAll: '전체 삭제',
+        selectItemsHint: '주문할 상품을 선택하세요',
+        maxStock: '재고 최대 수량입니다',
     },
     km: {
         title: 'រទេះទំនិញ',
@@ -41,11 +56,16 @@ const cartT: Record<string, any> = {
         qty: 'ចំនួន',
         remove: 'យកចេញ',
         subtotal: 'សរុបរង',
-        items: 'ផ្undle',
+        items: 'ចំណែក',
         checkout: 'ដំណើរការទូទាត់',
         continueShopping: 'ទិញបន្ត',
         freeShippingNote: 'ដឹកជញ្ជូនឥតគិតថ្លៃ $30+',
         itemsCount: (n: number) => `${n} ចំណែក`,
+        selectAll: 'ជ្រើសរើសទាំងអស់',
+        deleteSelected: 'លុបអ្វីដែលបានជ្រើស',
+        clearAll: 'សម្អាតរទេះ',
+        selectItemsHint: 'ជ្រើសរើសទំនិញដើម្បីទូទាត់',
+        maxStock: 'ដល់ស្តុកអតិបរមា',
     },
     zh: {
         title: '购物车',
@@ -59,6 +79,11 @@ const cartT: Record<string, any> = {
         continueShopping: '继续购物',
         freeShippingNote: '$30以上免运费',
         itemsCount: (n: number) => `${n}件商品`,
+        selectAll: '全选',
+        deleteSelected: '删除所选',
+        clearAll: '清空购物车',
+        selectItemsHint: '请选择要结算的商品',
+        maxStock: '已达库存上限',
     },
 };
 
@@ -68,17 +93,22 @@ export default function CartPage() {
     const t = cartT[language] || cartT.en;
 
     const items = useCartStore(s => s.items);
-    const subtotal = useCartStore(selectTotalPrice);
-    const totalItems = useCartStore(selectTotalItems);
-    const { removeItem, updateQty } = useCartStore();
+    const subtotal = useCartStore(selectSelectedTotalPrice);
+    const selectedCount = useCartStore(selectSelectedCount);
+    const { removeItem, updateQty, toggleSelect, setAllSelected, removeSelected, clearCart } = useCartStore();
 
     const [removingId, setRemovingId] = useState<string | null>(null);
     // stockWarnings: productId -> available qty (when cart qty exceeds stock)
     const [stockWarnings, setStockWarnings] = useState<Record<string, number>>({});
+    // stockMap: productId -> current available stock (for qty cap)
+    const [stockMap, setStockMap] = useState<Record<string, number>>({});
     const checkedRef = useRef<string>('');
 
+    const allSelected = items.length > 0 && items.every(isSelected);
+    const hasSelection = items.some(isSelected);
+
     useEffect(() => {
-        if (items.length === 0) { setStockWarnings({}); return; }
+        if (items.length === 0) { setStockWarnings({}); setStockMap({}); return; }
         const key = items.map(i => `${i.productId}:${i.qty}`).join(',');
         if (checkedRef.current === key) return;
         checkedRef.current = key;
@@ -90,15 +120,18 @@ export default function CartPage() {
                 .catch(() => null)
         )).then(results => {
             const warnings: Record<string, number> = {};
+            const stocks: Record<string, number> = {};
             results.forEach((data, i) => {
                 if (!data) return;
                 const stockQty: number = data.product?.stockQty ?? data.stockQty ?? 0;
+                stocks[uniqueIds[i]] = stockQty;
                 const cartItem = items.find(ci => ci.productId === uniqueIds[i]);
                 if (cartItem && cartItem.qty > stockQty) {
                     warnings[uniqueIds[i]] = stockQty;
                 }
             });
             setStockWarnings(warnings);
+            setStockMap(stocks);
         });
     }, [items]);
 
@@ -129,8 +162,8 @@ export default function CartPage() {
                         <h1 className="text-xl font-extrabold text-gray-900 flex items-center gap-2">
                             <ShoppingBag className="w-5 h-5 text-brand-primary" />
                             {t.title}
-                            {totalItems > 0 && (
-                                <span className="text-sm font-bold text-gray-400">({t.itemsCount(totalItems)})</span>
+                            {items.length > 0 && (
+                                <span className="text-sm font-bold text-gray-400">({t.itemsCount(items.reduce((s, i) => s + i.qty, 0))})</span>
                             )}
                         </h1>
                     </div>
@@ -183,16 +216,56 @@ export default function CartPage() {
                                 </div>
                             )}
 
+                            {/* Select-all / bulk actions toolbar */}
+                            <div className="flex items-center justify-between bg-white rounded-2xl border border-gray-200 shadow-sm px-4 py-2.5">
+                                <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                                    <input
+                                        type="checkbox"
+                                        checked={allSelected}
+                                        onChange={e => setAllSelected(e.target.checked)}
+                                        className="w-5 h-5 rounded-md border-gray-300 text-brand-primary focus:ring-brand-primary cursor-pointer"
+                                    />
+                                    <span className="text-sm font-bold text-gray-700">{t.selectAll}</span>
+                                </label>
+                                <div className="flex items-center gap-3">
+                                    <button
+                                        onClick={removeSelected}
+                                        disabled={!hasSelection}
+                                        className="text-xs font-semibold text-gray-500 hover:text-red-500 transition-colors disabled:opacity-40 disabled:hover:text-gray-500"
+                                    >
+                                        {t.deleteSelected}
+                                    </button>
+                                    <span className="text-gray-200">|</span>
+                                    <button
+                                        onClick={clearCart}
+                                        className="text-xs font-semibold text-gray-500 hover:text-red-500 transition-colors"
+                                    >
+                                        {t.clearAll}
+                                    </button>
+                                </div>
+                            </div>
+
                             {/* Cart Items */}
                             <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden divide-y divide-gray-100">
                                 {items.map((item) => {
                                     const key = item.variantId ? `${item.productId}-${item.variantId}` : item.productId;
                                     const isRemoving = removingId === key;
+                                    const selected = isSelected(item);
+                                    const availStock = stockMap[item.productId];
+                                    const atMaxStock = availStock !== undefined && item.qty >= availStock && availStock > 0;
                                     return (
                                         <div
                                             key={key}
-                                            className={`flex items-start gap-3 p-4 transition-all duration-200 ${isRemoving ? 'opacity-0 scale-95' : 'opacity-100'}`}
+                                            className={`flex items-start gap-3 p-4 transition-all duration-200 ${isRemoving ? 'opacity-0 scale-95' : 'opacity-100'} ${selected ? '' : 'bg-gray-50/60'}`}
                                         >
+                                            {/* Selection checkbox */}
+                                            <input
+                                                type="checkbox"
+                                                checked={selected}
+                                                onChange={() => toggleSelect(item.productId, item.variantId)}
+                                                className="mt-1 w-5 h-5 rounded-md border-gray-300 text-brand-primary focus:ring-brand-primary cursor-pointer flex-shrink-0"
+                                            />
+
                                             {/* Image */}
                                             <Link href={`/products/${item.productId}`} className="flex-shrink-0">
                                                 <img
@@ -241,8 +314,10 @@ export default function CartPage() {
                                                             {item.qty}
                                                         </span>
                                                         <button
-                                                            onClick={() => updateQty(item.productId, item.qty + 1, item.variantId)}
-                                                            className="px-2 py-1.5 hover:bg-gray-50 transition-colors active:scale-95"
+                                                            onClick={() => { if (!atMaxStock) updateQty(item.productId, item.qty + 1, item.variantId); }}
+                                                            disabled={atMaxStock}
+                                                            title={atMaxStock ? t.maxStock : undefined}
+                                                            className="px-2 py-1.5 hover:bg-gray-50 transition-colors active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed"
                                                         >
                                                             <Plus className="w-3.5 h-3.5 text-gray-600" />
                                                         </button>
@@ -266,10 +341,10 @@ export default function CartPage() {
                                 <h3 className="font-extrabold text-gray-900 mb-4 text-sm">{t.subtotal}</h3>
                                 <div className="space-y-2 mb-4">
                                     <div className="flex justify-between text-sm text-gray-600">
-                                        <span>{t.itemsCount(totalItems)}</span>
+                                        <span>{t.itemsCount(selectedCount)}</span>
                                         <span className="font-semibold">{formatUsd(subtotal)}</span>
                                     </div>
-                                    {freeShippingRemaining <= 0 && (
+                                    {freeShippingRemaining <= 0 && subtotal > 0 && (
                                         <div className="flex justify-between text-sm text-green-600 font-semibold">
                                             <span>{language === 'ko' ? '배송비' : 'Shipping'}</span>
                                             <span>Free</span>
@@ -281,13 +356,19 @@ export default function CartPage() {
                                     <span className="text-brand-secondary">{formatUsd(subtotal)}</span>
                                 </div>
 
-                                <Link
-                                    href="/checkout"
-                                    className="w-full flex items-center justify-center gap-2 bg-brand-primary text-white py-4 rounded-xl font-extrabold text-base hover:bg-brand-primary/90 transition-all active:scale-[0.99] shadow-sm"
-                                >
-                                    {t.checkout}
-                                    <ArrowRight className="w-4 h-4" />
-                                </Link>
+                                {hasSelection ? (
+                                    <Link
+                                        href="/checkout"
+                                        className="w-full flex items-center justify-center gap-2 bg-brand-primary text-white py-4 rounded-xl font-extrabold text-base hover:bg-brand-primary/90 transition-all active:scale-[0.99] shadow-sm"
+                                    >
+                                        {t.checkout}
+                                        <ArrowRight className="w-4 h-4" />
+                                    </Link>
+                                ) : (
+                                    <div className="w-full flex items-center justify-center gap-2 bg-gray-100 text-gray-400 py-4 rounded-xl font-extrabold text-base cursor-not-allowed">
+                                        {t.selectItemsHint}
+                                    </div>
+                                )}
                                 <Link
                                     href="/"
                                     className="mt-2 w-full flex items-center justify-center gap-1 text-sm text-gray-500 hover:text-gray-900 transition-colors py-2"
