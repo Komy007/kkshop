@@ -131,6 +131,14 @@ export default function SellerProductEditPage() {
     const [volumeVars, setVolumeVars] = useState<{_k:string;label:string;stock:string;price:string}[]>([]);
     const [customVars, setCustomVars] = useState<{_k:string;label:string;stock:string;price:string}[]>([]);
 
+    // ── Translation review (per-language manual correction of machine output) ──
+    type TransFields = { name: string; shortDesc: string; detailDesc: string; ingredients: string; howToUse: string; benefits: string };
+    const EMPTY_TRANS: TransFields = { name: '', shortDesc: '', detailDesc: '', ingredients: '', howToUse: '', benefits: '' };
+    const [translations, setTranslations] = useState<Record<string, TransFields>>({ ko: { ...EMPTY_TRANS }, en: { ...EMPTY_TRANS }, km: { ...EMPTY_TRANS }, zh: { ...EMPTY_TRANS } });
+    const [showTranslations, setShowTranslations] = useState(false);
+    const [transLang, setTransLang] = useState<'ko' | 'en' | 'km' | 'zh'>('en');
+    const [savingTrans, setSavingTrans] = useState(false);
+
     // Refs for scrolling variant sections into view on enable
     const colorSectionRef  = useRef<HTMLDivElement>(null);
     const sizeSectionRef   = useRef<HTMLDivElement>(null);
@@ -180,6 +188,18 @@ export default function SellerProductEditPage() {
                     widthCm:        data.widthCm       ? String(data.widthCm) : '',
                     heightCm:       data.heightCm      ? String(data.heightCm) : '',
                 });
+                // Populate all 4-language translations for the review panel
+                const transMap: Record<string, TransFields> = { ko: { ...EMPTY_TRANS }, en: { ...EMPTY_TRANS }, km: { ...EMPTY_TRANS }, zh: { ...EMPTY_TRANS } };
+                (data.translations ?? []).forEach((tr: any) => {
+                    if (transMap[tr.langCode]) {
+                        transMap[tr.langCode] = {
+                            name: tr.name ?? '', shortDesc: tr.shortDesc ?? '', detailDesc: tr.detailDesc ?? '',
+                            ingredients: tr.ingredients ?? '', howToUse: tr.howToUse ?? '', benefits: tr.benefits ?? '',
+                        };
+                    }
+                });
+                setTranslations(transMap);
+
                 setApprovalStatus(data.approvalStatus ?? 'PENDING');
                 setRejectionReason(data.rejectionReason ?? null);
                 setMainImageList(
@@ -487,6 +507,35 @@ export default function SellerProductEditPage() {
             setSaving(false);
             setUploading(false);
         }
+    };
+
+    // Save seller-reviewed translations verbatim (no machine re-translation)
+    const handleSaveTranslations = async () => {
+        setSavingTrans(true);
+        setMessage(null);
+        try {
+            const payload = (['ko', 'en', 'km', 'zh'] as const).map(lc => ({ langCode: lc, ...translations[lc] }));
+            const res = await fetch(`/api/seller/products/${productId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ translationsManual: payload }),
+            });
+            const data = await res.json();
+            if (res.ok) {
+                setMessage({ type: 'success', text: 'Translations saved! Pending re-review.', textKo: '번역 저장 완료. 재검수 대기 중입니다.' });
+                setApprovalStatus('PENDING');
+            } else {
+                setMessage({ type: 'error', text: 'Failed to save translations.', textKo: data.error ?? '번역 저장 실패' });
+            }
+        } catch {
+            setMessage({ type: 'error', text: 'An error occurred.', textKo: '오류가 발생했습니다.' });
+        } finally {
+            setSavingTrans(false);
+        }
+    };
+
+    const setTransField = (lang: string, field: keyof TransFields, value: string) => {
+        setTranslations(prev => ({ ...prev, [lang]: { ...prev[lang], [field]: value } }));
     };
 
     if (loading) {
@@ -1241,6 +1290,80 @@ export default function SellerProductEditPage() {
                         </div>
                     )}
                 </section>
+
+                {/* ── Translation Review (per-language manual correction) ── */}
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                    <button type="button" onClick={() => setShowTranslations(p => !p)}
+                        className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
+                        <div className="text-left flex items-center gap-2">
+                            <Globe className="w-5 h-5 text-teal-500" />
+                            <div>
+                                <h2 className="font-extrabold text-gray-900 text-base leading-tight">Translation Review · 번역 검수</h2>
+                                <p className="text-xs text-gray-400 mt-0.5">자동 번역을 직접 확인·수정하세요 · Review & fix machine translations</p>
+                            </div>
+                        </div>
+                        {showTranslations ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+                    </button>
+
+                    {showTranslations && (
+                        <div className="px-6 pb-6 border-t border-gray-100 pt-4 space-y-4">
+                            <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-700">
+                                <AlertCircle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+                                <span>여기서 저장하면 자동 번역을 덮어쓰고, 위쪽 본문을 수정해 저장하면 다시 자동 번역됩니다. · Edits here are saved verbatim; editing the main form above re-runs auto-translation.</span>
+                            </div>
+
+                            {/* Language tabs */}
+                            <div className="flex gap-2">
+                                {([
+                                    { code: 'ko', label: '🇰🇷 한국어' },
+                                    { code: 'en', label: '🇺🇸 English' },
+                                    { code: 'km', label: '🇰🇭 ខ្មែរ' },
+                                    { code: 'zh', label: '🇨🇳 中文' },
+                                ] as const).map(({ code, label }) => (
+                                    <button key={code} type="button" onClick={() => setTransLang(code)}
+                                        className={`px-3 py-1.5 rounded-lg text-sm font-bold border transition-all ${transLang === code ? 'bg-teal-600 text-white border-teal-600' : 'bg-white text-gray-600 border-gray-200 hover:border-teal-300'}`}>
+                                        {label}
+                                    </button>
+                                ))}
+                            </div>
+
+                            {/* Fields for the active language */}
+                            <div className="space-y-3">
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-700 mb-1">Product Name · 상품명</label>
+                                    <input type="text" value={translations[transLang].name} onChange={e => setTransField(transLang, 'name', e.target.value)} className={inp} />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-700 mb-1">Short Description · 짧은 설명</label>
+                                    <textarea rows={2} value={translations[transLang].shortDesc} onChange={e => setTransField(transLang, 'shortDesc', e.target.value)} className={ta} />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-700 mb-1">Key Ingredients · 주요 성분</label>
+                                    <textarea rows={2} value={translations[transLang].ingredients} onChange={e => setTransField(transLang, 'ingredients', e.target.value)} className={ta} />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-700 mb-1">How to Use · 사용 방법</label>
+                                    <textarea rows={2} value={translations[transLang].howToUse} onChange={e => setTransField(transLang, 'howToUse', e.target.value)} className={ta} />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-700 mb-1">Benefits / Features · 효능/특징</label>
+                                    <textarea rows={2} value={translations[transLang].benefits} onChange={e => setTransField(transLang, 'benefits', e.target.value)} className={ta} />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-700 mb-1">Detailed Description (HTML) · 상세 설명</label>
+                                    <textarea rows={4} value={translations[transLang].detailDesc} onChange={e => setTransField(transLang, 'detailDesc', e.target.value)} className={`${ta} font-mono text-xs`} />
+                                    <p className="text-[10px] text-gray-400 mt-1">HTML 태그는 그대로 유지됩니다. · HTML tags are preserved.</p>
+                                </div>
+                            </div>
+
+                            <button type="button" onClick={handleSaveTranslations} disabled={savingTrans}
+                                className="w-full flex items-center justify-center gap-2 py-2.5 bg-teal-600 text-white rounded-xl text-sm font-bold hover:bg-teal-700 transition-colors disabled:opacity-60">
+                                {savingTrans ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                                Save Translations <span className="text-[11px] opacity-70">· 번역 저장</span>
+                            </button>
+                        </div>
+                    )}
+                </div>
 
                 {/* ── Submit ── */}
                 <div className="flex gap-3 pt-2">

@@ -167,7 +167,26 @@ export async function PATCH(
         detailImages,  // NEW: full-replacement sync for DETAIL gallery [{id?, url, alt?}]
         options,             // full options replacement (undefined = no change)
         variants,            // full variants replacement (undefined = no change)
+        translationsManual,  // NEW: seller-reviewed per-language overrides — written verbatim (no machine translation)
     } = body;
+
+    // ── Translation review: seller manually corrects machine-translated text ──
+    // Sanitize to the 4 supported languages; write provided fields verbatim.
+    const ALLOWED_LANGS = ['ko', 'en', 'km', 'zh'];
+    const manualTranslations: Array<{ langCode: string; name: string; shortDesc: string | null; detailDesc: string | null; ingredients: string | null; howToUse: string | null; benefits: string | null }> =
+        Array.isArray(translationsManual)
+            ? translationsManual
+                .filter((tr: any) => tr && ALLOWED_LANGS.includes(tr.langCode))
+                .map((tr: any) => ({
+                    langCode: tr.langCode,
+                    name: (tr.name ?? '').toString().slice(0, 500),
+                    shortDesc: tr.shortDesc ? tr.shortDesc.toString() : null,
+                    detailDesc: tr.detailDesc ? tr.detailDesc.toString() : null,
+                    ingredients: tr.ingredients ? tr.ingredients.toString() : null,
+                    howToUse: tr.howToUse ? tr.howToUse.toString() : null,
+                    benefits: tr.benefits ? tr.benefits.toString() : null,
+                }))
+            : [];
 
     // Auto-detect input language from product name — no manual selection needed
     const srcLang: string = name ? await detectLanguage(name) : 'ko';
@@ -255,6 +274,16 @@ export async function PATCH(
             });
             } // end for loop
         } // end if translations
+
+        // Seller-reviewed manual translations — written verbatim, overriding machine output.
+        // Applied AFTER the auto path so manual corrections always win.
+        for (const tr of manualTranslations) {
+            await tx.productTranslation.upsert({
+                where: { productId_langCode: { productId: product.id, langCode: tr.langCode } },
+                create: { productId: product.id, langCode: tr.langCode, name: tr.name, shortDesc: tr.shortDesc, detailDesc: tr.detailDesc, ingredients: tr.ingredients, howToUse: tr.howToUse, benefits: tr.benefits },
+                update: { name: tr.name, shortDesc: tr.shortDesc, detailDesc: tr.detailDesc, ingredients: tr.ingredients, howToUse: tr.howToUse, benefits: tr.benefits },
+            });
+        }
 
         // Delete removed images (BigInt 변환 전 숫자 검증)
         if (deleteImageIds.length > 0) {
