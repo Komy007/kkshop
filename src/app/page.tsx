@@ -606,7 +606,7 @@ export default function Home() {
                 setPlaceholderIdx(i => (i + 1) % keywords.length);
                 setPlaceholderFade(true);
             }, 180);
-        }, 3000);
+        }, 4000);
         return () => clearInterval(interval);
     }, [mounted, language]);
 

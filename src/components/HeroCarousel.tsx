@@ -446,33 +446,20 @@ function BestSellersSlide({ slide, st }: { slide: ResolvedSlide; st: any }) {
 }
 
 // ─── Transition Engine ────────────────────────────────────────────────────────
-// 4 premium effects — avoid flip3D (CSS cannot interpolate between typed ↔ 'none')
-type TransitionType = 'slideUp' | 'slideLeft' | 'zoomBlur' | 'crossFade';
-const TRANSITIONS: TransitionType[] = ['slideUp', 'slideLeft', 'zoomBlur', 'crossFade'];
+type TransitionType = 'slideLeft';
+const TRANSITIONS: TransitionType[] = ['slideLeft'];
 const TRANSITION_MS = 550;
 
-// Neutral "settled" uses explicit typed transforms so CSS can interpolate cleanly
 const SETTLED: React.CSSProperties = {
     transform: 'translateY(0px) translateX(0px) scale(1)',
     opacity: 1,
-    filter: 'blur(0px)',
 };
 
-function exitStyle(fx: TransitionType): React.CSSProperties {
-    switch (fx) {
-        case 'slideUp':   return { transform: 'translateY(-108%) translateX(0px) scale(1)',     opacity: 0, filter: 'blur(0px)' };
-        case 'slideLeft': return { transform: 'translateY(0px) translateX(-108%) scale(1)',     opacity: 0, filter: 'blur(0px)' };
-        case 'zoomBlur':  return { transform: 'translateY(0px) translateX(0px) scale(1.28)',   opacity: 0, filter: 'blur(16px)' };
-        case 'crossFade': return { transform: 'translateY(0px) translateX(0px) scale(1.05)',   opacity: 0, filter: 'blur(4px)' };
-    }
+function exitStyle(_fx: TransitionType): React.CSSProperties {
+    return { transform: 'translateY(0px) translateX(-108%) scale(1)', opacity: 0 };
 }
-function enterFromStyle(fx: TransitionType): React.CSSProperties {
-    switch (fx) {
-        case 'slideUp':   return { transform: 'translateY(108%) translateX(0px) scale(1)',     opacity: 0, filter: 'blur(0px)' };
-        case 'slideLeft': return { transform: 'translateY(0px) translateX(108%) scale(1)',     opacity: 0, filter: 'blur(0px)' };
-        case 'zoomBlur':  return { transform: 'translateY(0px) translateX(0px) scale(0.72)',   opacity: 0, filter: 'blur(16px)' };
-        case 'crossFade': return { transform: 'translateY(0px) translateX(0px) scale(0.95)',   opacity: 0, filter: 'blur(4px)' };
-    }
+function enterFromStyle(_fx: TransitionType): React.CSSProperties {
+    return { transform: 'translateY(0px) translateX(108%) scale(1)', opacity: 0 };
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────

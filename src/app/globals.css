@@ -511,11 +511,10 @@
   50% { transform: translateX(100%) rotate(45deg); }
 }
 
-/* ── Category shortcut tiles: aurora gradient + shine sweep + spring entrance ── */
+/* ── Category shortcut tiles: spring entrance + hover-only shine ── */
 .cat-tile {
   background-size: 200% 200%;
-  animation: aurora 6s ease infinite;
-  will-change: transform, background-position;
+  will-change: transform;
 }
 .cat-tile-enter {
   animation: catSpringIn 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
@@ -524,7 +523,7 @@
   0% { transform: scale(0.4) translateY(12px); opacity: 0; }
   100% { transform: scale(1) translateY(0); opacity: 1; }
 }
-/* Diagonal shine that sweeps across the tile periodically */
+/* Diagonal shine — parked off-screen by default, sweeps only on hover/tap */
 .cat-shine::after {
   content: '';
   position: absolute;
@@ -532,15 +531,18 @@
   border-radius: inherit;
   background: linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.55) 48%, transparent 66%);
   transform: translateX(-130%);
-  animation: catShine 4.5s ease-in-out infinite;
   pointer-events: none;
 }
+.group:hover .cat-shine::after,
+.group:active .cat-shine::after {
+  animation: catShine 0.8s ease-out 1;
+}
 @keyframes catShine {
-  0%, 60% { transform: translateX(-130%); }
-  85%, 100% { transform: translateX(130%); }
+  0%   { transform: translateX(-130%); }
+  100% { transform: translateX(130%); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .cat-tile, .cat-tile-enter, .cat-shine::after { animation: none; }
+  .cat-tile-enter, .group:hover .cat-shine::after, .group:active .cat-shine::after { animation: none; }
 }
 
 @keyframes icon-float {
@@ -635,7 +637,7 @@ html[data-lang="km"] .font-bold {
 
 @keyframes kenBurns {
   0%   { transform: scale(1) translate(0, 0); }
-  100% { transform: scale(1.07) translate(-1%, -0.5%); }
+  100% { transform: scale(1.03) translate(-1%, -0.5%); }
 }
 
 @keyframes productFadeIn {
