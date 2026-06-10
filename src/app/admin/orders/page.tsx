@@ -33,7 +33,6 @@ async function updateOrderStatus(orderId: string, newStatus: string) {
     const allowed = ALLOWED_TRANSITIONS[current.status] ?? [];
     if (!allowed.includes(newStatus)) return; // silently reject invalid transitions
 
-    // When cancelling an order, restore stock for each item — $transaction으로 원자적 처리
     if (newStatus === 'CANCELLED') {
         const order = await prisma.order.findUnique({
             where: { id: orderId },
@@ -42,6 +41,13 @@ async function updateOrderStatus(orderId: string, newStatus: string) {
         if (order && order.status !== 'CANCELLED') {
             await prisma.$transaction(async (tx) => {
                 for (const item of order.items) {
+                    // Restore variant stock if applicable
+                    if ((item as any).variantId) {
+                        await tx.productVariant.update({
+                            where: { id: (item as any).variantId },
+                            data: { stockQty: { increment: item.quantity } },
+                        });
+                    }
                     const product = await tx.product.findUnique({
                         where: { id: item.productId },
                         select: { stockQty: true, status: true },
@@ -67,7 +73,32 @@ async function updateOrderStatus(orderId: string, newStatus: string) {
                         },
                     });
                 }
-                // 재고 복원 + 주문 상태 업데이트를 동일 트랜잭션 내에서 처리
+                // Refund points if used
+                if ((order as any).pointsUsed > 0 && order.userId) {
+                    const updatedUser = await tx.user.update({
+                        where: { id: order.userId },
+                        data: { pointBalance: { increment: (order as any).pointsUsed } },
+                    });
+                    await (tx as any).userPoint.create({
+                        data: {
+                            userId: order.userId,
+                            amount: (order as any).pointsUsed,
+                            reason: `주문 취소 환불 (Order #${orderId.slice(0, 8)})`,
+                            balanceAfter: updatedUser.pointBalance,
+                            orderId,
+                        },
+                    });
+                }
+                // Return coupon usage
+                if ((order as any).couponId && order.userId) {
+                    await tx.coupon.update({
+                        where: { id: (order as any).couponId },
+                        data: { usedCount: { decrement: 1 } },
+                    });
+                    await tx.userCoupon.deleteMany({
+                        where: { orderId, userId: order.userId },
+                    });
+                }
                 await tx.order.update({
                     where: { id: orderId },
                     data: { status: newStatus },
@@ -77,8 +108,47 @@ async function updateOrderStatus(orderId: string, newStatus: string) {
             // race condition: 동시 요청에 의해 이미 취소됨 — 재처리 불필요
             return;
         }
+    } else if (newStatus === 'DELIVERED') {
+        // Award points on delivery (not on order creation)
+        await prisma.$transaction(async (tx) => {
+            const deliveredOrder = await tx.order.findUnique({
+                where: { id: orderId },
+                select: { userId: true, totalUsd: true },
+            });
+            await tx.order.update({ where: { id: orderId }, data: { status: newStatus } });
+            if (deliveredOrder?.userId) {
+                // Dedupe: skip if points already awarded for this order
+                const existing = await tx.userPoint.findFirst({
+                    where: { orderId, userId: deliveredOrder.userId, amount: { gt: 0 } },
+                });
+                if (!existing) {
+                    const ptsCfgRow = await tx.siteSetting.findUnique({ where: { key: 'points_config' } });
+                    const ptsCfg: any = ptsCfgRow?.value
+                        ? (typeof ptsCfgRow.value === 'string' ? JSON.parse(ptsCfgRow.value as string) : ptsCfgRow.value)
+                        : {};
+                    const earnRatePct = typeof ptsCfg.earnRate === 'number' ? Math.min(Math.max(ptsCfg.earnRate, 0), 50) : 1;
+                    const redeemRate = typeof ptsCfg.redeemRate === 'number' ? Math.max(ptsCfg.redeemRate, 1) : 1000;
+                    const rewardPoints = Math.floor(Number(deliveredOrder.totalUsd) * (earnRatePct / 100) * redeemRate);
+                    if (rewardPoints > 0) {
+                        const updatedUser = await tx.user.update({
+                            where: { id: deliveredOrder.userId },
+                            data: { pointBalance: { increment: rewardPoints } },
+                        });
+                        await tx.userPoint.create({
+                            data: {
+                                userId: deliveredOrder.userId,
+                                amount: rewardPoints,
+                                reason: `배송완료 적립 (Order #${orderId.slice(0, 8)})`,
+                                balanceAfter: updatedUser.pointBalance,
+                                orderId,
+                            },
+                        });
+                    }
+                }
+            }
+        });
     } else {
-        // CONFIRMED, SHIPPING, DELIVERED 등 취소 이외의 상태 변경
+        // CONFIRMED, SHIPPING 등 취소/배송완료 이외의 상태 변경
         await prisma.order.update({
             where: { id: orderId },
             data: { status: newStatus },

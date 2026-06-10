@@ -391,25 +391,6 @@ export async function POST(request: Request) {
                 });
             }
 
-            // 5. Reward new points (DB 설정 적립률 적용 — 기본 1%, 1000P=$1)
-            // e.g. $100 * 0.01 * 1000 = 1,000 points (= $1 value)
-            const rewardPoints = Math.floor(totalUsd * earnRate * redeemRate);
-            if (rewardPoints > 0) {
-                const updatedUser = await tx.user.update({
-                    where: { id: userId },
-                    data: { pointBalance: { increment: rewardPoints } }
-                });
-                await tx.userPoint.create({
-                    data: {
-                        userId,
-                        amount: rewardPoints,
-                        reason: `주문 완료 적립 (Order #${newOrder.id})`,
-                        balanceAfter: updatedUser.pointBalance,
-                        orderId: newOrder.id
-                    }
-                });
-            }
-
             return newOrder;
         });
 

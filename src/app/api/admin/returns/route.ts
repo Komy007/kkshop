@@ -134,37 +134,30 @@ export async function PATCH(req: NextRequest) {
             }
 
             if (order.userId) {
-                // ② 주문 완료 시 지급된 리워드 포인트 회수 (1% × 1000P/$1)
-                let ptsCfg: any = {};
-                try {
-                    const ptsCfgRow = await tx.siteSetting.findUnique({ where: { key: 'points_config' } });
-                    ptsCfg = ptsCfgRow?.value ? (typeof ptsCfgRow.value === 'string' ? JSON.parse(ptsCfgRow.value as string) : ptsCfgRow.value) : {};
-                } catch { /* use defaults */ }
-                const refundEarnRate = (typeof ptsCfg.earnRate === 'number' ? ptsCfg.earnRate : 1) / 100;
-                const refundRedeemRate = typeof ptsCfg.redeemRate === 'number' ? ptsCfg.redeemRate : 1000;
-                const rewardPoints = Math.floor(Number(order.totalUsd) * refundEarnRate * refundRedeemRate);
-                if (rewardPoints > 0) {
-                    await tx.user.update({
-                        where: { id: order.userId },
-                        data:  { pointBalance: { decrement: rewardPoints } },
-                    });
-                    // 0 미만으로 내려가면 0으로 클램프
-                    await tx.user.updateMany({
-                        where: { id: order.userId, pointBalance: { lt: 0 } },
-                        data:  { pointBalance: 0 },
-                    });
-                    const afterReclaim = await tx.user.findUnique({
-                        where: { id: order.userId }, select: { pointBalance: true },
-                    });
-                    await tx.userPoint.create({
-                        data: {
-                            userId:       order.userId,
-                            amount:       -rewardPoints,
-                            reason:       `환불 처리로 리워드 포인트 회수 (주문 #${orderId})`,
-                            balanceAfter: afterReclaim?.pointBalance ?? 0,
-                            orderId,
-                        },
-                    });
+                // ② Reclaim actually-awarded reward points (look up records, not recalculate)
+                const awardedPtRows = await tx.userPoint.findMany({
+                    where: { orderId, userId: order.userId, amount: { gt: 0 } },
+                    select: { amount: true },
+                });
+                const totalAwarded = awardedPtRows.reduce((sum, p) => sum + p.amount, 0);
+                if (totalAwarded > 0) {
+                    const currentUser = await tx.user.findUnique({ where: { id: order.userId }, select: { pointBalance: true } });
+                    const toReclaim = Math.min(totalAwarded, currentUser?.pointBalance ?? 0);
+                    if (toReclaim > 0) {
+                        const afterReclaim = await tx.user.update({
+                            where: { id: order.userId },
+                            data: { pointBalance: { decrement: toReclaim } },
+                        });
+                        await tx.userPoint.create({
+                            data: {
+                                userId:       order.userId,
+                                amount:       -toReclaim,
+                                reason:       `반품 환불 — 적립 회수 (Order #${orderId.slice(0, 8)})`,
+                                balanceAfter: afterReclaim.pointBalance,
+                                orderId,
+                            },
+                        });
+                    }
                 }
 
                 // ③ 주문 시 사용한 포인트 환원 (update 반환값으로 balanceAfter 계산)
