@@ -1,17 +1,17 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import CategoryShortcuts from '@/components/CategoryShortcuts';
 import CurationSection from '@/components/CurationSection';
 import HeroCarousel from '@/components/HeroCarousel';
 import Footer from '@/components/Footer';
 import { useSafeAppStore } from '@/store/useAppStore';
-import { Search, Star, Flame, Sparkles, Crown, ChevronRight, ArrowRight, Zap, Clock, Plus, CheckCircle } from 'lucide-react';
+import { Search, Star, Flame, Sparkles, Crown, ChevronRight, Zap, Clock, Plus, CheckCircle, X } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { type TranslatedProduct } from '@/lib/api';
-import TaegukgiIcon from '@/components/TaegukgiIcon';
 import { useCartStore } from '@/store/useCartStore';
+import { useSession } from 'next-auth/react';
 
 const PLACEHOLDER_IMG = 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&q=80&w=400';
 
@@ -31,6 +31,7 @@ interface FlashSaleItem {
 const homeT: Record<string, any> = {
     ko: {
         searchPlaceholder: '상품명 또는 브랜드 검색',
+        searchKeywords: ['COSRX 세럼', '시트마스크', '선크림', '한국 과자', 'LANEIGE'],
         forYou: 'FOR YOU',
         curationTitle: '님을 위한 추천',
         flashTitle: '타임세일',
@@ -42,16 +43,14 @@ const homeT: Record<string, any> = {
         freeShipping: '🚚 $30 이상 무료배송',
         authentic: '✅ 한국정품 100%',
         fast: '⚡ 프놈펜 빠른 배송',
-        heroBadge: '캄보디아 No.1 한국 쇼핑몰',
-        heroTitle: '진짜 한국 상품을\n문 앞까지',
-        heroSub: '화장품 100% 한국산 정품 · 한국인이 검증한 가성비 베스트 상품',
-        shopNow: '지금 쇼핑하기',
         outOfStock: '품절',
         soldCount: '판매',
         recentlyViewed: '최근 본 상품',
+        signupBanner: '🎁 회원가입 후 매 주문 1% 포인트 적립',
     },
     en: {
         searchPlaceholder: 'Search products or brands',
+        searchKeywords: ['COSRX serum', 'Sheet mask', 'Sunscreen', 'Korean snacks', 'LANEIGE'],
         forYou: 'FOR YOU',
         curationTitle: "'s Picks",
         flashTitle: 'Flash Sale',
@@ -63,16 +62,14 @@ const homeT: Record<string, any> = {
         freeShipping: '🚚 Free shipping $30+',
         authentic: '✅ 100% Authentic Korean',
         fast: '⚡ Fast Phnom Penh Delivery',
-        heroBadge: 'Cambodia\'s No.1 Korean Shop',
-        heroTitle: 'Premium Korean Products\nDelivered to Your Door',
-        heroSub: 'Cosmetics, lifestyle & more — Curated by Korean Insight for Cambodia',
-        shopNow: 'Shop Now',
         outOfStock: 'Sold Out',
         soldCount: 'sold',
         recentlyViewed: 'Recently Viewed',
+        signupBanner: '🎁 Sign up & get 1% points on every order',
     },
     km: {
         searchPlaceholder: 'ស្វែងរកផលិតផល',
+        searchKeywords: ['ក្រែម COSRX', 'ម៉ាស់មុខ', 'គ្រប់ព្រះអាទិត្យ', 'LANEIGE', 'ផលិតផលថ្មី'],
         forYou: 'FOR YOU',
         curationTitle: ' សម្រាប់អ្នក',
         flashTitle: 'ការលក់ Flash',
@@ -84,16 +81,14 @@ const homeT: Record<string, any> = {
         freeShipping: '🚚 ដឹកជញ្ជូនឥតគិតថ្លៃ $30+',
         authentic: '✅ គ្រឿងសំអាងកូរ៉េ 100%',
         fast: '⚡ ដឹកជញ្ជូនរហ័ស',
-        heroBadge: 'ហាងកូរ៉េលេខ ១ នៅកម្ពុជា',
-        heroTitle: 'ផលិតផលកូរ៉េ Premium\nដល់ទ្វារផ្ទះអ្នក',
-        heroSub: 'គ្រឿងសំអាង 100% កូរ៉េ · ផ្ទះ & ច្រើនទៀត — ផ្ទៀងផ្ទាត់ & ជ្រើសរើសដោយជំនាញកូរ៉េ',
-        shopNow: 'ទិញឥឡូវ',
         outOfStock: 'អស់ស្តុក',
         soldCount: 'បានលក់',
         recentlyViewed: 'បានមើលថ្មីៗ',
+        signupBanner: '🎁 ចុះឈ្មោះ & ទទួល 1% ពិន្ទុគ្រប់ការបញ្ជាទិញ',
     },
     zh: {
         searchPlaceholder: '搜索商品或品牌',
+        searchKeywords: ['COSRX精华', '面膜', '防晒霜', '韩国零食', 'LANEIGE'],
         forYou: 'FOR YOU',
         curationTitle: '为你推荐',
         flashTitle: '限时闪购',
@@ -105,15 +100,53 @@ const homeT: Record<string, any> = {
         freeShipping: '🚚 $30以上免运费',
         authentic: '✅ 100%韩国正品',
         fast: '⚡ 金边快速配送',
-        heroBadge: '柬埔寨第一韩国购物平台',
-        heroTitle: '韩国精品\n直达您家门口',
-        heroSub: '100%韩国化妆品 · 生活精选 — 经韩国专业甄选与品质认证',
-        shopNow: '立即购物',
         outOfStock: '已售罄',
         soldCount: '已售',
         recentlyViewed: '最近浏览',
+        signupBanner: '🎁 注册即可每次购物获1%积分',
     }
 };
+
+// ── useInView hook ─────────────────────────────────────────────────────────────
+function useInView(ref: React.RefObject<any>, rootMargin = '300px') {
+    const [inView, setInView] = useState(false);
+    useEffect(() => {
+        const el = ref.current;
+        if (!el) return;
+        const observer = new IntersectionObserver(
+            ([entry]) => { if (entry.isIntersecting) { setInView(true); observer.disconnect(); } },
+            { rootMargin }
+        );
+        observer.observe(el);
+        return () => observer.disconnect();
+    }, []);
+    return inView;
+}
+
+// ── Skeleton components ────────────────────────────────────────────────────────
+function CardSkeleton() {
+    return (
+        <div className="flex-shrink-0 w-[116px] sm:w-[130px]">
+            <div className="aspect-square rounded-xl bg-gray-200 animate-pulse mb-1.5" />
+            <div className="h-2.5 bg-gray-200 animate-pulse rounded mb-1" />
+            <div className="h-2.5 bg-gray-200 animate-pulse rounded w-3/4 mb-1" />
+            <div className="h-3 bg-gray-200 animate-pulse rounded w-1/2" />
+        </div>
+    );
+}
+
+function ProductGridSkeleton({ title, icon }: { title: string; icon: React.ReactNode }) {
+    return (
+        <section className="mb-6">
+            <div className="flex items-center justify-between mb-3 px-3">
+                <div className="flex items-center gap-1.5">{icon}<span className="text-[15px] font-extrabold text-black">{title}</span></div>
+            </div>
+            <div className="flex gap-3 overflow-x-auto px-3 pb-2 scrollbar-hide">
+                {Array.from({ length: 5 }).map((_, i) => <CardSkeleton key={i} />)}
+            </div>
+        </section>
+    );
+}
 
 // ── Countdown Hook ────────────────────────────────────────────────────────────
 function useCountdown(endAt: string) {
@@ -231,7 +264,6 @@ function ProductCard({ product, t }: { product: TranslatedProduct; t: any }) {
 
     return (
         <Link href={`/products/${product.id}`} className="group block flex-shrink-0">
-            {/* Image */}
             <div className="relative aspect-square rounded-xl overflow-hidden bg-gray-100 mb-1.5 border border-gray-100">
                 <Image
                     src={imgError || !product.imageUrl ? PLACEHOLDER_IMG : product.imageUrl}
@@ -241,7 +273,6 @@ function ProductCard({ product, t }: { product: TranslatedProduct; t: any }) {
                     className={`object-cover transition-transform duration-300 ${isSoldOut ? 'opacity-60' : 'group-hover:scale-105'}`}
                     onError={() => setImgError(true)}
                 />
-                {/* Badges */}
                 {isSoldOut ? (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/40">
                         <span className="text-white text-[10px] font-extrabold bg-black/60 px-2 py-1 rounded">{t.outOfStock}</span>
@@ -253,13 +284,12 @@ function ProductCard({ product, t }: { product: TranslatedProduct; t: any }) {
                                 <Flame className="w-2.5 h-2.5" />HOT
                             </div>
                         )}
-                        {product.isNew && !product.isHotSale && (
+                        {(product as any).isNew && !product.isHotSale && (
                             <div className="absolute top-1.5 left-1.5 bg-blue-500 text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded shadow-sm">NEW</div>
                         )}
                         {discountPct > 0 && (
                             <div className="absolute top-1.5 right-1.5 bg-rose-500 text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded shadow-sm">{discountPct}%</div>
                         )}
-                        {/* Quick Add Button */}
                         <button
                             onClick={handleQuickAdd}
                             className={`absolute bottom-1.5 right-1.5 w-7 h-7 rounded-full flex items-center justify-center shadow-md transition-all duration-150 active:scale-95 hover:scale-110 ${quickAdded ? 'bg-green-500' : 'bg-brand-primary hover:bg-brand-primary/90'}`}
@@ -273,7 +303,6 @@ function ProductCard({ product, t }: { product: TranslatedProduct; t: any }) {
                     </>
                 )}
             </div>
-            {/* Brand & Origin */}
             {(product.brandName || (product.origin && /korea/i.test(product.origin))) && (
                 <div className="flex items-center gap-1 mb-0.5">
                     {product.brandName && (
@@ -284,11 +313,9 @@ function ProductCard({ product, t }: { product: TranslatedProduct; t: any }) {
                     )}
                 </div>
             )}
-            {/* Name */}
             <p className="text-[12px] sm:text-[13px] font-bold text-gray-900 leading-[1.3] line-clamp-2 mb-1 min-h-[32px]">
                 {product.name}
             </p>
-            {/* Price */}
             <div className="flex items-baseline gap-1.5">
                 <span className="text-[14px] sm:text-[15px] font-black text-[#E52528]">
                     <span className="text-[11px] font-bold mr-px">$</span>{effectivePrice.toFixed(2)}
@@ -297,7 +324,6 @@ function ProductCard({ product, t }: { product: TranslatedProduct; t: any }) {
                     <span className="text-[11px] text-gray-400 line-through">${product.priceUsd.toFixed(2)}</span>
                 )}
             </div>
-            {/* Rating */}
             {rating ? (
                 <div className="flex items-center gap-0.5 mt-0.5">
                     <Star className="w-2.5 h-2.5 text-amber-400 fill-amber-400" />
@@ -344,14 +370,12 @@ function ProductGrid({ products, title, icon, viewAllHref, t }: {
     return (
         <section className="mb-6">
             <SectionHeader icon={icon} title={title} viewAllHref={viewAllHref} t={t} />
-            {/* Mobile: horizontal scroll / Desktop: grid */}
             <div className="flex gap-3 overflow-x-auto px-3 pb-2 scrollbar-hide snap-x snap-mandatory md:grid md:grid-cols-4 lg:grid-cols-6 md:overflow-visible md:pb-0 md:flex-none md:snap-none">
                 {products.map(p => (
                     <div key={p.id} className="flex-shrink-0 w-[116px] sm:w-[130px] snap-start md:w-auto md:flex-shrink">
                         <ProductCard product={p} t={t} />
                     </div>
                 ))}
-                {/* View All card at end of scroll (mobile only) */}
                 <Link href={viewAllHref} className="md:hidden flex-shrink-0 w-[72px] flex flex-col items-center justify-center gap-1.5 bg-gray-50 rounded-xl border border-dashed border-gray-200 text-[10px] font-bold text-gray-400 hover:text-gray-600 hover:border-gray-400 transition-colors snap-start">
                     <ChevronRight className="w-5 h-5" />
                     <span className="text-center leading-tight">{t.viewAll}</span>
@@ -404,72 +428,49 @@ function RecentlyViewedSection({ t }: { t: any }) {
     );
 }
 
-// ── Hero Banner ───────────────────────────────────────────────────────────────
-function HeroBanner({ t }: { t: any }) {
-    return (
-        <div className="mx-3 mt-2 mb-4 rounded-2xl overflow-hidden relative bg-gradient-to-br from-[#1a1a2e] via-[#16213e] to-[#0f3460] min-h-[160px] sm:min-h-[200px] flex items-center">
-            {/* Background Pattern */}
-            <div className="absolute inset-0 opacity-20"
-                style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, #e94560 0%, transparent 60%), radial-gradient(circle at 80% 20%, #6366f1 0%, transparent 50%)' }}
-            />
-            {/* Flag decoration */}
-            <div className="absolute right-4 top-4 w-16 sm:w-20 opacity-90 select-none drop-shadow-lg">
-                <TaegukgiIcon />
-            </div>
-
-            <div className="relative z-10 px-5 py-5 max-w-[70%]">
-                <span className="inline-flex items-center gap-1.5 text-[10px] sm:text-xs font-extrabold text-white/70 bg-white/10 border border-white/20 px-2 py-0.5 rounded-full mb-2 uppercase tracking-wider">
-                    <TaegukgiIcon className="w-4 h-[11px] flex-shrink-0" />
-                    {t.heroBadge}
-                </span>
-                <h2 className="text-lg sm:text-2xl font-black text-white leading-tight mb-2 whitespace-pre-line">
-                    {t.heroTitle}
-                </h2>
-                <p className="text-[11px] sm:text-xs text-white/60 mb-3 line-clamp-2">{t.heroSub}</p>
-                <Link href="/category"
-                    className="inline-flex items-center gap-1.5 bg-white text-gray-900 text-xs font-extrabold px-3 py-2 rounded-full hover:bg-gray-100 transition-colors shadow-sm">
-                    {t.shopNow} <ArrowRight className="w-3 h-3" />
-                </Link>
-            </div>
-        </div>
-    );
-}
-
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function Home() {
     const store = useSafeAppStore();
     const language = store?.language || 'en';
     const t = homeT[language] || homeT.en;
 
+    const sessionResult = useSession();
+    const session = sessionResult?.data;
+
     const [mounted, setMounted] = useState(false);
+    const [showTodayPick, setShowTodayPick] = useState<TranslatedProduct[]>([]);
     const [showHot, setShowHot] = useState<TranslatedProduct[]>([]);
     const [showNew, setShowNew] = useState<TranslatedProduct[]>([]);
     const [showPopular, setShowPopular] = useState<TranslatedProduct[]>([]);
-    const [showTodayPick, setShowTodayPick] = useState<TranslatedProduct[]>([]);
     const [trustBadges, setTrustBadges] = useState<string[]>([]);
     const [topBanner, setTopBanner] = useState<any>(null);
+    const [bannerClosed, setBannerClosed] = useState(false);
+    const [placeholderIdx, setPlaceholderIdx] = useState(0);
+    const [placeholderFade, setPlaceholderFade] = useState(true);
+    const [hotFetched, setHotFetched] = useState(false);
+    const [newFetched, setNewFetched] = useState(false);
+    const [popularFetched, setPopularFetched] = useState(false);
 
-    useEffect(() => { setMounted(true); }, []);
+    const hotRef = useRef<HTMLDivElement>(null);
+    const newRef = useRef<HTMLDivElement>(null);
+    const popularRef = useRef<HTMLDivElement>(null);
+    const hotInView = useInView(hotRef);
+    const newInView = useInView(newRef);
+    const popularInView = useInView(popularRef);
 
+    // Mount init
+    useEffect(() => {
+        setMounted(true);
+        try { setBannerClosed(sessionStorage.getItem('home_top_banner_closed') === '1'); } catch {}
+    }, []);
+
+    // Eager: settings + curation todaypick
     useEffect(() => {
         if (!mounted) return;
-        // 섹션별 독립 호출 — 전체 상품 로드 방지
-        const base = `/api/products?lang=${language}&limit=8`;
-        Promise.all([
-            fetch(`${base}&section=hot`).then(r => r.ok ? r.json() : { products: [] }),
-            fetch(`${base}&section=new`).then(r => r.ok ? r.json() : { products: [] }),
-            fetch(`${base}&section=popular`).then(r => r.ok ? r.json() : { products: [] }),
-            fetch(`${base}&section=todaypick`).then(r => r.ok ? r.json() : { products: [] }),
-        ]).then(([hot, newArr, pop, todaypick]) => {
-            setShowHot(hot.products ?? []);
-            setShowNew(newArr.products ?? []);
-            setShowPopular(pop.products ?? []);
-            setShowTodayPick(todaypick.products ?? []);
-        }).catch(() => {});
-    }, [language, mounted]);
-
-    useEffect(() => {
-        if (!mounted) return;
+        fetch(`/api/products?lang=${language}&limit=8&section=todaypick`)
+            .then(r => r.ok ? r.json() : { products: [] })
+            .then(data => setShowTodayPick(data.products ?? []))
+            .catch(() => {});
         fetch('/api/settings?keys=landing_trust_badges,landing_top_banner')
             .then(res => res.ok ? res.json() : [])
             .then(data => {
@@ -479,38 +480,95 @@ export default function Home() {
                         const badges = Object.values(s.value as any) as string[];
                         if (badges.length > 0) setTrustBadges(badges);
                     }
-                    if (s.key === 'landing_top_banner' && s.value?.isActive) {
-                        setTopBanner(s.value);
-                    }
+                    if (s.key === 'landing_top_banner' && s.value?.isActive) setTopBanner(s.value);
                 }
             })
             .catch(() => {});
-    }, [mounted]);
+    }, [mounted, language]);
 
-    if (!mounted) return null;
+    // Trigger lazy fetches on first viewport entry
+    useEffect(() => { if (hotInView) setHotFetched(true); }, [hotInView]);
+    useEffect(() => { if (newInView) setNewFetched(true); }, [newInView]);
+    useEffect(() => { if (popularInView) setPopularFetched(true); }, [popularInView]);
+
+    // Lazy fetches (re-run on language change once fetched)
+    useEffect(() => {
+        if (!hotFetched) return;
+        fetch(`/api/products?lang=${language}&limit=8&section=hot`)
+            .then(r => r.ok ? r.json() : { products: [] })
+            .then(data => setShowHot(data.products ?? []))
+            .catch(() => {});
+    }, [hotFetched, language]);
+
+    useEffect(() => {
+        if (!newFetched) return;
+        fetch(`/api/products?lang=${language}&limit=8&section=new`)
+            .then(r => r.ok ? r.json() : { products: [] })
+            .then(data => setShowNew(data.products ?? []))
+            .catch(() => {});
+    }, [newFetched, language]);
+
+    useEffect(() => {
+        if (!popularFetched) return;
+        fetch(`/api/products?lang=${language}&limit=8&section=popular`)
+            .then(r => r.ok ? r.json() : { products: [] })
+            .then(data => setShowPopular(data.products ?? []))
+            .catch(() => {});
+    }, [popularFetched, language]);
+
+    // Rotating search placeholder (client-only, respects prefers-reduced-motion)
+    useEffect(() => {
+        if (!mounted) return;
+        const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (reducedMotion) return;
+        const keywords = (homeT[language]?.searchKeywords || homeT.en.searchKeywords) as string[];
+        const interval = setInterval(() => {
+            setPlaceholderFade(false);
+            setTimeout(() => {
+                setPlaceholderIdx(i => (i + 1) % keywords.length);
+                setPlaceholderFade(true);
+            }, 180);
+        }, 3000);
+        return () => clearInterval(interval);
+    }, [mounted, language]);
 
     const activeBadges = trustBadges.length > 0 ? trustBadges : [t.freeShipping, t.authentic, t.fast];
+    const keywords = (homeT[language]?.searchKeywords || homeT.en.searchKeywords) as string[];
+    const currentPlaceholder = mounted ? keywords[placeholderIdx] : t.searchPlaceholder;
 
     return (
         <>
             <main className="flex-grow pb-4">
-                {/* ── Top Promo Banner (from admin settings) ── */}
-                {topBanner && (
-                    <Link href={topBanner.link || '#'}
-                        className="flex items-center justify-center px-4 py-2.5 text-center text-[13px] font-bold shadow-sm"
+                {/* ── Top Promo Banner ── */}
+                {topBanner && !bannerClosed && (
+                    <div
+                        className="flex items-center justify-between px-4 py-2.5 text-[13px] font-bold shadow-sm"
                         style={{ backgroundColor: topBanner.bgColor || '#EF4444', color: topBanner.textColor || '#FFFFFF' }}>
-                        {topBanner.text}
-                    </Link>
+                        <Link href={topBanner.link || '#'} className="flex-1 text-center">{topBanner.text}</Link>
+                        <button
+                            onClick={() => { try { sessionStorage.setItem('home_top_banner_closed', '1'); } catch {} setBannerClosed(true); }}
+                            className="ml-2 opacity-70 hover:opacity-100 transition-opacity flex-shrink-0"
+                            aria-label="Close banner">
+                            <X className="w-4 h-4" />
+                        </button>
+                    </div>
                 )}
 
-                {/* ── Search Bar ── */}
-                <div className="px-3 pt-2 pb-1">
+                {/* ── Sticky Search Bar ── */}
+                <div className="sticky top-20 z-40 bg-white/95 backdrop-blur-sm border-b border-gray-100 px-3 py-2">
                     <Link href="/search"
-                        className="flex items-center gap-2.5 w-full px-4 py-3 rounded-full bg-white border-[1.5px] border-gray-200 text-gray-500 text-sm font-medium hover:border-gray-400 shadow-sm transition-colors">
+                        className="flex items-center gap-2.5 w-full px-4 py-2.5 rounded-full bg-gray-50 border border-gray-200 text-sm font-medium hover:border-gray-400 shadow-sm transition-colors">
                         <Search className="w-4 h-4 flex-shrink-0 text-gray-400" />
-                        <span>{t.searchPlaceholder}</span>
+                        <span
+                            className="text-gray-500 transition-opacity duration-200"
+                            style={{ opacity: placeholderFade ? 1 : 0 }}>
+                            {currentPlaceholder}
+                        </span>
                     </Link>
                 </div>
+
+                {/* ── Hero Carousel ── */}
+                <HeroCarousel t={t} language={language} />
 
                 {/* ── Trust Badge Strip ── */}
                 <div className="flex items-center gap-2 px-3 py-2 overflow-x-auto scrollbar-hide">
@@ -521,20 +579,27 @@ export default function Home() {
                     ))}
                 </div>
 
+                {/* ── Flash Sale ── */}
+                <FlashSaleSection t={t} />
+
                 {/* ── Category Shortcuts ── */}
                 <CategoryShortcuts />
 
-                {/* ── Hero Carousel (Brand + Category Pairs + Hot Deal + New + Best) ── */}
-                <HeroCarousel t={t} language={language} />
+                {/* ── Signup Perk Banner (hidden for logged-in users) ── */}
+                {!session && (
+                    <div className="mx-3 mb-4">
+                        <Link href="/signup"
+                            className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-2xl bg-gradient-to-r from-brand-primary to-brand-accent text-white text-[13px] font-extrabold shadow-md hover:opacity-90 transition-opacity">
+                            {t.signupBanner}
+                        </Link>
+                    </div>
+                )}
 
                 {/* ── Recently Viewed ── */}
                 <RecentlyViewedSection t={t} />
 
-                {/* ── Flash Sale ── */}
-                <FlashSaleSection t={t} />
-
-                {/* ── AI Curation Section ── */}
-                {showPopular.length > 0 && (
+                {/* ── FOR YOU Curation ── */}
+                {showTodayPick.length > 0 && (
                     <div className="mb-2">
                         <div className="px-3 flex items-center gap-2 mb-2">
                             <div className="w-7 h-7 rounded-full bg-brand-primary/10 flex items-center justify-center">
@@ -542,36 +607,69 @@ export default function Home() {
                             </div>
                             <p className="text-[14px] text-black font-extrabold">Premium{t.curationTitle}</p>
                         </div>
-                        <CurationSection products={showPopular} todayPicks={showTodayPick} />
+                        <CurationSection products={showTodayPick} todayPicks={showTodayPick} />
                     </div>
                 )}
 
-                {/* ── Hot Deal Grid ── */}
-                <ProductGrid
-                    products={showHot}
-                    title={`🔥 ${t.hotSale}`}
-                    icon={<span className="badge-3d bg-gradient-to-r from-red-500 to-orange-500 text-white"><Flame className="w-3.5 h-3.5" /></span>}
-                    viewAllHref="/category/all?sort=hot"
-                    t={t}
-                />
+                {/* ── Hot Deal Grid (lazy) ── */}
+                <div ref={hotRef}>
+                    {showHot.length > 0 ? (
+                        <ProductGrid
+                            products={showHot}
+                            title={`🔥 ${t.hotSale}`}
+                            icon={<span className="badge-3d bg-gradient-to-r from-red-500 to-orange-500 text-white"><Flame className="w-3.5 h-3.5" /></span>}
+                            viewAllHref="/category/all?sort=hot"
+                            t={t}
+                        />
+                    ) : hotFetched ? (
+                        <ProductGridSkeleton
+                            title={`🔥 ${t.hotSale}`}
+                            icon={<span className="badge-3d bg-gradient-to-r from-red-500 to-orange-500 text-white"><Flame className="w-3.5 h-3.5" /></span>}
+                        />
+                    ) : (
+                        <div className="h-44" />
+                    )}
+                </div>
 
-                {/* ── New Arrivals Grid ── */}
-                <ProductGrid
-                    products={showNew}
-                    title={`✨ ${t.newArrival}`}
-                    icon={<span className="badge-3d bg-gradient-to-r from-blue-500 to-cyan-500 text-white"><Sparkles className="w-3.5 h-3.5" /></span>}
-                    viewAllHref="/category/new?sort=newest"
-                    t={t}
-                />
+                {/* ── New Arrivals Grid (lazy) ── */}
+                <div ref={newRef}>
+                    {showNew.length > 0 ? (
+                        <ProductGrid
+                            products={showNew}
+                            title={`✨ ${t.newArrival}`}
+                            icon={<span className="badge-3d bg-gradient-to-r from-blue-500 to-cyan-500 text-white"><Sparkles className="w-3.5 h-3.5" /></span>}
+                            viewAllHref="/category/new?sort=newest"
+                            t={t}
+                        />
+                    ) : newFetched ? (
+                        <ProductGridSkeleton
+                            title={`✨ ${t.newArrival}`}
+                            icon={<span className="badge-3d bg-gradient-to-r from-blue-500 to-cyan-500 text-white"><Sparkles className="w-3.5 h-3.5" /></span>}
+                        />
+                    ) : (
+                        <div className="h-44" />
+                    )}
+                </div>
 
-                {/* ── Popular Products Grid ── */}
-                <ProductGrid
-                    products={showPopular}
-                    title={`👑 ${t.popular}`}
-                    icon={<span className="badge-3d bg-gradient-to-r from-amber-500 to-yellow-500 text-white"><Crown className="w-3.5 h-3.5" /></span>}
-                    viewAllHref="/category/all?sort=popular"
-                    t={t}
-                />
+                {/* ── Popular Products Grid (lazy) ── */}
+                <div ref={popularRef}>
+                    {showPopular.length > 0 ? (
+                        <ProductGrid
+                            products={showPopular}
+                            title={`👑 ${t.popular}`}
+                            icon={<span className="badge-3d bg-gradient-to-r from-amber-500 to-yellow-500 text-white"><Crown className="w-3.5 h-3.5" /></span>}
+                            viewAllHref="/category/all?sort=popular"
+                            t={t}
+                        />
+                    ) : popularFetched ? (
+                        <ProductGridSkeleton
+                            title={`👑 ${t.popular}`}
+                            icon={<span className="badge-3d bg-gradient-to-r from-amber-500 to-yellow-500 text-white"><Crown className="w-3.5 h-3.5" /></span>}
+                        />
+                    ) : (
+                        <div className="h-44" />
+                    )}
+                </div>
             </main>
             <Footer />
         </>
