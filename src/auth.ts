@@ -5,36 +5,7 @@ import { prisma } from "@/lib/api"
 import bcrypt from "bcryptjs"
 import authConfig from "./auth.config"
 import { twoFactorCache } from "@/lib/twoFactorCache"
-
-// Login rate limiting: max 10 attempts per IP per 15 minutes
-const loginAttempts = new Map<string, { count: number; firstAttempt: number }>();
-const LOGIN_MAX = 10;
-const LOGIN_WINDOW_MS = 15 * 60 * 1000;
-const LOGIN_MAP_MAX_SIZE = 50_000; // OOM 방지 — DDoS 시 무제한 증가 차단
-
-setInterval(() => {
-    const now = Date.now();
-    for (const [key, val] of loginAttempts.entries()) {
-        if (now - val.firstAttempt > LOGIN_WINDOW_MS * 2) loginAttempts.delete(key);
-    }
-}, 10 * 60 * 1000);
-
-function checkLoginRateLimit(ip: string): boolean {
-    const now = Date.now();
-    const entry = loginAttempts.get(ip);
-    if (!entry || now - entry.firstAttempt > LOGIN_WINDOW_MS) {
-        // 크기 상한 초과 시 가장 오래된 엔트리 제거
-        if (loginAttempts.size >= LOGIN_MAP_MAX_SIZE) {
-            const firstKey = loginAttempts.keys().next().value;
-            if (firstKey !== undefined) loginAttempts.delete(firstKey);
-        }
-        loginAttempts.set(ip, { count: 1, firstAttempt: now });
-        return true;
-    }
-    if (entry.count >= LOGIN_MAX) return false;
-    entry.count++;
-    return true;
-}
+import { checkRateLimit } from "@/lib/rateLimit"
 
 const nextAuthEnv = NextAuth({
     ...authConfig,
@@ -68,7 +39,8 @@ const nextAuthEnv = NextAuth({
                 // Rate limiting by IP
                 const forwarded = (req as any)?.headers?.['x-forwarded-for'];
                 const ip = (typeof forwarded === 'string' ? forwarded.split(',')[0] : '').trim() || 'unknown';
-                if (!checkLoginRateLimit(ip)) {
+                const rl = await checkRateLimit(ip, 'login', 10, 15 * 60 * 1000);
+                if (!rl.allowed) {
                     throw new Error('Too many login attempts. Please wait 15 minutes.');
                 }
 

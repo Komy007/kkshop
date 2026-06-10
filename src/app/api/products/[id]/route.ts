@@ -16,8 +16,8 @@ export async function GET(
     }
 
     try {
-        const product = await prisma.product.findUnique({
-            where: { id: BigInt(productId) },
+        const product = await prisma.product.findFirst({
+            where: { id: BigInt(productId), status: { in: ['ACTIVE', 'SOLDOUT'] }, approvalStatus: 'APPROVED' },
             include: {
                 translations: {
                     where: { langCode: { in: ['en', lang] } }

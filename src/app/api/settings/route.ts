@@ -20,6 +20,8 @@ const PUBLIC_SETTING_KEYS = new Set([
     'chat_widget_enabled',
     'maintenance_mode',
     'free_shipping_threshold',
+    'landing_trust_badges',
+    'landing_top_banner',
 ]);
 
 export async function GET(request: Request) {
