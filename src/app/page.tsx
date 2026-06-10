@@ -47,6 +47,9 @@ const homeT: Record<string, any> = {
         soldCount: '판매',
         recentlyViewed: '최근 본 상품',
         signupBanner: '🎁 회원가입 후 매 주문 1% 포인트 적립',
+        tickerBought: '구매',
+        tickerMinAgo: '분 전',
+        tickerHrAgo: '시간 전',
     },
     en: {
         searchPlaceholder: 'Search products or brands',
@@ -66,6 +69,9 @@ const homeT: Record<string, any> = {
         soldCount: 'sold',
         recentlyViewed: 'Recently Viewed',
         signupBanner: '🎁 Sign up & get 1% points on every order',
+        tickerBought: 'bought',
+        tickerMinAgo: ' min ago',
+        tickerHrAgo: ' hr ago',
     },
     km: {
         searchPlaceholder: 'ស្វែងរកផលិតផល',
@@ -85,6 +91,9 @@ const homeT: Record<string, any> = {
         soldCount: 'បានលក់',
         recentlyViewed: 'បានមើលថ្មីៗ',
         signupBanner: '🎁 ចុះឈ្មោះ & ទទួល 1% ពិន្ទុគ្រប់ការបញ្ជាទិញ',
+        tickerBought: 'បានទិញ',
+        tickerMinAgo: ' នាទីមុន',
+        tickerHrAgo: ' ម៉ោងមុន',
     },
     zh: {
         searchPlaceholder: '搜索商品或品牌',
@@ -104,6 +113,9 @@ const homeT: Record<string, any> = {
         soldCount: '已售',
         recentlyViewed: '最近浏览',
         signupBanner: '🎁 注册即可每次购物获1%积分',
+        tickerBought: '购买了',
+        tickerMinAgo: '分钟前',
+        tickerHrAgo: '小时前',
     }
 };
 
@@ -428,6 +440,56 @@ function RecentlyViewedSection({ t }: { t: any }) {
     );
 }
 
+// ── Live Purchase Ticker ──────────────────────────────────────────────────────
+function PurchaseTicker({ t }: { t: any }) {
+    const [items, setItems] = useState<{ maskedName: string; province: string; productName: string; minutesAgo: number }[]>([]);
+    const [idx, setIdx] = useState(0);
+    const [visible, setVisible] = useState(true);
+    const [loaded, setLoaded] = useState(false);
+
+    useEffect(() => {
+        fetch('/api/products/recent-purchases')
+            .then(r => r.ok ? r.json() : [])
+            .then(data => { if (Array.isArray(data)) { setItems(data); } setLoaded(true); })
+            .catch(() => setLoaded(true));
+    }, []);
+
+    useEffect(() => {
+        if (items.length === 0) return;
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        const interval = setInterval(() => {
+            setVisible(false);
+            setTimeout(() => { setIdx(i => (i + 1) % items.length); setVisible(true); }, 300);
+        }, 4000);
+        return () => clearInterval(interval);
+    }, [items.length]);
+
+    if (!loaded || items.length === 0) return null;
+
+    const item = items[idx];
+    const timeStr = item.minutesAgo < 60
+        ? `${item.minutesAgo}${t.tickerMinAgo}`
+        : `${Math.floor(item.minutesAgo / 60)}${t.tickerHrAgo}`;
+
+    return (
+        <div className="px-3 mb-2">
+            <div
+                className="flex items-center gap-1.5 text-[11px] text-gray-600 bg-gray-50 border border-gray-100 rounded-full px-3 py-1.5 transition-opacity duration-300 overflow-hidden"
+                style={{ opacity: visible ? 1 : 0 }}>
+                <span className="flex-shrink-0">🛒</span>
+                <span className="font-bold text-gray-800 flex-shrink-0">{item.maskedName}</span>
+                <span className="text-gray-300">·</span>
+                <span className="flex-shrink-0">{item.province}</span>
+                <span className="text-gray-300">·</span>
+                <span className="flex-shrink-0">{t.tickerBought}</span>
+                <span className="font-semibold text-gray-800 truncate">{item.productName}</span>
+                <span className="text-gray-300 flex-shrink-0">·</span>
+                <span className="text-gray-400 flex-shrink-0">{timeStr}</span>
+            </div>
+        </div>
+    );
+}
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function Home() {
     const store = useSafeAppStore();
@@ -579,6 +641,9 @@ export default function Home() {
                     ))}
                 </div>
 
+                {/* ── Live Purchase Ticker ── */}
+                <PurchaseTicker t={t} />
+
                 {/* ── Flash Sale ── */}
                 <FlashSaleSection t={t} />
 
@@ -589,7 +654,7 @@ export default function Home() {
                 {!session && (
                     <div className="mx-3 mb-4">
                         <Link href="/signup"
-                            className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-2xl bg-gradient-to-r from-brand-primary to-brand-accent text-white text-[13px] font-extrabold shadow-md hover:opacity-90 transition-opacity">
+                            className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-2xl bg-gradient-to-r from-blue-600 to-pink-500 text-white text-[13px] font-extrabold shadow-md hover:opacity-90 transition-opacity">
                             {t.signupBanner}
                         </Link>
                     </div>
