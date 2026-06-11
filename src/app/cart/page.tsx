@@ -8,6 +8,7 @@ import {
     selectSelectedTotalPrice,
     selectSelectedCount,
     isSelected,
+    effectiveUnitPrice,
 } from '@/store/useCartStore';
 import { useSafeAppStore } from '@/store/useAppStore';
 import { Trash2, Minus, Plus, ShoppingBag, ArrowRight, ChevronLeft, AlertTriangle } from 'lucide-react';
@@ -288,12 +289,31 @@ export default function CartPage() {
                                                 {item.variantLabel && (
                                                     <p className="text-xs text-gray-400 mt-0.5">{item.variantLabel}</p>
                                                 )}
-                                                <p className="text-base font-black text-brand-secondary mt-1">
-                                                    {formatUsd(item.priceUsd * item.qty)}
-                                                </p>
-                                                {item.qty > 1 && (
-                                                    <p className="text-xs text-gray-400">{formatUsd(item.priceUsd)} each</p>
-                                                )}
+                                                {(() => {
+                                                    const unitPrice = effectiveUnitPrice(item);
+                                                    const base = item.basePriceUsd ?? item.priceUsd;
+                                                    const hasDiscount = unitPrice < base;
+                                                    return (
+                                                        <>
+                                                            <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                                                                <p className="text-base font-black text-brand-secondary">
+                                                                    {formatUsd(unitPrice * item.qty)}
+                                                                </p>
+                                                                {hasDiscount && (
+                                                                    <span className="text-[10px] font-bold bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full">
+                                                                        -{Math.round((1 - unitPrice / base) * 100)}% OFF
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <p className="text-xs text-gray-400">
+                                                                {formatUsd(unitPrice)} each
+                                                                {hasDiscount && (
+                                                                    <span className="line-through ml-1 text-gray-300">{formatUsd(base)}</span>
+                                                                )}
+                                                            </p>
+                                                        </>
+                                                    );
+                                                })()}
                                                 {stockWarnings[item.productId] !== undefined && (
                                                     <p className="text-xs text-orange-600 font-bold mt-0.5">
                                                         {stockWarnings[item.productId] === 0

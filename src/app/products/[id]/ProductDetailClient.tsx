@@ -755,10 +755,22 @@ export default function ProductDetailClient() {
             appliedPrice = product.hotSalePrice;
         }
 
+        // basePriceUsd: effective unit price without bulk discount (hot-sale reflected, variant-adjusted)
+        const basePriceUsd = selectedVariant?.priceUsd
+            ? Number(selectedVariant.priceUsd)
+            : (product.isHotSale && product.hotSalePrice) ? product.hotSalePrice : product.priceUsd;
+
         addItem({
             productId: product.id,
             name: product.name,
             priceUsd: appliedPrice,
+            basePriceUsd,
+            bulkOptions: (product as any).options?.map((o: any) => ({
+                minQty: Number(o.minQty),
+                maxQty: o.maxQty != null ? Number(o.maxQty) : null,
+                discountPct: Number(o.discountPct),
+                freeShipping: Boolean(o.freeShipping),
+            })),
             imageUrl: productImage,
             variantId: selectedVariantId || undefined,
             variantLabel: selectedVariant?.variantValue || undefined,

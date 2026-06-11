@@ -3,7 +3,7 @@
 import React from 'react';
 import Image from 'next/image';
 import { X, Minus, Plus, Trash2, ShoppingBag } from 'lucide-react';
-import { useCartStore, selectTotalItems, selectTotalPrice } from '@/store/useCartStore';
+import { useCartStore, selectTotalItems, selectTotalPrice, effectiveUnitPrice } from '@/store/useCartStore';
 import { useAppStore, useSafeAppStore } from '@/store/useAppStore';
 
 const drawerTranslations: Record<string, any> = {
@@ -150,9 +150,26 @@ export default function MiniCartDrawer() {
                                                     {item.variantLabel}
                                                 </span>
                                             )}
-                                            <p className="font-extrabold text-[#E52528] text-lg mt-1 tracking-tight">
-                                                {formatUsd(item.priceUsd)}
-                                            </p>
+                                            {(() => {
+                                                const unitPrice = effectiveUnitPrice(item);
+                                                const base = item.basePriceUsd ?? item.priceUsd;
+                                                const hasDiscount = unitPrice < base;
+                                                return (
+                                                    <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                                                        <p className="font-extrabold text-[#E52528] text-lg tracking-tight">
+                                                            {formatUsd(unitPrice)}
+                                                        </p>
+                                                        {hasDiscount && (
+                                                            <>
+                                                                <span className="text-xs text-gray-400 line-through">{formatUsd(base)}</span>
+                                                                <span className="text-[10px] font-bold bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full">
+                                                                    -{Math.round((1 - unitPrice / base) * 100)}%
+                                                                </span>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })()}
                                         </div>
 
                                         <div className="flex items-center justify-between mt-3">
