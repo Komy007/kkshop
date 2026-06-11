@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { useCartStore, selectSelectedItems, selectSelectedTotalPrice } from '@/store/useCartStore';
+import { useCartStore, selectSelectedItems, selectSelectedTotalPrice, hasBulkFreeShipping } from '@/store/useCartStore';
 import { useSafeAppStore } from '@/store/useAppStore';
 import { ShoppingBag, ChevronDown, Loader2, MapPin, Ticket, Coins, CheckCircle2, QrCode, AlertCircle, Clock, BookmarkCheck } from 'lucide-react';
 import Footer from '@/components/Footer';
@@ -222,6 +222,9 @@ export default function CheckoutPage() {
     const subtotal = useCartStore(selectSelectedTotalPrice);
     const removeSelected = useCartStore(state => state.removeSelected);
 
+    // True if any selected item qualifies for a free-shipping bulk tier at its current qty
+    const bulkFreeShipping = cartItems.some(hasBulkFreeShipping);
+
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
@@ -369,7 +372,8 @@ export default function CheckoutPage() {
                 ? subtotal * (couponStatus.discount! / 100)
                 : couponStatus.discount!)
             : 0;
-        const maxUsable = Math.floor((subtotal + shippingFee - discountAmt) * REDEEM_RATE);
+        const effectiveShipping = bulkFreeShipping ? 0 : shippingFee;
+        const maxUsable = Math.floor((subtotal + effectiveShipping - discountAmt) * REDEEM_RATE);
         if (val > maxUsable) val = maxUsable;
         setForm({ ...form, pointsUsed: val.toString() });
     };
@@ -424,7 +428,9 @@ export default function CheckoutPage() {
             : couponStatus.discount!)
         : 0;
     const pointsDiscountUsd = (parseInt(form.pointsUsed) || 0) / REDEEM_RATE;
-    const finalTotal = Math.max(0, subtotal + shippingFee - discountAmt - pointsDiscountUsd);
+    // Display shipping fee: free when a bulk-purchase free-shipping tier is active
+    const displayShippingFee = bulkFreeShipping ? 0 : shippingFee;
+    const finalTotal = Math.max(0, subtotal + displayShippingFee - discountAmt - pointsDiscountUsd);
     const formatUsd = (price: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(price);
 
     return (
@@ -526,14 +532,14 @@ export default function CheckoutPage() {
                                             className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary outline-none"
                                         />
                                     )}
-                                    {shippingFee > 0 && (
+                                    {displayShippingFee > 0 && (
                                         <p className="text-[11px] text-amber-600 font-medium mt-1">
-                                            Shipping fee: {formatUsd(shippingFee)}
+                                            Shipping fee: {formatUsd(displayShippingFee)}
                                         </p>
                                     )}
-                                    {shippingFee === 0 && form.province && (
+                                    {displayShippingFee === 0 && form.province && (
                                         <p className="text-[11px] text-green-600 font-medium mt-1">
-                                            Free shipping for this area
+                                            {bulkFreeShipping ? '🚚 Free shipping (bulk discount)' : 'Free shipping for this area'}
                                         </p>
                                     )}
                                 </div>
@@ -703,10 +709,12 @@ export default function CheckoutPage() {
                                 </div>
                                 <div className="flex justify-between text-sm text-gray-600">
                                     <span>{t.shipping_fee}</span>
-                                    {shippingFee > 0 ? (
-                                        <span className="font-bold text-gray-900">{formatUsd(shippingFee)}</span>
+                                    {displayShippingFee > 0 ? (
+                                        <span className="font-bold text-gray-900">{formatUsd(displayShippingFee)}</span>
                                     ) : (
-                                        <span className="font-bold text-green-600">{t.shippingFree}</span>
+                                        <span className="font-bold text-green-600">
+                                            {bulkFreeShipping ? '🚚 Free (Bulk Discount)' : t.shippingFree}
+                                        </span>
                                     )}
                                 </div>
                                 {discountAmt > 0 && (
