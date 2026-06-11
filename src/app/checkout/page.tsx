@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useCartStore, selectSelectedItems, selectSelectedTotalPrice, hasBulkFreeShipping } from '@/store/useCartStore';
@@ -221,9 +221,12 @@ export default function CheckoutPage() {
     const cartItems = useCartStore(selectSelectedItems);
     const subtotal = useCartStore(selectSelectedTotalPrice);
     const removeSelected = useCartStore(state => state.removeSelected);
+    const refreshPricing = useCartStore(state => state.refreshPricing);
 
     // True if any selected item qualifies for a free-shipping bulk tier at its current qty
     const bulkFreeShipping = cartItems.some(hasBulkFreeShipping);
+
+    const pricingRefreshedRef = useRef(false);
 
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
@@ -257,6 +260,34 @@ export default function CheckoutPage() {
             .then(data => { if (data?.redeemRate) setRedeemRate(data.redeemRate); })
             .catch(() => {});
     }, []);
+
+    // Refresh pricing metadata for legacy cart items that lack basePriceUsd/bulkOptions.
+    // Runs once on first render that has items — mirrors the cart page's refreshPricing call.
+    useEffect(() => {
+        if (pricingRefreshedRef.current || cartItems.length === 0) return;
+        pricingRefreshedRef.current = true;
+        const uniqueIds = [...new Set(cartItems.map(i => i.productId))];
+        Promise.all(
+            uniqueIds.map(id =>
+                fetch(`/api/products/${id}`)
+                    .then(r => r.ok ? r.json() : null)
+                    .then(data => ({ id, data }))
+                    .catch(() => ({ id, data: null }))
+            )
+        ).then(results => {
+            results.forEach(({ id, data }) => {
+                if (data && typeof data.priceUsd === 'number') {
+                    refreshPricing(id, {
+                        priceUsd: data.priceUsd,
+                        isHotSale: data.isHotSale,
+                        hotSalePrice: data.hotSalePrice,
+                        variants: data.variants,
+                        options: data.options,
+                    });
+                }
+            });
+        });
+    }, [cartItems, refreshPricing]);
 
     // Fetch provinces on mount
     useEffect(() => {
