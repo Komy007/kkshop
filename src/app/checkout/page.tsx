@@ -233,6 +233,7 @@ export default function CheckoutPage() {
     const [provinces, setProvinces] = useState<Province[]>([]);
     const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
     const [shippingFee, setShippingFee] = useState(0);
+    const [redeemRate, setRedeemRate] = useState(1000); // fallback; overwritten by API
 
     const [form, setForm] = useState({
         customerName: '',
@@ -248,6 +249,14 @@ export default function CheckoutPage() {
     });
 
     const [couponStatus, setCouponStatus] = useState<{ id?: string, discount?: number, msg?: string, type?: string, ok?: boolean }>({});
+
+    // Fetch points redeem rate from server config (DB-driven, fallback 1000)
+    useEffect(() => {
+        fetch('/api/settings/points-config')
+            .then(res => res.ok ? res.json() : null)
+            .then(data => { if (data?.redeemRate) setRedeemRate(data.redeemRate); })
+            .catch(() => {});
+    }, []);
 
     // Fetch provinces on mount
     useEffect(() => {
@@ -361,7 +370,8 @@ export default function CheckoutPage() {
         }
     };
 
-    const REDEEM_RATE = 1000; // 1,000 points = $1 USD
+    // redeemRate is fetched from /api/settings/points-config (DB-driven, default 1000)
+    const REDEEM_RATE = redeemRate;
 
     const handlePointsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         let val = parseInt(e.target.value) || 0;
