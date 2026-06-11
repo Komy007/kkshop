@@ -145,7 +145,12 @@ export async function POST(request: Request) {
             const qty = Number(item.quantity);
             const opts = productOptionsMap.get(item.productId) || [];
             // 수량에 맞는 최적 할인 옵션 찾기 (내림차순이므로 첫 매칭이 최대 할인)
-            const matchedOpt = opts.find(o => qty >= o.minQty && (o.maxQty === null || qty <= o.maxQty));
+            // fallback: qty가 모든 maxQty를 초과하면 minQty가 가장 큰 티어(최고 혜택)를 적용
+            let matchedOpt = opts.find(o => qty >= o.minQty && (o.maxQty === null || qty <= o.maxQty));
+            if (!matchedOpt) {
+                const fallback = opts.filter(o => qty >= o.minQty).sort((a, b) => b.minQty - a.minQty)[0];
+                if (fallback) matchedOpt = fallback;
+            }
             if (matchedOpt && matchedOpt.discountPct > 0) {
                 const discounted = Math.round(item.priceUsd * (1 - matchedOpt.discountPct / 100) * 100) / 100;
                 item.finalUnitPrice = discounted;

@@ -531,6 +531,9 @@ export default function NewProductPage() {
                                     <label className="block text-xs font-medium text-gray-600 mb-1">{n.options.maxQty}</label>
                                     <input type="number" value={opt.maxQty} onChange={e => setOptions(options.map((o, idx) => idx === i ? { ...o, maxQty: e.target.value } : o))}
                                         className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder={n.options.unlimitedPlaceholder} />
+                                    {i === options.length - 1 && (
+                                        <p className="text-[10px] text-amber-600 mt-1">최고 티어는 비워두면 수량 무제한 적용</p>
+                                    )}
                                 </div>
                                 <div>
                                     <label className="block text-xs font-medium text-gray-600 mb-1">{n.options.discount}</label>

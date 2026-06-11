@@ -61,9 +61,16 @@ export function effectiveUnitPrice(item: CartItem): number {
     if (!item.bulkOptions || item.bulkOptions.length === 0) return base;
 
     // Find the matching tier with the highest minQty (best discount for the quantity)
-    const matched = item.bulkOptions
+    // Fallback: if qty exceeds all maxQty caps, apply the highest tier (most generous)
+    let matched = item.bulkOptions
         .filter(o => item.qty >= o.minQty && (o.maxQty === null || item.qty <= o.maxQty))
         .sort((a, b) => b.minQty - a.minQty)[0];
+    if (!matched) {
+        const fallback = item.bulkOptions
+            .filter(o => item.qty >= o.minQty)
+            .sort((a, b) => b.minQty - a.minQty)[0];
+        if (fallback) matched = fallback;
+    }
 
     if (!matched || matched.discountPct <= 0) return base;
     return Math.round(base * (1 - matched.discountPct / 100) * 100) / 100;

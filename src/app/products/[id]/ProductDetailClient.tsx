@@ -737,28 +737,27 @@ export default function ProductDetailClient() {
         if (!product) return;
         const productImage = selectedImageUrl || product.imageUrl || 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&q=80&w=800';
 
-        // Calculate price: variant price > option discount (only if qty qualifies) > hot sale > regular
-        let appliedPrice = product.priceUsd;
+        // Calculate price: variant > hot-sale as base, then apply bulk discount on top (matches server)
         const selectedVariant = product.variants?.find(v => v.id === selectedVariantId);
-        if (selectedVariant?.priceUsd) {
-            appliedPrice = selectedVariant.priceUsd;
-        } else if (product.options && product.options.length > 0) {
-            const opt = product.options.find((o: any) => o.id === selectedOptionId);
-            // Only apply discount if qty actually meets the option's minQty requirement
-            if (opt && opt.discountPct > 0 && qty >= opt.minQty && (!opt.maxQty || qty <= opt.maxQty)) {
-                const effectiveBase = (product.isHotSale && product.hotSalePrice) ? product.hotSalePrice : product.priceUsd;
-                appliedPrice = effectiveBase * (1 - opt.discountPct / 100);
-            } else if (product.isHotSale && product.hotSalePrice) {
-                appliedPrice = product.hotSalePrice;
-            }
-        } else if (product.isHotSale && product.hotSalePrice) {
-            appliedPrice = product.hotSalePrice;
-        }
-
-        // basePriceUsd: effective unit price without bulk discount (hot-sale reflected, variant-adjusted)
-        const basePriceUsd = selectedVariant?.priceUsd
+        const effectiveBase = selectedVariant?.priceUsd
             ? Number(selectedVariant.priceUsd)
             : (product.isHotSale && product.hotSalePrice) ? product.hotSalePrice : product.priceUsd;
+
+        let appliedPrice = effectiveBase;
+        if (product.options && product.options.length > 0) {
+            // Match the tier for the current qty; fall back to highest tier if qty exceeds all maxQty
+            const opts: any[] = product.options;
+            let matchedOpt = opts.find((o: any) => o.id === selectedOptionId && qty >= o.minQty && (!o.maxQty || qty <= o.maxQty));
+            if (!matchedOpt) {
+                matchedOpt = opts.filter((o: any) => qty >= o.minQty).sort((a: any, b: any) => b.minQty - a.minQty)[0];
+            }
+            if (matchedOpt && matchedOpt.discountPct > 0) {
+                appliedPrice = effectiveBase * (1 - matchedOpt.discountPct / 100);
+            }
+        }
+
+        // basePriceUsd = effectiveBase (variant / hot-sale / regular — without bulk tier)
+        const basePriceUsd = effectiveBase;
 
         addItem({
             productId: product.id,
@@ -830,15 +829,25 @@ export default function ProductDetailClient() {
     const selectedVariant = product.variants?.find(v => v.id === selectedVariantId);
     const effectiveStock = selectedVariant ? selectedVariant.stockQty : product.stockQty;
 
-    // displayPrice: only apply option discount if qty meets the option's minQty
-    const activeOption = selectedOptionId
-        ? (product as any).options?.find((o: any) => o.id === selectedOptionId && qty >= o.minQty && (!o.maxQty || qty <= o.maxQty))
-        : null;
-    const effectiveBasePrice = (product.isHotSale && product.hotSalePrice) ? product.hotSalePrice : product.priceUsd;
-    const displayPrice = selectedVariant?.priceUsd
-        ?? (activeOption && activeOption.discountPct > 0
-            ? effectiveBasePrice * (1 - activeOption.discountPct / 100)
-            : (product.isHotSale && product.hotSalePrice ? product.hotSalePrice : product.priceUsd));
+    // displayPrice: apply option discount when qty meets the tier; fallback to highest tier if qty exceeds all maxQty
+    const activeOption = (() => {
+        if (!selectedOptionId) return null;
+        const opts: any[] = (product as any).options ?? [];
+        const exact = opts.find((o: any) => o.id === selectedOptionId && qty >= o.minQty && (!o.maxQty || qty <= o.maxQty));
+        if (exact) return exact;
+        // qty exceeds maxQty of chosen tier — apply highest eligible tier (any id)
+        const fallback = opts
+            .filter((o: any) => qty >= o.minQty)
+            .sort((a: any, b: any) => b.minQty - a.minQty)[0];
+        return fallback ?? null;
+    })();
+    // effectiveBasePrice: variant price > hot-sale > regular (mirrors server logic)
+    const effectiveBasePrice = selectedVariant?.priceUsd
+        ? Number(selectedVariant.priceUsd)
+        : (product.isHotSale && product.hotSalePrice) ? product.hotSalePrice : product.priceUsd;
+    const displayPrice = activeOption && activeOption.discountPct > 0
+        ? effectiveBasePrice * (1 - activeOption.discountPct / 100)
+        : effectiveBasePrice;
     const isHotSaleDisplay = !selectedVariant?.priceUsd && !activeOption && product.isHotSale && !!product.hotSalePrice;
 
     return (
