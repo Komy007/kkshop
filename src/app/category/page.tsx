@@ -2,7 +2,8 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Search, Droplets, Palette, Bath, Sofa, HeartPulse, UtensilsCrossed, Crown, Sparkles, Flame, Package, type LucideIcon } from 'lucide-react';
+import { ArrowLeft, Search, Droplets, Palette, Bath, Sofa, HeartPulse, UtensilsCrossed, Crown, Flame, Package } from 'lucide-react';
+import { NewArrivalIcon } from '@/components/NewArrivalIcon';
 import { useSafeAppStore } from '@/store/useAppStore';
 import Footer from '@/components/Footer';
 
@@ -35,7 +36,7 @@ const categoryTranslations: Record<string, any> = {
 
 interface CategoryItem {
     key: string;
-    icon: LucideIcon;
+    icon: React.ElementType;
     href: string;
     gradient: string;
     iconColor: string;
@@ -90,7 +91,7 @@ const categories: CategoryItem[] = [
         badge: 'BEST', badgeGradient: 'linear-gradient(135deg, #F97316, #EA580C)',
     },
     {
-        key: 'newArrivals', icon: Sparkles,
+        key: 'newArrivals', icon: NewArrivalIcon,
         href: '/category/new',
         gradient: 'linear-gradient(135deg, #EDE9FE 0%, #C4B5FD 50%, #8B5CF6 100%)',
         iconColor: 'text-violet-700', shadowColor: 'shadow-violet-300/50',

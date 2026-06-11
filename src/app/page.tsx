@@ -6,7 +6,8 @@ import CurationSection from '@/components/CurationSection';
 import HeroCarousel from '@/components/HeroCarousel';
 import Footer from '@/components/Footer';
 import { useSafeAppStore } from '@/store/useAppStore';
-import { Search, Star, Flame, Sparkles, Crown, ChevronRight, Zap, Clock, Plus, CheckCircle, X } from 'lucide-react';
+import { Search, Star, Flame, Crown, ChevronRight, Zap, Clock, Plus, CheckCircle, X } from 'lucide-react';
+import { NewArrivalIcon } from '@/components/NewArrivalIcon';
 import Link from 'next/link';
 import Image from 'next/image';
 import { type TranslatedProduct } from '@/lib/api';
@@ -718,14 +719,14 @@ export default function Home() {
                         <ProductGrid
                             products={showNew}
                             title={`✨ ${t.newArrival}`}
-                            icon={<span className="badge-3d bg-gradient-to-r from-blue-500 to-cyan-500 text-white"><Sparkles className="w-3.5 h-3.5" /></span>}
+                            icon={<span className="badge-3d bg-gradient-to-r from-blue-500 to-cyan-500 text-white"><NewArrivalIcon className="w-3.5 h-3.5" /></span>}
                             viewAllHref="/category/new?sort=newest"
                             t={t}
                         />
                     ) : newFetched ? (
                         <ProductGridSkeleton
                             title={`✨ ${t.newArrival}`}
-                            icon={<span className="badge-3d bg-gradient-to-r from-blue-500 to-cyan-500 text-white"><Sparkles className="w-3.5 h-3.5" /></span>}
+                            icon={<span className="badge-3d bg-gradient-to-r from-blue-500 to-cyan-500 text-white"><NewArrivalIcon className="w-3.5 h-3.5" /></span>}
                         />
                     ) : (
                         <div className="h-44" />

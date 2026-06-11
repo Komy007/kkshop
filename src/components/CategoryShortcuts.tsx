@@ -5,9 +5,9 @@ import Link from 'next/link';
 import { useSafeAppStore } from '@/store/useAppStore';
 import {
     Droplets, Palette, Bath, Sofa, HeartPulse,
-    UtensilsCrossed, Crown, Sparkles, Flame, LayoutGrid,
-    type LucideIcon,
+    UtensilsCrossed, Crown, Flame, LayoutGrid,
 } from 'lucide-react';
+import { NewArrivalIcon } from '@/components/NewArrivalIcon';
 
 // ─── Translations ─────────────────────────────────────────────────────────────
 const shortcutTranslations: Record<string, Record<string, string>> = {
@@ -64,7 +64,7 @@ const shortcutTranslations: Record<string, Record<string, string>> = {
 // ─── Shortcut Definition ──────────────────────────────────────────────────────
 interface Shortcut {
     key: string;
-    icon: LucideIcon;
+    icon: React.ElementType;
     href: string;
     gradient: string;       // CSS gradient for the icon circle
     iconColor: string;      // Tailwind text color for the icon
@@ -137,7 +137,7 @@ const shortcuts: Shortcut[] = [
     },
     {
         key: 'newArrivals',
-        icon: Sparkles,
+        icon: NewArrivalIcon,
         href: '/category/new',
         gradient: 'linear-gradient(135deg, #EDE9FE 0%, #C4B5FD 50%, #8B5CF6 100%)',
         iconColor: 'text-violet-700',

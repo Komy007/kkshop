@@ -4,10 +4,11 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
-    ArrowRight, Flame, Sparkles, Crown, Star,
+    ArrowRight, Flame, Crown, Star,
     Droplets, Palette, Bath, Sofa, HeartPulse,
     UtensilsCrossed, LayoutGrid,
 } from 'lucide-react';
+import { NewArrivalIcon } from '@/components/NewArrivalIcon';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface CarouselProduct {
@@ -121,7 +122,7 @@ const MINI_CATEGORIES = [
     { slug: 'health',     icon: HeartPulse,      color: 'text-amber-300'   },
     { slug: 'fnb',        icon: UtensilsCrossed, color: 'text-orange-300'  },
     { slug: 'best',       icon: Crown,           color: 'text-yellow-300'  },
-    { slug: 'new',        icon: Sparkles,        color: 'text-violet-300'  },
+    { slug: 'new',        icon: NewArrivalIcon,  color: 'text-violet-300'  },
     { slug: 'sale',       icon: Flame,           color: 'text-red-300'     },
     { slug: 'all',        icon: LayoutGrid,      color: 'text-blue-300'    },
 ];
@@ -165,26 +166,50 @@ function ProductCard({ product, size = 'md', fadeIn }: {
 
 // ─── Slide renderers ──────────────────────────────────────────────────────────
 
-/** Inline "한국 K-BEAUTY" badge — replaces the flag SVG */
+/** Lightweight inline Korean flag SVG — ~600 bytes, pure vector (replaces 2.2 MB embedded-PNG original) */
+function KoreanFlagSVG({ className }: { className?: string }) {
+    return (
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40" className={className} aria-hidden="true">
+            <rect width="60" height="40" fill="white"/>
+            {/* Taeguk: full red circle → blue bottom half → blue upper inner circle → red lower inner circle */}
+            <circle cx="30" cy="20" r="10" fill="#CD2E3A"/>
+            <path d="M20,20 A10,10 0 0,0 40,20 Z" fill="#0047A0"/>
+            <circle cx="30" cy="15" r="5" fill="#0047A0"/>
+            <circle cx="30" cy="25" r="5" fill="#CD2E3A"/>
+            {/* 건(☰) top-left — 3 solid bars, rotated -45° */}
+            <g transform="translate(9,9) rotate(-45)" fill="#1a1a1a">
+                <rect x="-4" y="-3" width="8" height="1.2"/><rect x="-4" y="-0.6" width="8" height="1.2"/><rect x="-4" y="1.8" width="8" height="1.2"/>
+            </g>
+            {/* 이(☲) top-right — broken/solid/broken, rotated 45° */}
+            <g transform="translate(51,9) rotate(45)" fill="#1a1a1a">
+                <rect x="-4" y="-3" width="3.2" height="1.2"/><rect x="0.8" y="-3" width="3.2" height="1.2"/>
+                <rect x="-4" y="-0.6" width="8" height="1.2"/>
+                <rect x="-4" y="1.8" width="3.2" height="1.2"/><rect x="0.8" y="1.8" width="3.2" height="1.2"/>
+            </g>
+            {/* 감(☵) bottom-left — solid/broken/solid, rotated 45° */}
+            <g transform="translate(9,31) rotate(45)" fill="#1a1a1a">
+                <rect x="-4" y="-3" width="8" height="1.2"/>
+                <rect x="-4" y="-0.6" width="3.2" height="1.2"/><rect x="0.8" y="-0.6" width="3.2" height="1.2"/>
+                <rect x="-4" y="1.8" width="8" height="1.2"/>
+            </g>
+            {/* 곤(☷) bottom-right — 3 broken bars, rotated -45° */}
+            <g transform="translate(51,31) rotate(-45)" fill="#1a1a1a">
+                <rect x="-4" y="-3" width="3.2" height="1.2"/><rect x="0.8" y="-3" width="3.2" height="1.2"/>
+                <rect x="-4" y="-0.6" width="3.2" height="1.2"/><rect x="0.8" y="-0.6" width="3.2" height="1.2"/>
+                <rect x="-4" y="1.8" width="3.2" height="1.2"/><rect x="0.8" y="1.8" width="3.2" height="1.2"/>
+            </g>
+        </svg>
+    );
+}
+
 function KoreaBadge() {
     return (
         <div className="relative select-none" aria-label="Korean Products">
-            {/* Soft glow halo */}
-            <div className="absolute -inset-2 bg-gradient-to-b from-red-500/25 to-blue-700/25 blur-xl rounded-full pointer-events-none" />
-            {/* Glass card */}
-            <div className="relative flex flex-col items-center bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl px-3.5 pt-2 pb-1.5 shadow-2xl overflow-hidden">
-                {/* Top colour stripe */}
-                <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-red-500 via-white/50 to-blue-600 rounded-t-2xl" />
-                {/* Korean text */}
-                <span className="text-[26px] font-black text-white leading-none tracking-tight mt-0.5"
-                      style={{ textShadow: '0 2px 12px rgba(255,255,255,0.3)' }}>
-                    한국
-                </span>
-                {/* Sub-label */}
-                <div className="flex items-center gap-1 mt-0.5 mb-0.5">
-                    <div className="h-px w-3 bg-white/30" />
-                    <span className="text-[7px] font-bold text-white/55 tracking-[0.22em] uppercase">K-BEAUTY</span>
-                    <div className="h-px w-3 bg-white/30" />
+            <div className="absolute -inset-2 bg-gradient-to-b from-red-500/20 to-blue-700/20 blur-xl rounded-full pointer-events-none" />
+            <div className="relative bg-white/15 backdrop-blur-md border border-white/30 rounded-xl shadow-2xl overflow-hidden">
+                <KoreanFlagSVG className="w-[72px] h-auto block" />
+                <div className="bg-black/25 text-center py-[3px]">
+                    <span className="text-[7px] font-black text-white/90 tracking-[0.2em] uppercase">K-BEAUTY</span>
                 </div>
             </div>
         </div>
@@ -382,7 +407,7 @@ function NewArrivalsSlide({ slide, st }: { slide: ResolvedSlide; st: any }) {
                 style={{ backgroundImage: 'radial-gradient(circle at 50% 40%, #fff 0%, transparent 65%)' }} />
             <div className="relative z-10 flex flex-col h-full px-2 pt-2 pb-2">
                 <div className="flex items-center gap-1.5 mb-1 px-1">
-                    <Sparkles className="w-3.5 h-3.5 text-yellow-200" />
+                    <NewArrivalIcon className="w-3.5 h-3.5 text-yellow-200" />
                     <span className="text-[11px] font-black text-white uppercase tracking-widest">{st.newArrivals}</span>
                 </div>
                 <div className="flex-1 flex items-center justify-center gap-2 sm:gap-3">
