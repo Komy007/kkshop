@@ -1280,7 +1280,9 @@ export default function ProductDetailClient() {
                                                     <div className={`flex-shrink-0 w-11 h-11 rounded-lg flex flex-col items-center justify-center text-xs font-black leading-tight ${
                                                         isSelected
                                                             ? 'bg-brand-primary text-white'
-                                                            : 'bg-red-50 text-red-500'
+                                                            : opt.discountPct > 0
+                                                                ? 'bg-red-50 text-red-500'
+                                                                : 'bg-gray-100 text-gray-400'
                                                     }`}>
                                                         {opt.discountPct > 0 ? (
                                                             <>
@@ -1288,33 +1290,36 @@ export default function ProductDetailClient() {
                                                                 <span className="text-[9px] opacity-80">OFF</span>
                                                             </>
                                                         ) : (
-                                                            <span className="text-[10px] text-center leading-snug px-1">{t.option.freeShip}</span>
+                                                            /* No discount: show quantity, never "Free Shipping" */
+                                                            <>
+                                                                <span className="text-sm leading-none">{opt.minQty}</span>
+                                                                <span className="text-[9px] opacity-70">개+</span>
+                                                            </>
                                                         )}
                                                     </div>
                                                     <div>
                                                         <div className="font-bold text-gray-900 text-sm">
                                                             {opt.label || t.option.defaultLabel(opt.minQty)}
                                                         </div>
-                                                        <div className="text-xs text-gray-500 mt-0.5 flex items-center gap-1.5 flex-wrap">
-                                                            <span>{opt.maxQty ? t.option.minMax(opt.minQty, opt.maxQty) : t.option.minOnly(opt.minQty)}</span>
-                                                            {opt.freeShipping && opt.discountPct > 0 && (
-                                                                <span className="text-brand-primary font-semibold">+{t.option.freeShip}</span>
-                                                            )}
+                                                        <div className="text-xs text-gray-500 mt-0.5">
+                                                            {opt.maxQty ? t.option.minMax(opt.minQty, opt.maxQty) : t.option.minOnly(opt.minQty)}
                                                         </div>
                                                     </div>
                                                 </div>
-                                                {/* Right: price info */}
+                                                {/* Right: price + free shipping — consolidated, no duplication */}
                                                 <div className="text-right flex-shrink-0">
-                                                    {opt.discountPct > 0 && (
+                                                    {opt.discountPct > 0 ? (
                                                         <>
                                                             <div className="text-red-500 font-black text-base leading-tight">{formatUsd(discountedPrice)}</div>
                                                             <div className="text-xs text-gray-400 line-through">{formatUsd(product.priceUsd)}</div>
                                                             <div className="text-[10px] text-gray-400">{t.option.perUnit}</div>
+                                                            {opt.freeShipping && (
+                                                                <div className="text-[10px] text-brand-primary font-bold mt-0.5">+{t.option.freeShip}</div>
+                                                            )}
                                                         </>
-                                                    )}
-                                                    {opt.freeShipping && opt.discountPct === 0 && (
+                                                    ) : opt.freeShipping ? (
                                                         <span className="text-brand-primary font-semibold text-xs">{t.option.freeShip}</span>
-                                                    )}
+                                                    ) : null}
                                                 </div>
                                             </button>
                                         );
