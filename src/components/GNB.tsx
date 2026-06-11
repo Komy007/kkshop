@@ -37,7 +37,7 @@ export default function GNB() {
 
     const currentLang = LANGUAGES.find((l) => l.code === language) || LANGUAGES[0];
     const pathname = usePathname();
-    const isFullWidth = pathname.startsWith('/admin') || pathname.startsWith('/seller');
+    const isFullWidth = !!pathname && (pathname.startsWith('/admin') || pathname.startsWith('/seller'));
 
     // Fetch wishlist count when logged in
     useEffect(() => {
