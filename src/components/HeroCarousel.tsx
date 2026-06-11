@@ -166,48 +166,19 @@ function ProductCard({ product, size = 'md', fadeIn }: {
 
 // ─── Slide renderers ──────────────────────────────────────────────────────────
 
-/** Lightweight inline Korean flag SVG — ~600 bytes, pure vector (replaces 2.2 MB embedded-PNG original) */
-function KoreanFlagSVG({ className }: { className?: string }) {
-    return (
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40" className={className} aria-hidden="true">
-            <rect width="60" height="40" fill="white"/>
-            {/* Taeguk: full red circle → blue bottom half → blue upper inner circle → red lower inner circle */}
-            <circle cx="30" cy="20" r="10" fill="#CD2E3A"/>
-            <path d="M20,20 A10,10 0 0,0 40,20 Z" fill="#0047A0"/>
-            <circle cx="30" cy="15" r="5" fill="#0047A0"/>
-            <circle cx="30" cy="25" r="5" fill="#CD2E3A"/>
-            {/* 건(☰) top-left — 3 solid bars, rotated -45° */}
-            <g transform="translate(9,9) rotate(-45)" fill="#1a1a1a">
-                <rect x="-4" y="-3" width="8" height="1.2"/><rect x="-4" y="-0.6" width="8" height="1.2"/><rect x="-4" y="1.8" width="8" height="1.2"/>
-            </g>
-            {/* 이(☲) top-right — broken/solid/broken, rotated 45° */}
-            <g transform="translate(51,9) rotate(45)" fill="#1a1a1a">
-                <rect x="-4" y="-3" width="3.2" height="1.2"/><rect x="0.8" y="-3" width="3.2" height="1.2"/>
-                <rect x="-4" y="-0.6" width="8" height="1.2"/>
-                <rect x="-4" y="1.8" width="3.2" height="1.2"/><rect x="0.8" y="1.8" width="3.2" height="1.2"/>
-            </g>
-            {/* 감(☵) bottom-left — solid/broken/solid, rotated 45° */}
-            <g transform="translate(9,31) rotate(45)" fill="#1a1a1a">
-                <rect x="-4" y="-3" width="8" height="1.2"/>
-                <rect x="-4" y="-0.6" width="3.2" height="1.2"/><rect x="0.8" y="-0.6" width="3.2" height="1.2"/>
-                <rect x="-4" y="1.8" width="8" height="1.2"/>
-            </g>
-            {/* 곤(☷) bottom-right — 3 broken bars, rotated -45° */}
-            <g transform="translate(51,31) rotate(-45)" fill="#1a1a1a">
-                <rect x="-4" y="-3" width="3.2" height="1.2"/><rect x="0.8" y="-3" width="3.2" height="1.2"/>
-                <rect x="-4" y="-0.6" width="3.2" height="1.2"/><rect x="0.8" y="-0.6" width="3.2" height="1.2"/>
-                <rect x="-4" y="1.8" width="3.2" height="1.2"/><rect x="0.8" y="1.8" width="3.2" height="1.2"/>
-            </g>
-        </svg>
-    );
-}
-
 function KoreaBadge() {
     return (
         <div className="relative select-none" aria-label="Korean Products">
             <div className="absolute -inset-2 bg-gradient-to-b from-red-500/20 to-blue-700/20 blur-xl rounded-full pointer-events-none" />
             <div className="relative bg-white/15 backdrop-blur-md border border-white/30 rounded-xl shadow-2xl overflow-hidden">
-                <KoreanFlagSVG className="w-[72px] h-auto block" />
+                <Image
+                    src="/images/korean-flag.png"
+                    alt="Korean Flag"
+                    width={72}
+                    height={48}
+                    className="block"
+                    priority
+                />
                 <div className="bg-black/25 text-center py-[3px]">
                     <span className="text-[7px] font-black text-white/90 tracking-[0.2em] uppercase">K-BEAUTY</span>
                 </div>
