@@ -49,7 +49,7 @@ export default function BottomTabBar() {
 
     return (
         <nav
-            className="fixed bottom-0 inset-x-0 z-40 md:hidden bg-white/95 backdrop-blur-xl border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]"
+            className="app-fixed fixed bottom-0 inset-x-0 z-40 md:hidden bg-white/95 backdrop-blur-xl border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]"
             style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
             role="navigation"
             aria-label="Bottom navigation"

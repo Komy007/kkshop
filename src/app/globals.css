@@ -656,3 +656,32 @@ html[data-lang="km"] .font-bold {
 html[data-lang="km"] .font-extrabold {
   font-weight: 900 !important;
 }
+
+/* ── PC/Desktop: constrain app to phone width ───────────────────────────────
+   Applies only when viewport ≥ 640px (Tailwind sm).
+   Smartphones (< 640px) are completely unaffected — the CSS block never fires.
+   ────────────────────────────────────────────────────────────────────────── */
+@media (min-width: 640px) {
+  body {
+    background-color: #e2e8f0; /* slate-200 side gutter */
+  }
+
+  /* Centered white app shell */
+  .app-shell {
+    max-width: 430px;
+    margin-left: auto;
+    margin-right: auto;
+    background-color: #ffffff;
+    min-height: 100dvh;
+    box-shadow: 0 0 60px rgba(0, 0, 0, 0.18);
+    position: relative;
+  }
+
+  /* Fixed elements (GNB, BottomTabBar) — centered to match the shell */
+  .app-fixed {
+    max-width: 430px !important;
+    left: calc(50% - 215px) !important;
+    right: auto !important;
+    width: 430px !important;
+  }
+}

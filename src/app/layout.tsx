@@ -158,13 +158,15 @@ export default async function RootLayout({
             >
                 <GoogleAnalytics />
                 <SessionProvider>
-                    <GNB />
-                    <main className="min-h-screen pt-24 pb-20 md:pb-16">
-                        {children}
-                    </main>
-                    <MiniCartDrawer />
-                    <ChatWidget />
-                    <BottomTabBar />
+                    <div className="app-shell">
+                        <GNB />
+                        <main className="min-h-screen pt-24 pb-20 md:pb-16">
+                            {children}
+                        </main>
+                        <MiniCartDrawer />
+                        <ChatWidget />
+                        <BottomTabBar />
+                    </div>
                 </SessionProvider>
             </body>
         </html>

@@ -98,7 +98,7 @@ export default function GNB() {
     return (
         <>
             <header
-                className={`fixed top-0 inset-x-0 z-50 flex justify-center transition-all duration-300 animate-slide-down ${scrolled ? "pt-2 pb-2" : "pt-6"
+                className={`app-fixed fixed top-0 inset-x-0 z-50 flex justify-center transition-all duration-300 animate-slide-down ${scrolled ? "pt-2 pb-2" : "pt-6"
                     }`}
             >
                 <div
