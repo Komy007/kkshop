@@ -79,8 +79,14 @@ async function fetchWithTimeout(url: string, ms: number): Promise<Response> {
         return await fetch(url, {
             signal: controller.signal,
             redirect: 'follow',
-            // Spoof a generic User-Agent — many CDNs reject default node-fetch UA
-            headers: { 'User-Agent': 'Mozilla/5.0 (compatible; KKShopBot/1.0)' },
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+                'Accept': 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
+                'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
+                'Accept-Encoding': 'gzip, deflate, br',
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache',
+            },
         });
     } finally {
         clearTimeout(timer);

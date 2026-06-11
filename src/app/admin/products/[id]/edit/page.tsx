@@ -269,13 +269,15 @@ export default function EditProductPage() {
         ]);
     }, [detailImageList.length]);
 
-    // Global paste handler — Ctrl+V adds image (defaults to main; falls through to detail when main is full)
+    // Global paste handler — Ctrl+V로 이미지 파일 또는 URL 텍스트 직접 붙여넣기
     useEffect(() => {
         const handlePaste = (e: ClipboardEvent) => {
             const target = e.target as HTMLElement;
             if (target && /^(INPUT|TEXTAREA)$/.test(target.tagName)) return;
             const items = e.clipboardData?.items;
             if (!items) return;
+
+            // 우선순위 1: 이미지 바이너리 (우클릭 → 이미지 복사, 스크린샷 등)
             const imageFiles: File[] = [];
             for (const item of Array.from(items)) {
                 if (item.type.startsWith('image/')) {
@@ -283,9 +285,36 @@ export default function EditProductPage() {
                     if (file) imageFiles.push(file);
                 }
             }
-            if (imageFiles.length === 0) return;
-            if (mainImageList.length < MAX_MAIN_IMAGES) addMainFiles(imageFiles);
-            else addDetailFiles(imageFiles);
+            if (imageFiles.length > 0) {
+                if (mainImageList.length < MAX_MAIN_IMAGES) addMainFiles(imageFiles);
+                else addDetailFiles(imageFiles);
+                return;
+            }
+
+            // 우선순위 2: URL 텍스트 (우클릭 → 이미지 주소 복사, URL 목록 붙여넣기)
+            const textItem = Array.from(items).find(i => i.type === 'text/plain');
+            if (!textItem) return;
+            textItem.getAsString(async (text) => {
+                const urls = text.split(/[\r\n,]+/).map(s => s.trim()).filter(s => /^https?:\/\//i.test(s));
+                if (urls.length === 0) return;
+                try {
+                    const res = await fetch('/api/upload/from-urls', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ urls: urls.slice(0, 50), crop: 'square' }),
+                    });
+                    const data = await res.json();
+                    const imported: string[] = (data.results ?? [])
+                        .filter((r: { ok: boolean; gcsUrl?: string }) => r.ok && r.gcsUrl)
+                        .map((r: { ok: boolean; gcsUrl?: string }) => r.gcsUrl as string);
+                    if (imported.length > 0) {
+                        setMainImageList(prev => [
+                            ...prev,
+                            ...imported.slice(0, Math.max(0, MAX_MAIN_IMAGES - prev.length)).map(url => ({ url, preview: url })),
+                        ]);
+                    }
+                } catch {}
+            });
         };
         window.addEventListener('paste', handlePaste);
         return () => window.removeEventListener('paste', handlePaste);
