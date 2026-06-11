@@ -746,7 +746,8 @@ export default function ProductDetailClient() {
             const opt = product.options.find((o: any) => o.id === selectedOptionId);
             // Only apply discount if qty actually meets the option's minQty requirement
             if (opt && opt.discountPct > 0 && qty >= opt.minQty && (!opt.maxQty || qty <= opt.maxQty)) {
-                appliedPrice = product.priceUsd * (1 - opt.discountPct / 100);
+                const effectiveBase = (product.isHotSale && product.hotSalePrice) ? product.hotSalePrice : product.priceUsd;
+                appliedPrice = effectiveBase * (1 - opt.discountPct / 100);
             } else if (product.isHotSale && product.hotSalePrice) {
                 appliedPrice = product.hotSalePrice;
             }
@@ -821,9 +822,10 @@ export default function ProductDetailClient() {
     const activeOption = selectedOptionId
         ? (product as any).options?.find((o: any) => o.id === selectedOptionId && qty >= o.minQty && (!o.maxQty || qty <= o.maxQty))
         : null;
+    const effectiveBasePrice = (product.isHotSale && product.hotSalePrice) ? product.hotSalePrice : product.priceUsd;
     const displayPrice = selectedVariant?.priceUsd
         ?? (activeOption && activeOption.discountPct > 0
-            ? product.priceUsd * (1 - activeOption.discountPct / 100)
+            ? effectiveBasePrice * (1 - activeOption.discountPct / 100)
             : (product.isHotSale && product.hotSalePrice ? product.hotSalePrice : product.priceUsd));
     const isHotSaleDisplay = !selectedVariant?.priceUsd && !activeOption && product.isHotSale && !!product.hotSalePrice;
 
@@ -1066,7 +1068,7 @@ export default function ProductDetailClient() {
                                 {activeOption && activeOption.discountPct > 0 ? (
                                     <>
                                         <span className="text-4xl font-black text-red-500">{formatUsd(displayPrice)}</span>
-                                        <span className="text-xl font-bold text-gray-400 line-through pb-1">{formatUsd(product.priceUsd)}</span>
+                                        <span className="text-xl font-bold text-gray-400 line-through pb-1">{formatUsd(effectiveBasePrice)}</span>
                                         <span className="text-gray-400 text-sm pb-1">USD</span>
                                     </>
                                 ) : isHotSaleDisplay && product.hotSalePrice ? (
@@ -1101,7 +1103,7 @@ export default function ProductDetailClient() {
                                     <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-red-50 border border-red-200 text-red-600 text-xs font-bold rounded-full">
                                         🏷️ {t.option.saving(
                                             activeOption.discountPct,
-                                            formatUsd((product.priceUsd - displayPrice) * qty)
+                                            formatUsd((effectiveBasePrice - displayPrice) * qty)
                                         )}
                                     </span>
                                     {activeOption.freeShipping && (
@@ -1246,9 +1248,10 @@ export default function ProductDetailClient() {
                                 <div className="grid grid-cols-1 gap-2">
                                     {(product as any).options.map((opt: any) => {
                                         const isSelected = selectedOptionId === opt.id;
+                                        const effectiveBase = (product.isHotSale && product.hotSalePrice) ? product.hotSalePrice : product.priceUsd;
                                         const discountedPrice = opt.discountPct > 0
-                                            ? product.priceUsd * (1 - opt.discountPct / 100)
-                                            : product.priceUsd;
+                                            ? effectiveBase * (1 - opt.discountPct / 100)
+                                            : effectiveBase;
                                         return (
                                             <button
                                                 key={opt.id}
@@ -1311,7 +1314,7 @@ export default function ProductDetailClient() {
                                                     {opt.discountPct > 0 ? (
                                                         <>
                                                             <div className="text-red-500 font-black text-base leading-tight">{formatUsd(discountedPrice)}</div>
-                                                            <div className="text-xs text-gray-400 line-through">{formatUsd(product.priceUsd)}</div>
+                                                            <div className="text-xs text-gray-400 line-through">{formatUsd(effectiveBase)}</div>
                                                             <div className="text-[10px] text-gray-400">{t.option.perUnit}</div>
                                                             {opt.freeShipping && (
                                                                 <div className="text-[10px] text-brand-primary font-bold mt-0.5">+{t.option.freeShip}</div>
