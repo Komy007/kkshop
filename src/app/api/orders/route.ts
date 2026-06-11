@@ -90,7 +90,7 @@ export async function POST(request: Request) {
         const variantPriceMap = new Map(dbVariants.map(v => [v.id.toString(), v]));
 
         // 각 아이템에 대해 DB 가격으로 검증 및 서버 가격 적용
-        const verifiedItems: Array<typeof items[0] & { priceUsd: number }> = [];
+        const verifiedItems: Array<typeof items[0] & { priceUsd: number; finalUnitPrice?: number }> = [];
         let subtotalUsd = 0;
         for (const item of items) {
             const dbProduct = productPriceMap.get(item.productId);
@@ -138,7 +138,7 @@ export async function POST(request: Request) {
             }
         }
 
-        // 수량별 할인 적용하여 subtotal 재계산
+        // 수량별 할인 적용하여 subtotal 재계산 + 아이템별 최종 단가 저장
         let bulkFreeShipping = false;
         subtotalUsd = 0;
         for (const item of verifiedItems) {
@@ -147,11 +147,14 @@ export async function POST(request: Request) {
             // 수량에 맞는 최적 할인 옵션 찾기 (내림차순이므로 첫 매칭이 최대 할인)
             const matchedOpt = opts.find(o => qty >= o.minQty && (o.maxQty === null || qty <= o.maxQty));
             if (matchedOpt && matchedOpt.discountPct > 0) {
-                const discounted = item.priceUsd * (1 - matchedOpt.discountPct / 100);
-                subtotalUsd += Math.round(discounted * qty * 100) / 100;
+                const discounted = Math.round(item.priceUsd * (1 - matchedOpt.discountPct / 100) * 100) / 100;
+                item.finalUnitPrice = discounted;
+                subtotalUsd += discounted * qty;
             } else {
+                item.finalUnitPrice = item.priceUsd;
                 subtotalUsd += item.priceUsd * qty;
             }
+            subtotalUsd = Math.round(subtotalUsd * 100) / 100;
             if (matchedOpt?.freeShipping) bulkFreeShipping = true;
         }
 
@@ -250,7 +253,8 @@ export async function POST(request: Request) {
                             optionId: i.optionId ? BigInt(i.optionId) : null,
                             variantId: i.variantId ? BigInt(i.variantId) : null,
                             quantity: Number(i.quantity),
-                            priceUsd: Number(i.priceUsd)
+                            // Store the bulk-discounted unit price so item rows match subtotal
+                            priceUsd: Number(i.finalUnitPrice ?? i.priceUsd)
                         }))
                     }
                 }
