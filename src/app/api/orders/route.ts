@@ -159,9 +159,10 @@ export async function POST(request: Request) {
                 item.finalUnitPrice = item.priceUsd;
                 subtotalUsd += item.priceUsd * qty;
             }
-            subtotalUsd = Math.round(subtotalUsd * 100) / 100;
             if (matchedOpt?.freeShipping) bulkFreeShipping = true;
         }
+        // 부동소수점 오차 방지: 누적 후 한 번만 반올림
+        subtotalUsd = Math.round(subtotalUsd * 100) / 100;
 
         // Verify & Calculate Coupon
         let discountAmount = 0;

@@ -31,6 +31,14 @@ interface CartState {
     addItem: (item: Omit<CartItem, 'qty'>, qty?: number) => void;
     removeItem: (productId: string, variantId?: string) => void;
     updateQty: (productId: string, qty: number, variantId?: string) => void;
+    // Refresh pricing metadata from fresh product data (migrates legacy items)
+    refreshPricing: (productId: string, data: {
+        priceUsd: number;
+        isHotSale?: boolean;
+        hotSalePrice?: number | null;
+        variants?: Array<{ id: string; priceUsd: number | null }>;
+        options?: Array<{ minQty: number; maxQty: number | null; discountPct: number; freeShipping: boolean }>;
+    }) => void;
     clearCart: () => void;
     // Selection
     toggleSelect: (productId: string, variantId?: string) => void;
@@ -52,38 +60,41 @@ function isSameItem(a: CartItem, productId: string, variantId?: string): boolean
 export const isSelected = (item: CartItem): boolean => item.selected !== false;
 
 /**
+ * Finds the bulk tier matching the item's current quantity.
+ * Mirrors the server (api/orders): exact range match with highest minQty wins;
+ * if qty exceeds all maxQty caps, falls back to the highest eligible tier.
+ */
+export function matchBulkTier(item: CartItem): BulkOption | null {
+    if (!item.bulkOptions || item.bulkOptions.length === 0) return null;
+    const matched = item.bulkOptions
+        .filter(o => item.qty >= o.minQty && (o.maxQty === null || item.qty <= o.maxQty))
+        .sort((a, b) => b.minQty - a.minQty)[0];
+    if (matched) return matched;
+    const fallback = item.bulkOptions
+        .filter(o => item.qty >= o.minQty)
+        .sort((a, b) => b.minQty - a.minQty)[0];
+    return fallback ?? null;
+}
+
+/**
  * Returns the effective unit price for a cart item based on current quantity.
- * Applies the highest-qualifying bulk discount tier on top of basePriceUsd.
+ * Applies the matched bulk discount tier on top of basePriceUsd.
  * Falls back to priceUsd for legacy items without basePriceUsd/bulkOptions.
  */
 export function effectiveUnitPrice(item: CartItem): number {
     const base = item.basePriceUsd ?? item.priceUsd;
-    if (!item.bulkOptions || item.bulkOptions.length === 0) return base;
-
-    // Find the matching tier with the highest minQty (best discount for the quantity)
-    // Fallback: if qty exceeds all maxQty caps, apply the highest tier (most generous)
-    let matched = item.bulkOptions
-        .filter(o => item.qty >= o.minQty && (o.maxQty === null || item.qty <= o.maxQty))
-        .sort((a, b) => b.minQty - a.minQty)[0];
-    if (!matched) {
-        const fallback = item.bulkOptions
-            .filter(o => item.qty >= o.minQty)
-            .sort((a, b) => b.minQty - a.minQty)[0];
-        if (fallback) matched = fallback;
-    }
-
+    const matched = matchBulkTier(item);
     if (!matched || matched.discountPct <= 0) return base;
     return Math.round(base * (1 - matched.discountPct / 100) * 100) / 100;
 }
 
 /**
- * Returns true if a free-shipping bulk tier is active for this item at its current qty.
+ * Returns true if the matched bulk tier grants free shipping at the current qty.
+ * Uses the same tier-matching (incl. fallback) as effectiveUnitPrice and the server.
  */
 export function hasBulkFreeShipping(item: CartItem): boolean {
-    if (!item.bulkOptions) return false;
-    return item.bulkOptions.some(
-        o => o.freeShipping && item.qty >= o.minQty && (o.maxQty === null || item.qty <= o.maxQty)
-    );
+    const matched = matchBulkTier(item);
+    return !!matched?.freeShipping;
 }
 
 export const useCartStore = create<CartState>()(
@@ -135,6 +146,30 @@ export const useCartStore = create<CartState>()(
                     items: state.items.map((i) =>
                         isSameItem(i, productId, variantId) ? { ...i, qty } : i
                     ),
+                }));
+            },
+
+            refreshPricing: (productId, data) => {
+                set((state) => ({
+                    items: state.items.map((i) => {
+                        if (i.productId !== productId) return i;
+                        // Base price: variant price > hot-sale > regular (matches server)
+                        const variantPrice = i.variantId
+                            ? data.variants?.find(v => v.id === i.variantId)?.priceUsd ?? null
+                            : null;
+                        const basePriceUsd = variantPrice
+                            ?? ((data.isHotSale && data.hotSalePrice) ? data.hotSalePrice : data.priceUsd);
+                        return {
+                            ...i,
+                            basePriceUsd,
+                            bulkOptions: data.options?.map(o => ({
+                                minQty: Number(o.minQty),
+                                maxQty: o.maxQty != null ? Number(o.maxQty) : null,
+                                discountPct: Number(o.discountPct),
+                                freeShipping: Boolean(o.freeShipping),
+                            })) ?? i.bulkOptions,
+                        };
+                    }),
                 }));
             },
 

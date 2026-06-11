@@ -97,7 +97,7 @@ export default function CartPage() {
     const items = useCartStore(s => s.items);
     const subtotal = useCartStore(selectSelectedTotalPrice);
     const selectedCount = useCartStore(selectSelectedCount);
-    const { removeItem, updateQty, toggleSelect, setAllSelected, removeSelected, clearCart } = useCartStore();
+    const { removeItem, updateQty, toggleSelect, setAllSelected, removeSelected, clearCart, refreshPricing } = useCartStore();
 
     const [removingId, setRemovingId] = useState<string | null>(null);
     // stockWarnings: productId -> available qty (when cart qty exceeds stock)
@@ -130,6 +130,16 @@ export default function CartPage() {
                 const cartItem = items.find(ci => ci.productId === uniqueIds[i]);
                 if (cartItem && cartItem.qty > stockQty) {
                     warnings[uniqueIds[i]] = stockQty;
+                }
+                // Migrate/refresh pricing metadata (legacy items get basePriceUsd + bulkOptions)
+                if (typeof data.priceUsd === 'number') {
+                    refreshPricing(uniqueIds[i], {
+                        priceUsd: data.priceUsd,
+                        isHotSale: data.isHotSale,
+                        hotSalePrice: data.hotSalePrice,
+                        variants: data.variants,
+                        options: data.options,
+                    });
                 }
             });
             setStockWarnings(warnings);

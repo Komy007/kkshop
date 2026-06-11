@@ -1269,7 +1269,8 @@ export default function ProductDetailClient() {
                                 <div className="grid grid-cols-1 gap-2">
                                     {(product as any).options.map((opt: any) => {
                                         const isSelected = selectedOptionId === opt.id;
-                                        const effectiveBase = (product.isHotSale && product.hotSalePrice) ? product.hotSalePrice : product.priceUsd;
+                                        // effectiveBasePrice: variant > hot-sale > regular (component scope, matches server)
+                                        const effectiveBase = effectiveBasePrice;
                                         const discountedPrice = opt.discountPct > 0
                                             ? effectiveBase * (1 - opt.discountPct / 100)
                                             : effectiveBase;
