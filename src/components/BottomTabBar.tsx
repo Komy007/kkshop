@@ -41,6 +41,8 @@ export default function BottomTabBar() {
     const sessionResult = useSession();
     const role = (sessionResult?.data?.user as any)?.role;
 
+    const isFullWidth = pathname.startsWith('/admin') || pathname.startsWith('/seller');
+
     const isActive = (href: string) => {
         if (href === '/') return pathname === '/';
         if (href === '#cart') return false;
@@ -49,7 +51,7 @@ export default function BottomTabBar() {
 
     return (
         <nav
-            className="app-fixed fixed bottom-0 inset-x-0 z-40 md:hidden bg-white/95 backdrop-blur-xl border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]"
+            className={`${!isFullWidth ? 'app-fixed' : ''} fixed bottom-0 inset-x-0 z-40 md:hidden bg-white/95 backdrop-blur-xl border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]`}
             style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
             role="navigation"
             aria-label="Bottom navigation"

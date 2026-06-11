@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
 import TaegukgiIcon from "@/components/TaegukgiIcon";
 import Link from "next/link";
 import Image from "next/image";
@@ -35,6 +36,8 @@ export default function GNB() {
     const userRef = useRef<HTMLDivElement>(null);
 
     const currentLang = LANGUAGES.find((l) => l.code === language) || LANGUAGES[0];
+    const pathname = usePathname();
+    const isFullWidth = pathname.startsWith('/admin') || pathname.startsWith('/seller');
 
     // Fetch wishlist count when logged in
     useEffect(() => {
@@ -98,7 +101,7 @@ export default function GNB() {
     return (
         <>
             <header
-                className={`app-fixed fixed top-0 inset-x-0 z-50 flex justify-center transition-all duration-300 animate-slide-down ${scrolled ? "pt-2 pb-2" : "pt-6"
+                className={`${!isFullWidth ? 'app-fixed' : ''} fixed top-0 inset-x-0 z-50 flex justify-center transition-all duration-300 animate-slide-down ${scrolled ? "pt-2 pb-2" : "pt-6"
                     }`}
             >
                 <div

@@ -7,6 +7,7 @@ import GNB from "@/components/GNB";
 import BottomTabBar from "@/components/BottomTabBar";
 import MiniCartDrawer from "@/components/MiniCartDrawer";
 import ChatWidget from "@/components/ChatWidget";
+import AppShellWrapper from "@/components/AppShellWrapper";
 import { SessionProvider } from "next-auth/react";
 import { prisma } from '@/lib/api';
 
@@ -158,7 +159,7 @@ export default async function RootLayout({
             >
                 <GoogleAnalytics />
                 <SessionProvider>
-                    <div className="app-shell">
+                    <AppShellWrapper>
                         <GNB />
                         <main className="min-h-screen pt-24 pb-20 md:pb-16">
                             {children}
@@ -166,7 +167,7 @@ export default async function RootLayout({
                         <MiniCartDrawer />
                         <ChatWidget />
                         <BottomTabBar />
-                    </div>
+                    </AppShellWrapper>
                 </SessionProvider>
             </body>
         </html>

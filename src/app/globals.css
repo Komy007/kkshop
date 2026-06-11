@@ -668,20 +668,20 @@ html[data-lang="km"] .font-extrabold {
 
   /* Centered white app shell */
   .app-shell {
-    max-width: 430px;
+    max-width: 560px;
     margin-left: auto;
     margin-right: auto;
     background-color: #ffffff;
     min-height: 100dvh;
-    box-shadow: 0 0 60px rgba(0, 0, 0, 0.18);
+    box-shadow: 0 0 60px rgba(0, 0, 0, 0.15);
     position: relative;
   }
 
   /* Fixed elements (GNB, BottomTabBar) — centered to match the shell */
   .app-fixed {
-    max-width: 430px !important;
-    left: calc(50% - 215px) !important;
+    max-width: 560px !important;
+    left: calc(50% - 280px) !important;
     right: auto !important;
-    width: 430px !important;
+    width: 560px !important;
   }
 }
