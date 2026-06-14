@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
-    ArrowRight, Flame, Crown, Star,
+    ArrowRight, Flame, Crown,
     Droplets, Palette, Bath, Sofa, HeartPulse,
     UtensilsCrossed, LayoutGrid,
 } from 'lucide-react';
@@ -83,11 +83,6 @@ function flattenSlides(rawSlides: RawSlide[]): FlatSlide[] {
     return flat;
 }
 
-// CTA button label per language
-const CTA: Record<string, string> = {
-    ko: '지금 보기', en: 'View Now', km: 'មើលឥឡូវ', zh: '立即查看',
-};
-
 // Mini category icons shown at bottom of BrandSlide
 const MINI_CATS = [
     { slug: 'skincare',  Icon: Droplets,        color: 'text-pink-300'    },
@@ -140,74 +135,74 @@ function BrandSlide({ t }: { t: any }) {
 }
 
 // ─── Single Product Slide ─────────────────────────────────────────────────────
-function SingleProductSlide({ slide, language }: { slide: FlatSlide; language: string }) {
+function SingleProductSlide({ slide }: { slide: FlatSlide }) {
     const p = slide.product!;
     const hasDiscount = p.isHotSale && p.hotSalePrice != null && p.hotSalePrice < p.priceUsd;
     const price = hasDiscount ? p.hotSalePrice! : p.priceUsd;
     const discountPct = hasDiscount ? Math.round((1 - p.hotSalePrice! / p.priceUsd) * 100) : 0;
-    const cta = CTA[language] ?? CTA.en;
 
     return (
-        <div className={`relative w-full h-full bg-gradient-to-br ${slide.gradient} overflow-hidden`}>
+        <Link href={`/products/${p.id}`} className={`block relative w-full h-full bg-gradient-to-br ${slide.gradient} overflow-hidden`}>
+            {/* Subtle light spot top-right */}
             <div
-                className="absolute inset-0 opacity-10 pointer-events-none"
-                style={{ backgroundImage: 'radial-gradient(circle at 85% 10%, rgba(255,255,255,0.9) 0%, transparent 45%)' }}
+                className="absolute inset-0 opacity-20 pointer-events-none"
+                style={{ backgroundImage: 'radial-gradient(circle at 75% 20%, rgba(255,255,255,0.8) 0%, transparent 55%)' }}
             />
-            <div className="relative z-10 flex h-full items-center px-4 gap-3">
-                {/* Product image — left 44% */}
-                <Link href={`/products/${p.id}`} className="flex-shrink-0 w-[44%]">
-                    <div className="relative aspect-square rounded-2xl overflow-hidden bg-white/10 shadow-2xl ring-1 ring-white/20">
-                        {p.imageUrl ? (
-                            <Image src={p.imageUrl} alt={p.name} fill sizes="44vw" className="object-cover" />
-                        ) : (
-                            <div className="w-full h-full flex items-center justify-center text-3xl opacity-40">🛍</div>
-                        )}
-                        {slide.badge && (
-                            <span className={`absolute top-1.5 left-1.5 text-[9px] font-black text-white px-1.5 py-0.5 rounded shadow-sm ${
-                                slide.badge === 'HOT' ? 'bg-red-500' :
-                                slide.badge === 'NEW' ? 'bg-blue-500' : 'bg-amber-500'
-                            }`}>
-                                {slide.badge}
-                            </span>
-                        )}
-                    </div>
-                </Link>
 
-                {/* Product info — right */}
-                <div className="flex-1 min-w-0 flex flex-col gap-1.5">
-                    {discountPct > 0 && (
-                        <span className="inline-flex self-start bg-yellow-300 text-red-700 text-[10px] font-black px-1.5 py-0.5 rounded-md">
-                            -{discountPct}% OFF
-                        </span>
-                    )}
-                    <Link href={`/products/${p.id}`}>
-                        <p className="text-[12px] sm:text-[13px] font-bold text-white line-clamp-3 leading-snug">
-                            {p.name}
-                        </p>
-                    </Link>
-                    <div className="flex items-baseline gap-1 flex-wrap">
-                        {hasDiscount && (
-                            <span className="text-[10px] text-white/45 line-through">${p.priceUsd.toFixed(2)}</span>
-                        )}
-                        <span className="text-[18px] font-black text-yellow-200 leading-none">${price.toFixed(2)}</span>
+            {/* Product image — large, centered, leaves bottom 60px for overlay */}
+            {p.imageUrl ? (
+                <div className="absolute inset-x-0 top-0 bottom-[60px] flex items-center justify-center px-10 py-4">
+                    <div className="relative w-full h-full">
+                        <Image
+                            src={p.imageUrl}
+                            alt={p.name}
+                            fill
+                            sizes="100vw"
+                            className="object-contain drop-shadow-2xl"
+                        />
                     </div>
-                    {p.reviewCount > 0 && (
-                        <div className="flex items-center gap-0.5">
-                            <Star className="w-2.5 h-2.5 text-yellow-300 fill-yellow-300" />
-                            <span className="text-[9px] text-white/65">
-                                {p.reviewAvg.toFixed(1)} ({p.reviewCount})
-                            </span>
-                        </div>
+                </div>
+            ) : (
+                <div className="absolute inset-x-0 top-0 bottom-[60px] flex items-center justify-center">
+                    <span className="text-6xl opacity-30">🛍</span>
+                </div>
+            )}
+
+            {/* Bottom gradient overlay */}
+            <div className="absolute bottom-0 left-0 right-0 h-[80px] bg-gradient-to-t from-black/80 via-black/50 to-transparent" />
+
+            {/* Badge — top-left */}
+            {slide.badge && (
+                <span className={`absolute top-3 left-3 z-10 text-[11px] font-black text-white px-2.5 py-1 rounded-md shadow-lg ${
+                    slide.badge === 'HOT' ? 'bg-red-500' :
+                    slide.badge === 'NEW' ? 'bg-blue-500' : 'bg-amber-500'
+                }`}>
+                    {slide.badge}
+                </span>
+            )}
+
+            {/* Discount % — top-right */}
+            {discountPct > 0 && (
+                <span className="absolute top-3 right-3 z-10 bg-yellow-300 text-red-700 text-[11px] font-black px-2.5 py-1 rounded-md shadow-lg">
+                    -{discountPct}%
+                </span>
+            )}
+
+            {/* Bottom info bar */}
+            <div className="absolute bottom-0 left-0 right-0 z-10 h-[60px] flex items-center justify-between gap-3 px-4">
+                <p className="flex-1 min-w-0 text-white text-[12px] sm:text-[13px] font-bold leading-snug line-clamp-2 drop-shadow">
+                    {p.name}
+                </p>
+                <div className="flex-shrink-0 text-right">
+                    {hasDiscount && (
+                        <div className="text-white/55 text-[9px] line-through leading-none">${p.priceUsd.toFixed(2)}</div>
                     )}
-                    <Link
-                        href={`/products/${p.id}`}
-                        className="inline-flex items-center gap-1 mt-0.5 bg-white text-gray-900 text-[10px] font-extrabold px-3 py-1.5 rounded-full shadow-md self-start hover:bg-gray-100 transition-colors"
-                    >
-                        {cta} <ArrowRight className="w-2.5 h-2.5" />
-                    </Link>
+                    <div className="text-yellow-300 text-[18px] font-black leading-tight drop-shadow">
+                        ${price.toFixed(2)}
+                    </div>
                 </div>
             </div>
-        </div>
+        </Link>
     );
 }
 
@@ -273,9 +268,9 @@ export default function HeroCarousel({ t, language }: HeroCarouselProps) {
     const current = slides[currentIdx] ?? slides[0];
 
     return (
-        <div className="mx-3 mt-2 mb-3">
+        <div className="mt-2 mb-2">
             <div
-                className="relative rounded-2xl overflow-hidden shadow-xl h-[220px] sm:h-[240px]"
+                className="relative overflow-hidden h-[270px] sm:h-[300px]"
                 onTouchStart={onTouchStart}
                 onTouchEnd={onTouchEnd}
                 onMouseEnter={() => setIsTouching(true)}
@@ -289,7 +284,7 @@ export default function HeroCarousel({ t, language }: HeroCarouselProps) {
                     {current?.type === 'brand' ? (
                         <BrandSlide t={t} />
                     ) : current?.product ? (
-                        <SingleProductSlide slide={current} language={language} />
+                        <SingleProductSlide slide={current} />
                     ) : (
                         <BrandSlide t={t} />
                     )}
@@ -297,7 +292,7 @@ export default function HeroCarousel({ t, language }: HeroCarouselProps) {
 
                 {/* Dot indicators */}
                 {slides.length > 1 && (
-                    <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-20">
+                    <div className="absolute bottom-[68px] left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-20">
                         {slides.map((_, idx) => (
                             <button
                                 key={idx}
