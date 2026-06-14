@@ -3,6 +3,10 @@ import { prisma } from '@/lib/api';
 
 export const dynamic = 'force-dynamic';
 
+// Cache public settings keyed by sorted key list (60s TTL)
+const _settingsCache = new Map<string, { data: any; ts: number }>();
+const SETTINGS_TTL = 60 * 1000;
+
 /**
  * GET /api/settings?keys=site_name,chat_widget_enabled
  *
@@ -43,10 +47,17 @@ export async function GET(request: Request) {
         );
     }
 
+    const cacheKey = [...keysArray].sort().join(',');
+    const cached = _settingsCache.get(cacheKey);
+    if (cached && Date.now() - cached.ts < SETTINGS_TTL) {
+        return NextResponse.json(cached.data);
+    }
+
     try {
         const settings = await prisma.siteSetting.findMany({
             where: { key: { in: keysArray } },
         });
+        _settingsCache.set(cacheKey, { data: settings, ts: Date.now() });
         return NextResponse.json(settings);
     } catch (error) {
         console.error('GET /api/settings error:', error);

@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/api';
 
+// Per-language server-side cache (5 min TTL) — avoids 7-9 DB queries on every page load
+const _cache = new Map<string, { data: any; ts: number }>();
+const CACHE_TTL = 5 * 60 * 1000;
+
 // Carousel API — returns POOLS of products per slide so the client can
 // randomly pick different products each time a slide appears.
 // Slide 1: brand banner (no data)
@@ -55,6 +59,11 @@ export async function GET(req: Request) {
     try {
         const { searchParams } = new URL(req.url);
         const lang = searchParams.get('lang') || 'en';
+
+        const cached = _cache.get(lang);
+        if (cached && Date.now() - cached.ts < CACHE_TTL) {
+            return NextResponse.json(cached.data);
+        }
 
         // ── Category pair pools ──────────────────────────────────────────────
         const categoryPairSlides = await Promise.all(
@@ -164,7 +173,7 @@ export async function GET(req: Request) {
             pool: bestPool,
         };
 
-        return NextResponse.json({
+        const result = {
             slides: [
                 { type: 'brand' },
                 categoryPairSlides[0],   // Skincare + Makeup
@@ -173,7 +182,9 @@ export async function GET(req: Request) {
                 newArrivalsSlide,
                 bestSellersSlide,
             ],
-        });
+        };
+        _cache.set(lang, { data: result, ts: Date.now() });
+        return NextResponse.json(result);
     } catch (err: any) {
         console.error('Carousel API error:', err);
         return NextResponse.json({ slides: [{ type: 'brand' }] }, { status: 200 });

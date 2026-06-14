@@ -3,6 +3,11 @@ import { getProductsByLanguage, getProductsForSection } from '@/lib/api';
 
 export const dynamic = 'force-dynamic';
 
+// 2-min server cache for homepage section queries (hot/new/popular/todaypick)
+// Key: `${section}:${lang}:${limit}` — only section requests are cached
+const _sectionCache = new Map<string, { data: any; ts: number }>();
+const SECTION_TTL = 2 * 60 * 1000;
+
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const lang = searchParams.get('lang') || 'ko';
@@ -18,8 +23,15 @@ export async function GET(request: Request) {
     try {
         // Section-specific fetch (homepage) — returns small curated list
         if (section === 'hot' || section === 'new' || section === 'popular' || section === 'todaypick') {
+            const cacheKey = `${section}:${lang}:${limit}`;
+            const cached = _sectionCache.get(cacheKey);
+            if (cached && Date.now() - cached.ts < SECTION_TTL) {
+                return NextResponse.json(cached.data);
+            }
             const products = await getProductsForSection(lang, section, limit || 8);
-            return NextResponse.json({ products, total: products.length });
+            const result = { products, total: products.length };
+            _sectionCache.set(cacheKey, { data: result, ts: Date.now() });
+            return NextResponse.json(result);
         }
 
         // General paginated fetch

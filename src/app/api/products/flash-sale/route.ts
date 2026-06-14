@@ -3,6 +3,9 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/api';
 
+const _cache = new Map<string, { data: any; ts: number }>();
+const CACHE_TTL = 2 * 60 * 1000; // 2 min — flash sales change infrequently
+
 // GET /api/products/flash-sale?lang=en - Return currently active flash sales (public)
 export async function GET(req: Request) {
   try {
@@ -11,6 +14,11 @@ export async function GET(req: Request) {
     const lang = (['en', 'ko', 'km', 'zh'] as const).includes(rawLang as 'en')
       ? rawLang
       : 'en';
+
+    const cached = _cache.get(lang);
+    if (cached && Date.now() - cached.ts < CACHE_TTL) {
+      return NextResponse.json(cached.data);
+    }
 
     const now = new Date();
 
@@ -64,6 +72,7 @@ export async function GET(req: Request) {
       };
     });
 
+    _cache.set(lang, { data: result, ts: Date.now() });
     return NextResponse.json(result);
   } catch (error) {
     console.error('GET /api/products/flash-sale error:', error);
