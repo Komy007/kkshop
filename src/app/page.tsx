@@ -166,7 +166,7 @@ function CardSkeleton() {
 
 function ProductGridSkeleton({ title, icon }: { title: string; icon: React.ReactNode }) {
     return (
-        <section className="mb-6">
+        <section className="mb-4">
             <div className="flex items-center justify-between mb-3 px-3">
                 <div className="flex items-center gap-1.5">{icon}<span className="text-[15px] font-extrabold text-black">{title}</span></div>
             </div>
@@ -247,7 +247,7 @@ function FlashSaleSection({ t }: { t: any }) {
     if (!loaded || items.length === 0) return null;
 
     return (
-        <section className="mb-5">
+        <section className="mb-3">
             <div className="flex items-center justify-between mb-3 px-3">
                 <div className="flex items-center gap-2">
                     <div className="icon-3d w-8 h-8 bg-gradient-to-br from-yellow-400 to-orange-500 animate-zap-pulse">
@@ -397,7 +397,7 @@ function ProductGrid({ products, title, icon, viewAllHref, t }: {
 }) {
     if (!products || products.length === 0) return null;
     return (
-        <section className="mb-6">
+        <section className="mb-4">
             <SectionHeader icon={icon} title={title} viewAllHref={viewAllHref} t={t} />
             <div className="flex gap-3 overflow-x-auto px-3 pb-2 scrollbar-hide snap-x snap-mandatory md:grid md:grid-cols-4 lg:grid-cols-6 md:overflow-visible md:pb-0 md:flex-none md:snap-none">
                 {products.map(p => (
@@ -439,7 +439,7 @@ function RecentlyViewedSection({ t }: { t: any }) {
     if (!mounted || products.length === 0) return null;
 
     return (
-        <section className="mb-6">
+        <section className="mb-4">
             <SectionHeader
                 icon={<span className="badge-3d bg-gradient-to-r from-slate-500 to-blue-500 text-white"><Clock className="w-3.5 h-3.5" /></span>}
                 title={t.recentlyViewed || 'Recently Viewed'}
@@ -489,7 +489,7 @@ function PurchaseTicker({ t }: { t: any }) {
         : `${Math.floor(item.minutesAgo / 60)}${t.tickerHrAgo}`;
 
     return (
-        <div className="px-3 mb-2">
+        <div className="px-3 mb-1.5">
             <div
                 className="flex items-center gap-1.5 text-[11px] text-gray-600 bg-gray-50 border border-gray-100 rounded-full px-3 py-1.5 transition-opacity duration-300 overflow-hidden"
                 style={{ opacity: visible ? 1 : 0 }}>
@@ -650,7 +650,7 @@ export default function Home() {
                 <HeroCarousel t={t} language={language} />
 
                 {/* ── Trust Badge Strip ── */}
-                <div className="flex items-center gap-2 px-3 py-2 overflow-x-auto scrollbar-hide">
+                <div className="flex items-center gap-2 px-3 py-1.5 overflow-x-auto scrollbar-hide">
                     {activeBadges.map((badge, i) => (
                         <span key={i} className="flex-shrink-0 text-[11px] text-gray-700 bg-white border border-gray-200 shadow-sm rounded-full px-2.5 py-1 font-semibold whitespace-nowrap">
                             {badge}
@@ -669,7 +669,7 @@ export default function Home() {
 
                 {/* ── Signup Perk Banner (hidden for logged-in users) ── */}
                 {!session && (
-                    <div className="mx-3 mb-4">
+                    <div className="mx-3 mb-3">
                         <Link href="/signup"
                             className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-2xl bg-gradient-to-r from-blue-600 to-pink-500 text-white text-[13px] font-extrabold shadow-md hover:opacity-90 transition-opacity">
                             {t.signupBanner}
@@ -682,7 +682,7 @@ export default function Home() {
 
                 {/* ── FOR YOU Curation ── */}
                 {showTodayPick.length > 0 && (
-                    <div className="mb-2">
+                    <div className="mb-1">
                         <div className="px-3 flex items-center gap-2 mb-2">
                             <div className="w-7 h-7 rounded-full bg-brand-primary/10 flex items-center justify-center">
                                 <span className="text-[9px] font-extrabold text-brand-primary">{t.forYou}</span>

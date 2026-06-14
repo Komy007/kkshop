@@ -172,8 +172,8 @@ export default function CategoryShortcuts() {
     const t = shortcutTranslations[language] ?? shortcutTranslations.en;
 
     return (
-        <section className="py-4 px-3 bg-white" aria-label="Category shortcuts">
-            <div className="grid grid-cols-5 gap-y-5 gap-x-1">
+        <section className="py-3 px-3 bg-white" aria-label="Category shortcuts">
+            <div className="grid grid-cols-5 gap-y-3 gap-x-1">
                 {shortcuts.map((item, i) => {
                     const Icon = item.icon;
                     return (
@@ -200,7 +200,7 @@ export default function CategoryShortcuts() {
                                     className={`
                                         cat-tile cat-shine
                                         relative
-                                        w-[60px] h-[60px] sm:w-[68px] sm:h-[68px]
+                                        w-[48px] h-[48px] sm:w-[52px] sm:h-[52px]
                                         rounded-2xl
                                         flex items-center justify-center
                                         shadow-lg ${item.shadowColor}
@@ -229,7 +229,7 @@ export default function CategoryShortcuts() {
                                     {/* Icon — gentle float, springs on hover */}
                                     <Icon
                                         className={`
-                                            relative z-20 w-6 h-6 sm:w-7 sm:h-7
+                                            relative z-20 w-5 h-5 sm:w-6 sm:h-6
                                             ${item.iconColor}
                                             drop-shadow-sm
                                             group-hover:scale-110
