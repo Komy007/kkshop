@@ -100,33 +100,33 @@ const MINI_CATS = [
 // ─── Brand Slide ──────────────────────────────────────────────────────────────
 function BrandSlide({ t }: { t: any }) {
     return (
-        <div className="relative w-full h-full flex flex-col justify-between bg-gradient-to-br from-[#1a1a2e] via-[#16213e] to-[#0f3460] overflow-hidden px-5 pt-4 pb-3">
+        <div className="relative w-full h-full flex flex-col justify-between bg-gradient-to-br from-[#1a1a2e] via-[#16213e] to-[#0f3460] overflow-hidden px-4 pt-3 pb-2">
             <div
                 className="absolute inset-0 opacity-20 pointer-events-none"
                 style={{ backgroundImage: 'radial-gradient(circle at 18% 55%, #e94560 0%, transparent 55%), radial-gradient(circle at 80% 15%, #6366f1 0%, transparent 50%)' }}
             />
             <div className="relative z-10">
-                <span className="inline-flex items-center text-[9px] font-extrabold text-white/70 bg-white/10 border border-white/20 px-2.5 py-1 rounded-full mb-2 uppercase tracking-widest">
+                <span className="inline-flex items-center text-[8px] font-extrabold text-white/70 bg-white/10 border border-white/20 px-2 py-0.5 rounded-full mb-1.5 uppercase tracking-widest">
                     🇰🇷 {t.heroBadge}
                 </span>
-                <h2 className="text-[18px] sm:text-xl font-black text-white leading-tight whitespace-pre-line drop-shadow mb-1.5">
+                <h2 className="text-[15px] sm:text-[17px] font-black text-white leading-tight whitespace-pre-line drop-shadow mb-1">
                     {t.heroTitle}
                 </h2>
-                <p className="text-[10px] sm:text-[11px] text-white/55 line-clamp-2 leading-relaxed mb-3">
+                <p className="text-[9px] sm:text-[10px] text-white/55 line-clamp-1 leading-relaxed mb-2">
                     {t.heroSub}
                 </p>
                 <Link
                     href="/category"
-                    className="inline-flex items-center gap-1.5 bg-white text-gray-900 text-[11px] font-extrabold px-4 py-1.5 rounded-full hover:bg-gray-100 transition-colors shadow-md"
+                    className="inline-flex items-center gap-1 bg-white text-gray-900 text-[10px] font-extrabold px-3 py-1 rounded-full hover:bg-gray-100 transition-colors shadow-md"
                 >
-                    {t.shopNow} <ArrowRight className="w-3 h-3" />
+                    {t.shopNow} <ArrowRight className="w-2.5 h-2.5" />
                 </Link>
             </div>
             {/* Category quick-links */}
-            <div className="relative z-10 flex items-center justify-around pt-2 border-t border-white/10">
+            <div className="relative z-10 flex items-center justify-around pt-1.5 border-t border-white/10">
                 {MINI_CATS.map(({ slug, Icon, color }) => (
-                    <Link key={slug} href={`/category/${slug}`} className="hover:scale-125 transition-transform duration-200 p-1">
-                        <Icon className={`w-4 h-4 ${color} drop-shadow-sm`} strokeWidth={1.8} />
+                    <Link key={slug} href={`/category/${slug}`} className="hover:scale-125 transition-transform duration-200 p-0.5">
+                        <Icon className={`w-3.5 h-3.5 ${color} drop-shadow-sm`} strokeWidth={1.8} />
                     </Link>
                 ))}
             </div>
@@ -170,14 +170,14 @@ function SingleProductSlide({ slide, priority = false }: { slide: FlatSlide; pri
             )}
 
             {/* Top vignette — badge readability */}
-            <div className="absolute top-0 left-0 right-0 h-14 bg-gradient-to-b from-black/40 to-transparent pointer-events-none" />
+            <div className="absolute top-0 left-0 right-0 h-10 bg-gradient-to-b from-black/35 to-transparent pointer-events-none" />
 
-            {/* Bottom gradient — text overlay (taller + more opaque for image bleed) */}
-            <div className="absolute bottom-0 left-0 right-0 h-[96px] bg-gradient-to-t from-black/95 via-black/70 to-transparent" />
+            {/* Bottom gradient — text overlay */}
+            <div className="absolute bottom-0 left-0 right-0 h-[72px] bg-gradient-to-t from-black/95 via-black/65 to-transparent" />
 
-            {/* Badge — top-left (z above top vignette) */}
+            {/* Badge — top-left */}
             {slide.badge && (
-                <span className={`absolute top-3 left-3 z-10 text-[11px] font-black text-white px-2.5 py-1 rounded-md shadow-lg ${
+                <span className={`absolute top-2 left-2.5 z-10 text-[10px] font-black text-white px-2 py-0.5 rounded shadow-lg ${
                     slide.badge === 'HOT' ? 'bg-red-500' :
                     slide.badge === 'NEW' ? 'bg-blue-500' : 'bg-amber-500'
                 }`}>
@@ -187,21 +187,21 @@ function SingleProductSlide({ slide, priority = false }: { slide: FlatSlide; pri
 
             {/* Discount % — top-right */}
             {discountPct > 0 && (
-                <span className="absolute top-3 right-3 z-10 bg-yellow-300 text-red-700 text-[11px] font-black px-2.5 py-1 rounded-md shadow-lg">
+                <span className="absolute top-2 right-2.5 z-10 bg-yellow-300 text-red-700 text-[10px] font-black px-2 py-0.5 rounded shadow-lg">
                     -{discountPct}%
                 </span>
             )}
 
             {/* Bottom info bar */}
-            <div className="absolute bottom-0 left-0 right-0 z-10 h-[60px] flex items-center justify-between gap-3 px-4">
-                <p className="flex-1 min-w-0 text-white text-[13px] sm:text-[14px] font-bold leading-snug line-clamp-2 drop-shadow-md">
+            <div className="absolute bottom-0 left-0 right-0 z-10 h-[48px] flex items-center justify-between gap-2 px-3">
+                <p className="flex-1 min-w-0 text-white text-[11px] sm:text-[12px] font-bold leading-snug line-clamp-2 drop-shadow">
                     {p.name}
                 </p>
                 <div className="flex-shrink-0 text-right">
                     {hasDiscount && (
-                        <div className="text-white/60 text-[10px] line-through leading-none">${p.priceUsd.toFixed(2)}</div>
+                        <div className="text-white/55 text-[9px] line-through leading-none">${p.priceUsd.toFixed(2)}</div>
                     )}
-                    <div className="text-yellow-300 text-[20px] font-black leading-tight drop-shadow-md">
+                    <div className="text-yellow-300 text-[16px] font-black leading-tight drop-shadow">
                         ${price.toFixed(2)}
                     </div>
                 </div>
@@ -274,9 +274,9 @@ export default function HeroCarousel({ t, language }: HeroCarouselProps) {
     const slideWidthPct = slides.length > 0 ? 100 / slides.length : 100;
 
     return (
-        <div className="mt-2 mb-2">
+        <div className="mb-1">
             <div
-                className="relative overflow-hidden h-[300px] sm:h-[340px]"
+                className="relative overflow-hidden h-[215px] sm:h-[235px]"
                 style={{ touchAction: 'pan-y' }}
                 onTouchStart={onTouchStart}
                 onTouchEnd={onTouchEnd}
@@ -316,7 +316,7 @@ export default function HeroCarousel({ t, language }: HeroCarouselProps) {
 
                 {/* Dot indicators — above info bar */}
                 {slides.length > 1 && (
-                    <div className="absolute bottom-[64px] left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-20">
+                    <div className="absolute bottom-[52px] left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-20">
                         {slides.map((_, idx) => (
                             <button
                                 key={idx}
