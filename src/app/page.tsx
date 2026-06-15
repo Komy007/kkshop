@@ -4,6 +4,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import CategoryShortcuts from '@/components/CategoryShortcuts';
 import CurationSection from '@/components/CurationSection';
 import HeroCarousel from '@/components/HeroCarousel';
+import USPStrip from '@/components/USPStrip';
 import Footer from '@/components/Footer';
 import { useSafeAppStore } from '@/store/useAppStore';
 import { Search, Star, Flame, Crown, ChevronRight, Zap, Clock, Plus, CheckCircle, X, ArrowUp } from 'lucide-react';
@@ -538,7 +539,6 @@ export default function Home() {
     const [showHot, setShowHot] = useState<TranslatedProduct[]>([]);
     const [showNew, setShowNew] = useState<TranslatedProduct[]>([]);
     const [showPopular, setShowPopular] = useState<TranslatedProduct[]>([]);
-    const [trustBadges, setTrustBadges] = useState<string[]>([]);
     const [topBanner, setTopBanner] = useState<any>(null);
     const [bannerClosed, setBannerClosed] = useState(false);
     const [placeholderIdx, setPlaceholderIdx] = useState(0);
@@ -564,15 +564,11 @@ export default function Home() {
             .then(r => r.ok ? r.json() : { products: [] })
             .then(data => setShowTodayPick(data.products ?? []))
             .catch(() => {});
-        fetch('/api/settings?keys=landing_trust_badges,landing_top_banner')
+        fetch('/api/settings?keys=landing_top_banner')
             .then(res => res.ok ? res.json() : [])
             .then(data => {
                 if (!Array.isArray(data)) return;
                 for (const s of data) {
-                    if (s.key === 'landing_trust_badges' && s.value) {
-                        const badges = Object.values(s.value as any) as string[];
-                        if (badges.length > 0) setTrustBadges(badges);
-                    }
                     if (s.key === 'landing_top_banner' && s.value?.isActive) setTopBanner(s.value);
                 }
             })
@@ -611,7 +607,6 @@ export default function Home() {
         return () => clearInterval(interval);
     }, [mounted, language]);
 
-    const activeBadges = trustBadges.length > 0 ? trustBadges : [t.freeShipping, t.authentic, t.fast];
     const keywords = (homeT[language]?.searchKeywords || homeT.en.searchKeywords) as string[];
     const currentPlaceholder = mounted ? keywords[placeholderIdx] : t.searchPlaceholder;
 
@@ -647,16 +642,10 @@ export default function Home() {
                 </div>
 
                 {/* ── Hero Carousel ── */}
-                <HeroCarousel t={t} language={language} />
+                <HeroCarousel language={language} />
 
-                {/* ── Trust Badge Strip ── */}
-                <div className="flex items-center gap-2 px-3 py-1.5 overflow-x-auto scrollbar-hide">
-                    {activeBadges.map((badge, i) => (
-                        <span key={i} className="flex-shrink-0 text-[11px] text-gray-700 bg-white border border-gray-200 shadow-sm rounded-full px-2.5 py-1 font-semibold whitespace-nowrap">
-                            {badge}
-                        </span>
-                    ))}
-                </div>
+                {/* ── USP Strip ── */}
+                <USPStrip />
 
                 {/* ── Live Purchase Ticker ── */}
                 <PurchaseTicker t={t} />
