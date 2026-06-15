@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { ShieldCheck, Star, Store } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface CarouselProduct {
@@ -25,16 +26,59 @@ interface RawSlide {
     pool2?: CarouselProduct[];
 }
 
-interface FlatSlide {
+type ProductSlideData = {
     type: 'product';
     product: CarouselProduct;
     badge?: 'HOT' | 'NEW' | 'BEST';
     gradient: string;
-}
+};
+
+type FlatSlide = { type: 'usp' } | ProductSlideData;
 
 interface HeroCarouselProps {
     language: string;
 }
+
+// ─── USP Slide Content (4 languages) ──────────────────────────────────────────
+interface USPItem { title: string; sub: string; href: string | null; iconColor: string; iconBg: string; }
+interface USPData { tagline: string; items: [USPItem, USPItem, USPItem]; }
+
+const USP_CONTENT: Record<string, USPData> = {
+    en: {
+        tagline: 'WHY KKSHOP?',
+        items: [
+            { title: '100% Korean\nCosmetics', sub: 'Authentic · Certified', href: null, iconColor: 'text-rose-400', iconBg: 'bg-rose-400/20' },
+            { title: 'Korean-Curated\nQuality', sub: 'Every item hand-picked', href: null, iconColor: 'text-amber-300', iconBg: 'bg-amber-300/20' },
+            { title: 'Sell\nWith Us', sub: 'Open your store →', href: '/seller/register', iconColor: 'text-violet-300', iconBg: 'bg-violet-300/20' },
+        ],
+    },
+    ko: {
+        tagline: '왜 KKShop인가요?',
+        items: [
+            { title: '화장품\n한국산 100%', sub: '정품 인증 · 직접 수입', href: null, iconColor: 'text-rose-400', iconBg: 'bg-rose-400/20' },
+            { title: '한국인이\n직접 큐레이션', sub: '엄선된 품질 보장', href: null, iconColor: 'text-amber-300', iconBg: 'bg-amber-300/20' },
+            { title: '셀러\n입점 모집', sub: '지금 신청하기 →', href: '/seller/register', iconColor: 'text-violet-300', iconBg: 'bg-violet-300/20' },
+        ],
+    },
+    km: {
+        tagline: 'ហេតុអ្វីជ្រើស KKShop?',
+        items: [
+            { title: 'គ្រឿងសំអាងកូរ៉េ\n100%', sub: 'ពិតប្រាកដ · បញ្ជាក់', href: null, iconColor: 'text-rose-400', iconBg: 'bg-rose-400/20' },
+            { title: 'ជ្រើសរើស\nដោយជំនាញ', sub: 'គ្រប់ទំនិញ', href: null, iconColor: 'text-amber-300', iconBg: 'bg-amber-300/20' },
+            { title: 'ចូលជា\nអ្នកលក់', sub: 'ចុះឈ្មោះឥឡូវ →', href: '/seller/register', iconColor: 'text-violet-300', iconBg: 'bg-violet-300/20' },
+        ],
+    },
+    zh: {
+        tagline: '为什么选择KKShop?',
+        items: [
+            { title: '化妆品100%\n韩国正品', sub: '正品认证 · 直接进口', href: null, iconColor: 'text-rose-400', iconBg: 'bg-rose-400/20' },
+            { title: '韩国人\n精选品质', sub: '每件商品精挑细选', href: null, iconColor: 'text-amber-300', iconBg: 'bg-amber-300/20' },
+            { title: '欢迎\n入驻开店', sub: '立即申请 →', href: '/seller/register', iconColor: 'text-violet-300', iconBg: 'bg-violet-300/20' },
+        ],
+    },
+};
+
+const USP_ICONS = [ShieldCheck, Star, Store] as const;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function pickRandom<T>(arr: T[], n: number): T[] {
@@ -48,10 +92,8 @@ function pickOne<T>(arr: T[]): T | null {
     return arr[Math.floor(Math.random() * arr.length)];
 }
 
-// Brand slide removed — carousel is now 100% product images.
-// API still returns a 'brand' type first; we skip it here.
-function flattenSlides(rawSlides: RawSlide[]): FlatSlide[] {
-    const flat: FlatSlide[] = [];
+function flattenProductSlides(rawSlides: RawSlide[]): ProductSlideData[] {
+    const flat: ProductSlideData[] = [];
     for (const raw of rawSlides) {
         if (raw.type === 'brand') continue;
         if (raw.type === 'hotDeal') {
@@ -76,8 +118,56 @@ function flattenSlides(rawSlides: RawSlide[]): FlatSlide[] {
     return flat;
 }
 
-// ─── Single Product Slide ─────────────────────────────────────────────────────
-function ProductSlide({ slide, priority = false }: { slide: FlatSlide; priority?: boolean }) {
+// ─── USP Slide Component ──────────────────────────────────────────────────────
+function USPSlide({ language }: { language: string }) {
+    const data = USP_CONTENT[language] ?? USP_CONTENT.en;
+
+    return (
+        <div className="relative w-full h-full overflow-hidden bg-gradient-to-br from-slate-900 via-[#1e1040] to-slate-900 flex flex-col items-center justify-center gap-5">
+            {/* Violet glow */}
+            <div
+                className="absolute inset-0 pointer-events-none opacity-30"
+                style={{ backgroundImage: 'radial-gradient(ellipse at 50% -10%, rgba(139,92,246,0.9) 0%, transparent 62%)' }}
+            />
+
+            {/* Tagline */}
+            <p className="relative text-white/40 text-[10px] font-bold tracking-[0.18em] uppercase">{data.tagline}</p>
+
+            {/* 3-column grid */}
+            <div className="relative flex w-full justify-around px-2">
+                {data.items.map((item, i) => {
+                    const Icon = USP_ICONS[i];
+                    const inner = (
+                        <div
+                            className={`flex flex-col items-center gap-2 text-center px-2 ${i < data.items.length - 1 ? 'border-r border-white/10' : ''}`}
+                            style={{ width: '30vw', maxWidth: '112px' }}
+                        >
+                            <div className={`w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 ${item.iconBg}`}>
+                                <Icon className={`w-[22px] h-[22px] ${item.iconColor}`} strokeWidth={2} />
+                            </div>
+                            <div>
+                                <p className="text-white text-[11px] font-bold leading-snug whitespace-pre-line">{item.title}</p>
+                                <p className={`text-[9px] mt-0.5 leading-tight ${item.href ? 'text-violet-300 font-semibold' : 'text-white/40'}`}>
+                                    {item.sub}
+                                </p>
+                            </div>
+                        </div>
+                    );
+                    return item.href ? (
+                        <Link key={i} href={item.href} className="active:opacity-70 transition-opacity">
+                            {inner}
+                        </Link>
+                    ) : (
+                        <div key={i}>{inner}</div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+}
+
+// ─── Product Slide Component ──────────────────────────────────────────────────
+function ProductSlide({ slide, priority = false }: { slide: ProductSlideData; priority?: boolean }) {
     const p = slide.product;
     const hasDiscount = p.isHotSale && p.hotSalePrice != null && p.hotSalePrice < p.priceUsd;
     const price = hasDiscount ? p.hotSalePrice! : p.priceUsd;
@@ -111,7 +201,7 @@ function ProductSlide({ slide, priority = false }: { slide: FlatSlide; priority?
                 </div>
             )}
 
-            {/* Top vignette — badge contrast */}
+            {/* Top vignette */}
             <div className="absolute top-0 left-0 right-0 h-10 bg-gradient-to-b from-black/35 to-transparent pointer-events-none" />
 
             {/* Bottom gradient — text overlay */}
@@ -154,7 +244,8 @@ function ProductSlide({ slide, priority = false }: { slide: FlatSlide; priority?
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function HeroCarousel({ language }: HeroCarouselProps) {
-    const [slides, setSlides] = useState<FlatSlide[]>([]);
+    // USP slide is always first — shown immediately, no shimmer needed
+    const [slides, setSlides] = useState<FlatSlide[]>([{ type: 'usp' }]);
     const [currentIdx, setCurrentIdx] = useState(0);
     const [sliding, setSliding] = useState(false);
     const [isTouching, setIsTouching] = useState(false);
@@ -167,8 +258,8 @@ export default function HeroCarousel({ language }: HeroCarouselProps) {
             .then(r => r.json())
             .then(data => {
                 if (Array.isArray(data.slides) && data.slides.length > 0) {
-                    const flat = flattenSlides(data.slides);
-                    if (flat.length > 0) setSlides(flat);
+                    const productSlides = flattenProductSlides(data.slides);
+                    setSlides([{ type: 'usp' }, ...productSlides]);
                 }
             })
             .catch(() => {});
@@ -212,15 +303,6 @@ export default function HeroCarousel({ language }: HeroCarouselProps) {
 
     const slideWidthPct = slides.length > 0 ? 100 / slides.length : 100;
 
-    // Skeleton while loading
-    if (slides.length === 0) {
-        return (
-            <div className="mb-1">
-                <div className="h-[215px] sm:h-[235px] shimmer" />
-            </div>
-        );
-    }
-
     return (
         <div className="mb-1">
             <div
@@ -246,7 +328,10 @@ export default function HeroCarousel({ language }: HeroCarouselProps) {
                             key={i}
                             style={{ width: `${slideWidthPct}%`, flexShrink: 0, height: '100%', position: 'relative' }}
                         >
-                            <ProductSlide slide={slide} priority={i < 2} />
+                            {slide.type === 'usp'
+                                ? <USPSlide language={language} />
+                                : <ProductSlide slide={slide} priority={i < 2} />
+                            }
                         </div>
                     ))}
                 </div>
