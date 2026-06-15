@@ -143,36 +143,39 @@ function SingleProductSlide({ slide, priority = false }: { slide: FlatSlide; pri
 
     return (
         <Link href={`/products/${p.id}`} className={`block relative w-full h-full bg-gradient-to-br ${slide.gradient} overflow-hidden`}>
-            {/* Subtle light spot top-right */}
+            {/* Background light orb — top-right glow */}
             <div
-                className="absolute inset-0 opacity-20 pointer-events-none"
-                style={{ backgroundImage: 'radial-gradient(circle at 75% 20%, rgba(255,255,255,0.8) 0%, transparent 55%)' }}
+                className="absolute inset-0 opacity-25 pointer-events-none"
+                style={{ backgroundImage: 'radial-gradient(circle at 70% 15%, rgba(255,255,255,0.9) 0%, transparent 55%)' }}
             />
 
-            {/* Product image — large, centered, leaves bottom 60px for overlay */}
+            {/* Product image — full height bleed, gradient covers bottom text area */}
             {p.imageUrl ? (
-                <div className="absolute inset-x-0 top-0 bottom-[60px] flex items-center justify-center px-10 py-4">
+                <div className="absolute inset-x-5 top-0 bottom-0">
                     <div className="relative w-full h-full">
                         <Image
                             src={p.imageUrl}
                             alt={p.name}
                             fill
-                            sizes="100vw"
-                            className="object-contain drop-shadow-2xl"
+                            sizes="(max-width: 640px) 90vw, 50vw"
+                            className="object-contain drop-shadow-[0_8px_24px_rgba(0,0,0,0.45)]"
                             priority={priority}
                         />
                     </div>
                 </div>
             ) : (
-                <div className="absolute inset-x-0 top-0 bottom-[60px] flex items-center justify-center">
-                    <span className="text-6xl opacity-30">🛍</span>
+                <div className="absolute inset-0 flex items-center justify-center pb-14">
+                    <span className="text-7xl opacity-30">🛍</span>
                 </div>
             )}
 
-            {/* Bottom gradient overlay */}
-            <div className="absolute bottom-0 left-0 right-0 h-[80px] bg-gradient-to-t from-black/80 via-black/50 to-transparent" />
+            {/* Top vignette — badge readability */}
+            <div className="absolute top-0 left-0 right-0 h-14 bg-gradient-to-b from-black/40 to-transparent pointer-events-none" />
 
-            {/* Badge — top-left */}
+            {/* Bottom gradient — text overlay (taller + more opaque for image bleed) */}
+            <div className="absolute bottom-0 left-0 right-0 h-[96px] bg-gradient-to-t from-black/95 via-black/70 to-transparent" />
+
+            {/* Badge — top-left (z above top vignette) */}
             {slide.badge && (
                 <span className={`absolute top-3 left-3 z-10 text-[11px] font-black text-white px-2.5 py-1 rounded-md shadow-lg ${
                     slide.badge === 'HOT' ? 'bg-red-500' :
@@ -191,14 +194,14 @@ function SingleProductSlide({ slide, priority = false }: { slide: FlatSlide; pri
 
             {/* Bottom info bar */}
             <div className="absolute bottom-0 left-0 right-0 z-10 h-[60px] flex items-center justify-between gap-3 px-4">
-                <p className="flex-1 min-w-0 text-white text-[12px] sm:text-[13px] font-bold leading-snug line-clamp-2 drop-shadow">
+                <p className="flex-1 min-w-0 text-white text-[13px] sm:text-[14px] font-bold leading-snug line-clamp-2 drop-shadow-md">
                     {p.name}
                 </p>
                 <div className="flex-shrink-0 text-right">
                     {hasDiscount && (
-                        <div className="text-white/55 text-[9px] line-through leading-none">${p.priceUsd.toFixed(2)}</div>
+                        <div className="text-white/60 text-[10px] line-through leading-none">${p.priceUsd.toFixed(2)}</div>
                     )}
-                    <div className="text-yellow-300 text-[18px] font-black leading-tight drop-shadow">
+                    <div className="text-yellow-300 text-[20px] font-black leading-tight drop-shadow-md">
                         ${price.toFixed(2)}
                     </div>
                 </div>
@@ -273,7 +276,7 @@ export default function HeroCarousel({ t, language }: HeroCarouselProps) {
     return (
         <div className="mt-2 mb-2">
             <div
-                className="relative overflow-hidden h-[270px] sm:h-[300px]"
+                className="relative overflow-hidden h-[300px] sm:h-[340px]"
                 style={{ touchAction: 'pan-y' }}
                 onTouchStart={onTouchStart}
                 onTouchEnd={onTouchEnd}
@@ -313,7 +316,7 @@ export default function HeroCarousel({ t, language }: HeroCarouselProps) {
 
                 {/* Dot indicators — above info bar */}
                 {slides.length > 1 && (
-                    <div className="absolute bottom-[66px] left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-20">
+                    <div className="absolute bottom-[64px] left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-20">
                         {slides.map((_, idx) => (
                             <button
                                 key={idx}
