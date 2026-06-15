@@ -543,16 +543,10 @@ export default function Home() {
     const [bannerClosed, setBannerClosed] = useState(false);
     const [placeholderIdx, setPlaceholderIdx] = useState(0);
     const [placeholderFade, setPlaceholderFade] = useState(true);
-    const [hotFetched, setHotFetched] = useState(false);
-    const [newFetched, setNewFetched] = useState(false);
-    const [popularFetched, setPopularFetched] = useState(false);
+    const [sectionsFetched, setSectionsFetched] = useState(false);
 
     const hotRef = useRef<HTMLDivElement>(null);
-    const newRef = useRef<HTMLDivElement>(null);
-    const popularRef = useRef<HTMLDivElement>(null);
     const hotInView = useInView(hotRef);
-    const newInView = useInView(newRef);
-    const popularInView = useInView(popularRef);
 
     // Mount init
     useEffect(() => {
@@ -585,35 +579,21 @@ export default function Home() {
             .catch(() => {});
     }, [mounted, language]);
 
-    // Trigger lazy fetches on first viewport entry
-    useEffect(() => { if (hotInView) setHotFetched(true); }, [hotInView]);
-    useEffect(() => { if (newInView) setNewFetched(true); }, [newInView]);
-    useEffect(() => { if (popularInView) setPopularFetched(true); }, [popularInView]);
+    // Trigger unified sections fetch when hot section enters viewport
+    useEffect(() => { if (hotInView) setSectionsFetched(true); }, [hotInView]);
 
-    // Lazy fetches (re-run on language change once fetched)
+    // Single API call — hot/new/popular deduplicated server-side, no overlap
     useEffect(() => {
-        if (!hotFetched) return;
-        fetch(`/api/products?lang=${language}&limit=8&section=hot`)
-            .then(r => r.ok ? r.json() : { products: [] })
-            .then(data => setShowHot(data.products ?? []))
+        if (!sectionsFetched) return;
+        fetch(`/api/homepage/sections?lang=${language}`)
+            .then(r => r.ok ? r.json() : {})
+            .then(data => {
+                if (Array.isArray(data.hot))     setShowHot(data.hot);
+                if (Array.isArray(data.new))     setShowNew(data.new);
+                if (Array.isArray(data.popular)) setShowPopular(data.popular);
+            })
             .catch(() => {});
-    }, [hotFetched, language]);
-
-    useEffect(() => {
-        if (!newFetched) return;
-        fetch(`/api/products?lang=${language}&limit=8&section=new`)
-            .then(r => r.ok ? r.json() : { products: [] })
-            .then(data => setShowNew(data.products ?? []))
-            .catch(() => {});
-    }, [newFetched, language]);
-
-    useEffect(() => {
-        if (!popularFetched) return;
-        fetch(`/api/products?lang=${language}&limit=8&section=popular`)
-            .then(r => r.ok ? r.json() : { products: [] })
-            .then(data => setShowPopular(data.products ?? []))
-            .catch(() => {});
-    }, [popularFetched, language]);
+    }, [sectionsFetched, language]);
 
     // Rotating search placeholder (client-only, respects prefers-reduced-motion)
     useEffect(() => {
@@ -732,7 +712,7 @@ export default function Home() {
                 </div>
 
                 {/* ── New Arrivals Grid (lazy) ── */}
-                <div ref={newRef}>
+                <div>
                     {showNew.length > 0 ? (
                         <ProductGrid
                             products={showNew}
@@ -750,7 +730,7 @@ export default function Home() {
                 </div>
 
                 {/* ── Popular Products Grid (lazy) ── */}
-                <div ref={popularRef}>
+                <div>
                     {showPopular.length > 0 ? (
                         <ProductGrid
                             products={showPopular}
