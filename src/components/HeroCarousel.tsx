@@ -135,7 +135,7 @@ function BrandSlide({ t }: { t: any }) {
 }
 
 // ─── Single Product Slide ─────────────────────────────────────────────────────
-function SingleProductSlide({ slide }: { slide: FlatSlide }) {
+function SingleProductSlide({ slide, priority = false }: { slide: FlatSlide; priority?: boolean }) {
     const p = slide.product!;
     const hasDiscount = p.isHotSale && p.hotSalePrice != null && p.hotSalePrice < p.priceUsd;
     const price = hasDiscount ? p.hotSalePrice! : p.priceUsd;
@@ -159,6 +159,7 @@ function SingleProductSlide({ slide }: { slide: FlatSlide }) {
                             fill
                             sizes="100vw"
                             className="object-contain drop-shadow-2xl"
+                            priority={priority}
                         />
                     </div>
                 </div>
@@ -210,11 +211,11 @@ function SingleProductSlide({ slide }: { slide: FlatSlide }) {
 export default function HeroCarousel({ t, language }: HeroCarouselProps) {
     const [slides, setSlides] = useState<FlatSlide[]>([{ type: 'brand', gradient: 'from-[#1a1a2e] to-[#0f3460]' }]);
     const [currentIdx, setCurrentIdx] = useState(0);
-    const [visible, setVisible] = useState(true);
+    const [sliding, setSliding] = useState(false);
     const [isTouching, setIsTouching] = useState(false);
     const [touchStartX, setTouchStartX] = useState(0);
-    const transitioning = useRef(false);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
+    const slideTimerRef = useRef<NodeJS.Timeout | null>(null);
 
     // Fetch carousel data and flatten into individual product slides
     useEffect(() => {
@@ -228,16 +229,13 @@ export default function HeroCarousel({ t, language }: HeroCarouselProps) {
             .catch(() => {});
     }, [language]);
 
-    // Simple fade transition
+    // CSS translateX slide — GPU-accelerated, all slides stay in DOM
     const goTo = useCallback((idx: number) => {
-        if (transitioning.current || idx === currentIdx) return;
-        transitioning.current = true;
-        setVisible(false);
-        setTimeout(() => {
-            setCurrentIdx(idx);
-            setVisible(true);
-            transitioning.current = false;
-        }, 200);
+        if (idx === currentIdx) return;
+        setSliding(true);
+        setCurrentIdx(idx);
+        if (slideTimerRef.current) clearTimeout(slideTimerRef.current);
+        slideTimerRef.current = setTimeout(() => setSliding(false), 380);
     }, [currentIdx]);
 
     const goNext = useCallback(() => {
@@ -251,6 +249,11 @@ export default function HeroCarousel({ t, language }: HeroCarouselProps) {
         return () => { if (timerRef.current) clearInterval(timerRef.current); };
     }, [goNext, isTouching, slides.length]);
 
+    // Cleanup slide timer on unmount
+    useEffect(() => {
+        return () => { if (slideTimerRef.current) clearTimeout(slideTimerRef.current); };
+    }, []);
+
     const onTouchStart = (e: React.TouchEvent) => {
         setIsTouching(true);
         setTouchStartX(e.touches[0].clientX);
@@ -258,41 +261,59 @@ export default function HeroCarousel({ t, language }: HeroCarouselProps) {
     const onTouchEnd = (e: React.TouchEvent) => {
         setIsTouching(false);
         const diff = touchStartX - e.changedTouches[0].clientX;
-        if (Math.abs(diff) > 50) {
+        if (Math.abs(diff) > 40) {
             diff > 0
                 ? goTo((currentIdx + 1) % slides.length)
                 : goTo((currentIdx - 1 + slides.length) % slides.length);
         }
     };
 
-    const current = slides[currentIdx] ?? slides[0];
+    const slideWidthPct = slides.length > 0 ? 100 / slides.length : 100;
 
     return (
         <div className="mt-2 mb-2">
             <div
                 className="relative overflow-hidden h-[270px] sm:h-[300px]"
+                style={{ touchAction: 'pan-y' }}
                 onTouchStart={onTouchStart}
                 onTouchEnd={onTouchEnd}
                 onMouseEnter={() => setIsTouching(true)}
                 onMouseLeave={() => setIsTouching(false)}
             >
-                {/* Slide content — simple fade */}
+                {/* All slides in DOM simultaneously — GPU translateX transition */}
                 <div
-                    className="absolute inset-0 transition-opacity duration-200"
-                    style={{ opacity: visible ? 1 : 0 }}
+                    className="flex h-full"
+                    style={{
+                        width: `${slides.length * 100}%`,
+                        transform: `translateX(-${currentIdx * slideWidthPct}%)`,
+                        transition: sliding ? 'transform 360ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
+                        willChange: 'transform',
+                    }}
                 >
-                    {current?.type === 'brand' ? (
-                        <BrandSlide t={t} />
-                    ) : current?.product ? (
-                        <SingleProductSlide slide={current} />
-                    ) : (
-                        <BrandSlide t={t} />
-                    )}
+                    {slides.map((slide, i) => (
+                        <div
+                            key={i}
+                            style={{
+                                width: `${slideWidthPct}%`,
+                                flexShrink: 0,
+                                height: '100%',
+                                position: 'relative',
+                            }}
+                        >
+                            {slide.type === 'brand' ? (
+                                <BrandSlide t={t} />
+                            ) : slide.product ? (
+                                <SingleProductSlide slide={slide} priority={i < 2} />
+                            ) : (
+                                <BrandSlide t={t} />
+                            )}
+                        </div>
+                    ))}
                 </div>
 
-                {/* Dot indicators */}
+                {/* Dot indicators — above info bar */}
                 {slides.length > 1 && (
-                    <div className="absolute bottom-[68px] left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-20">
+                    <div className="absolute bottom-[66px] left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-20">
                         {slides.map((_, idx) => (
                             <button
                                 key={idx}

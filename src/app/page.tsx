@@ -6,7 +6,7 @@ import CurationSection from '@/components/CurationSection';
 import HeroCarousel from '@/components/HeroCarousel';
 import Footer from '@/components/Footer';
 import { useSafeAppStore } from '@/store/useAppStore';
-import { Search, Star, Flame, Crown, ChevronRight, Zap, Clock, Plus, CheckCircle, X } from 'lucide-react';
+import { Search, Star, Flame, Crown, ChevronRight, Zap, Clock, Plus, CheckCircle, X, ArrowUp } from 'lucide-react';
 import { NewArrivalIcon } from '@/components/NewArrivalIcon';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -15,6 +15,7 @@ import { useCartStore } from '@/store/useCartStore';
 import { useSession } from 'next-auth/react';
 
 const PLACEHOLDER_IMG = 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&q=80&w=400';
+const BLUR_DATA_URL = 'data:image/gif;base64,R0lGODlhAQABAIAAAMLCwgAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==';
 
 interface FlashSaleItem {
     id: string;
@@ -55,6 +56,8 @@ const homeT: Record<string, any> = {
         tickerBought: '구매',
         tickerMinAgo: '분 전',
         tickerHrAgo: '시간 전',
+        stockLeft: '잔여',
+        stockUnit: '개',
     },
     en: {
         searchPlaceholder: 'Search products or brands',
@@ -81,6 +84,8 @@ const homeT: Record<string, any> = {
         tickerBought: 'bought',
         tickerMinAgo: ' min ago',
         tickerHrAgo: ' hr ago',
+        stockLeft: 'Only',
+        stockUnit: 'left',
     },
     km: {
         searchPlaceholder: 'ស្វែងរកផលិតផល',
@@ -107,6 +112,8 @@ const homeT: Record<string, any> = {
         tickerBought: 'បានទិញ',
         tickerMinAgo: ' នាទីមុន',
         tickerHrAgo: ' ម៉ោងមុន',
+        stockLeft: 'នៅ',
+        stockUnit: 'ទៀត',
     },
     zh: {
         searchPlaceholder: '搜索商品或品牌',
@@ -133,6 +140,8 @@ const homeT: Record<string, any> = {
         tickerBought: '购买了',
         tickerMinAgo: '分钟前',
         tickerHrAgo: '小时前',
+        stockLeft: '仅剩',
+        stockUnit: '件',
     }
 };
 
@@ -300,6 +309,8 @@ function ProductCard({ product, t }: { product: TranslatedProduct; t: any }) {
                     fill
                     sizes="(max-width: 768px) 130px, 16vw"
                     className={`object-cover transition-transform duration-300 ${isSoldOut ? 'opacity-60' : 'group-hover:scale-105'}`}
+                    placeholder="blur"
+                    blurDataURL={BLUR_DATA_URL}
                     onError={() => setImgError(true)}
                 />
                 {isSoldOut ? (
@@ -318,6 +329,11 @@ function ProductCard({ product, t }: { product: TranslatedProduct; t: any }) {
                         )}
                         {discountPct > 0 && (
                             <div className="absolute top-1.5 right-1.5 bg-rose-500 text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded shadow-sm">{discountPct}%</div>
+                        )}
+                        {product.stockQty != null && product.stockQty > 0 && product.stockQty <= 5 && (
+                            <div className="absolute bottom-1.5 left-1.5 bg-black/75 text-white text-[9px] font-bold px-1.5 py-0.5 rounded whitespace-nowrap">
+                                {t.stockLeft} {product.stockQty}{t.stockUnit}
+                            </div>
                         )}
                         <button
                             onClick={handleQuickAdd}
@@ -517,6 +533,7 @@ export default function Home() {
     const session = sessionResult?.data;
 
     const [mounted, setMounted] = useState(false);
+    const [showScrollTop, setShowScrollTop] = useState(false);
     const [showTodayPick, setShowTodayPick] = useState<TranslatedProduct[]>([]);
     const [showHot, setShowHot] = useState<TranslatedProduct[]>([]);
     const [showNew, setShowNew] = useState<TranslatedProduct[]>([]);
@@ -541,6 +558,9 @@ export default function Home() {
     useEffect(() => {
         setMounted(true);
         try { setBannerClosed(sessionStorage.getItem('home_top_banner_closed') === '1'); } catch {}
+        const onScroll = () => setShowScrollTop(window.scrollY > 300);
+        window.addEventListener('scroll', onScroll, { passive: true });
+        return () => window.removeEventListener('scroll', onScroll);
     }, []);
 
     // Eager: settings + curation todaypick
@@ -703,13 +723,11 @@ export default function Home() {
                             viewAllHref="/category/all?sort=hot"
                             t={t}
                         />
-                    ) : hotFetched ? (
+                    ) : (
                         <ProductGridSkeleton
                             title={`🔥 ${t.hotSale}`}
                             icon={<span className="badge-3d bg-gradient-to-r from-red-500 to-orange-500 text-white"><Flame className="w-3.5 h-3.5" /></span>}
                         />
-                    ) : (
-                        <div className="h-44" />
                     )}
                 </div>
 
@@ -723,13 +741,11 @@ export default function Home() {
                             viewAllHref="/category/new?sort=newest"
                             t={t}
                         />
-                    ) : newFetched ? (
+                    ) : (
                         <ProductGridSkeleton
                             title={`✨ ${t.newArrival}`}
                             icon={<span className="badge-3d bg-gradient-to-r from-blue-500 to-cyan-500 text-white"><NewArrivalIcon className="w-3.5 h-3.5" /></span>}
                         />
-                    ) : (
-                        <div className="h-44" />
                     )}
                 </div>
 
@@ -743,17 +759,25 @@ export default function Home() {
                             viewAllHref="/category/all?sort=popular"
                             t={t}
                         />
-                    ) : popularFetched ? (
+                    ) : (
                         <ProductGridSkeleton
                             title={`👑 ${t.popular}`}
                             icon={<span className="badge-3d bg-gradient-to-r from-amber-500 to-yellow-500 text-white"><Crown className="w-3.5 h-3.5" /></span>}
                         />
-                    ) : (
-                        <div className="h-44" />
                     )}
                 </div>
             </main>
             <Footer />
+            {/* Scroll-to-top FAB */}
+            {showScrollTop && (
+                <button
+                    onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                    className="fixed bottom-20 right-4 z-50 w-10 h-10 rounded-full bg-white border border-gray-200 shadow-lg flex items-center justify-center hover:bg-gray-50 active:scale-90 transition-all duration-200"
+                    aria-label="Scroll to top"
+                >
+                    <ArrowUp className="w-4 h-4 text-gray-600" />
+                </button>
+            )}
         </>
     );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSafeAppStore } from '@/store/useAppStore';
 import {
@@ -170,6 +170,16 @@ export default function CategoryShortcuts() {
     const store = useSafeAppStore();
     const { language } = store || { language: 'en' };
     const t = shortcutTranslations[language] ?? shortcutTranslations.en;
+    const [shouldAnimate, setShouldAnimate] = useState(false);
+
+    useEffect(() => {
+        try {
+            if (!sessionStorage.getItem('cat_animated')) {
+                setShouldAnimate(true);
+                sessionStorage.setItem('cat_animated', '1');
+            }
+        } catch {}
+    }, []);
 
     return (
         <section className="py-3 px-3 bg-white" aria-label="Category shortcuts">
@@ -180,8 +190,8 @@ export default function CategoryShortcuts() {
                         <Link
                             key={item.key}
                             href={item.href}
-                            className="group flex flex-col items-center gap-2 cat-tile-enter"
-                            style={{ animationDelay: `${i * 45}ms` }}
+                            className={`group flex flex-col items-center gap-2${shouldAnimate ? ' cat-tile-enter' : ''}`}
+                            style={shouldAnimate ? { animationDelay: `${i * 45}ms` } : undefined}
                         >
                             {/* Icon circle with gradient + glass effect */}
                             <div className="relative">
