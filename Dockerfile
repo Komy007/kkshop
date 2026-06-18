@@ -11,6 +11,10 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+# Build-time public env vars — baked into the client JS bundle by Next.js
+ARG NEXT_PUBLIC_TELEGRAM_BOT_ID
+ENV NEXT_PUBLIC_TELEGRAM_BOT_ID=$NEXT_PUBLIC_TELEGRAM_BOT_ID
+
 # Ensure public directory exists
 RUN mkdir -p public
 
