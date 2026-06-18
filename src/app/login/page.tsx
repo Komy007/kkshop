@@ -55,17 +55,31 @@ function LoginContent() {
     const [googleLoading, setGoogleLoading] = useState(false);
     const [tgLoading, setTgLoading]         = useState(false);
     const [error, setError]                 = useState(urlError);
-    const tgScriptRef = useRef<HTMLDivElement>(null);
+    const tgScriptRef    = useRef<HTMLDivElement>(null);
+    // ref로 콜백 유지 — stale closure 방지
+    const onTelegramAuthRef = useRef<((user: any) => void) | null>(null);
 
-    // 백그라운드에서 Telegram 위젯 스크립트 로드 — Telegram.Login.auth() API 사용을 위함
+    // Telegram 위젯 스크립트 — 화면 밖(offscreen)에 렌더링해야 iframe이 정상 초기화됨
+    // display:none 이면 브라우저가 iframe 실행을 건너뛰어 Telegram.Login이 undefined로 남음
     useEffect(() => {
-        if (!tgScriptRef.current || tgScriptRef.current.childNodes.length > 0) return;
+        const ref = tgScriptRef.current;
+        if (!ref || ref.childNodes.length > 0) return;
+
+        (window as any).onTelegramAuth = (user: any) => {
+            setTgLoading(true);
+            onTelegramAuthRef.current?.(user);
+        };
+
         const script = document.createElement('script');
         script.src = 'https://telegram.org/js/telegram-widget.js?22';
         script.setAttribute('data-telegram-login', 'kkshop_loginbot');
         script.setAttribute('data-size', 'large');
+        script.setAttribute('data-onauth', 'onTelegramAuth(user)');
+        script.setAttribute('data-request-access', 'write');
         script.async = true;
-        tgScriptRef.current.appendChild(script);
+        ref.appendChild(script);
+
+        return () => { delete (window as any).onTelegramAuth; };
     }, []);
 
     // ── Google ──────────────────────────────────────────────────────────────
@@ -81,8 +95,6 @@ function LoginContent() {
     };
 
     // ── Telegram ─────────────────────────────────────────────────────────────
-    // Telegram.Login.auth() — 공식 위젯 내부 API
-    // 데스크탑: 팝업 / 모바일: 텔레그램 앱 딥링크 처리 모두 지원
     const onTelegramAuth = useCallback(async (user: any) => {
         if (!user?.id) { setTgLoading(false); return; }
         try {
@@ -109,6 +121,9 @@ function LoginContent() {
         }
     }, [router]);
 
+    // ref를 최신 콜백으로 항상 동기화
+    onTelegramAuthRef.current = onTelegramAuth;
+
     const handleTelegramLogin = () => {
         const tg = (window as any).Telegram;
         if (!tg?.Login) {
@@ -117,8 +132,9 @@ function LoginContent() {
         }
         setTgLoading(true);
         setError('');
+        // bot_id는 숫자여야 함, request_access는 'write' 문자열
         tg.Login.auth(
-            { bot_id: process.env.NEXT_PUBLIC_TELEGRAM_BOT_ID, request_access: true, lang: 'en' },
+            { bot_id: Number(process.env.NEXT_PUBLIC_TELEGRAM_BOT_ID), request_access: 'write' },
             (user: any) => {
                 if (!user) { setTgLoading(false); return; }
                 onTelegramAuth(user);
@@ -159,7 +175,12 @@ function LoginContent() {
 
     return (
         <>
-        <div ref={tgScriptRef} style={{ display: 'none' }} aria-hidden="true" />
+        {/* display:none이면 iframe이 초기화 안 됨 — fixed로 화면 밖에 렌더링 */}
+        <div
+            ref={tgScriptRef}
+            style={{ position: 'fixed', left: '-1000px', top: '-1000px', width: '250px', height: '60px', overflow: 'hidden' }}
+            aria-hidden="true"
+        />
         <div className="min-h-screen flex items-center justify-center px-4">
             <div className="w-full max-w-md">
                 {/* Header */}
