@@ -343,6 +343,8 @@ model User {
   preferredLanguage String    @default("en") @map("preferred_language") @db.VarChar(5)
   referralCode      String?   @unique @map("referral_code") @db.VarChar(20)  // 내 추천 코드
   referredByCode    String?   @map("referred_by_code") @db.VarChar(20)       // 가입 시 사용한 추천 코드
+  // 소셜 로그인
+  telegramId        String?   @unique @map("telegram_id") @db.VarChar(50)
   // 2FA (관리자 계정 보호)
   twoFactorSecret   String?   @map("two_factor_secret") @db.VarChar(255)
   twoFactorEnabled  Boolean   @default(false) @map("two_factor_enabled")

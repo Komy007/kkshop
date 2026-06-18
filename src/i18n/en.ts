@@ -182,7 +182,6 @@ const en: Translations = {
         signupLink: "Don't have an account? Sign Up",
         facebook: 'Continue with Facebook',
         telegram: 'Continue with Telegram',
-        tiktok: 'Continue with TikTok',
     },
     about: {
         badge: "Cambodia's #1 Korean Shopping Platform",

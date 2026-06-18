@@ -6,6 +6,7 @@ import bcrypt from "bcryptjs"
 import authConfig from "./auth.config"
 import { twoFactorCache } from "@/lib/twoFactorCache"
 import { checkRateLimit } from "@/lib/rateLimit"
+import { verifyTelegramAuth } from "@/lib/telegramAuth"
 
 const nextAuthEnv = NextAuth({
     ...authConfig,
@@ -27,6 +28,67 @@ const nextAuthEnv = NextAuth({
             })]
             : []
         ),
+        // ── Telegram Login ────────────────────────────────────────────────────
+        CredentialsProvider({
+            id: 'telegram',
+            name: 'Telegram',
+            credentials: {
+                id:         { type: 'text' },
+                first_name: { type: 'text' },
+                last_name:  { type: 'text' },
+                username:   { type: 'text' },
+                photo_url:  { type: 'text' },
+                auth_date:  { type: 'text' },
+                hash:       { type: 'text' },
+            },
+            async authorize(credentials) {
+                if (!credentials?.id || !credentials?.hash || !credentials?.auth_date) return null;
+
+                const isValid = verifyTelegramAuth({
+                    id:         Number(credentials.id),
+                    first_name: String(credentials.first_name || ''),
+                    last_name:  credentials.last_name  ? String(credentials.last_name)  : undefined,
+                    username:   credentials.username   ? String(credentials.username)   : undefined,
+                    photo_url:  credentials.photo_url  ? String(credentials.photo_url)  : undefined,
+                    auth_date:  Number(credentials.auth_date),
+                    hash:       String(credentials.hash),
+                });
+                if (!isValid) return null;
+
+                const telegramId = String(credentials.id);
+                const fullName = [credentials.first_name, credentials.last_name]
+                    .filter(Boolean).join(' ') || credentials.username || 'Telegram User';
+
+                let user = await prisma.user.findUnique({ where: { telegramId } });
+
+                if (!user) {
+                    user = await prisma.user.create({
+                        data: {
+                            telegramId,
+                            name: String(fullName),
+                            image: credentials.photo_url ? String(credentials.photo_url) : null,
+                            role: 'USER',
+                            emailVerified: new Date(),
+                        },
+                    });
+                } else if (credentials.photo_url && !user.image) {
+                    await prisma.user.update({
+                        where: { id: user.id },
+                        data: { image: String(credentials.photo_url) },
+                    });
+                }
+
+                return {
+                    id: user.id,
+                    name: user.name,
+                    image: user.image,
+                    role: user.role,
+                    preferredLanguage: user.preferredLanguage,
+                } as any;
+            },
+        }),
+
+        // ── Email / Password ──────────────────────────────────────────────────
         CredentialsProvider({
             name: "Credentials",
             credentials: {
@@ -153,6 +215,17 @@ const nextAuthEnv = NextAuth({
                     console.error('JWT callback DB lookup error:', err);
                 }
             }
+            // Telegram 로그인 — 온보딩 체크 (전화번호 없으면 필요)
+            if (user && account?.provider === 'telegram') {
+                try {
+                    const dbUser = await prisma.user.findUnique({
+                        where: { id: user.id as string },
+                        select: { phone: true },
+                    });
+                    if (dbUser) token.needsOnboarding = !dbUser.phone;
+                } catch {}
+            }
+
             // Credentials 로그인 시 2FA 체크
             if (user && account?.provider === 'credentials') {
                 const role = (user as any).role;

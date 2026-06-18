@@ -214,7 +214,6 @@ export interface Translations {
         signupLink: string;
         facebook: string;
         telegram: string;
-        tiktok: string;
     };
 
     // About Us Page

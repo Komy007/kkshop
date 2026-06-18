@@ -182,7 +182,6 @@ const zh: Translations = {
         signupLink: '还没有账号？注册',
         facebook: '使用 Facebook 继续',
         telegram: '使用 Telegram 继续',
-        tiktok: '使用 TikTok 继续',
     },
     about: {
         badge: '柬埔寨 #1 韩国购物平台',

@@ -182,7 +182,6 @@ const km: Translations = {
         signupLink: 'មិនមានគណនី? ចុះឈ្មោះ',
         facebook: 'បន្តជាមួយ Facebook',
         telegram: 'បន្តជាមួយ Telegram',
-        tiktok: 'បន្តជាមួយ TikTok',
     },
     about: {
         badge: 'វេទិកាទិញទំនិញកូរ៉េ លេខ ១ នៅកម្ពុជា',

@@ -182,7 +182,6 @@ const ko: Translations = {
         signupLink: '아직 회원이 아니신가요? 회원가입',
         facebook: '페이스북으로 계속',
         telegram: '텔레그램으로 계속',
-        tiktok: '틱톡으로 계속',
     },
     about: {
         badge: '캄보디아 NO.1 한국 쇼핑 플랫폼',
