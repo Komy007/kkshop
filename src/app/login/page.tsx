@@ -41,23 +41,32 @@ const oauthErrorMessages: Record<string, string> = {
     Default:              'Sign-in failed. Please try again.',
 };
 
+// base64url → JSON 파싱 헬퍼
+function parseTgAuthResult(raw: string): Record<string, unknown> | null {
+    try {
+        const base64 = raw.replace(/-/g, '+').replace(/_/g, '/');
+        const padding = base64.length % 4 ? '='.repeat(4 - (base64.length % 4)) : '';
+        return JSON.parse(atob(base64 + padding));
+    } catch {
+        return null;
+    }
+}
+
 // ─── Main login form ───────────────────────────────────────────────────────────
 function LoginContent() {
     const t = useTranslations();
     const router = useRouter();
     const searchParams = useSearchParams();
     const urlErrorCode = searchParams.get('error');
-    // Telegram OAuth 리다이렉트 콜백에서 전달된 base64 인증 데이터
-    const tgResult = searchParams.get('tg');
     const urlError = urlErrorCode ? (oauthErrorMessages[urlErrorCode] ?? oauthErrorMessages.Default) : '';
 
     const [email, setEmail]                 = useState('');
     const [password, setPassword]           = useState('');
     const [loading, setLoading]             = useState(false);
     const [googleLoading, setGoogleLoading] = useState(false);
-    const [tgLoading, setTgLoading]         = useState(!!tgResult); // tg 콜백이면 즉시 로딩 표시
+    const [tgLoading, setTgLoading]         = useState(false);
     const [error, setError]                 = useState(urlError);
-    const onTelegramAuthRef = useRef<((user: any) => void) | null>(null);
+    const onTelegramAuthRef = useRef<((user: Record<string, unknown>) => void) | null>(null);
 
     // ── Google ──────────────────────────────────────────────────────────────
     const handleGoogleLogin = async () => {
@@ -71,8 +80,8 @@ function LoginContent() {
         }
     };
 
-    // ── Telegram ─────────────────────────────────────────────────────────────
-    const onTelegramAuth = useCallback(async (user: any) => {
+    // ── Telegram signIn ───────────────────────────────────────────────────────
+    const onTelegramAuth = useCallback(async (user: Record<string, unknown>) => {
         if (!user?.id) { setTgLoading(false); return; }
         try {
             const result = await signIn('telegram', {
@@ -100,36 +109,37 @@ function LoginContent() {
 
     onTelegramAuthRef.current = onTelegramAuth;
 
-    // Telegram OAuth 리다이렉트 결과 처리
-    // oauth.telegram.org → /api/auth/telegram-callback → /login?tg=BASE64
+    // oauth.telegram.org는 return_to URL에 #tgAuthResult=BASE64 (해시)로 데이터를 보냄
+    // 해시는 서버로 전송되지 않으므로 클라이언트에서 window.location.hash를 직접 읽음
     useEffect(() => {
-        if (!tgResult) return;
-        try {
-            // base64url → base64 (URL-safe 문자 복원) → JSON 파싱
-            const base64 = tgResult.replace(/-/g, '+').replace(/_/g, '/');
-            const padding = base64.length % 4 ? '='.repeat(4 - (base64.length % 4)) : '';
-            const decoded = JSON.parse(atob(base64 + padding));
-            if (decoded?.id && decoded?.hash) {
-                onTelegramAuthRef.current?.(decoded);
-            } else {
-                setError('Telegram sign-in failed. Please try again.');
-                setTgLoading(false);
-            }
-        } catch {
+        const hash = window.location.hash; // '#tgAuthResult=eyJ...'
+        if (!hash.startsWith('#tgAuthResult=')) return;
+
+        const raw = hash.slice('#tgAuthResult='.length);
+        if (!raw) return;
+
+        // URL에서 해시 제거 (뒤로가기 시 재실행 방지)
+        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+
+        setTgLoading(true);
+        const decoded = parseTgAuthResult(raw);
+        if (decoded?.id && decoded?.hash) {
+            onTelegramAuthRef.current?.(decoded);
+        } else {
             setError('Telegram sign-in failed. Please try again.');
             setTgLoading(false);
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [tgResult]);
+    }, []); // 마운트 시 1회만
 
-    // Telegram 버튼 클릭 → oauth.telegram.org로 리다이렉트
-    // 팝업/postMessage 방식 대신 리다이렉트 사용 (모바일에서 더 안정적)
+    // Telegram 버튼 → oauth.telegram.org 리다이렉트
+    // return_to = 현재 로그인 페이지 (서버 라우트 거치지 않음, 해시 직접 처리)
     const handleTelegramLogin = () => {
         setTgLoading(true);
         setError('');
-        const botId  = process.env.NEXT_PUBLIC_TELEGRAM_BOT_ID || '8618221243';
-        const origin = window.location.origin;
-        const returnTo = `${origin}/api/auth/telegram-callback`;
+        const botId    = process.env.NEXT_PUBLIC_TELEGRAM_BOT_ID || '8618221243';
+        const origin   = window.location.origin;
+        const returnTo = `${origin}/login`;
         window.location.href = [
             'https://oauth.telegram.org/auth',
             `?bot_id=${botId}`,
@@ -203,7 +213,7 @@ function LoginContent() {
                         <span className="flex-1 text-left">Continue with Google</span>
                     </button>
 
-                    {/* Telegram — oauth.telegram.org 리다이렉트 방식 */}
+                    {/* Telegram */}
                     <button
                         onClick={handleTelegramLogin}
                         disabled={tgLoading || googleLoading}
