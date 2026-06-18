@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect, Suspense } from 'react';
+import React, { useState, useRef, useEffect, useCallback, Suspense } from 'react';
 import Link from 'next/link';
 import { useTranslations } from '@/i18n/useTranslations';
 import { Mail, Lock, Loader2 } from 'lucide-react';
@@ -55,10 +55,18 @@ function LoginContent() {
     const [googleLoading, setGoogleLoading] = useState(false);
     const [tgLoading, setTgLoading]         = useState(false);
     const [error, setError]                 = useState(urlError);
-    const popupTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const tgScriptRef = useRef<HTMLDivElement>(null);
 
-    // Cleanup popup timer on unmount
-    useEffect(() => () => { if (popupTimerRef.current) clearInterval(popupTimerRef.current); }, []);
+    // 백그라운드에서 Telegram 위젯 스크립트 로드 — Telegram.Login.auth() API 사용을 위함
+    useEffect(() => {
+        if (!tgScriptRef.current || tgScriptRef.current.childNodes.length > 0) return;
+        const script = document.createElement('script');
+        script.src = 'https://telegram.org/js/telegram-widget.js?22';
+        script.setAttribute('data-telegram-login', 'kkshop_loginbot');
+        script.setAttribute('data-size', 'large');
+        script.async = true;
+        tgScriptRef.current.appendChild(script);
+    }, []);
 
     // ── Google ──────────────────────────────────────────────────────────────
     const handleGoogleLogin = async () => {
@@ -73,77 +81,49 @@ function LoginContent() {
     };
 
     // ── Telegram ─────────────────────────────────────────────────────────────
-    // Flow: open oauth.telegram.org popup → user approves in Telegram app/web
-    //       → popup sends auth data via postMessage → we verify server-side + signIn
+    // Telegram.Login.auth() — 공식 위젯 내부 API
+    // 데스크탑: 팝업 / 모바일: 텔레그램 앱 딥링크 처리 모두 지원
+    const onTelegramAuth = useCallback(async (user: any) => {
+        if (!user?.id) { setTgLoading(false); return; }
+        try {
+            const result = await signIn('telegram', {
+                id:         String(user.id),
+                first_name: String(user.first_name ?? ''),
+                last_name:  user.last_name  ? String(user.last_name)  : '',
+                username:   user.username   ? String(user.username)   : '',
+                photo_url:  user.photo_url  ? String(user.photo_url)  : '',
+                auth_date:  String(user.auth_date),
+                hash:       String(user.hash),
+                redirect:   false,
+            });
+            if (result?.error) {
+                setError('Telegram sign-in failed. Please try again.');
+                setTgLoading(false);
+            } else {
+                router.push('/');
+                router.refresh();
+            }
+        } catch {
+            setError('Telegram sign-in failed.');
+            setTgLoading(false);
+        }
+    }, [router]);
+
     const handleTelegramLogin = () => {
-        const botId = process.env.NEXT_PUBLIC_TELEGRAM_BOT_ID;
-        if (!botId) {
-            setError('Telegram login is not configured yet.');
+        const tg = (window as any).Telegram;
+        if (!tg?.Login) {
+            setError('Telegram is still loading. Please wait a moment and try again.');
             return;
         }
         setTgLoading(true);
         setError('');
-
-        const origin = window.location.origin;
-        const w = 550, h = 470;
-        const left = Math.max(0, (window.screen.width  - w) / 2);
-        const top  = Math.max(0, (window.screen.height - h) / 2);
-        const popup = window.open(
-            `https://oauth.telegram.org/auth?bot_id=${botId}&origin=${encodeURIComponent(origin)}&request_access=write&lang=en`,
-            'tg_oauth',
-            `width=${w},height=${h},left=${left},top=${top},scrollbars=no`
+        tg.Login.auth(
+            { bot_id: process.env.NEXT_PUBLIC_TELEGRAM_BOT_ID, request_access: true, lang: 'en' },
+            (user: any) => {
+                if (!user) { setTgLoading(false); return; }
+                onTelegramAuth(user);
+            }
         );
-
-        if (!popup) {
-            // Popup was blocked by browser
-            setError('Please allow popups for this site, then try again.');
-            setTgLoading(false);
-            return;
-        }
-
-        const onMessage = async (e: MessageEvent) => {
-            if (e.origin !== 'https://oauth.telegram.org') return;
-            window.removeEventListener('message', onMessage);
-            if (popupTimerRef.current) clearInterval(popupTimerRef.current);
-            try { popup.close(); } catch {}
-
-            const user = e.data;
-            if (!user?.id) { setTgLoading(false); return; }
-
-            try {
-                const result = await signIn('telegram', {
-                    id:         String(user.id),
-                    first_name: String(user.first_name ?? ''),
-                    last_name:  user.last_name  ? String(user.last_name)  : '',
-                    username:   user.username   ? String(user.username)   : '',
-                    photo_url:  user.photo_url  ? String(user.photo_url)  : '',
-                    auth_date:  String(user.auth_date),
-                    hash:       String(user.hash),
-                    redirect: false,
-                });
-                if (result?.error) {
-                    setError('Telegram sign-in failed. Please try again.');
-                    setTgLoading(false);
-                } else {
-                    router.push('/');
-                    router.refresh();
-                }
-            } catch {
-                setError('Telegram sign-in failed.');
-                setTgLoading(false);
-            }
-        };
-
-        window.addEventListener('message', onMessage);
-
-        // Detect if user closes the popup without completing auth
-        popupTimerRef.current = setInterval(() => {
-            if (popup.closed) {
-                clearInterval(popupTimerRef.current!);
-                window.removeEventListener('message', onMessage);
-                setTgLoading(false);
-            }
-        }, 800);
     };
 
     // ── Email / Password ─────────────────────────────────────────────────────
@@ -178,6 +158,8 @@ function LoginContent() {
     };
 
     return (
+        <>
+        <div ref={tgScriptRef} style={{ display: 'none' }} aria-hidden="true" />
         <div className="min-h-screen flex items-center justify-center px-4">
             <div className="w-full max-w-md">
                 {/* Header */}
@@ -300,6 +282,7 @@ function LoginContent() {
                 </div>
             </div>
         </div>
+        </>
     );
 }
 
