@@ -3,8 +3,8 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Grid3X3, Search, ShoppingCart, User, Store } from 'lucide-react';
-import { useAppStore, useSafeAppStore } from '@/store/useAppStore';
+import { Home, Grid3X3, Search, ShoppingCart, User, Store, LogIn } from 'lucide-react';
+import { useSafeAppStore } from '@/store/useAppStore';
 import { useCartStore, selectTotalItems } from '@/store/useCartStore';
 import { useSession } from 'next-auth/react';
 
@@ -15,6 +15,10 @@ const tabTranslations: Record<string, Record<TabKey, string>> = {
     en: { home: 'Home', category: 'Category', search: 'Search', cart: 'Cart', mypage: 'My' },
     km: { home: 'ទំព័រដើម', category: 'ប្រភេទ', search: 'ស្វែងរក', cart: 'រទេះ', mypage: 'របស់ខ្ញុំ' },
     zh: { home: '首页', category: '分类', search: '搜索', cart: '购物车', mypage: '我的' },
+};
+
+const loginLabel: Record<string, string> = {
+    ko: '로그인', en: 'Login', km: 'ចូល', zh: '登录',
 };
 
 interface TabItem {
@@ -93,16 +97,44 @@ export default function BottomTabBar() {
                         );
                     }
 
-                    // For SUPPLIER role: replace "My" tab with "Seller" dashboard link
-                    if (tab.key === 'mypage' && role === 'SUPPLIER') {
-                        const sellerActive = pathname.startsWith('/seller');
+                    // "My" 탭: 역할·로그인 상태에 따라 분기
+                    if (tab.key === 'mypage') {
+                        // SUPPLIER → Seller 대시보드 링크
+                        if (role === 'SUPPLIER') {
+                            const sellerActive = pathname.startsWith('/seller');
+                            return (
+                                <Link key={tab.key} href="/seller" aria-label="Seller Dashboard">
+                                    <div className={`flex flex-col items-center justify-center gap-0.5 min-w-[44px] min-h-[44px] rounded-xl transition-colors duration-200 ${sellerActive ? 'text-blue-600' : 'text-gray-600 hover:text-gray-900'}`}>
+                                        <Store className="w-5 h-5" strokeWidth={sellerActive ? 2.5 : 2} />
+                                        <span className="text-[11px] font-bold leading-tight tracking-tight">
+                                            {language === 'ko' ? '셀러' : language === 'km' ? 'ហាង' : language === 'zh' ? '卖家' : 'Seller'}
+                                        </span>
+                                    </div>
+                                </Link>
+                            );
+                        }
+
+                        // 비로그인 → Login 탭 (로즈 색상으로 클릭 유도)
+                        if (sessionResult.status !== 'authenticated') {
+                            return (
+                                <Link key="login-tab" href="/login" aria-label="Login">
+                                    <div className="flex flex-col items-center justify-center gap-0.5 min-w-[44px] min-h-[44px] rounded-xl transition-colors duration-200 text-rose-500">
+                                        <LogIn className="w-5 h-5" strokeWidth={2} />
+                                        <span className="text-[11px] font-bold leading-tight tracking-tight">
+                                            {loginLabel[language] ?? 'Login'}
+                                        </span>
+                                    </div>
+                                </Link>
+                            );
+                        }
+
+                        // 로그인 상태 → My 탭 (비활성 teal, 활성 brand-primary)
+                        const myActive = isActive(tab.href);
                         return (
-                            <Link key={tab.key} href="/seller" aria-label="Seller Dashboard">
-                                <div className={`flex flex-col items-center justify-center gap-0.5 min-w-[44px] min-h-[44px] rounded-xl transition-colors duration-200 ${sellerActive ? 'text-blue-600' : 'text-gray-600 hover:text-gray-900'}`}>
-                                    <Store className="w-5 h-5" strokeWidth={sellerActive ? 2.5 : 2} />
-                                    <span className="text-[11px] font-bold leading-tight tracking-tight">
-                                        {language === 'ko' ? '셀러' : language === 'km' ? 'ហាង' : language === 'zh' ? '卖家' : 'Seller'}
-                                    </span>
+                            <Link key={tab.key} href={tab.href} aria-label={label}>
+                                <div className={`flex flex-col items-center justify-center gap-0.5 min-w-[44px] min-h-[44px] rounded-xl transition-colors duration-200 ${myActive ? 'text-brand-primary' : 'text-teal-500'}`}>
+                                    <User className="w-5 h-5" strokeWidth={myActive ? 2.5 : 2} />
+                                    <span className="text-[11px] font-bold leading-tight tracking-tight">{label}</span>
                                 </div>
                             </Link>
                         );
