@@ -109,28 +109,58 @@ function LoginContent() {
 
     onTelegramAuthRef.current = onTelegramAuth;
 
-    // oauth.telegram.org는 return_to URL에 #tgAuthResult=BASE64 (해시)로 데이터를 보냄
-    // 해시는 서버로 전송되지 않으므로 클라이언트에서 window.location.hash를 직접 읽음
+    // oauth.telegram.org 콜백 처리:
+    // - 표준 (Android/Desktop): #tgAuthResult=BASE64 (해시 프래그먼트)
+    // - iOS 폴백: ?tgAuthResult=BASE64 (쿼리 파라미터) or ?tg=BASE64 (콜백 라우트 경유)
+    // - iOS Safari BFCache: pageshow 이벤트로 캐시 복원 시도 감지
     useEffect(() => {
-        const hash = window.location.hash; // '#tgAuthResult=eyJ...'
-        if (!hash.startsWith('#tgAuthResult=')) return;
+        const processAuth = () => {
+            let raw: string | null = null;
 
-        const raw = hash.slice('#tgAuthResult='.length);
-        if (!raw) return;
+            // 1) 해시 프래그먼트 확인 — 가장 일반적인 경우
+            const hash = window.location.hash;
+            if (hash.startsWith('#tgAuthResult=')) {
+                // iOS Safari는 URL 인코딩된 채로 돌려주는 경우 있음 (예: %3D → =)
+                raw = decodeURIComponent(hash.slice('#tgAuthResult='.length));
+                window.history.replaceState(null, '', window.location.pathname + window.location.search);
+            }
 
-        // URL에서 해시 제거 (뒤로가기 시 재실행 방지)
-        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+            // 2) 쿼리 파라미터 확인 — iOS Telegram 앱 폴백 or 콜백 라우트 경유
+            if (!raw) {
+                const params = new URLSearchParams(window.location.search);
+                const fromQuery = params.get('tgAuthResult') || params.get('tg');
+                if (fromQuery) {
+                    raw = fromQuery;
+                    params.delete('tgAuthResult');
+                    params.delete('tg');
+                    const qs = params.toString();
+                    window.history.replaceState(null, '', window.location.pathname + (qs ? `?${qs}` : ''));
+                }
+            }
 
-        setTgLoading(true);
-        const decoded = parseTgAuthResult(raw);
-        if (decoded?.id && decoded?.hash) {
-            onTelegramAuthRef.current?.(decoded);
-        } else {
-            setError('Telegram sign-in failed. Please try again.');
-            setTgLoading(false);
-        }
+            if (!raw) return;
+
+            setTgLoading(true);
+            const decoded = parseTgAuthResult(raw);
+            if (decoded?.id && decoded?.hash) {
+                onTelegramAuthRef.current?.(decoded);
+            } else {
+                setError('Telegram sign-in failed. Please try again.');
+                setTgLoading(false);
+            }
+        };
+
+        processAuth();
+
+        // iOS Safari BFCache: 캐시에서 복원될 때 pageshow 이벤트 발생 (persisted=true)
+        // → 이 경우 컴포넌트 재마운트 없이 해시/파람 재처리 필요
+        const handlePageShow = (e: PageTransitionEvent) => {
+            if (e.persisted) processAuth();
+        };
+        window.addEventListener('pageshow', handlePageShow);
+        return () => window.removeEventListener('pageshow', handlePageShow);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []); // 마운트 시 1회만
+    }, []);
 
     // Telegram 버튼 → oauth.telegram.org 리다이렉트
     // return_to = 현재 로그인 페이지 (서버 라우트 거치지 않음, 해시 직접 처리)
