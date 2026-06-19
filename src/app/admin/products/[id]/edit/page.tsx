@@ -47,7 +47,7 @@ interface ProductData {
 
 const SIZE_PRESETS   = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Free Size'];
 const VOLUME_PRESETS = ['30ml', '50ml', '100ml', '150ml', '200ml', '250ml', '300ml', '500ml', '1L'];
-const UNIT_LABELS    = ['개', 'box', 'pack', 'set', '병', '튜브', '매', '장', '캡슐'];
+const UNIT_LABELS    = ['pc', 'box', 'pack', 'set', 'bottle', 'tube', 'sheet', 'piece', 'capsule'];
 const vInp = "px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500";
 
 const Sec = ({ icon, title, desc }: { icon: React.ReactNode; title: string; desc?: string }) => (
@@ -487,7 +487,7 @@ export default function EditProductPage() {
         : null;
 
     return (
-        <div className="max-w-4xl mx-auto py-8 px-4 space-y-6">
+        <div className="max-w-6xl mx-auto py-8 px-4 space-y-6">
             {/* Header */}
             <div className="flex items-center gap-3 mb-2">
                 <button onClick={() => router.back()} className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg">
@@ -1041,14 +1041,14 @@ export default function EditProductPage() {
                         <div className="col-span-2 md:col-span-3">
                             <label className="block text-xs font-medium text-gray-600 mb-1">Selling Unit <span className="text-gray-400 font-normal">· 판매 단위</span></label>
                             <div className="flex items-center gap-3">
-                                <select name="unitLabel" value={(form as any).unitLabel ?? '개'} onChange={handleChange} className="border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white w-28">
+                                <select name="unitLabel" value={(form as any).unitLabel ?? 'pc'} onChange={handleChange} className="border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white w-28">
                                     {UNIT_LABELS.map(u => <option key={u} value={u}>{u}</option>)}
                                 </select>
-                                {(form as any).unitLabel && (form as any).unitLabel !== '개' && (
+                                {(form as any).unitLabel && (form as any).unitLabel !== 'pc' && (form as any).unitLabel !== '개' && (
                                     <div className="flex items-center gap-2">
                                         <span className="text-xs text-gray-400 whitespace-nowrap">1 {(form as any).unitLabel} =</span>
                                         <input type="number" name="unitsPerPkg" min="1" value={(form as any).unitsPerPkg ?? ''} onChange={handleChange} placeholder="e.g. 12" className="border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none w-24" />
-                                        <span className="text-xs text-gray-400">개</span>
+                                        <span className="text-xs text-gray-400">pc</span>
                                     </div>
                                 )}
                             </div>

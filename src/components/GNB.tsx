@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import TaegukgiIcon from "@/components/TaegukgiIcon";
 import Link from "next/link";
-import Image from "next/image";
 import { Globe, User, ShoppingCart, Menu, X, LogOut, Settings, Heart, Store } from "lucide-react";
 import { useSafeMarketStore, rehydrateLanguageStore } from "@/store/useAppStore";
 import { useCartStore, selectTotalItems } from "@/store/useCartStore";
@@ -16,6 +15,25 @@ const LANGUAGES = [
     { code: "km" as const, label: "ភាសាខ្មែរ", flag: "🇰🇭" },
     { code: "zh" as const, label: "中文", flag: "🇨🇳" },
 ];
+
+// Avatar — plain <img> so external avatar hosts (Telegram, Google …) load without
+// next.config remotePatterns config; falls back to the User icon if the URL fails to load.
+function Avatar({ src }: { src?: string | null }) {
+    const [failed, setFailed] = useState(false);
+    if (!src || failed) return <User className="w-4 h-4" />;
+    return (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+            src={src}
+            alt=""
+            width={24}
+            height={24}
+            referrerPolicy="no-referrer"
+            onError={() => setFailed(true)}
+            className="w-6 h-6 rounded-full object-cover"
+        />
+    );
+}
 
 export default function GNB() {
     const sessionResult = useSession();
@@ -163,11 +181,7 @@ export default function GNB() {
                                 onClick={() => setUserMenuOpen(!userMenuOpen)}
                                 className="flex items-center gap-2 px-3 py-2 rounded-full bg-white border border-gray-200 hover:border-brand-primary/40 hover:text-brand-primary transition-all text-gray-700 shadow-sm"
                             >
-                                {session?.user?.image ? (
-                                    <Image src={session.user.image} alt="" width={24} height={24} className="w-6 h-6 rounded-full object-cover" />
-                                ) : (
-                                    <User className="w-4 h-4" />
-                                )}
+                                <Avatar src={session?.user?.image} />
                                 <span className="text-sm font-bold">
                                     {session ? (session.user?.name?.split(' ')[0] || 'My') : 'My'}
                                 </span>
