@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
@@ -328,14 +328,16 @@ export default function AdminProductsPage() {
                                         <th className="py-3 px-4">{t.admin.products.table.priceStock}</th>
                                         <th className="py-3 px-4 hidden lg:table-cell">{t.admin.products.table.margin}</th>
                                         <th className="py-3 px-4">{t.admin.products.table.status}</th>
-                                        <th className="py-3 px-4 hidden md:table-cell">Review <span className="opacity-60">· 검수</span></th>
+                                        <th className="py-3 px-4 ">Review</th>
                                         <th className="py-3 px-4">{t.admin.products.table.isNew}</th>
                                         <th className="py-3 px-4 text-right">{t.admin.products.table.manage}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-50">
                                     {products.map(p => {
-                                        const koName = p.translations.find(tr => tr.langCode === 'ko')?.name || p.sku;
+                                        const koName = p.translations.find(tr => tr.langCode === 'en')?.name
+                                            || p.translations.find(tr => tr.langCode === 'ko')?.name
+                                            || p.sku;
                                         const statusMap: any = {
                                             ACTIVE: t.admin.products.status.active,
                                             INACTIVE: t.admin.products.status.inactive,
@@ -385,7 +387,7 @@ export default function AdminProductsPage() {
                                                         </button>
                                                     </td>
                                                     {/* Review status cell */}
-                                                    <td className="py-3 px-4 hidden md:table-cell">
+                                                    <td className="py-3 px-4">
                                                         {p.approvalStatus === 'PENDING' ? (
                                                             <button
                                                                 onClick={() => { setApprovingId(approvingId === p.id ? null : p.id); setRejectReason(''); }}

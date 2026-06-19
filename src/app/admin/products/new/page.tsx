@@ -62,6 +62,7 @@ export default function NewProductPage() {
         unitLabel: 'pc', unitsPerPkg: '',
         name: '', shortDesc: '', detailDesc: '',
         ingredients: '', howToUse: '', benefits: '', seoKeywords: '',
+        costPrice: '', isHotSale: false, hotSalePrice: '', hotSaleStartAt: '', hotSaleEndAt: '',
     });
 
     useEffect(() => {
@@ -712,6 +713,59 @@ export default function NewProductPage() {
                             <label className="block text-xs font-medium text-gray-600 mb-1">{ef.stock}</label>
                             <input type="number" name="stockQty" value={form.stockQty} onChange={handleChange} className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" />
                         </div>
+
+                        {/* Cost Price */}
+                        <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">Cost Price (USD) <span className="text-gray-400 font-normal">· for margin calc</span></label>
+                            <div className="relative">
+                                <span className="absolute left-3 top-2 text-gray-400 text-sm">$</span>
+                                <input type="number" step="0.01" name="costPrice" value={form.costPrice} onChange={handleChange}
+                                    className="w-full border border-gray-200 rounded-lg py-2 pl-6 pr-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="0.00" />
+                            </div>
+                        </div>
+
+                        {/* Hot Sale toggle */}
+                        <div className="md:col-span-2">
+                            <button
+                                type="button"
+                                role="switch"
+                                aria-checked={form.isHotSale}
+                                onClick={() => setForm(prev => ({ ...prev, isHotSale: !prev.isHotSale }))}
+                                className="w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all select-none text-left hover:border-red-300 hover:bg-red-50"
+                                style={{ borderColor: form.isHotSale ? '#EF4444' : '#E5E7EB', background: form.isHotSale ? '#FEF2F2' : '' }}
+                            >
+                                <div className={`w-10 h-6 rounded-full transition-colors flex items-center px-0.5 flex-shrink-0 ${form.isHotSale ? 'bg-red-500' : 'bg-gray-200'}`}>
+                                    <div className={`w-5 h-5 bg-white rounded-full shadow transition-transform ${form.isHotSale ? 'translate-x-4' : 'translate-x-0'}`} />
+                                </div>
+                                <div>
+                                    <div className="font-semibold text-sm text-gray-800">🔥 Hot Sale</div>
+                                    <div className="text-xs text-gray-500 mt-0.5">Show a discounted sale price with a "HOT" badge</div>
+                                </div>
+                            </button>
+                        </div>
+
+                        {form.isHotSale && (
+                            <>
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-600 mb-1">Hot Sale Price (USD)</label>
+                                    <div className="relative">
+                                        <span className="absolute left-3 top-2 text-gray-400 text-sm">$</span>
+                                        <input type="number" step="0.01" name="hotSalePrice" value={form.hotSalePrice} onChange={handleChange}
+                                            className="w-full border border-red-200 rounded-lg py-2 pl-6 pr-3 text-sm focus:ring-2 focus:ring-red-400 focus:outline-none" placeholder="0.00" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-600 mb-1">Hot Sale Start</label>
+                                    <input type="datetime-local" name="hotSaleStartAt" value={form.hotSaleStartAt} onChange={handleChange}
+                                        className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-red-400 focus:outline-none" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-600 mb-1">Hot Sale End</label>
+                                    <input type="datetime-local" name="hotSaleEndAt" value={form.hotSaleEndAt} onChange={handleChange}
+                                        className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-red-400 focus:outline-none" />
+                                </div>
+                            </>
+                        )}
 
                         {/* New Arrival toggle — uses button (not label+checkbox) to prevent sr-only focus from triggering scrollIntoView */}
                         <div className="md:col-span-2">

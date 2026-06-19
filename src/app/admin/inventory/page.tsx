@@ -22,12 +22,12 @@ interface StockLog {
 }
 
 const REASON_LABELS: Record<string, { label: string; color: string }> = {
-    RECEIVED:   { label: '입고',     color: 'bg-green-100 text-green-700' },
-    SOLD:       { label: '판매',     color: 'bg-blue-100 text-blue-700' },
-    RETURN:     { label: '반품/취소', color: 'bg-orange-100 text-orange-700' },
-    DAMAGED:    { label: '파손/손실', color: 'bg-red-100 text-red-700' },
-    ADJUSTMENT: { label: '재고실사', color: 'bg-purple-100 text-purple-700' },
-    EXPIRED:    { label: '유통기한', color: 'bg-gray-100 text-gray-600' },
+    RECEIVED:   { label: 'Stock In',    color: 'bg-green-100 text-green-700' },
+    SOLD:       { label: 'Sold',        color: 'bg-blue-100 text-blue-700' },
+    RETURN:     { label: 'Return',      color: 'bg-orange-100 text-orange-700' },
+    DAMAGED:    { label: 'Damaged',     color: 'bg-red-100 text-red-700' },
+    ADJUSTMENT: { label: 'Audit',       color: 'bg-purple-100 text-purple-700' },
+    EXPIRED:    { label: 'Expired',     color: 'bg-gray-100 text-gray-600' },
 };
 
 interface AdjustModalProps {
@@ -49,7 +49,7 @@ function AdjustModal({ product, onClose, onDone }: AdjustModalProps) {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!qty || parseInt(qty) <= 0) { setError('수량을 입력하세요'); return; }
+        if (!qty || parseInt(qty) <= 0) { setError('Please enter a quantity.'); return; }
         setLoading(true); setError('');
         try {
             const res = await fetch('/api/admin/inventory', {
@@ -58,7 +58,7 @@ function AdjustModal({ product, onClose, onDone }: AdjustModalProps) {
                 body: JSON.stringify({ productId: product.id, changeQty, reason, memo }),
             });
             const data = await res.json();
-            if (!res.ok) throw new Error(data.error || '실패');
+            if (!res.ok) throw new Error(data.error || 'Failed');
             onDone();
         } catch (e: any) {
             setError(e.message);
@@ -72,7 +72,7 @@ function AdjustModal({ product, onClose, onDone }: AdjustModalProps) {
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
                     <h3 className="font-bold text-gray-900 flex items-center gap-2">
-                        <ClipboardList className="w-5 h-5 text-blue-500" /> 재고 조정
+                        <ClipboardList className="w-5 h-5 text-blue-500" /> Adjust Stock
                     </h3>
                     <button onClick={onClose} className="p-1.5 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-gray-100">
                         <X className="w-5 h-5" />
@@ -87,7 +87,7 @@ function AdjustModal({ product, onClose, onDone }: AdjustModalProps) {
                         }
                         <div>
                             <div className="font-semibold text-sm text-gray-900 line-clamp-1">{product.name}</div>
-                            <div className="text-xs text-gray-500">{product.sku} · 현재 재고: <span className={`font-bold ${product.isLowStock ? 'text-red-600' : 'text-gray-700'}`}>{product.stockQty}개</span></div>
+                            <div className="text-xs text-gray-500">{product.sku} · Current stock: <span className={`font-bold ${product.isLowStock ? 'text-red-600' : 'text-gray-700'}`}>{product.stockQty}</span></div>
                         </div>
                     </div>
 
@@ -95,7 +95,7 @@ function AdjustModal({ product, onClose, onDone }: AdjustModalProps) {
 
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-2">변동 사유</label>
+                            <label className="block text-xs font-medium text-gray-600 mb-2">Reason</label>
                             <div className="grid grid-cols-3 gap-2">
                                 {Object.entries(REASON_LABELS).filter(([k]) => k !== 'SOLD').map(([k, v]) => (
                                     <button key={k} type="button" onClick={() => setReason(k)}
@@ -107,7 +107,7 @@ function AdjustModal({ product, onClose, onDone }: AdjustModalProps) {
                         </div>
                         <div>
                             <label className="block text-xs font-medium text-gray-600 mb-1">
-                                수량 ({isPositive ? '입고/추가' : '감소'})
+                                Quantity ({isPositive ? 'Add' : 'Remove'})
                             </label>
                             <div className="relative">
                                 <span className={`absolute left-3 top-2.5 text-lg font-bold ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
@@ -115,29 +115,29 @@ function AdjustModal({ product, onClose, onDone }: AdjustModalProps) {
                                 </span>
                                 <input type="number" min="1" value={qty} onChange={e => setQty(e.target.value)}
                                     className="w-full border border-gray-200 rounded-xl py-2.5 pl-8 pr-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                    placeholder="수량 입력" />
+                                    placeholder="Enter quantity" />
                             </div>
                             {qty && parseInt(qty) > 0 && (
                                 <div className={`mt-1.5 text-xs font-semibold ${newStock < 0 ? 'text-red-600' : newStock === 0 ? 'text-orange-600' : 'text-green-600'}`}>
-                                    → 조정 후 재고: {newStock}개 {newStock < 0 ? '(불가)' : ''}
+                                    → After adjustment: {newStock} {newStock < 0 ? '(invalid)' : ''}
                                 </div>
                             )}
                         </div>
                         <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">메모 (선택)</label>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">Memo (optional)</label>
                             <input type="text" value={memo} onChange={e => setMemo(e.target.value)}
                                 className="w-full border border-gray-200 rounded-xl py-2.5 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                placeholder="예: 한국 직배 2박스 입고" />
+                                placeholder="e.g. Received 2 boxes from Korea warehouse" />
                         </div>
                         <div className="flex gap-3 pt-1">
                             <button type="button" onClick={onClose}
                                 className="flex-1 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200">
-                                취소
+                                Cancel
                             </button>
                             <button type="submit" disabled={loading || (!!qty && newStock < 0)}
                                 className="flex-1 py-2.5 text-sm font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-700 disabled:opacity-60 flex items-center justify-center gap-2">
                                 {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
-                                {loading ? '처리 중...' : '재고 조정'}
+                                {loading ? 'Processing…' : 'Apply Adjustment'}
                             </button>
                         </div>
                     </form>
@@ -188,18 +188,18 @@ export default function InventoryPage() {
             {/* Header */}
             <div className="mb-6">
                 <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                    <ClipboardList className="w-6 h-6 text-blue-500" /> 재고 관리
+                    <ClipboardList className="w-6 h-6 text-blue-500" /> Inventory Management
                 </h1>
-                <p className="text-sm text-gray-500 mt-0.5">상품별 재고 현황 확인 및 입고/손실 조정</p>
+                <p className="text-sm text-gray-500 mt-0.5">Track stock levels and adjust for restocks, damages, and returns.</p>
             </div>
 
             {/* Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                 {[
-                    { label: '전체 상품', value: items.length, icon: Package, color: 'text-blue-600', bg: 'bg-blue-50' },
-                    { label: '총 재고', value: `${totalStock}개`, icon: ClipboardList, color: 'text-green-600', bg: 'bg-green-50' },
-                    { label: '⚠️ 저재고', value: lowStockCount, icon: AlertTriangle, color: 'text-amber-600', bg: 'bg-amber-50' },
-                    { label: '품절', value: soldOutCount, icon: X, color: 'text-red-600', bg: 'bg-red-50' },
+                    { label: 'Total Products', value: items.length, icon: Package, color: 'text-blue-600', bg: 'bg-blue-50' },
+                    { label: 'Total Stock', value: totalStock, icon: ClipboardList, color: 'text-green-600', bg: 'bg-green-50' },
+                    { label: '⚠️ Low Stock', value: lowStockCount, icon: AlertTriangle, color: 'text-amber-600', bg: 'bg-amber-50' },
+                    { label: 'Sold Out', value: soldOutCount, icon: X, color: 'text-red-600', bg: 'bg-red-50' },
                 ].map(stat => (
                     <div key={stat.label} className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
                         <div className={`w-8 h-8 ${stat.bg} rounded-lg flex items-center justify-center mb-2`}>
@@ -216,7 +216,7 @@ export default function InventoryPage() {
                 {(['stock', 'history'] as const).map(t => (
                     <button key={t} onClick={() => setTab(t)}
                         className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${tab === t ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
-                        {t === 'stock' ? '📦 재고 현황' : '📋 변동 이력'}
+                        {t === 'stock' ? '📦 Stock Levels' : '📋 Change History'}
                     </button>
                 ))}
             </div>
@@ -228,12 +228,12 @@ export default function InventoryPage() {
                         <div className="relative flex-1 min-w-[200px]">
                             <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
                             <input type="text" value={search} onChange={e => setSearch(e.target.value)}
-                                placeholder="상품명, SKU, 브랜드 검색..."
+                                placeholder="Search by product name, SKU, or brand…"
                                 className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white shadow-sm" />
                         </div>
                         <button onClick={() => setShowLowOnly(p => !p)}
                             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border transition-all ${showLowOnly ? 'bg-amber-500 text-white border-amber-500' : 'bg-white text-gray-600 border-gray-200 hover:border-amber-300'}`}>
-                            <AlertTriangle className="w-4 h-4" /> 저재고만
+                            <AlertTriangle className="w-4 h-4" /> Low Stock Only
                         </button>
                         <button onClick={() => { fetchInventory(); fetchLogs(); }}
                             className="p-2.5 text-gray-500 hover:bg-gray-100 rounded-xl border border-gray-200">
@@ -250,13 +250,13 @@ export default function InventoryPage() {
                             <table className="w-full text-left">
                                 <thead>
                                     <tr className="bg-gray-50 border-b border-gray-100 text-xs text-gray-500 font-medium">
-                                        <th className="py-3 px-4">상품</th>
-                                        <th className="py-3 px-4 hidden md:table-cell">카테고리</th>
-                                        <th className="py-3 px-4">재고</th>
-                                        <th className="py-3 px-4 hidden md:table-cell">판매가</th>
-                                        <th className="py-3 px-4 hidden lg:table-cell">매입가</th>
-                                        <th className="py-3 px-4 hidden lg:table-cell">마진</th>
-                                        <th className="py-3 px-4 text-right">조정</th>
+                                        <th className="py-3 px-4">Product</th>
+                                        <th className="py-3 px-4 hidden md:table-cell">Category</th>
+                                        <th className="py-3 px-4">Stock</th>
+                                        <th className="py-3 px-4 hidden md:table-cell">Price</th>
+                                        <th className="py-3 px-4 hidden lg:table-cell">Cost</th>
+                                        <th className="py-3 px-4 hidden lg:table-cell">Margin</th>
+                                        <th className="py-3 px-4 text-right">Adjust</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-50">
@@ -264,7 +264,7 @@ export default function InventoryPage() {
                                         <tr>
                                             <td colSpan={7} className="py-16 text-center text-gray-400">
                                                 <Package className="w-10 h-10 mx-auto mb-2 text-gray-200" />
-                                                {search ? '검색 결과가 없습니다' : '상품이 없습니다'}
+                                                {search ? 'No products found' : 'No products'}
                                             </td>
                                         </tr>
                                     ) : filtered.map(item => (
@@ -282,7 +282,7 @@ export default function InventoryPage() {
                                                 </div>
                                             </td>
                                             <td className="py-3 px-4 hidden md:table-cell">
-                                                <span className="text-xs text-gray-500">{item.category ?? '미분류'}</span>
+                                                <span className="text-xs text-gray-500">{item.category ?? 'Uncategorized'}</span>
                                             </td>
                                             <td className="py-3 px-4">
                                                 <div className="flex items-center gap-2">
@@ -293,10 +293,10 @@ export default function InventoryPage() {
                                                         <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
                                                     )}
                                                     {item.stockQty === 0 && (
-                                                        <span className="text-xs bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full font-semibold">품절</span>
+                                                        <span className="text-xs bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full font-semibold">Sold Out</span>
                                                     )}
                                                 </div>
-                                                <div className="text-[10px] text-gray-400">알림: {item.stockAlertQty}개</div>
+                                                <div className="text-[10px] text-gray-400">Alert at: {item.stockAlertQty}</div>
                                             </td>
                                             <td className="py-3 px-4 hidden md:table-cell">
                                                 <span className="text-sm font-semibold text-gray-800">${Number(item.priceUsd).toFixed(2)}</span>
@@ -304,7 +304,7 @@ export default function InventoryPage() {
                                             <td className="py-3 px-4 hidden lg:table-cell">
                                                 {item.costPrice
                                                     ? <span className="text-sm text-gray-600">${Number(item.costPrice).toFixed(2)}</span>
-                                                    : <span className="text-xs text-gray-300">미입력</span>
+                                                    : <span className="text-xs text-gray-300">—</span>
                                                 }
                                             </td>
                                             <td className="py-3 px-4 hidden lg:table-cell">
@@ -319,7 +319,7 @@ export default function InventoryPage() {
                                             <td className="py-3 px-4 text-right">
                                                 <button onClick={() => setAdjustTarget(item)}
                                                     className="px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 rounded-lg text-xs font-semibold transition-colors">
-                                                    조정
+                                                    Adjust
                                                 </button>
                                             </td>
                                         </tr>
@@ -338,13 +338,13 @@ export default function InventoryPage() {
                     <table className="w-full text-left">
                         <thead>
                             <tr className="bg-gray-50 border-b border-gray-100 text-xs text-gray-500 font-medium">
-                                <th className="py-3 px-4">상품</th>
-                                <th className="py-3 px-4">사유</th>
-                                <th className="py-3 px-4">변동</th>
-                                <th className="py-3 px-4">조정 후</th>
-                                <th className="py-3 px-4 hidden md:table-cell">메모</th>
-                                <th className="py-3 px-4 hidden md:table-cell">처리자</th>
-                                <th className="py-3 px-4">일시</th>
+                                <th className="py-3 px-4">Product</th>
+                                <th className="py-3 px-4">Reason</th>
+                                <th className="py-3 px-4">Change</th>
+                                <th className="py-3 px-4">Balance</th>
+                                <th className="py-3 px-4 hidden md:table-cell">Memo</th>
+                                <th className="py-3 px-4 hidden md:table-cell">By</th>
+                                <th className="py-3 px-4">Date</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
@@ -352,7 +352,7 @@ export default function InventoryPage() {
                                 <tr>
                                     <td colSpan={7} className="py-16 text-center text-gray-400">
                                         <History className="w-10 h-10 mx-auto mb-2 text-gray-200" />
-                                        재고 변동 이력이 없습니다
+                                        No stock history found
                                     </td>
                                 </tr>
                             ) : logs.map(log => {

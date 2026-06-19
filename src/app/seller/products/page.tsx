@@ -39,6 +39,8 @@ const TABS: { key: 'ALL'|'PENDING'|'APPROVED'|'REJECTED'; en: string; ko: string
 
 const PAGE_SIZE = 30;
 
+interface TabCounts { ALL: number; PENDING: number; APPROVED: number; REJECTED: number; }
+
 export default function SellerProductsPage() {
     const [products, setProducts]   = useState<Product[]>([]);
     const [total,    setTotal]      = useState(0);
@@ -52,6 +54,7 @@ export default function SellerProductsPage() {
     const [deletingId,   setDeletingId]   = useState<string | null>(null);
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
     const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
+    const [counts, setCounts] = useState<TabCounts>({ ALL: 0, PENDING: 0, APPROVED: 0, REJECTED: 0 });
 
     const router = useRouter();
     const searchTimer = useRef<NodeJS.Timeout | null>(null);
@@ -78,7 +81,16 @@ export default function SellerProductsPage() {
 
     useEffect(() => { load(1, search, tab); }, [tab]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    useEffect(() => { load(1, '', 'ALL'); }, []);
+    useEffect(() => {
+        load(1, '', 'ALL');
+        fetch('/api/seller/stats').then(r => r.json()).then(data => {
+            const total = (data.totalProducts ?? 0);
+            const pending = (data.pendingProducts ?? 0);
+            const approved = (data.approvedProducts ?? 0);
+            const rejected = (data.rejectedProducts ?? 0);
+            setCounts({ ALL: total, PENDING: pending, APPROVED: approved, REJECTED: rejected });
+        }).catch(() => {});
+    }, []);
 
     const handleSearchChange = (val: string) => {
         setSearchInput(val);
@@ -164,9 +176,13 @@ export default function SellerProductsPage() {
             <div className="flex gap-2 mb-4 flex-wrap">
                 {TABS.map(t => (
                     <button key={t.key} onClick={() => handleTabChange(t.key)}
-                        className={`px-3 py-1.5 rounded-full text-sm font-semibold transition-colors border ${tab === t.key ? 'bg-teal-600 text-white border-teal-600' : 'bg-white text-gray-600 border-gray-200 hover:border-teal-300'}`}>
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold transition-colors border ${tab === t.key ? 'bg-teal-600 text-white border-teal-600' : 'bg-white text-gray-600 border-gray-200 hover:border-teal-300'}`}>
                         {t.en}
-                        <span className={`text-[10px] ${tab === t.key ? 'opacity-70' : 'opacity-50'}`}> · {t.ko}</span>
+                        {counts[t.key] > 0 && (
+                            <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${tab === t.key ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'}`}>
+                                {counts[t.key]}
+                            </span>
+                        )}
                     </button>
                 ))}
             </div>

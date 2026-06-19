@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ShieldCheck, Star, Store } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface CarouselProduct {
@@ -30,55 +29,12 @@ type ProductSlideData = {
     type: 'product';
     product: CarouselProduct;
     badge?: 'HOT' | 'NEW' | 'BEST';
-    gradient: string;
+    gradient: string; // fallback background when a product has no image
 };
-
-type FlatSlide = { type: 'usp' } | ProductSlideData;
 
 interface HeroCarouselProps {
     language: string;
 }
-
-// ─── USP Slide Content (4 languages) ──────────────────────────────────────────
-interface USPItem { title: string; sub: string; href: string | null; iconColor: string; iconBg: string; }
-interface USPData { tagline: string; items: [USPItem, USPItem, USPItem]; }
-
-const USP_CONTENT: Record<string, USPData> = {
-    en: {
-        tagline: 'WHY KKSHOP?',
-        items: [
-            { title: '100% Korean\nCosmetics', sub: 'Authentic · Certified', href: null, iconColor: 'text-rose-400', iconBg: 'bg-rose-400/20' },
-            { title: 'Korean-Curated\nQuality', sub: 'Every item hand-picked', href: null, iconColor: 'text-amber-300', iconBg: 'bg-amber-300/20' },
-            { title: 'Sell\nWith Us', sub: 'Open your store →', href: '/seller/register', iconColor: 'text-violet-300', iconBg: 'bg-violet-300/20' },
-        ],
-    },
-    ko: {
-        tagline: '왜 KKShop인가요?',
-        items: [
-            { title: '화장품\n한국산 100%', sub: '정품 인증 · 직접 수입', href: null, iconColor: 'text-rose-400', iconBg: 'bg-rose-400/20' },
-            { title: '한국인이\n직접 큐레이션', sub: '엄선된 품질 보장', href: null, iconColor: 'text-amber-300', iconBg: 'bg-amber-300/20' },
-            { title: '셀러\n입점 모집', sub: '지금 신청하기 →', href: '/seller/register', iconColor: 'text-violet-300', iconBg: 'bg-violet-300/20' },
-        ],
-    },
-    km: {
-        tagline: 'ហេតុអ្វីជ្រើស KKShop?',
-        items: [
-            { title: 'គ្រឿងសំអាងកូរ៉េ\n100%', sub: 'ពិតប្រាកដ · បញ្ជាក់', href: null, iconColor: 'text-rose-400', iconBg: 'bg-rose-400/20' },
-            { title: 'ជ្រើសរើស\nដោយជំនាញ', sub: 'គ្រប់ទំនិញ', href: null, iconColor: 'text-amber-300', iconBg: 'bg-amber-300/20' },
-            { title: 'ចូលជា\nអ្នកលក់', sub: 'ចុះឈ្មោះឥឡូវ →', href: '/seller/register', iconColor: 'text-violet-300', iconBg: 'bg-violet-300/20' },
-        ],
-    },
-    zh: {
-        tagline: '为什么选择KKShop?',
-        items: [
-            { title: '化妆品100%\n韩国正品', sub: '正品认证 · 直接进口', href: null, iconColor: 'text-rose-400', iconBg: 'bg-rose-400/20' },
-            { title: '韩国人\n精选品质', sub: '每件商品精挑细选', href: null, iconColor: 'text-amber-300', iconBg: 'bg-amber-300/20' },
-            { title: '欢迎\n入驻开店', sub: '立即申请 →', href: '/seller/register', iconColor: 'text-violet-300', iconBg: 'bg-violet-300/20' },
-        ],
-    },
-};
-
-const USP_ICONS = [ShieldCheck, Star, Store] as const;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function pickRandom<T>(arr: T[], n: number): T[] {
@@ -118,55 +74,11 @@ function flattenProductSlides(rawSlides: RawSlide[]): ProductSlideData[] {
     return flat;
 }
 
-// ─── USP Slide Component ──────────────────────────────────────────────────────
-function USPSlide({ language }: { language: string }) {
-    const data = USP_CONTENT[language] ?? USP_CONTENT.en;
-
-    return (
-        <div className="relative w-full h-full overflow-hidden bg-gradient-to-br from-slate-900 via-[#1e1040] to-slate-900 flex flex-col items-center justify-center gap-5">
-            {/* Violet glow */}
-            <div
-                className="absolute inset-0 pointer-events-none opacity-30"
-                style={{ backgroundImage: 'radial-gradient(ellipse at 50% -10%, rgba(139,92,246,0.9) 0%, transparent 62%)' }}
-            />
-
-            {/* Tagline */}
-            <p className="relative text-white/40 text-[10px] font-bold tracking-[0.18em] uppercase">{data.tagline}</p>
-
-            {/* 3-column grid */}
-            <div className="relative flex w-full justify-around px-2">
-                {data.items.map((item, i) => {
-                    const Icon = USP_ICONS[i];
-                    const inner = (
-                        <div
-                            className={`flex flex-col items-center gap-2 text-center px-2 ${i < data.items.length - 1 ? 'border-r border-white/10' : ''}`}
-                            style={{ width: '30vw', maxWidth: '112px' }}
-                        >
-                            <div className={`w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 ${item.iconBg}`}>
-                                <Icon className={`w-[22px] h-[22px] ${item.iconColor}`} strokeWidth={2} />
-                            </div>
-                            <div>
-                                <p className="text-white text-[11px] font-bold leading-snug whitespace-pre-line">{item.title}</p>
-                                <p className={`text-[9px] mt-0.5 leading-tight ${item.href ? 'text-violet-300 font-semibold' : 'text-white/40'}`}>
-                                    {item.sub}
-                                </p>
-                            </div>
-                        </div>
-                    );
-                    return item.href ? (
-                        <Link key={i} href={item.href} className="active:opacity-70 transition-opacity">
-                            {inner}
-                        </Link>
-                    ) : (
-                        <div key={i}>{inner}</div>
-                    );
-                })}
-            </div>
-        </div>
-    );
-}
-
 // ─── Product Slide Component ──────────────────────────────────────────────────
+// "Wide photo" look: a blurred, scaled copy of the same product image fills the
+// whole slide, so the photo's own background colour bleeds edge-to-edge. The sharp
+// product sits on top. A dark bottom scrim guarantees the white name / price stay
+// readable regardless of how light or dark the underlying photo is.
 function ProductSlide({ slide, priority = false }: { slide: ProductSlideData; priority?: boolean }) {
     const p = slide.product;
     const hasDiscount = p.isHotSale && p.hotSalePrice != null && p.hotSalePrice < p.priceUsd;
@@ -174,38 +86,46 @@ function ProductSlide({ slide, priority = false }: { slide: ProductSlideData; pr
     const discountPct = hasDiscount ? Math.round((1 - p.hotSalePrice! / p.priceUsd) * 100) : 0;
 
     return (
-        <Link href={`/products/${p.id}`} className={`block relative w-full h-full bg-gradient-to-br ${slide.gradient} overflow-hidden`}>
-            {/* Light orb — top-right */}
-            <div
-                className="absolute inset-0 opacity-25 pointer-events-none"
-                style={{ backgroundImage: 'radial-gradient(circle at 70% 15%, rgba(255,255,255,0.9) 0%, transparent 55%)' }}
-            />
-
-            {/* Product image — full bleed */}
+        <Link href={`/products/${p.id}`} className="block relative w-full h-full overflow-hidden bg-neutral-100">
             {p.imageUrl ? (
-                <div className="absolute inset-x-5 top-0 bottom-0">
-                    <div className="relative w-full h-full">
-                        <Image
-                            src={p.imageUrl}
-                            alt={p.name}
-                            fill
-                            sizes="(max-width: 640px) 90vw, 50vw"
-                            className="object-contain drop-shadow-[0_8px_24px_rgba(0,0,0,0.45)]"
-                            priority={priority}
-                        />
+                <>
+                    {/* Blurred full-bleed background — extends the photo's own colours */}
+                    <Image
+                        src={p.imageUrl}
+                        alt=""
+                        aria-hidden
+                        fill
+                        sizes="(max-width: 640px) 100vw, 50vw"
+                        className="object-cover scale-110 blur-2xl"
+                        priority={priority}
+                    />
+                    {/* Soft wash to unify and lift contrast a touch */}
+                    <div className="absolute inset-0 bg-black/5 pointer-events-none" />
+                    {/* Sharp product image — centred */}
+                    <div className="absolute inset-x-8 top-2 bottom-2">
+                        <div className="relative w-full h-full">
+                            <Image
+                                src={p.imageUrl}
+                                alt={p.name}
+                                fill
+                                sizes="(max-width: 640px) 80vw, 40vw"
+                                className="object-contain drop-shadow-[0_8px_24px_rgba(0,0,0,0.35)]"
+                                priority={priority}
+                            />
+                        </div>
                     </div>
-                </div>
+                </>
             ) : (
-                <div className="absolute inset-0 flex items-center justify-center pb-14">
+                <div className={`absolute inset-0 bg-gradient-to-br ${slide.gradient} flex items-center justify-center pb-14`}>
                     <span className="text-7xl opacity-30">🛍</span>
                 </div>
             )}
 
-            {/* Top vignette */}
-            <div className="absolute top-0 left-0 right-0 h-10 bg-gradient-to-b from-black/35 to-transparent pointer-events-none" />
+            {/* Top scrim — keeps badges legible on light photos */}
+            <div className="absolute top-0 left-0 right-0 h-12 bg-gradient-to-b from-black/30 to-transparent pointer-events-none" />
 
-            {/* Bottom gradient — text overlay */}
-            <div className="absolute bottom-0 left-0 right-0 h-[72px] bg-gradient-to-t from-black/95 via-black/65 to-transparent" />
+            {/* Bottom scrim — guarantees text readability on any background colour */}
+            <div className="absolute bottom-0 left-0 right-0 h-[88px] bg-gradient-to-t from-black/90 via-black/55 to-transparent pointer-events-none" />
 
             {/* Badge — top-left */}
             {slide.badge && (
@@ -244,8 +164,8 @@ function ProductSlide({ slide, priority = false }: { slide: ProductSlideData; pr
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function HeroCarousel({ language }: HeroCarouselProps) {
-    // USP slide is always first — shown immediately, no shimmer needed
-    const [slides, setSlides] = useState<FlatSlide[]>([{ type: 'usp' }]);
+    // Products-only carousel — no intro slide.
+    const [slides, setSlides] = useState<ProductSlideData[]>([]);
     const [currentIdx, setCurrentIdx] = useState(0);
     const [sliding, setSliding] = useState(false);
     const [isTouching, setIsTouching] = useState(false);
@@ -258,8 +178,7 @@ export default function HeroCarousel({ language }: HeroCarouselProps) {
             .then(r => r.json())
             .then(data => {
                 if (Array.isArray(data.slides) && data.slides.length > 0) {
-                    const productSlides = flattenProductSlides(data.slides);
-                    setSlides([{ type: 'usp' }, ...productSlides]);
+                    setSlides(flattenProductSlides(data.slides));
                 }
             })
             .catch(() => {});
@@ -274,6 +193,7 @@ export default function HeroCarousel({ language }: HeroCarouselProps) {
     }, [currentIdx]);
 
     const goNext = useCallback(() => {
+        if (slides.length === 0) return;
         goTo((currentIdx + 1) % slides.length);
     }, [currentIdx, slides.length, goTo]);
 
@@ -293,6 +213,7 @@ export default function HeroCarousel({ language }: HeroCarouselProps) {
     };
     const onTouchEnd = (e: React.TouchEvent) => {
         setIsTouching(false);
+        if (slides.length <= 1) return;
         const diff = touchStartX - e.changedTouches[0].clientX;
         if (Math.abs(diff) > 40) {
             diff > 0
@@ -306,52 +227,56 @@ export default function HeroCarousel({ language }: HeroCarouselProps) {
     return (
         <div className="mb-1">
             <div
-                className="relative overflow-hidden h-[215px] sm:h-[235px]"
+                className="relative overflow-hidden h-[215px] sm:h-[235px] bg-neutral-100"
                 style={{ touchAction: 'pan-y' }}
                 onTouchStart={onTouchStart}
                 onTouchEnd={onTouchEnd}
                 onMouseEnter={() => setIsTouching(true)}
                 onMouseLeave={() => setIsTouching(false)}
             >
-                {/* All slides in DOM — GPU translateX */}
-                <div
-                    className="flex h-full"
-                    style={{
-                        width: `${slides.length * 100}%`,
-                        transform: `translateX(-${currentIdx * slideWidthPct}%)`,
-                        transition: sliding ? 'transform 360ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
-                        willChange: 'transform',
-                    }}
-                >
-                    {slides.map((slide, i) => (
+                {slides.length === 0 ? (
+                    /* Loading skeleton — avoids an empty flash before products arrive */
+                    <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-neutral-100 to-neutral-200" />
+                ) : (
+                    <>
+                        {/* All slides in DOM — GPU translateX */}
                         <div
-                            key={i}
-                            style={{ width: `${slideWidthPct}%`, flexShrink: 0, height: '100%', position: 'relative' }}
+                            className="flex h-full"
+                            style={{
+                                width: `${slides.length * 100}%`,
+                                transform: `translateX(-${currentIdx * slideWidthPct}%)`,
+                                transition: sliding ? 'transform 360ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
+                                willChange: 'transform',
+                            }}
                         >
-                            {slide.type === 'usp'
-                                ? <USPSlide language={language} />
-                                : <ProductSlide slide={slide} priority={i < 2} />
-                            }
+                            {slides.map((slide, i) => (
+                                <div
+                                    key={i}
+                                    style={{ width: `${slideWidthPct}%`, flexShrink: 0, height: '100%', position: 'relative' }}
+                                >
+                                    <ProductSlide slide={slide} priority={i < 2} />
+                                </div>
+                            ))}
                         </div>
-                    ))}
-                </div>
 
-                {/* Dot indicators */}
-                {slides.length > 1 && (
-                    <div className="absolute bottom-[52px] left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-20">
-                        {slides.map((_, idx) => (
-                            <button
-                                key={idx}
-                                onClick={() => goTo(idx)}
-                                className={`rounded-full transition-all duration-300 ${
-                                    idx === currentIdx
-                                        ? 'w-5 h-2 bg-white shadow-md'
-                                        : 'w-2 h-2 bg-white/40 hover:bg-white/70'
-                                }`}
-                                aria-label={`Slide ${idx + 1}`}
-                            />
-                        ))}
-                    </div>
+                        {/* Dot indicators */}
+                        {slides.length > 1 && (
+                            <div className="absolute bottom-[52px] left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-20">
+                                {slides.map((_, idx) => (
+                                    <button
+                                        key={idx}
+                                        onClick={() => goTo(idx)}
+                                        className={`rounded-full transition-all duration-300 ${
+                                            idx === currentIdx
+                                                ? 'w-5 h-2 bg-white shadow-md'
+                                                : 'w-2 h-2 bg-white/40 hover:bg-white/70'
+                                        }`}
+                                        aria-label={`Slide ${idx + 1}`}
+                                    />
+                                ))}
+                            </div>
+                        )}
+                    </>
                 )}
             </div>
         </div>

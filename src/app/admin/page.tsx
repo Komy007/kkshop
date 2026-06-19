@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useSession } from 'next-auth/react';
 import {
     Package, Users, ShoppingCart, Store, TrendingUp,
     Plus, Eye, Settings, ArrowRight, Sparkles, BarChart3,
@@ -16,6 +17,7 @@ interface Stats {
     pendingOrders: number;
     confirmedOrders: number;
     shippingOrders: number;
+    deliveredOrders: number;
     totalMembers: number;
     totalSuppliers: number;
     pendingSuppliers: number;
@@ -26,6 +28,9 @@ interface Stats {
 }
 
 export default function AdminDashboard() {
+    const { data: session } = useSession();
+    const role = (session?.user as any)?.role ?? 'ADMIN';
+    const isSuperAdmin = role === 'SUPERADMIN';
     const [stats, setStats] = useState<Stats | null>(null);
     const [loading, setLoading] = useState(true);
 
@@ -43,6 +48,7 @@ export default function AdminDashboard() {
                     pendingOrders:    data.pendingOrders    ?? 0,
                     confirmedOrders:  data.confirmedOrders  ?? 0,
                     shippingOrders:   data.shippingOrders   ?? 0,
+                    deliveredOrders:  data.deliveredOrders  ?? 0,
                     totalMembers:     data.totalMembers     ?? 0,
                     totalSuppliers:   data.totalSuppliers   ?? 0,
                     pendingSuppliers: data.pendingSuppliers ?? 0,
@@ -135,11 +141,12 @@ export default function AdminDashboard() {
                         <Clock className="w-4 h-4 text-gray-500" />
                         Order Status Overview
                     </h2>
-                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                         {[
                             { label: 'Pending', count: stats.pendingOrders, color: 'text-amber-600 bg-amber-50', icon: <Clock className="w-3.5 h-3.5" /> },
                             { label: 'Confirmed', count: stats.confirmedOrders, color: 'text-blue-600 bg-blue-50', icon: <CheckCircle className="w-3.5 h-3.5" /> },
                             { label: 'Shipping', count: stats.shippingOrders, color: 'text-indigo-600 bg-indigo-50', icon: <Package className="w-3.5 h-3.5" /> },
+                            { label: 'Delivered', count: stats.deliveredOrders, color: 'text-green-600 bg-green-50', icon: <CheckCircle className="w-3.5 h-3.5" /> },
                         ].map(({ label, count, color, icon }) => (
                             <div key={label} className={`flex items-center gap-2 px-3 py-2.5 rounded-xl ${color}`}>
                                 {icon}
@@ -169,10 +176,10 @@ export default function AdminDashboard() {
                     <ClipboardList className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
                     <div className="flex-1">
                         <p className="text-sm font-bold text-red-800">
-                            재고 경보: {stats.soldOutCount > 0 ? `품절 ${stats.soldOutCount}개` : ''}{stats.soldOutCount > 0 && stats.lowStockCount > 0 ? ' · ' : ''}{stats.lowStockCount > 0 ? `저재고 ${stats.lowStockCount}개` : ''}
+                            Stock Alert: {stats.soldOutCount > 0 ? `${stats.soldOutCount} sold out` : ''}{stats.soldOutCount > 0 && stats.lowStockCount > 0 ? ' · ' : ''}{stats.lowStockCount > 0 ? `${stats.lowStockCount} low stock` : ''}
                         </p>
-                        <p className="text-xs text-red-600 mt-0.5">일부 상품의 재고가 부족합니다. 입고 처리가 필요합니다.</p>
-                        <Link href="/admin/inventory" className="text-xs font-bold text-red-700 underline mt-1 inline-block">재고 관리 →</Link>
+                        <p className="text-xs text-red-600 mt-0.5">Some products are running low or sold out. Restock required.</p>
+                        <Link href="/admin/inventory" className="text-xs font-bold text-red-700 underline mt-1 inline-block">Manage Inventory →</Link>
                     </div>
                 </div>
             )}
@@ -183,13 +190,14 @@ export default function AdminDashboard() {
                 Quick Actions
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-8">
-                {[
+                {([
                     {
                         href: '/admin/products/new',
                         icon: <Plus className="w-5 h-5 text-rose-600" />,
                         color: 'bg-rose-50',
                         label: 'Add New Product',
                         desc: 'Register product with auto-translation (KO/EN/KM/ZH)',
+                        superOnly: false,
                     },
                     {
                         href: '/admin/products',
@@ -197,6 +205,7 @@ export default function AdminDashboard() {
                         color: 'bg-blue-50',
                         label: 'Manage Products',
                         desc: 'Edit, delete, categorize, toggle Hot Sale & New',
+                        superOnly: false,
                     },
                     {
                         href: '/admin/orders',
@@ -204,6 +213,7 @@ export default function AdminDashboard() {
                         color: 'bg-green-50',
                         label: 'Manage Orders',
                         desc: 'Update order status, add shipment tracking',
+                        superOnly: false,
                     },
                     {
                         href: '/admin/inventory',
@@ -211,6 +221,7 @@ export default function AdminDashboard() {
                         color: 'bg-orange-50',
                         label: 'Inventory Management',
                         desc: 'Stock levels, adjust in/out, view history',
+                        superOnly: false,
                     },
                     {
                         href: '/admin/reviews',
@@ -218,6 +229,7 @@ export default function AdminDashboard() {
                         color: 'bg-yellow-50',
                         label: 'Review Moderation',
                         desc: 'Approve or reject customer product reviews',
+                        superOnly: false,
                     },
                     {
                         href: '/admin/customers',
@@ -225,6 +237,7 @@ export default function AdminDashboard() {
                         color: 'bg-purple-50',
                         label: 'Customer Management',
                         desc: 'View members, manage roles & reset passwords',
+                        superOnly: false,
                     },
                     {
                         href: '/admin/categories',
@@ -232,6 +245,7 @@ export default function AdminDashboard() {
                         color: 'bg-gray-50',
                         label: 'Categories',
                         desc: 'Edit multilingual category names and order',
+                        superOnly: false,
                     },
                     {
                         href: '/admin/coupons',
@@ -239,6 +253,7 @@ export default function AdminDashboard() {
                         color: 'bg-emerald-50',
                         label: 'Coupons & Discounts',
                         desc: 'Create coupon codes (% off, fixed, free shipping)',
+                        superOnly: false,
                     },
                     {
                         href: '/admin/suppliers',
@@ -246,6 +261,7 @@ export default function AdminDashboard() {
                         color: 'bg-teal-50',
                         label: 'Seller Management',
                         desc: 'Approve sellers, adjust commission rates',
+                        superOnly: false,
                     },
                     {
                         href: '/admin/orders/returns',
@@ -253,6 +269,7 @@ export default function AdminDashboard() {
                         color: 'bg-orange-50',
                         label: 'Returns & Refunds',
                         desc: 'Review cancelled orders, approve or reject refunds',
+                        superOnly: false,
                     },
                     {
                         href: '/admin/support',
@@ -260,6 +277,7 @@ export default function AdminDashboard() {
                         color: 'bg-sky-50',
                         label: 'CS Support (Q&A)',
                         desc: 'Answer pending product Q&A tickets from customers',
+                        superOnly: false,
                     },
                     {
                         href: '/admin/marketing/banners',
@@ -267,6 +285,7 @@ export default function AdminDashboard() {
                         color: 'bg-pink-50',
                         label: 'Homepage Banners',
                         desc: 'Add, reorder, and toggle hero banner slides',
+                        superOnly: false,
                     },
                     {
                         href: '/admin/products/bulk-import',
@@ -274,6 +293,7 @@ export default function AdminDashboard() {
                         color: 'bg-violet-50',
                         label: 'Bulk Product Import',
                         desc: 'Upload a CSV to register many products at once',
+                        superOnly: false,
                     },
                     {
                         href: '/admin/suppliers/payouts',
@@ -281,6 +301,7 @@ export default function AdminDashboard() {
                         color: 'bg-teal-50',
                         label: 'Supplier Payouts',
                         desc: 'Revenue breakdown, commission, and net payout per supplier',
+                        superOnly: true,
                     },
                     {
                         href: '/admin/suppliers/commission',
@@ -288,6 +309,7 @@ export default function AdminDashboard() {
                         color: 'bg-emerald-50',
                         label: 'Commission Rules',
                         desc: 'Set global and per-supplier commission rates',
+                        superOnly: true,
                     },
                     {
                         href: '/admin/settings/seo',
@@ -295,6 +317,7 @@ export default function AdminDashboard() {
                         color: 'bg-indigo-50',
                         label: 'SEO Settings',
                         desc: 'Site meta, OG image, Google Analytics & verification',
+                        superOnly: true,
                     },
                     {
                         href: '/admin/settings/points',
@@ -302,6 +325,7 @@ export default function AdminDashboard() {
                         color: 'bg-yellow-50',
                         label: 'Points & Rewards',
                         desc: 'Earn rate, redeem rate, expiry, welcome & review bonuses',
+                        superOnly: true,
                     },
                     {
                         href: '/admin/landing-settings',
@@ -309,6 +333,7 @@ export default function AdminDashboard() {
                         color: 'bg-pink-50',
                         label: 'Landing Page Settings',
                         desc: 'Edit top banners, trust badges, promotions',
+                        superOnly: true,
                     },
                     {
                         href: '/admin/settings/roles',
@@ -316,6 +341,7 @@ export default function AdminDashboard() {
                         color: 'bg-orange-50',
                         label: 'Admin Role Settings',
                         desc: 'Assign ADMIN / SUPERADMIN roles',
+                        superOnly: true,
                     },
                     {
                         href: '/admin/settings/email',
@@ -323,6 +349,7 @@ export default function AdminDashboard() {
                         color: 'bg-blue-50',
                         label: 'Email Settings',
                         desc: 'Configure SMTP for order notifications',
+                        superOnly: true,
                     },
                     {
                         href: '/admin/change-password',
@@ -330,8 +357,11 @@ export default function AdminDashboard() {
                         color: 'bg-red-50',
                         label: 'Change Password',
                         desc: 'Reset admin account password directly',
+                        superOnly: false,
                     },
-                ].map(({ href, icon, color, label, desc }) => (
+                ] as { href: string; icon: React.ReactNode; color: string; label: string; desc: string; superOnly: boolean }[])
+                    .filter(item => !item.superOnly || isSuperAdmin)
+                    .map(({ href, icon, color, label, desc }) => (
                     <Link key={href} href={href}
                         className="flex items-center gap-3 p-4 bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-blue-100 transition-all group">
                         <div className={`p-2.5 rounded-xl ${color} flex-shrink-0`}>{icon}</div>

@@ -8,7 +8,7 @@ import RichTextEditor from '@/components/RichTextEditor';
 import ImportFromUrlsButton from '@/components/ImportFromUrlsButton';
 import { useTranslations } from '@/i18n/useTranslations';
 
-interface Category { id: string; slug: string; nameKo: string; nameEn?: string; parentId?: string | null; }
+interface Category { id: string; slug: string; name: string; nameEn?: string; parentId?: string | null; }
 
 const MAX_MAIN_IMAGES = 10;
 const MAX_DETAIL_IMAGES = 50;
@@ -120,12 +120,15 @@ export default function SellerProductNewPage() {
     const [volumeVars, setVolumeVars] = useState<{_k:string;label:string;stock:string;price:string}[]>([]);
     const [customVars, setCustomVars] = useState<{_k:string;label:string;stock:string;price:string}[]>([]);
 
+    const [doTranslate, setDoTranslate] = useState(true);
+
     const [form, setForm] = useState({
         sku: '', priceUsd: '', stockQty: '0', categoryId: '',
+        baseLang: 'ko',
         brandName: '', volume: '', origin: '', skinType: '', expiryMonths: '', certifications: '',
         unitLabel: 'pc', unitsPerPkg: '',
-        nameKo: '', shortDescKo: '', detailDescKo: '',
-        ingredientsKo: '', howToUseKo: '', benefitsKo: '',
+        name: '', shortDesc: '', detailDesc: '',
+        ingredients: '', howToUse: '', benefits: '',
         weightGram: '', lengthCm: '', widthCm: '', heightCm: '',
     });
 
@@ -158,7 +161,7 @@ export default function SellerProductNewPage() {
     // ── Draft autosave: persist text fields whenever they change ──────────────
     useEffect(() => {
         // Only save if the user has typed something meaningful
-        if (!form.nameKo && !form.sku && !form.priceUsd && !form.detailDescKo) return;
+        if (!form.name && !form.sku && !form.priceUsd && !form.detailDesc) return;
         const id = setTimeout(() => {
             try {
                 localStorage.setItem(DRAFT_KEY, JSON.stringify({ form, bulkDiscountEnabled, options, savedAt: Date.now() }));
@@ -169,7 +172,7 @@ export default function SellerProductNewPage() {
 
     // ── Warn before leaving with unsaved content ──────────────────────────────
     useEffect(() => {
-        const hasContent = Boolean(form.nameKo || form.sku || form.priceUsd || form.detailDescKo || images.length);
+        const hasContent = Boolean(form.name || form.sku || form.priceUsd || form.detailDesc || images.length);
         const handler = (e: BeforeUnloadEvent) => {
             if (hasContent && !submitting && !success) {
                 e.preventDefault();
@@ -185,10 +188,11 @@ export default function SellerProductNewPage() {
         clearDraft();
         setForm({
             sku: '', priceUsd: '', stockQty: '0', categoryId: '',
+            baseLang: 'ko',
             brandName: '', volume: '', origin: '', skinType: '', expiryMonths: '', certifications: '',
             unitLabel: 'pc', unitsPerPkg: '',
-            nameKo: '', shortDescKo: '', detailDescKo: '',
-            ingredientsKo: '', howToUseKo: '', benefitsKo: '',
+            name: '', shortDesc: '', detailDesc: '',
+            ingredients: '', howToUse: '', benefits: '',
             weightGram: '', lengthCm: '', widthCm: '', heightCm: '',
         });
         setBulkDiscountEnabled(false);
@@ -324,7 +328,7 @@ export default function SellerProductNewPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!form.nameKo)     return alert('Product name is required. · 상품명을 입력해주세요.');
+        if (!form.name)     return alert('Product name is required. · 상품명을 입력해주세요.');
         if (!form.priceUsd)   return alert('Price is required. · 판매가를 입력해주세요.');
         if (!form.categoryId) return alert('Please select a category. · 카테고리를 선택해주세요.');
 
@@ -423,6 +427,7 @@ export default function SellerProductNewPage() {
             detailImageAlts,
             options: bulkDiscountEnabled ? options : [],
             variants: variantsPayload,
+            doTranslate,
             approvalStatus: 'PENDING',
             status: 'INACTIVE',
         };
@@ -616,7 +621,7 @@ export default function SellerProductNewPage() {
                                                 <div key={src} className="flex items-center gap-3">
                                                     <img src={src} className="w-12 h-12 object-cover rounded-lg border border-gray-200 flex-shrink-0" />
                                                     <input type="text" value={imageAlts[i] || ''} onChange={e => setMainAltAt(i, e.target.value)}
-                                                        placeholder={`${form.nameKo || 'Product'} - ${i + 1}`} maxLength={255}
+                                                        placeholder={`${form.name || 'Product'} - ${i + 1}`} maxLength={255}
                                                         className="flex-1 border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-teal-500 focus:outline-none" />
                                                 </div>
                                             ))}
@@ -631,7 +636,7 @@ export default function SellerProductNewPage() {
                                                 <div key={src} className="flex items-center gap-3">
                                                     <img src={src} className="w-12 h-12 object-cover rounded-lg border border-gray-200 flex-shrink-0" />
                                                     <input type="text" value={detailImageAlts[i] || ''} onChange={e => setDetailAltAt(i, e.target.value)}
-                                                        placeholder={`${form.nameKo || 'Product'} detail ${i + 1}`} maxLength={255}
+                                                        placeholder={`${form.name || 'Product'} detail ${i + 1}`} maxLength={255}
                                                         className="flex-1 border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none" />
                                                 </div>
                                             ))}
@@ -673,13 +678,13 @@ export default function SellerProductNewPage() {
                                     {categories.filter(c => !c.parentId).map(parent => {
                                         const subs = categories.filter(c => c.parentId === parent.id);
                                         return subs.length > 0 ? (
-                                            <optgroup key={parent.id} label={`📁 ${parent.nameEn || parent.nameKo}`}>
+                                            <optgroup key={parent.id} label={`📁 ${parent.nameEn || parent.name}`}>
                                                 {subs.map(s => (
-                                                    <option key={s.id} value={s.id}>{s.nameEn || s.nameKo}</option>
+                                                    <option key={s.id} value={s.id}>{s.nameEn || s.name}</option>
                                                 ))}
                                             </optgroup>
                                         ) : (
-                                            <option key={parent.id} value={parent.id}>{parent.nameEn || parent.nameKo}</option>
+                                            <option key={parent.id} value={parent.id}>{parent.nameEn || parent.name}</option>
                                         );
                                     })}
                                 </select>
@@ -1087,42 +1092,72 @@ export default function SellerProductNewPage() {
                 </Section>
 
                 {/* ── Product Description ── */}
-                <Section title="🌐 Product Description" sub="상품 설명 — 어떤 언어로 입력해도 4개국어 자동 번역 · Any language auto-translated to 4 langs">
+                <Section title="🌐 Product Description" sub="상품 설명 — 4개국어 자동 번역 지원 · Auto-translated to 4 languages">
                     <div className="space-y-4">
-                        <div className="flex items-center gap-2 text-xs text-teal-600 bg-teal-50 px-3 py-2 rounded-lg border border-teal-100">
-                            <Sparkles className="w-3.5 h-3.5 flex-shrink-0" />
-                            {t.admin.new.autoDetect?.notice ?? 'Enter in any language — auto-detected & translated into 4 languages'}
+                        <div className="flex items-start justify-between gap-3 flex-wrap">
+                            {/* Language selector */}
+                            <div className="flex items-center gap-2">
+                                <span className="text-xs font-semibold text-gray-600">Input language:</span>
+                                <select value={form.baseLang} onChange={e => set('baseLang', e.target.value)}
+                                    className="border border-gray-200 rounded-lg py-1.5 px-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500">
+                                    <option value="ko">🇰🇷 한국어</option>
+                                    <option value="en">🇺🇸 English</option>
+                                    <option value="zh">🇨🇳 中文</option>
+                                    <option value="km">🇰🇭 ខ្មែរ</option>
+                                </select>
+                            </div>
+                            {/* Auto-translate toggle */}
+                            <label className={`flex items-center gap-2 cursor-pointer px-3 py-1.5 rounded-xl border transition-all text-sm ${doTranslate ? 'border-teal-400 bg-teal-50' : 'border-gray-200'}`}>
+                                <input type="checkbox" checked={doTranslate} onChange={e => setDoTranslate(e.target.checked)}
+                                    className="rounded text-teal-600 focus:ring-teal-500" />
+                                <span className={`font-semibold ${doTranslate ? 'text-teal-700' : 'text-gray-500'}`}>
+                                    Auto-translate to 4 languages
+                                </span>
+                            </label>
                         </div>
+                        {!doTranslate && (
+                            <div className="flex items-center gap-2 text-xs text-amber-600 bg-amber-50 px-3 py-2 rounded-lg border border-amber-100">
+                                <Info className="w-3.5 h-3.5 flex-shrink-0" />
+                                Auto-translate is off. The same text will be used for all 4 languages.
+                            </div>
+                        )}
                         <Field en="Product Name" ko="상품명" required>
-                            <input value={form.nameKo} onChange={e => set('nameKo', e.target.value)}
+                            <input value={form.name} onChange={e => set('name', e.target.value)}
                                 placeholder="e.g. Hydrating Ampoule Serum 50ml · 수분 앰플 세럼 50ml" className={inp} required />
                         </Field>
                         <Field en="Short Description" ko="짧은 설명">
-                            <textarea value={form.shortDescKo} onChange={e => set('shortDescKo', e.target.value)}
+                            <textarea value={form.shortDesc} onChange={e => set('shortDesc', e.target.value)}
                                 placeholder="1–2 line summary shown on product cards" rows={2} className={ta} />
                         </Field>
                         <Field en="Detailed Description" ko="상세 설명">
                             <RichTextEditor
-                                value={form.detailDescKo}
-                                onChange={(html) => set('detailDescKo', html)}
+                                value={form.detailDesc}
+                                onChange={(html) => set('detailDesc', html)}
                                 placeholder="Brand story, key features, ingredient tables, comparison charts… · 표·리스트·강조 지원"
                                 minHeight={200}
                             />
                         </Field>
                         <Field en="Key Ingredients" ko="주요 성분">
-                            <textarea value={form.ingredientsKo} onChange={e => set('ingredientsKo', e.target.value)}
+                            <textarea value={form.ingredients} onChange={e => set('ingredients', e.target.value)}
                                 placeholder="e.g. Hyaluronic Acid, Niacinamide, Panthenol…" rows={3} className={ta} />
                         </Field>
                         <Field en="How to Use" ko="사용 방법">
-                            <textarea value={form.howToUseKo} onChange={e => set('howToUseKo', e.target.value)}
+                            <textarea value={form.howToUse} onChange={e => set('howToUse', e.target.value)}
                                 placeholder="e.g. After cleansing, apply appropriate amount to face…" rows={3} className={ta} />
                         </Field>
                         <Field en="Benefits / Features" ko="효능/특징">
-                            <textarea value={form.benefitsKo} onChange={e => set('benefitsKo', e.target.value)}
+                            <textarea value={form.benefits} onChange={e => set('benefits', e.target.value)}
                                 placeholder="e.g. 24hr hydration, soothing, brightening…" rows={3} className={ta} />
                         </Field>
                     </div>
                 </Section>
+
+                {images.length === 0 && (
+                    <div className="flex items-start gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+                        <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                        <span>No product images uploaded. Products without images are less likely to be approved. Upload at least 1 image for best results.</span>
+                    </div>
+                )}
 
                 <button type="submit" disabled={submitting}
                     className="w-full flex items-center justify-center gap-2 py-3.5 bg-teal-600 text-white font-extrabold rounded-xl hover:bg-teal-700 disabled:opacity-60 text-base shadow-md transition-all">

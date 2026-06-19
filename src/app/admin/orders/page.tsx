@@ -2,6 +2,7 @@ import React from 'react';
 import { prisma } from '@/lib/api';
 import { ShoppingBag, Truck, ChevronLeft, ChevronRight } from 'lucide-react';
 import OrderShipmentModal from '@/components/admin/OrderShipmentModal';
+import AdminOrdersFilter from '@/components/admin/AdminOrdersFilter';
 import { revalidatePath } from 'next/cache';
 import { sendOrderStatusEmail } from '@/lib/mail';
 import { logAudit } from '@/lib/audit';
@@ -186,41 +187,71 @@ async function updateOrderStatus(orderId: string, newStatus: string) {
 }
 
 const STATUS_STYLE: Record<string, string> = {
-    PENDING:   'bg-amber-50 text-amber-700 border-amber-200',
-    CONFIRMED: 'bg-blue-50 text-blue-700 border-blue-200',
-    SHIPPING:  'bg-indigo-50 text-indigo-700 border-indigo-200',
-    DELIVERED: 'bg-green-50 text-green-700 border-green-200',
-    CANCELLED: 'bg-red-50 text-red-700 border-red-200',
-    REFUNDED:  'bg-gray-50 text-gray-500 border-gray-200',
+    PENDING:          'bg-amber-50 text-amber-700 border-amber-200',
+    CONFIRMED:        'bg-blue-50 text-blue-700 border-blue-200',
+    SHIPPING:         'bg-indigo-50 text-indigo-700 border-indigo-200',
+    DELIVERED:        'bg-green-50 text-green-700 border-green-200',
+    CANCELLED:        'bg-red-50 text-red-700 border-red-200',
+    REFUNDED:         'bg-gray-50 text-gray-500 border-gray-200',
+    RETURN_REQUESTED: 'bg-orange-50 text-orange-700 border-orange-200',
 };
 
 const PAGE_SIZE = 20;
 
-export default async function AdminOrdersPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
+export default async function AdminOrdersPage({ searchParams }: { searchParams: Promise<{ page?: string; status?: string; q?: string }> }) {
     const params = await searchParams;
     const page = Math.max(1, parseInt(params.page ?? '1', 10));
+    const status = params.status ?? '';
+    const q = params.q ?? '';
     const skip = (page - 1) * PAGE_SIZE;
+
+    const where: Record<string, any> = {};
+    if (status) where.status = status;
+    if (q) {
+        where.OR = [
+            { id: { contains: q, mode: 'insensitive' } },
+            { customerName: { contains: q, mode: 'insensitive' } },
+            { customerEmail: { contains: q, mode: 'insensitive' } },
+        ];
+    }
 
     const [orders, total] = await Promise.all([
         prisma.order.findMany({
+            where,
             orderBy: { createdAt: 'desc' },
             skip,
             take: PAGE_SIZE,
             include: {
-                items: { include: { product: true } },
+                items: {
+                    include: {
+                        product: {
+                            include: {
+                                translations: { where: { langCode: 'en' }, take: 1 },
+                            },
+                        },
+                    },
+                },
                 shipment: true,
             },
         }),
-        prisma.order.count(),
+        prisma.order.count({ where }),
     ]);
     const totalPages = Math.ceil(total / PAGE_SIZE);
 
     const formatUsd = (price: any) =>
         new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(price));
 
+    const buildPageUrl = (p: number) => {
+        const sp = new URLSearchParams();
+        sp.set('page', String(p));
+        if (status) sp.set('status', status);
+        if (q) sp.set('q', q);
+        return `?${sp.toString()}`;
+    };
+
     return (
         <div className="max-w-7xl mx-auto py-8 px-4">
-            <header className="mb-6 p-5 bg-white rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
+            <header className="mb-4 p-5 bg-white rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
                 <div>
                     <h1 className="text-xl font-black text-gray-900 flex items-center gap-2">
                         <ShoppingBag className="w-5 h-5 text-blue-600" /> Order Management
@@ -232,7 +263,10 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
                 </div>
             </header>
 
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <AdminOrdersFilter currentStatus={status} currentQ={q} />
+
+            {/* Desktop table */}
+            <div className="hidden md:block bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm">
                         <thead className="bg-gray-50 border-b border-gray-100 text-gray-500 font-semibold uppercase tracking-wider text-xs">
@@ -248,7 +282,7 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
                         <tbody className="divide-y divide-gray-100">
                             {orders.length === 0 && (
                                 <tr>
-                                    <td colSpan={6} className="px-5 py-16 text-center text-gray-400">No orders yet.</td>
+                                    <td colSpan={6} className="px-5 py-16 text-center text-gray-400">No orders found.</td>
                                 </tr>
                             )}
                             {orders.map(order => {
@@ -270,16 +304,18 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
                                         </td>
                                         <td className="px-5 py-4 align-top">
                                             <div className="font-bold text-gray-900 text-sm">{order.customerName}</div>
-                                            <div className="text-gray-500 text-xs mt-0.5">{order.customerPhone}</div>
                                             <div className="text-gray-400 text-xs mt-0.5 truncate max-w-[140px]">{order.customerEmail}</div>
                                         </td>
                                         <td className="px-5 py-4 align-top">
                                             <ul className="space-y-0.5">
-                                                {order.items.map(item => (
-                                                    <li key={item.id} className="text-xs text-gray-600">
-                                                        • {item.product.sku} × {item.quantity}
-                                                    </li>
-                                                ))}
+                                                {order.items.map(item => {
+                                                    const enName = item.product.translations[0]?.name ?? item.product.sku;
+                                                    return (
+                                                        <li key={item.id} className="text-xs text-gray-600 line-clamp-1 max-w-[200px]">
+                                                            • {enName} × {item.quantity}
+                                                        </li>
+                                                    );
+                                                })}
                                             </ul>
                                         </td>
                                         <td className="px-5 py-4 align-top">
@@ -292,7 +328,6 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
                                         </td>
                                         <td className="px-5 py-4 align-top">
                                             <div className="flex flex-col gap-1.5">
-                                                {/* Status transition buttons */}
                                                 {order.status === 'PENDING' && (
                                                     <form action={confirmAction}>
                                                         <button type="submit" className="w-full text-xs px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 rounded font-semibold transition-colors">
@@ -321,7 +356,6 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
                                                         </button>
                                                     </form>
                                                 )}
-                                                {/* Shipment tracking */}
                                                 <OrderShipmentModal orderId={order.id} shipment={order.shipment} />
                                             </div>
                                         </td>
@@ -333,6 +367,72 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
                 </div>
             </div>
 
+            {/* Mobile cards */}
+            <div className="md:hidden space-y-3">
+                {orders.length === 0 && (
+                    <div className="py-16 text-center text-gray-400 text-sm bg-white rounded-2xl border border-gray-100">No orders found.</div>
+                )}
+                {orders.map(order => {
+                    const confirmAction = updateOrderStatus.bind(null, order.id, 'CONFIRMED');
+                    const shipAction = updateOrderStatus.bind(null, order.id, 'SHIPPING');
+                    const deliverAction = updateOrderStatus.bind(null, order.id, 'DELIVERED');
+                    const cancelAction = updateOrderStatus.bind(null, order.id, 'CANCELLED');
+                    return (
+                        <div key={order.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+                            <div className="flex items-start justify-between mb-2">
+                                <div>
+                                    <div className="font-mono text-[10px] text-gray-400">{order.id.slice(0, 12)}…</div>
+                                    <div className="text-xs text-gray-500 mt-0.5">
+                                        {order.createdAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                    </div>
+                                </div>
+                                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border ${STATUS_STYLE[order.status] ?? 'bg-gray-50 text-gray-500 border-gray-200'}`}>
+                                    {order.status}
+                                </span>
+                            </div>
+                            <div className="mb-2">
+                                <div className="font-bold text-gray-900 text-sm">{order.customerName}</div>
+                                <div className="text-xs text-gray-400">{order.customerEmail}</div>
+                            </div>
+                            <ul className="space-y-0.5 mb-3">
+                                {order.items.map(item => {
+                                    const enName = item.product.translations[0]?.name ?? item.product.sku;
+                                    return (
+                                        <li key={item.id} className="text-xs text-gray-600 line-clamp-1">• {enName} × {item.quantity}</li>
+                                    );
+                                })}
+                            </ul>
+                            <div className="flex items-center justify-between">
+                                <span className="font-black text-rose-600 text-base">{formatUsd(order.totalUsd)}</span>
+                                <div className="flex gap-1.5">
+                                    {order.status === 'PENDING' && (
+                                        <form action={confirmAction}>
+                                            <button type="submit" className="text-xs px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-200 rounded font-semibold">✓ Confirm</button>
+                                        </form>
+                                    )}
+                                    {order.status === 'CONFIRMED' && (
+                                        <form action={shipAction}>
+                                            <button type="submit" className="text-xs px-3 py-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded font-semibold">Ship</button>
+                                        </form>
+                                    )}
+                                    {order.status === 'SHIPPING' && (
+                                        <form action={deliverAction}>
+                                            <button type="submit" className="text-xs px-3 py-1.5 bg-green-50 text-green-700 border border-green-200 rounded font-semibold">✅ Delivered</button>
+                                        </form>
+                                    )}
+                                    {(order.status === 'PENDING' || order.status === 'CONFIRMED') && (
+                                        <form action={cancelAction}>
+                                            <button type="submit" className="text-xs px-3 py-1.5 bg-red-50 text-red-600 border border-red-200 rounded font-semibold">✕ Cancel</button>
+                                        </form>
+                                    )}
+                                    <OrderShipmentModal orderId={order.id} shipment={order.shipment} />
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+
             {/* Pagination */}
             {totalPages > 1 && (
                 <div className="mt-6 flex items-center justify-between">
@@ -341,7 +441,7 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
                     </p>
                     <div className="flex items-center gap-2">
                         {page > 1 && (
-                            <a href={`?page=${page - 1}`} className="flex items-center gap-1 px-3 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                            <a href={buildPageUrl(page - 1)} className="flex items-center gap-1 px-3 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
                                 <ChevronLeft className="w-4 h-4" /> Prev
                             </a>
                         )}
@@ -349,7 +449,7 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
                             {page} / {totalPages}
                         </span>
                         {page < totalPages && (
-                            <a href={`?page=${page + 1}`} className="flex items-center gap-1 px-3 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                            <a href={buildPageUrl(page + 1)} className="flex items-center gap-1 px-3 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
                                 Next <ChevronRight className="w-4 h-4" />
                             </a>
                         )}

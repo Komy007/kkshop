@@ -67,7 +67,7 @@ export default function SellerDashboard() {
                         <h1 className="text-2xl font-extrabold text-gray-900 leading-tight">
                             👋 {profile?.companyName || 'Supplier'} Dashboard
                         </h1>
-                        <p className="text-sm text-gray-400 mt-0.5">공급업체 대시보드</p>
+                        <p className="text-sm text-gray-400 mt-0.5">Supplier Dashboard</p>
                     </div>
                 </div>
 
@@ -93,6 +93,22 @@ export default function SellerDashboard() {
                     </div>
                 )}
             </div>
+
+            {/* ── Rejected products alert ── */}
+            {!loading && stats && stats.rejectedProducts > 0 && (
+                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3">
+                    <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                        <p className="text-sm font-bold text-red-800">
+                            {stats.rejectedProducts} product{stats.rejectedProducts > 1 ? 's' : ''} rejected
+                        </p>
+                        <p className="text-xs text-red-600 mt-0.5">Please review the rejection reason and re-submit.</p>
+                        <Link href="/seller/products?status=REJECTED" className="text-xs font-bold text-red-700 underline mt-1 inline-block">
+                            View rejected products →
+                        </Link>
+                    </div>
+                </div>
+            )}
 
             {/* ── Stats grid ── */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
@@ -137,7 +153,7 @@ export default function SellerDashboard() {
                     </div>
                     <div className="flex-1">
                         <div className="font-bold text-base leading-tight">Register New Product</div>
-                        <div className="text-xs opacity-75 mt-0.5">새 상품 등록 — 관리자 검수 후 판매 시작</div>
+                        <div className="text-xs opacity-75 mt-0.5">Admin review required before going live</div>
                     </div>
                     <ArrowRight className="w-4 h-4 opacity-70" />
                 </Link>
@@ -168,16 +184,18 @@ export default function SellerDashboard() {
                     <ArrowRight className="w-4 h-4 text-gray-300" />
                 </Link>
 
-                {/* Sales stats — coming soon */}
-                <div className="flex items-center gap-4 p-4 bg-white rounded-xl border border-dashed border-gray-200">
+                {/* Sales stats — payout summary */}
+                <Link href="/seller/payouts"
+                    className="flex items-center gap-4 p-4 bg-white rounded-xl border border-dashed border-gray-200 hover:border-emerald-300 hover:bg-emerald-50 transition-all active:scale-[.99]">
                     <div className="p-2 bg-gray-50 rounded-lg">
-                        <BarChart2 className="w-5 h-5 text-gray-300" />
+                        <BarChart2 className="w-5 h-5 text-emerald-500" />
                     </div>
                     <div className="flex-1">
-                        <div className="font-bold text-base text-gray-400 leading-tight">Sales Analytics</div>
-                        <div className="text-xs text-gray-300 mt-0.5">매출 통계 — Coming Soon · 준비중</div>
+                        <div className="font-bold text-base text-gray-700 leading-tight">Sales & Payouts</div>
+                        <div className="text-xs text-gray-400 mt-0.5">Revenue, commission, and net payout</div>
                     </div>
-                </div>
+                    <ArrowRight className="w-4 h-4 text-gray-300" />
+                </Link>
             </div>
 
             {/* ── Tips ── */}

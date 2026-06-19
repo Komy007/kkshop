@@ -46,9 +46,9 @@ interface AnalyticsData {
 const PIE_COLORS = ['#e91e8c', '#6366f1', '#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
 const PERIODS = [
-  { label: '7일', value: '7d' },
-  { label: '30일', value: '30d' },
-  { label: '90일', value: '90d' },
+  { label: '7 days', value: '7d' },
+  { label: '30 days', value: '30d' },
+  { label: '90 days', value: '90d' },
 ];
 
 function StatCard({
@@ -117,7 +117,7 @@ export default function AnalyticsPage() {
       const json = await res.json();
       setData(json);
     } catch {
-      setError('분석 데이터를 불러오지 못했습니다.');
+      setError('Failed to load analytics data.');
     } finally {
       setLoading(false);
     }
@@ -136,9 +136,9 @@ export default function AnalyticsPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <BarChart2 className="w-6 h-6 text-indigo-500" /> 분석 대시보드
+            <BarChart2 className="w-6 h-6 text-indigo-500" /> Analytics Dashboard
           </h1>
-          <p className="text-sm text-gray-500 mt-1">매출, 주문, 회원 데이터를 한눈에 확인합니다.</p>
+          <p className="text-sm text-gray-500 mt-1">Revenue, orders, and member data at a glance.</p>
         </div>
         <div className="flex items-center gap-2">
           {/* Period Selector */}
@@ -169,14 +169,14 @@ export default function AnalyticsPage() {
       {loading ? (
         <div className="flex flex-col items-center justify-center py-32">
           <Loader2 className="w-10 h-10 animate-spin text-indigo-500 mb-4" />
-          <p className="text-gray-500 font-medium">데이터를 불러오는 중...</p>
+          <p className="text-gray-500 font-medium">Loading data...</p>
         </div>
       ) : error ? (
         <div className="text-center py-24 bg-white rounded-2xl border border-red-100 shadow-sm">
           <BarChart2 className="w-12 h-12 text-gray-200 mx-auto mb-4" />
           <p className="text-red-500 font-medium">{error}</p>
           <button onClick={fetchData} className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors">
-            다시 시도
+            Retry
           </button>
         </div>
       ) : data ? (
@@ -185,28 +185,28 @@ export default function AnalyticsPage() {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <StatCard
               icon={<DollarSign className="w-6 h-6 text-pink-600" />}
-              label="총 매출"
+              label="Total Revenue"
               value={`$${data.summary.totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-              sub={data.summary.revenueChange !== undefined ? `전 기간 대비 ${data.summary.revenueChange > 0 ? '+' : ''}${data.summary.revenueChange}%` : undefined}
+              sub={data.summary.revenueChange !== undefined ? `vs. prior period: ${data.summary.revenueChange > 0 ? '+' : ''}${data.summary.revenueChange}%` : undefined}
               color="bg-pink-50"
             />
             <StatCard
               icon={<ShoppingBag className="w-6 h-6 text-indigo-600" />}
-              label="총 주문"
-              value={`${data.summary.totalOrders.toLocaleString()}건`}
-              sub={data.summary.ordersChange !== undefined ? `전 기간 대비 ${data.summary.ordersChange > 0 ? '+' : ''}${data.summary.ordersChange}%` : undefined}
+              label="Total Orders"
+              value={`${data.summary.totalOrders.toLocaleString()}`}
+              sub={data.summary.ordersChange !== undefined ? `vs. prior period: ${data.summary.ordersChange > 0 ? '+' : ''}${data.summary.ordersChange}%` : undefined}
               color="bg-indigo-50"
             />
             <StatCard
               icon={<TrendingUp className="w-6 h-6 text-emerald-600" />}
-              label="평균 주문액"
+              label="Avg. Order Value"
               value={`$${data.summary.avgOrderValue.toFixed(2)}`}
               color="bg-emerald-50"
             />
             <StatCard
               icon={<Users className="w-6 h-6 text-sky-600" />}
-              label="신규 회원"
-              value={`${data.summary.newUsers.toLocaleString()}명`}
+              label="New Members"
+              value={`${data.summary.newUsers.toLocaleString()}`}
               color="bg-sky-50"
             />
           </div>
@@ -214,10 +214,10 @@ export default function AnalyticsPage() {
           {/* Daily Revenue Bar Chart */}
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
             <h2 className="text-base font-bold text-gray-900 mb-5 flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-indigo-500" /> 일별 매출 (Daily Revenue)
+              <TrendingUp className="w-4 h-4 text-indigo-500" /> Daily Revenue
             </h2>
             {data.dailyRevenue.length === 0 ? (
-              <div className="flex items-center justify-center h-48 text-gray-400 text-sm">데이터 없음</div>
+              <div className="flex items-center justify-center h-48 text-gray-400 text-sm">No data</div>
             ) : (
               <ResponsiveContainer width="100%" height={260}>
                 <BarChart data={data.dailyRevenue} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
@@ -249,11 +249,11 @@ export default function AnalyticsPage() {
             <div className="lg:col-span-3 bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
               <div className="px-6 py-4 border-b border-gray-100">
                 <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
-                  <ShoppingBag className="w-4 h-4 text-pink-500" /> 판매 상위 10 상품
+                  <ShoppingBag className="w-4 h-4 text-pink-500" /> Top 10 Products
                 </h2>
               </div>
               {data.topProducts.length === 0 ? (
-                <div className="flex items-center justify-center py-16 text-gray-400 text-sm">데이터 없음</div>
+                <div className="flex items-center justify-center py-16 text-gray-400 text-sm">No data</div>
               ) : (
                 <div className="divide-y divide-gray-50">
                   {data.topProducts.slice(0, 10).map((p) => (
@@ -273,7 +273,7 @@ export default function AnalyticsPage() {
                       )}
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-gray-900 truncate">{p.name}</p>
-                        <p className="text-xs text-gray-400">{p.qtySold.toLocaleString()}개 판매</p>
+                        <p className="text-xs text-gray-400">{p.qtySold.toLocaleString()} sold</p>
                       </div>
                       <div className="text-right flex-shrink-0">
                         <p className="text-sm font-bold text-gray-900">${p.revenue.toFixed(2)}</p>
@@ -287,10 +287,10 @@ export default function AnalyticsPage() {
             {/* Category Revenue Pie */}
             <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
               <h2 className="text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <BarChart2 className="w-4 h-4 text-sky-500" /> 카테고리별 매출
+                <BarChart2 className="w-4 h-4 text-sky-500" /> Revenue by Category
               </h2>
               {data.categoryRevenue.length === 0 ? (
-                <div className="flex items-center justify-center h-48 text-gray-400 text-sm">데이터 없음</div>
+                <div className="flex items-center justify-center h-48 text-gray-400 text-sm">No data</div>
               ) : (
                 <ResponsiveContainer width="100%" height={260}>
                   <PieChart>

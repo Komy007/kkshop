@@ -93,23 +93,35 @@ export async function POST(req: Request) {
         certifications,
         unitLabel, unitsPerPkg,
         weightGram, lengthCm, widthCm, heightCm,
-        nameKo, shortDescKo, detailDescKo, ingredientsKo, howToUseKo, benefitsKo,
+        // Support both new field names (name, shortDesc, ...) and legacy Ko-suffix names
+        name: nameInput, shortDesc: shortDescInput, detailDesc: detailDescInput,
+        ingredients: ingredientsInput, howToUse: howToUseInput, benefits: benefitsInput,
+        nameKo: nameKoLegacy, shortDescKo, detailDescKo, ingredientsKo, howToUseKo, benefitsKo,
         imageUrls = [], detailImageUrls = [],
         imageAlts = [], detailImageAlts = [],
         options = [], variants = [],
+        doTranslate = true,
+        baseLang,
     } = body;
 
-    if (!sku || !priceUsd || !nameKo) return NextResponse.json({ error: '필수 값 누락' }, { status: 400 });
+    const nameKo = nameInput ?? nameKoLegacy;
+    const shortDescKoFinal = shortDescInput ?? shortDescKo;
+    const detailDescKoFinal = detailDescInput ?? detailDescKo;
+    const ingredientsKoFinal = ingredientsInput ?? ingredientsKo;
+    const howToUseKoFinal = howToUseInput ?? howToUseKo;
+    const benefitsKoFinal = benefitsInput ?? benefitsKo;
+
+    if (!sku || !priceUsd || !nameKo) return NextResponse.json({ error: 'Missing required fields: sku, priceUsd, name' }, { status: 400 });
 
     // SKU length limit (max 50 chars)
-    if (sku.trim().length > 50) return NextResponse.json({ error: 'SKU는 50자 이하여야 합니다.' }, { status: 400 });
+    if (sku.trim().length > 50) return NextResponse.json({ error: 'SKU must be 50 characters or less.' }, { status: 400 });
 
     // Check for duplicate SKU
     const existing = await prisma.product.findUnique({ where: { sku } });
-    if (existing) return NextResponse.json({ error: 'SKU가 이미 존재합니다.' }, { status: 400 });
+    if (existing) return NextResponse.json({ error: 'SKU already exists.' }, { status: 400 });
 
-    // Auto-detect input language from product name — no manual selection needed
-    const srcLang: string = await detectLanguage(nameKo);
+    // Auto-detect input language (use provided baseLang if set, else auto-detect)
+    const srcLang: string = baseLang || (await detectLanguage(nameKo));
 
     const translateField = async (text: string, targetLang: string): Promise<string | null> => {
         if (!text?.trim()) return null;
@@ -117,16 +129,16 @@ export async function POST(req: Request) {
     };
 
     // Build translations for all 4 langs.
-    // Detected language slot → store original text as-is (no API call).
-    // All other slots → translate via Google Translate.
+    // If doTranslate=false, copy the same text to all languages without API calls.
+    // If doTranslate=true, detected/selected language slot → original text, other slots → Google Translate.
     const buildTranslation = async (langCode: string) => ({
         langCode,
-        name: langCode === srcLang ? nameKo : await translateField(nameKo, langCode),
-        shortDesc: langCode === srcLang ? (shortDescKo || null) : (shortDescKo ? await translateField(shortDescKo, langCode) : null),
-        detailDesc: langCode === srcLang ? (detailDescKo || null) : (detailDescKo ? await translateField(detailDescKo, langCode) : null),
-        ingredients: langCode === srcLang ? (ingredientsKo || null) : (ingredientsKo ? await translateField(ingredientsKo, langCode) : null),
-        howToUse: langCode === srcLang ? (howToUseKo || null) : (howToUseKo ? await translateField(howToUseKo, langCode) : null),
-        benefits: langCode === srcLang ? (benefitsKo || null) : (benefitsKo ? await translateField(benefitsKo, langCode) : null),
+        name: (!doTranslate || langCode === srcLang) ? nameKo : await translateField(nameKo, langCode),
+        shortDesc: !shortDescKoFinal ? null : ((!doTranslate || langCode === srcLang) ? shortDescKoFinal : await translateField(shortDescKoFinal, langCode)),
+        detailDesc: !detailDescKoFinal ? null : ((!doTranslate || langCode === srcLang) ? detailDescKoFinal : await translateField(detailDescKoFinal, langCode)),
+        ingredients: !ingredientsKoFinal ? null : ((!doTranslate || langCode === srcLang) ? ingredientsKoFinal : await translateField(ingredientsKoFinal, langCode)),
+        howToUse: !howToUseKoFinal ? null : ((!doTranslate || langCode === srcLang) ? howToUseKoFinal : await translateField(howToUseKoFinal, langCode)),
+        benefits: !benefitsKoFinal ? null : ((!doTranslate || langCode === srcLang) ? benefitsKoFinal : await translateField(benefitsKoFinal, langCode)),
     });
 
     const [trKo, trEn, trKm, trZh] = await Promise.all([

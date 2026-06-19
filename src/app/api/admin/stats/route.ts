@@ -23,6 +23,7 @@ export async function GET() {
         pendingOrders,
         confirmedOrders,
         shippingOrders,
+        deliveredOrders,
         totalMembers,
         totalSuppliers,
         pendingSuppliers,
@@ -37,11 +38,10 @@ export async function GET() {
         prisma.order.count({ where: { status: 'PENDING' } }),
         prisma.order.count({ where: { status: 'CONFIRMED' } }),
         prisma.order.count({ where: { status: 'SHIPPING' } }),
+        prisma.order.count({ where: { status: 'DELIVERED' } }),
         prisma.user.count({ where: { role: 'USER' } }),
         prisma.supplier.count(),
         prisma.supplier.count({ where: { status: 'PENDING' } }),
-        // 재고 경보: stockQty가 stockAlertQty 이하이고 0 초과
-        // Prisma는 동일 테이블 컬럼 간 비교를 지원하지 않으므로 raw query 사용
         prisma.$queryRaw<[{ count: number }]>`
             SELECT COUNT(*)::int AS count FROM "Product"
             WHERE status = 'ACTIVE' AND "stockQty" > 0 AND "stockQty" <= "stockAlertQty"
@@ -58,6 +58,7 @@ export async function GET() {
         pendingOrders,
         confirmedOrders,
         shippingOrders,
+        deliveredOrders,
         totalMembers,
         totalSuppliers,
         pendingSuppliers,

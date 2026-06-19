@@ -60,7 +60,8 @@ export default function SellerPayoutsPage() {
         const blob = new Blob([header + rows], { type: 'text/csv' });
         const url  = URL.createObjectURL(blob);
         const a    = document.createElement('a');
-        a.href = url; a.download = `my-payouts-${period}d.csv`; a.click();
+        const periodLabel = PERIODS.find(([v]) => v === period)?.[1]?.replace(' ', '-') ?? `${period}d`;
+        a.href = url; a.download = `payouts-${periodLabel}-${new Date().toISOString().slice(0, 10)}.csv`; a.click();
         URL.revokeObjectURL(url);
     };
 
@@ -120,12 +121,17 @@ export default function SellerPayoutsPage() {
 
             {/* Payout Formula */}
             {summary && (
-                <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 text-sm text-blue-800">
-                    <span className="font-bold">Payout Formula · 정산 계산식: </span>
-                    Gross ${summary.grossRevenue.toFixed(2)} − Commission {summary.commissionRate}% (${summary.commission.toFixed(2)}) = <strong>Net ${summary.netPayout.toFixed(2)}</strong>
-                    <span className="text-xs opacity-70 block mt-1">
-                        * Only DELIVERED orders are counted · 배송완료(DELIVERED) 주문만 집계됩니다. Actual payout processed by admin · 실제 정산은 플랫폼 관리자가 처리합니다.
-                    </span>
+                <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 text-sm text-blue-800 space-y-2">
+                    <div>
+                        <span className="font-bold">Payout Formula: </span>
+                        Gross ${summary.grossRevenue.toFixed(2)} − Commission {summary.commissionRate}% (${summary.commission.toFixed(2)}) = <strong>Net ${summary.netPayout.toFixed(2)}</strong>
+                    </div>
+                    <div className="text-xs text-blue-700 opacity-80 space-y-0.5">
+                        <p>• Only <strong>DELIVERED</strong> orders count towards your payout.</p>
+                        <p>• Payout schedule: Processed by admin <strong>on the 1st and 15th of each month</strong>.</p>
+                        <p>• Minimum payout threshold: <strong>$10.00</strong>. Amounts below this roll over to the next cycle.</p>
+                        <p>• Please contact admin if you have not received a payout within 5 business days of the cycle date.</p>
+                    </div>
                 </div>
             )}
 

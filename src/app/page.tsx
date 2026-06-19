@@ -4,6 +4,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import CategoryShortcuts from '@/components/CategoryShortcuts';
 import CurationSection from '@/components/CurationSection';
 import HeroCarousel from '@/components/HeroCarousel';
+import USPStrip from '@/components/USPStrip';
 import Footer from '@/components/Footer';
 import { useSafeAppStore } from '@/store/useAppStore';
 import { Search, Star, Flame, Crown, ChevronRight, Zap, Clock, Plus, CheckCircle, X, ArrowUp } from 'lucide-react';
@@ -642,6 +643,9 @@ export default function Home() {
 
                 {/* ── Hero Carousel ── */}
                 <HeroCarousel language={language} />
+
+                {/* ── Trust badges + Seller CTA (moved out of the hero slider) ── */}
+                <USPStrip />
 
                 {/* ── Live Purchase Ticker ── */}
                 <PurchaseTicker t={t} />

@@ -260,6 +260,11 @@ export async function POST(req: Request) {
             options = [], // [{ minQty, maxQty, discountPct, freeShipping, labelKo }]
             variants = [], // [{ variantType, variantValue, sku?, stockQty, priceUsd?, imageUrl?, sortOrder }]
             doTranslate = false, // translate to all 4 languages only when explicitly requested
+            isHotSale = false,
+            hotSalePrice = null,
+            hotSaleStartAt = null,
+            hotSaleEndAt = null,
+            costPrice = null,
         } = body;
 
         if (!sku || !priceUsd || !name || !baseLang) {
@@ -392,6 +397,11 @@ export async function POST(req: Request) {
                     certifications: certifications || null,
                     unitLabel: unitLabel || null,
                     unitsPerPkg: unitsPerPkg ? parseInt(unitsPerPkg) : null,
+                    isHotSale: Boolean(isHotSale),
+                    hotSalePrice: hotSalePrice ? parseFloat(hotSalePrice) : null,
+                    hotSaleStartAt: hotSaleStartAt ? new Date(hotSaleStartAt) : null,
+                    hotSaleEndAt: hotSaleEndAt ? new Date(hotSaleEndAt) : null,
+                    costPrice: costPrice ? parseFloat(costPrice) : null,
                 }
             });
 
