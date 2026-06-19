@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import TaegukgiIcon from "@/components/TaegukgiIcon";
 import Link from "next/link";
-import { Globe, User, ShoppingCart, Menu, X, LogOut, Settings, Heart, Store } from "lucide-react";
+import { Globe, User, ShoppingCart, Menu, X, LogOut, Settings, Heart, Store, LogIn } from "lucide-react";
 import { useSafeMarketStore, rehydrateLanguageStore } from "@/store/useAppStore";
 import { useCartStore, selectTotalItems } from "@/store/useCartStore";
 import { useSession, signOut } from "next-auth/react";
@@ -179,11 +179,18 @@ export default function GNB() {
                         <div className="relative" ref={userRef}>
                             <button
                                 onClick={() => setUserMenuOpen(!userMenuOpen)}
-                                className="flex items-center gap-2 px-3 py-2 rounded-full bg-white border border-gray-200 hover:border-brand-primary/40 hover:text-brand-primary transition-all text-gray-700 shadow-sm"
+                                className={`flex items-center gap-2 px-3 py-2 rounded-full border shadow-sm transition-all ${
+                                    session
+                                        ? 'bg-white border-teal-200 text-teal-600 hover:border-teal-400 hover:text-teal-700'
+                                        : 'bg-rose-50 border-rose-300 text-rose-500 hover:bg-rose-100 hover:border-rose-400'
+                                }`}
                             >
-                                <Avatar src={session?.user?.image} />
+                                {session
+                                    ? <Avatar src={session.user?.image} />
+                                    : <LogIn className="w-4 h-4" />
+                                }
                                 <span className="text-sm font-bold">
-                                    {session ? (session.user?.name?.split(' ')[0] || 'My') : 'My'}
+                                    {session ? (session.user?.name?.split(' ')[0] || 'My') : 'Login'}
                                 </span>
                             </button>
 
