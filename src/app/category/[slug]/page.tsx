@@ -49,10 +49,10 @@ export default function CategoryDetailPage() {
     const searchParams = useSearchParams();
 
     const accentMap: Record<string, { banner: string; label: string; icon: string }> = {
-        hot:     { banner: 'bg-red-50 border-red-200 text-red-700',    label: t.sortHot,     icon: '🔥' },
-        newest:  { banner: 'bg-blue-50 border-blue-200 text-blue-700', label: t.sortNewest,  icon: '✨' },
-        popular: { banner: 'bg-amber-50 border-amber-200 text-amber-700', label: t.sortPopular, icon: '👑' },
-        rating:  { banner: 'bg-purple-50 border-purple-200 text-purple-700', label: t.sortRating, icon: '⭐' },
+        hot:     { banner: 'bg-red-50 border-red-200 text-red-700',       label: t['sortHot'] ?? '',     icon: '🔥' },
+        newest:  { banner: 'bg-blue-50 border-blue-200 text-blue-700',    label: t['sortNewest'] ?? '',  icon: '✨' },
+        popular: { banner: 'bg-amber-50 border-amber-200 text-amber-700', label: t['sortPopular'] ?? '', icon: '👑' },
+        rating:  { banner: 'bg-purple-50 border-purple-200 text-purple-700', label: t['sortRating'] ?? '', icon: '⭐' },
     };
 
     // State

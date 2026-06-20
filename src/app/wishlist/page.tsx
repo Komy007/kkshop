@@ -109,7 +109,6 @@ export default function WishlistPage() {
             name: item.name,
             priceUsd: price,
             imageUrl: item.imageUrl || '',
-            qty: 1,
         });
         setAddedIds(prev => new Set(prev).add(item.productId));
         setTimeout(() => setAddedIds(prev => { const s = new Set(prev); s.delete(item.productId); return s; }), 1500);

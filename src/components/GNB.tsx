@@ -186,7 +186,7 @@ export default function GNB() {
                                 }`}
                             >
                                 {session
-                                    ? <Avatar src={session.user?.image} />
+                                    ? <Avatar src={session.user?.image ?? null} />
                                     : <LogIn className="w-4 h-4" />
                                 }
                                 <span className="text-sm font-bold">

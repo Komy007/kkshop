@@ -39,7 +39,7 @@ export async function logAudit(params: LogAuditParams): Promise<void> {
                 action: params.action,
                 resource: params.resource ?? null,
                 resourceId: params.resourceId ?? null,
-                details: params.details ?? undefined,
+                ...(params.details !== undefined ? { details: params.details as any } : {}),
                 ipAddress: params.ipAddress ?? null,
             },
         });
@@ -52,7 +52,7 @@ export async function logAudit(params: LogAuditParams): Promise<void> {
 export function getIpFromRequest(req: Request): string | null {
     const forwarded = req.headers.get('x-forwarded-for');
     if (forwarded) {
-        const first = forwarded.split(',')[0].trim();
+        const first = (forwarded.split(',')[0] ?? '').trim();
         if (/^[\d.]+$/.test(first) || /^[a-f0-9:]+$/i.test(first)) return first;
     }
     return req.headers.get('x-real-ip');

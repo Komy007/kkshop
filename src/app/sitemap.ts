@@ -1,4 +1,4 @@
-import { MetadataRoute } from 'next';
+import type { MetadataRoute } from 'next';
 import { prisma } from '@/lib/api';
 
 const BASE_URL = 'https://kkshop.cc';
@@ -57,7 +57,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             }),
             prisma.category.findMany({
                 where: { parentId: null }, // Top-level categories only
-                select: { slug: true, updatedAt: true },
+                select: { slug: true }, // Category has no updatedAt field
             }),
         ]);
 
@@ -70,7 +70,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
         const dbCategoryPages: MetadataRoute.Sitemap = categories.map((c) => ({
             url: `${BASE_URL}/category/${c.slug}`,
-            lastModified: c.updatedAt,
+            lastModified: new Date(), // Category has no updatedAt — use current date
             changeFrequency: 'daily' as const,
             priority: 0.9,
         }));

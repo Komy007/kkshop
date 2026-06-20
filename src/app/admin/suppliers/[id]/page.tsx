@@ -243,17 +243,17 @@ export default function SupplierDetailPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 px-6 py-2 divide-y md:divide-y-0">
                     <div>
-                        <InfoField icon={Building2} label="Company Name" labelKo="회사명" value={form.companyName} editing={editing} name="companyName" onChange={set} />
-                        <InfoField icon={FileText} label="Brand Name" labelKo="브랜드명" value={form.brandName} editing={editing} name="brandName" onChange={set} />
-                        <InfoField icon={User} label="CEO Name" labelKo="대표자명" value={form.ceoName} editing={editing} name="ceoName" onChange={set} />
-                        <InfoField icon={FileText} label="Business Number" labelKo="사업자번호" value={form.businessNumber} editing={editing} name="businessNumber" onChange={set} />
-                        <InfoField icon={MapPin} label="Business Address" labelKo="사업장주소" value={form.businessAddress} editing={editing} name="businessAddress" onChange={set} />
-                        <InfoField icon={Globe} label="Country" labelKo="국가" value={form.country} editing={editing} name="country" onChange={set} />
+                        <InfoField icon={Building2} label="Company Name" labelKo="회사명" value={form['companyName'] ?? ''} editing={editing} name="companyName" onChange={set} />
+                        <InfoField icon={FileText} label="Brand Name" labelKo="브랜드명" value={form['brandName'] ?? ''} editing={editing} name="brandName" onChange={set} />
+                        <InfoField icon={User} label="CEO Name" labelKo="대표자명" value={form['ceoName'] ?? ''} editing={editing} name="ceoName" onChange={set} />
+                        <InfoField icon={FileText} label="Business Number" labelKo="사업자번호" value={form['businessNumber'] ?? ''} editing={editing} name="businessNumber" onChange={set} />
+                        <InfoField icon={MapPin} label="Business Address" labelKo="사업장주소" value={form['businessAddress'] ?? ''} editing={editing} name="businessAddress" onChange={set} />
+                        <InfoField icon={Globe} label="Country" labelKo="국가" value={form['country'] ?? ''} editing={editing} name="country" onChange={set} />
                     </div>
                     <div>
-                        <InfoField icon={Mail} label="Contact Email" labelKo="이메일" value={form.contactEmail} editing={editing} name="contactEmail" onChange={set} type="email" />
-                        <InfoField icon={Phone} label="Phone" labelKo="연락처" value={form.phone} editing={editing} name="phone" onChange={set} />
-                        <InfoField icon={Percent} label="Commission Rate (%)" labelKo="수수료율" value={form.commissionRate} editing={editing} name="commissionRate" onChange={set} type="number" />
+                        <InfoField icon={Mail} label="Contact Email" labelKo="이메일" value={form['contactEmail'] ?? ''} editing={editing} name="contactEmail" onChange={set} type="email" />
+                        <InfoField icon={Phone} label="Phone" labelKo="연락처" value={form['phone'] ?? ''} editing={editing} name="phone" onChange={set} />
+                        <InfoField icon={Percent} label="Commission Rate (%)" labelKo="수수료율" value={form['commissionRate'] ?? ''} editing={editing} name="commissionRate" onChange={set} type="number" />
                         <InfoField icon={Calendar} label="Registered" labelKo="등록일" value={new Date(s.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })} editing={false} name="" onChange={() => {}} />
                         <InfoField icon={Calendar} label="Last Updated" labelKo="수정일" value={new Date(s.updatedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })} editing={false} name="" onChange={() => {}} />
                     </div>

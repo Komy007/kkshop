@@ -281,8 +281,8 @@ export default function AdminSuppliersPage() {
                 {FILTERS.map(s => (
                     <button key={s} onClick={() => setFilterStatus(s)}
                         className={`px-4 py-1.5 rounded-full text-sm font-semibold border transition-colors ${filterStatus === s ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>
-                        {FILTER_LABELS[s].en}
-                        <span className="text-[11px] opacity-60 ml-1">· {FILTER_LABELS[s].ko}</span>
+                        {FILTER_LABELS[s]?.en ?? s}
+                        <span className="text-[11px] opacity-60 ml-1">· {FILTER_LABELS[s]?.ko ?? s}</span>
                     </button>
                 ))}
             </div>
@@ -299,7 +299,8 @@ export default function AdminSuppliersPage() {
             ) : (
                 <div className="space-y-3">
                     {suppliers.map(s => {
-                        const cfg = statusConfig[s.status] ?? statusConfig['PENDING'];
+                        // 'PENDING' は必ず statusConfig に存在するため ! アサーション
+                        const cfg = statusConfig[s.status] ?? statusConfig['PENDING']!;
                         const isExpanded = expanded === s.id;
                         return (
                             <div key={s.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">

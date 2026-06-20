@@ -46,7 +46,7 @@ export async function POST(req: Request) {
         const body = await req.json();
         const parsed = RegisterSchema.safeParse(body);
         if (!parsed.success) {
-            const msg = parsed.error.errors[0]?.message ?? '입력값이 올바르지 않습니다.';
+            const msg = parsed.error.issues[0]?.message ?? '입력값이 올바르지 않습니다.';
             return NextResponse.json({ error: msg }, { status: 400 });
         }
         const { name, email, password, phone, address, detailAddress, postalCode, referralCode } = parsed.data;

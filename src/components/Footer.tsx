@@ -3,12 +3,9 @@
 import React from 'react';
 import { useSafeAppStore } from '@/store/useAppStore';
 
-const footerTexts: Record<string, {
-    tagline: string; tagline2: string;
-    support: string; orders: string;
-    info: string; about: string; delivery: string; privacy: string; terms: string;
-    payments: string; copyright: string; builtWith: string;
-}> = {
+// noUncheckedIndexedAccess で Record<string,V>[key] は V|undefined になるため
+// explicit 型アノテーションを外して推論させる → faq/contact も含む完全型が確定し t が always defined になる
+const footerTexts = {
     en: {
         tagline: "Cambodia's No.1 Premium E-commerce.",
         tagline2: 'Experience the authentic taste and quality of Korea right here in Phnom Penh. We deliver to wherever you are.',
@@ -51,10 +48,14 @@ const footerTexts: Record<string, {
     },
 };
 
+type FooterLang = keyof typeof footerTexts; // 'en' | 'ko' | 'km' | 'zh'
+
 export default function Footer() {
     const store = useSafeAppStore();
     const language = store?.language || 'en';
-    const t = footerTexts[language] || footerTexts.en;
+    // language는 string — FooterLang 키인지 확인 후 좁힘 → t가 항상 defined
+    const lang: FooterLang = (language in footerTexts ? language : 'en') as FooterLang;
+    const t = footerTexts[lang];
 
     return (
         <footer className="bg-white text-gray-700 py-16 text-sm border-t border-gray-200 relative z-10 w-full">

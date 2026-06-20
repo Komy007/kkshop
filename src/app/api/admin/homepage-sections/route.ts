@@ -47,7 +47,7 @@ export async function GET(req: Request) {
         const products = await prisma.product.findMany({
             where,
             orderBy,
-            take,
+            ...(take !== undefined ? { take } : {}),
             include: {
                 translations: {
                     where: { langCode: 'ko' },

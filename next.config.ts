@@ -68,9 +68,6 @@ const nextConfig: NextConfig = {
     // sharp is a native binary — keep it external so the prebuilt .node files are loaded
     // at runtime rather than bundled by webpack (which would break native modules).
     serverExternalPackages: ['sharp'],
-    typescript: {
-        ignoreBuildErrors: true,
-    },
     async headers() {
         return [
             {

@@ -72,8 +72,9 @@ const t: Record<string, any> = {
 export default function OnboardingPage() {
     const router = useRouter();
     const { update } = useSession();
-    const lang = useSafeAppStore((s) => s.language) || 'en';
-    const tx = t[lang] || t.en;
+    const store = useSafeAppStore();
+    const lang = store?.language || 'en';
+    const tx = (lang in t ? t[lang as keyof typeof t] : t.en) ?? t.en;
 
     const [phone, setPhone] = useState('');
     const [address, setAddress] = useState('');

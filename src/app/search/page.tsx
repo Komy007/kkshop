@@ -121,8 +121,8 @@ export default function SearchPage() {
     const [page, setPage] = useState(0);
     const [suggestions, setSuggestions] = useState<{ brands: string[]; products: { id: string; name: string }[] }>({ brands: [], products: [] });
     const [showSuggestions, setShowSuggestions] = useState(false);
-    const debounceRef = useRef<ReturnType<typeof setTimeout>>();
-    const suggestRef = useRef<ReturnType<typeof setTimeout>>();
+    const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+    const suggestRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
     // Load recent searches from localStorage
     useEffect(() => {
@@ -215,7 +215,7 @@ export default function SearchPage() {
     const handleSearch = (e?: React.FormEvent) => {
         if (e) e.preventDefault();
         if (query.trim()) saveSearch(query.trim());
-        fetchProducts(query);
+        fetchProducts(query, 0, false);
     };
 
     return (

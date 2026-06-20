@@ -101,7 +101,7 @@ export async function GET(req: Request) {
         const newRaw = await prisma.product.findMany({
             where: {
                 ...baseWhere,
-                id: { notIn: hotIds.length > 0 ? hotIds : undefined },
+                id: { notIn: hotIds },
             },
             include,
             orderBy: [
@@ -118,7 +118,7 @@ export async function GET(req: Request) {
         const popularRaw = await prisma.product.findMany({
             where: {
                 ...baseWhere,
-                id: { notIn: excludeIds.length > 0 ? excludeIds : undefined },
+                id: { notIn: excludeIds },
             },
             include,
             orderBy: [

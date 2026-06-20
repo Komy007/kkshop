@@ -16,7 +16,7 @@ export async function POST(req: Request) {
     }
     const pwResult = PasswordSchema.safeParse(newPassword);
     if (!pwResult.success) {
-        return NextResponse.json({ error: pwResult.error.errors[0]?.message ?? 'password_too_weak' }, { status: 400 });
+        return NextResponse.json({ error: pwResult.error.issues[0]?.message ?? 'password_too_weak' }, { status: 400 });
     }
 
     const user = await prisma.user.findUnique({ where: { id: session.user.id } });

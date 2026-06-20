@@ -116,15 +116,15 @@ export default function CurationSection({ products, todayPicks: curatedPicks = [
                     sku: product.sku,
                     priceUsd: product.priceUsd,
                     stockQty: product.stockQty,
-                    imageUrl: product.imageUrl ?? null,
+                    imageUrl: product.imageUrl ?? '',
                     name: product.name,
                     shortDesc: product.shortDesc || '',
                     rating: product.reviewAvg,
                     reviewCount: product.reviewCount,
                     badgeAuthentic: product.badgeAuthentic,
                     badgeKoreanCertified: product.badgeKoreanCertified,
-                    brandName: product.brandName,
-                    origin: product.origin,
+                    brandName: product.brandName ?? null,
+                    origin: product.origin ?? null,
                 }}
             />
         </div>

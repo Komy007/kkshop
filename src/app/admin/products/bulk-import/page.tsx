@@ -29,7 +29,7 @@ LNG-WSM-001,"Laneige Water Sleeping Mask",25.00,50,skincare,Laneige,https://exam
 
 function parseCsv(text: string): ImportRow[] {
     const lines  = text.trim().split('\n');
-    const header = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
+    const header = (lines[0] ?? '').split(',').map(h => h.replace(/"/g, '').trim());
     return lines.slice(1).map(line => {
         const values: string[] = [];
         let current  = '';

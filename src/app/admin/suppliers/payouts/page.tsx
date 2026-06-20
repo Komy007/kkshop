@@ -70,7 +70,7 @@ export default function PayoutsPage() {
                 <div className="flex items-center gap-3">
                     {/* Period selector */}
                     <div className="flex gap-1 bg-slate-100 rounded-xl p-1">
-                        {[['7', '7D'], ['30', '30D'], ['90', '90D'], ['365', '1Y']].map(([v, l]) => (
+                        {([['7', '7D'], ['30', '30D'], ['90', '90D'], ['365', '1Y']] as [string, string][]).map(([v, l]) => (
                             <button key={v} onClick={() => setPeriod(v)}
                                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${period === v ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}>
                                 {l}

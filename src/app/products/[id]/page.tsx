@@ -1,4 +1,4 @@
-import { Metadata } from 'next';
+import type { Metadata } from 'next';
 import { prisma } from '@/lib/api';
 import ProductDetailClient from './ProductDetailClient';
 

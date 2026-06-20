@@ -250,7 +250,7 @@ export default function NewProductPage() {
     const reorderImages = (from: number, to: number) => {
         setImages(prev => {
             const arr = [...prev];
-            const [moved] = arr.splice(from, 1);
+            const moved = arr.splice(from, 1)[0]!;
             arr.splice(to, 0, moved);
             return arr;
         });
@@ -259,7 +259,7 @@ export default function NewProductPage() {
     const reorderDetailImages = (from: number, to: number) => {
         setDetailImages(prev => {
             const arr = [...prev];
-            const [moved] = arr.splice(from, 1);
+            const moved = arr.splice(from, 1)[0]!;
             arr.splice(to, 0, moved);
             return arr;
         });

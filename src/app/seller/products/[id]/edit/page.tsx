@@ -144,7 +144,7 @@ export default function SellerProductEditPage() {
     const sizeSectionRef   = useRef<HTMLDivElement>(null);
     const volumeSectionRef = useRef<HTMLDivElement>(null);
     const customSectionRef = useRef<HTMLDivElement>(null);
-    const scrollInto = (ref: React.RefObject<HTMLDivElement>) =>
+    const scrollInto = (ref: React.RefObject<HTMLDivElement | null>) =>
         requestAnimationFrame(() => requestAnimationFrame(() =>
             ref.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
         ));
@@ -333,10 +333,10 @@ export default function SellerProductEditPage() {
     };
 
     const reorderMain = (from: number, to: number) => {
-        setMainImageList(prev => { const a = [...prev]; const [m] = a.splice(from, 1); a.splice(to, 0, m); return a; });
+        setMainImageList(prev => { const a = [...prev]; const m = a.splice(from, 1)[0]!; a.splice(to, 0, m); return a; });
     };
     const reorderDetail = (from: number, to: number) => {
-        setDetailImageList(prev => { const a = [...prev]; const [m] = a.splice(from, 1); a.splice(to, 0, m); return a; });
+        setDetailImageList(prev => { const a = [...prev]; const m = a.splice(from, 1)[0]!; a.splice(to, 0, m); return a; });
     };
 
     const setMainAlt = (idx: number, alt: string) =>
@@ -349,7 +349,7 @@ export default function SellerProductEditPage() {
         const endpoint = square ? '/api/upload?crop=square' : '/api/upload';
         for (const it of list) {
             if (it.existingId && it.url) {
-                out.push({ id: it.existingId, url: it.url, alt: it.alt });
+                out.push({ id: it.existingId, url: it.url, ...(it.alt !== undefined && { alt: it.alt }) });
                 continue;
             }
             if (it.file) {
@@ -357,9 +357,9 @@ export default function SellerProductEditPage() {
                 fd.append('file', it.file);
                 const res = await fetch(endpoint, { method: 'POST', body: fd });
                 const data = await res.json();
-                if (data.url) out.push({ url: data.url, alt: it.alt });
+                if (data.url) out.push({ url: data.url, ...(it.alt !== undefined && { alt: it.alt }) });
             } else if (it.url) {
-                out.push({ url: it.url, alt: it.alt });
+                out.push({ url: it.url, ...(it.alt !== undefined && { alt: it.alt }) });
             }
         }
         return out;
@@ -535,7 +535,7 @@ export default function SellerProductEditPage() {
     };
 
     const setTransField = (lang: string, field: keyof TransFields, value: string) => {
-        setTranslations(prev => ({ ...prev, [lang]: { ...prev[lang], [field]: value } }));
+        setTranslations(prev => ({ ...prev, [lang]: { ...(prev[lang] ?? {}), [field]: value } as TransFields }));
     };
 
     if (loading) {
@@ -641,9 +641,7 @@ export default function SellerProductEditPage() {
                                     images={mainImageList.map((img) => ({
                                         id: img.existingId ?? img.preview,
                                         src: img.preview,
-                                        badge: img.file ? 'New · 신규' : undefined,
-                                        badgeColor: img.file ? 'bg-teal-600' : undefined,
-                                        borderColor: img.file ? 'border-teal-300 border-2' : undefined,
+                                        ...(img.file && { badge: 'New · 신규', badgeColor: 'bg-teal-600', borderColor: 'border-teal-300 border-2' }),
                                     }))}
                                     onReorder={reorderMain}
                                     onRemove={removeMainImage}
@@ -705,9 +703,7 @@ export default function SellerProductEditPage() {
                                     images={detailImageList.map((img) => ({
                                         id: img.existingId ?? img.preview,
                                         src: img.preview,
-                                        badge: img.file ? 'New · 신규' : undefined,
-                                        badgeColor: img.file ? 'bg-purple-600' : undefined,
-                                        borderColor: img.file ? 'border-purple-300 border-2' : undefined,
+                                        ...(img.file && { badge: 'New · 신규', badgeColor: 'bg-purple-600', borderColor: 'border-purple-300 border-2' }),
                                     }))}
                                     onReorder={reorderDetail}
                                     onRemove={removeDetailImage}
@@ -1328,33 +1324,38 @@ export default function SellerProductEditPage() {
                             </div>
 
                             {/* Fields for the active language */}
+                            {/* noUncheckedIndexedAccess: translations[transLang] は | undefined なので安全な変数に抽出 */}
+                            {(() => {
+                            const tf: TransFields = translations[transLang] ?? { name: '', shortDesc: '', detailDesc: '', ingredients: '', howToUse: '', benefits: '' };
+                            return (
                             <div className="space-y-3">
                                 <div>
                                     <label className="block text-xs font-semibold text-gray-700 mb-1">Product Name · 상품명</label>
-                                    <input type="text" value={translations[transLang].name} onChange={e => setTransField(transLang, 'name', e.target.value)} className={inp} />
+                                    <input type="text" value={tf.name} onChange={e => setTransField(transLang, 'name', e.target.value)} className={inp} />
                                 </div>
                                 <div>
                                     <label className="block text-xs font-semibold text-gray-700 mb-1">Short Description · 짧은 설명</label>
-                                    <textarea rows={2} value={translations[transLang].shortDesc} onChange={e => setTransField(transLang, 'shortDesc', e.target.value)} className={ta} />
+                                    <textarea rows={2} value={tf.shortDesc} onChange={e => setTransField(transLang, 'shortDesc', e.target.value)} className={ta} />
                                 </div>
                                 <div>
                                     <label className="block text-xs font-semibold text-gray-700 mb-1">Key Ingredients · 주요 성분</label>
-                                    <textarea rows={2} value={translations[transLang].ingredients} onChange={e => setTransField(transLang, 'ingredients', e.target.value)} className={ta} />
+                                    <textarea rows={2} value={tf.ingredients} onChange={e => setTransField(transLang, 'ingredients', e.target.value)} className={ta} />
                                 </div>
                                 <div>
                                     <label className="block text-xs font-semibold text-gray-700 mb-1">How to Use · 사용 방법</label>
-                                    <textarea rows={2} value={translations[transLang].howToUse} onChange={e => setTransField(transLang, 'howToUse', e.target.value)} className={ta} />
+                                    <textarea rows={2} value={tf.howToUse} onChange={e => setTransField(transLang, 'howToUse', e.target.value)} className={ta} />
                                 </div>
                                 <div>
                                     <label className="block text-xs font-semibold text-gray-700 mb-1">Benefits / Features · 효능/특징</label>
-                                    <textarea rows={2} value={translations[transLang].benefits} onChange={e => setTransField(transLang, 'benefits', e.target.value)} className={ta} />
+                                    <textarea rows={2} value={tf.benefits} onChange={e => setTransField(transLang, 'benefits', e.target.value)} className={ta} />
                                 </div>
                                 <div>
                                     <label className="block text-xs font-semibold text-gray-700 mb-1">Detailed Description (HTML) · 상세 설명</label>
-                                    <textarea rows={4} value={translations[transLang].detailDesc} onChange={e => setTransField(transLang, 'detailDesc', e.target.value)} className={`${ta} font-mono text-xs`} />
+                                    <textarea rows={4} value={tf.detailDesc} onChange={e => setTransField(transLang, 'detailDesc', e.target.value)} className={`${ta} font-mono text-xs`} />
                                     <p className="text-[10px] text-gray-400 mt-1">HTML 태그는 그대로 유지됩니다. · HTML tags are preserved.</p>
                                 </div>
                             </div>
+                            );})()}
 
                             <button type="button" onClick={handleSaveTranslations} disabled={savingTrans}
                                 className="w-full flex items-center justify-center gap-2 py-2.5 bg-teal-600 text-white rounded-xl text-sm font-bold hover:bg-teal-700 transition-colors disabled:opacity-60">

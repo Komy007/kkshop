@@ -45,7 +45,7 @@ function pickRandom<T>(arr: T[], n: number): T[] {
 
 function pickOne<T>(arr: T[]): T | null {
     if (!arr || arr.length === 0) return null;
-    return arr[Math.floor(Math.random() * arr.length)];
+    return arr[Math.floor(Math.random() * arr.length)] ?? null;
 }
 
 function flattenProductSlides(rawSlides: RawSlide[]): ProductSlideData[] {
@@ -209,12 +209,12 @@ export default function HeroCarousel({ language }: HeroCarouselProps) {
 
     const onTouchStart = (e: React.TouchEvent) => {
         setIsTouching(true);
-        setTouchStartX(e.touches[0].clientX);
+        setTouchStartX(e.touches[0]!.clientX);
     };
     const onTouchEnd = (e: React.TouchEvent) => {
         setIsTouching(false);
         if (slides.length <= 1) return;
-        const diff = touchStartX - e.changedTouches[0].clientX;
+        const diff = touchStartX - e.changedTouches[0]!.clientX;
         if (Math.abs(diff) > 40) {
             diff > 0
                 ? goTo((currentIdx + 1) % slides.length)

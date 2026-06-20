@@ -153,7 +153,7 @@ function useInView(ref: React.RefObject<any>, rootMargin = '300px') {
         const el = ref.current;
         if (!el) return;
         const observer = new IntersectionObserver(
-            ([entry]) => { if (entry.isIntersecting) { setInView(true); observer.disconnect(); } },
+            ([entry]) => { if (entry?.isIntersecting) { setInView(true); observer.disconnect(); } },
             { rootMargin }
         );
         observer.observe(el);
@@ -500,7 +500,7 @@ function PurchaseTicker({ t }: { t: any }) {
 
     if (!loaded || items.length === 0) return null;
 
-    const item = items[idx];
+    const item = items[idx]!; // idx < items.length보장 (위에서 items.length === 0 체크)
     const timeStr = item.minutesAgo < 60
         ? `${item.minutesAgo}${t.tickerMinAgo}`
         : `${Math.floor(item.minutesAgo / 60)}${t.tickerHrAgo}`;
@@ -583,7 +583,7 @@ export default function Home() {
         if (!sectionsFetched) return;
         fetch(`/api/homepage/sections?lang=${language}`)
             .then(r => r.ok ? r.json() : {})
-            .then(data => {
+            .then((data: any) => {
                 if (Array.isArray(data.hot))     setShowHot(data.hot);
                 if (Array.isArray(data.new))     setShowNew(data.new);
                 if (Array.isArray(data.popular)) setShowPopular(data.popular);

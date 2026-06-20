@@ -126,14 +126,15 @@ export default function CartPage() {
             results.forEach((data, i) => {
                 if (!data) return;
                 const stockQty: number = data.product?.stockQty ?? data.stockQty ?? 0;
-                stocks[uniqueIds[i]] = stockQty;
-                const cartItem = items.find(ci => ci.productId === uniqueIds[i]);
+                const uid = uniqueIds[i]!; // bounded by uniqueIds.length
+                stocks[uid] = stockQty;
+                const cartItem = items.find(ci => ci.productId === uid);
                 if (cartItem && cartItem.qty > stockQty) {
-                    warnings[uniqueIds[i]] = stockQty;
+                    warnings[uid] = stockQty;
                 }
                 // Migrate/refresh pricing metadata (legacy items get basePriceUsd + bulkOptions)
                 if (typeof data.priceUsd === 'number') {
-                    refreshPricing(uniqueIds[i], {
+                    refreshPricing(uid, {
                         priceUsd: data.priceUsd,
                         isHotSale: data.isHotSale,
                         hotSalePrice: data.hotSalePrice,

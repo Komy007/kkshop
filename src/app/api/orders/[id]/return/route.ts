@@ -35,7 +35,7 @@ export async function POST(
     const body = await req.json();
     const parsed = ReturnRequestSchema.safeParse(body);
     if (!parsed.success) {
-        const msg = parsed.error.errors[0]?.message ?? '반품 사유를 입력해 주세요.';
+        const msg = parsed.error.issues[0]?.message ?? '반품 사유를 입력해 주세요.';
         return NextResponse.json({ error: msg }, { status: 400 });
     }
     const { reason } = parsed.data;

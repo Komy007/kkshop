@@ -187,7 +187,7 @@ async function runWithConcurrency<T>(tasks: Array<() => Promise<T>>, limit: numb
             const i = idx++;
             if (i >= tasks.length) return;
             try {
-                results[i] = await tasks[i]();
+                results[i] = await tasks[i]!();
             } catch (err) {
                 // Defensive: store as a "failed" placeholder rather than throwing the whole batch
                 results[i] = { ok: false, error: 'Unhandled error' } as any;

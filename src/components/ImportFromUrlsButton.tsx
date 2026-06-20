@@ -37,7 +37,7 @@ export default function ImportFromUrlsButton({ target, remaining, accent = 'blue
         purple: { btnBg: 'bg-purple-50 text-purple-700', btnHover: 'hover:bg-purple-100', ring: 'focus:ring-purple-500', bar: 'bg-purple-500' },
         teal:   { btnBg: 'bg-teal-50 text-teal-700',   btnHover: 'hover:bg-teal-100',   ring: 'focus:ring-teal-500',   bar: 'bg-teal-500' },
     };
-    const c = colorMap[accent];
+    const c = colorMap[accent]!;
 
     // Parse + sanity check the textarea content
     const parseUrls = (): string[] => {

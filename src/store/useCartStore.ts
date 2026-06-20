@@ -117,9 +117,9 @@ export const useCartStore = create<CartState>()(
                                     ? {
                                         ...i,
                                         qty: i.qty + qty,
-                                        // Refresh pricing metadata so stale snapshots stay current
-                                        basePriceUsd: item.basePriceUsd ?? i.basePriceUsd,
-                                        bulkOptions: item.bulkOptions ?? i.bulkOptions,
+                                        // exactOptionalPropertyTypes: undefined 불가 → 조건부 ternary spread
+                                        ...(item.basePriceUsd !== undefined ? { basePriceUsd: item.basePriceUsd } : {}),
+                                        ...(item.bulkOptions  !== undefined ? { bulkOptions:  item.bulkOptions  } : {}),
                                     }
                                     : i
                             ),
@@ -159,15 +159,16 @@ export const useCartStore = create<CartState>()(
                             : null;
                         const basePriceUsd = variantPrice
                             ?? ((data.isHotSale && data.hotSalePrice) ? data.hotSalePrice : data.priceUsd);
+                        const newBulkOptions = data.options?.map(o => ({
+                            minQty: Number(o.minQty),
+                            maxQty: o.maxQty != null ? Number(o.maxQty) : null,
+                            discountPct: Number(o.discountPct),
+                            freeShipping: Boolean(o.freeShipping),
+                        })) ?? i.bulkOptions;
                         return {
                             ...i,
                             basePriceUsd,
-                            bulkOptions: data.options?.map(o => ({
-                                minQty: Number(o.minQty),
-                                maxQty: o.maxQty != null ? Number(o.maxQty) : null,
-                                discountPct: Number(o.discountPct),
-                                freeShipping: Boolean(o.freeShipping),
-                            })) ?? i.bulkOptions,
+                            ...(newBulkOptions !== undefined ? { bulkOptions: newBulkOptions } : {}),
                         };
                     }),
                 }));

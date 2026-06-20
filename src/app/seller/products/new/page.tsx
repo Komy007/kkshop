@@ -111,7 +111,7 @@ export default function SellerProductNewPage() {
     const sizeSectionRef   = useRef<HTMLDivElement>(null);
     const volumeSectionRef = useRef<HTMLDivElement>(null);
     const customSectionRef = useRef<HTMLDivElement>(null);
-    const scrollInto = (ref: React.RefObject<HTMLDivElement>) =>
+    const scrollInto = (ref: React.RefObject<HTMLDivElement | null>) =>
         requestAnimationFrame(() => requestAnimationFrame(() =>
             ref.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
         ));
@@ -260,15 +260,15 @@ export default function SellerProductNewPage() {
     };
 
     const reorderImages = (from: number, to: number) => {
-        setImages(prev => { const a = [...prev]; const [m] = a.splice(from, 1); a.splice(to, 0, m); return a; });
-        setPreviews(prev => { const a = [...prev]; const [m] = a.splice(from, 1); a.splice(to, 0, m); return a; });
-        setImageAlts(prev => { const a = [...prev]; const [m] = a.splice(from, 1); a.splice(to, 0, m); return a; });
+        setImages(prev => { const a = [...prev]; const m = a.splice(from, 1)[0]!; a.splice(to, 0, m); return a; });
+        setPreviews(prev => { const a = [...prev]; const m = a.splice(from, 1)[0]!; a.splice(to, 0, m); return a; });
+        setImageAlts(prev => { const a = [...prev]; const m = a.splice(from, 1)[0]!; a.splice(to, 0, m); return a; });
     };
 
     const reorderDetailImages = (from: number, to: number) => {
-        setDetailImages(prev => { const a = [...prev]; const [m] = a.splice(from, 1); a.splice(to, 0, m); return a; });
-        setDetailPreviews(prev => { const a = [...prev]; const [m] = a.splice(from, 1); a.splice(to, 0, m); return a; });
-        setDetailImageAlts(prev => { const a = [...prev]; const [m] = a.splice(from, 1); a.splice(to, 0, m); return a; });
+        setDetailImages(prev => { const a = [...prev]; const m = a.splice(from, 1)[0]!; a.splice(to, 0, m); return a; });
+        setDetailPreviews(prev => { const a = [...prev]; const m = a.splice(from, 1)[0]!; a.splice(to, 0, m); return a; });
+        setDetailImageAlts(prev => { const a = [...prev]; const m = a.splice(from, 1)[0]!; a.splice(to, 0, m); return a; });
     };
 
     const setMainAltAt = (idx: number, alt: string) => {

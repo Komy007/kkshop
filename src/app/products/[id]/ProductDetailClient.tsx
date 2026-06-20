@@ -12,7 +12,7 @@ import { useCartStore } from '@/store/useCartStore';
 
 // Strict allowlist for rich-text HTML rendered from user/seller input.
 // Blocks scripts, iframes, event handlers, javascript: URLs, etc.
-const SANITIZE_CONFIG: DOMPurify.Config = {
+const SANITIZE_CONFIG = {
     ALLOWED_TAGS: [
         'p', 'br', 'strong', 'b', 'em', 'i', 'u', 's', 'code', 'pre', 'blockquote',
         'h2', 'h3', 'h4', 'ul', 'ol', 'li',
@@ -333,14 +333,14 @@ function ImageLightbox({
         };
     }, [index]);
 
-    const dist = (t: TouchList) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+    const dist = (t: React.TouchList) => Math.hypot(t[0]!.clientX - t[1]!.clientX, t[0]!.clientY - t[1]!.clientY);
 
     const onTouchStart = (e: React.TouchEvent) => {
         const t = e.touches;
         if (t.length === 2) {
             gesture.current = { mode: 'pinch', startDist: dist(t), startScale: scale };
         } else if (t.length === 1) {
-            gesture.current = { mode: scale > 1 ? 'pan' : 'swipe', startX: t[0].clientX, startY: t[0].clientY, startTx: tx, startTy: ty };
+            gesture.current = { mode: scale > 1 ? 'pan' : 'swipe', startX: t[0]!.clientX, startY: t[0]!.clientY, startTx: tx, startTy: ty };
         }
     };
     const onTouchMove = (e: React.TouchEvent) => {
@@ -350,10 +350,10 @@ function ImageLightbox({
             const ratio = dist(t) / (g.startDist || 1);
             setScale(Math.min(4, Math.max(1, g.startScale * ratio)));
         } else if (g.mode === 'pan' && t.length === 1) {
-            setTx(g.startTx + (t[0].clientX - g.startX));
-            setTy(g.startTy + (t[0].clientY - g.startY));
+            setTx(g.startTx + (t[0]!.clientX - g.startX));
+            setTy(g.startTy + (t[0]!.clientY - g.startY));
         } else if (g.mode === 'swipe' && t.length === 1) {
-            g.dx = t[0].clientX - g.startX;
+            g.dx = t[0]!.clientX - g.startX;
         }
     };
     const onTouchEnd = () => {
@@ -759,20 +759,22 @@ export default function ProductDetailClient() {
         // basePriceUsd = effectiveBase (variant / hot-sale / regular — without bulk tier)
         const basePriceUsd = effectiveBase;
 
+        const cartBulkOptions = (product as any).options?.map((o: any) => ({
+            minQty: Number(o.minQty),
+            maxQty: o.maxQty != null ? Number(o.maxQty) : null,
+            discountPct: Number(o.discountPct),
+            freeShipping: Boolean(o.freeShipping),
+        }));
+        const cartVariantLabel = selectedVariant?.variantValue;
         addItem({
             productId: product.id,
             name: product.name,
             priceUsd: appliedPrice,
             basePriceUsd,
-            bulkOptions: (product as any).options?.map((o: any) => ({
-                minQty: Number(o.minQty),
-                maxQty: o.maxQty != null ? Number(o.maxQty) : null,
-                discountPct: Number(o.discountPct),
-                freeShipping: Boolean(o.freeShipping),
-            })),
+            ...(cartBulkOptions !== undefined ? { bulkOptions: cartBulkOptions } : {}),
             imageUrl: productImage,
-            variantId: selectedVariantId || undefined,
-            variantLabel: selectedVariant?.variantValue || undefined,
+            ...(selectedVariantId ? { variantId: selectedVariantId } : {}),
+            ...(cartVariantLabel ? { variantLabel: cartVariantLabel } : {}),
         }, qty);
         setCartAdded(true);
         setTimeout(() => setCartAdded(false), 2000);
@@ -907,7 +909,7 @@ export default function ProductDetailClient() {
                         <div
                             className="relative rounded-3xl overflow-hidden aspect-[3/4] bg-gray-50 group border border-gray-100 shadow-sm touch-pan-y"
                             onTouchStart={(e) => {
-                                const touch = e.touches[0];
+                                const touch = e.touches[0]!;
                                 (e.currentTarget as any)._swipeX = touch.clientX;
                                 (e.currentTarget as any)._swipeY = touch.clientY;
                             }}
@@ -915,16 +917,16 @@ export default function ProductDetailClient() {
                                 const startX = (e.currentTarget as any)._swipeX;
                                 const startY = (e.currentTarget as any)._swipeY;
                                 if (startX == null || galleryImages.length <= 1) return;
-                                const endTouch = e.changedTouches[0];
+                                const endTouch = e.changedTouches[0]!;
                                 const dx = endTouch.clientX - startX;
                                 const dy = endTouch.clientY - startY;
                                 if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy)) return; // too short or vertical scroll
                                 const currentIdx = galleryImages.findIndex(img => img.url === productImage);
                                 const idx = currentIdx >= 0 ? currentIdx : 0;
                                 if (dx < 0 && idx < galleryImages.length - 1) {
-                                    setSelectedImageUrl(galleryImages[idx + 1].url);
+                                    setSelectedImageUrl(galleryImages[idx + 1]!.url);
                                 } else if (dx > 0 && idx > 0) {
-                                    setSelectedImageUrl(galleryImages[idx - 1].url);
+                                    setSelectedImageUrl(galleryImages[idx - 1]!.url);
                                 }
                             }}
                         >
@@ -1026,8 +1028,8 @@ export default function ProductDetailClient() {
                         {(product.badgeAuthentic || product.badgeKoreanCertified) && (
                             <TrustBadges
                                 variant="compact"
-                                showAuthentic={product.badgeAuthentic}
-                                showKoreanCertified={product.badgeKoreanCertified}
+                                {...(product.badgeAuthentic !== undefined ? { showAuthentic: product.badgeAuthentic } : {})}
+                                {...(product.badgeKoreanCertified !== undefined ? { showKoreanCertified: product.badgeKoreanCertified } : {})}
                             />
                         )}
 

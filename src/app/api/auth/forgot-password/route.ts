@@ -9,7 +9,7 @@ const rateLimitCache = new Map<string, { count: number; timestamp: number }>();
 export async function POST(req: Request) {
     try {
         const forwarded = req.headers.get('x-forwarded-for');
-        const ip = forwarded ? forwarded.split(',')[0].trim() : (req.headers.get('x-real-ip') || 'unknown');
+        const ip = forwarded ? (forwarded.split(',')[0] ?? '').trim() : (req.headers.get('x-real-ip') || 'unknown');
         const now = Date.now();
         const windowMs = 10 * 60 * 1000;
 
@@ -59,7 +59,7 @@ export async function POST(req: Request) {
         const resetUrl = `${baseUrl}/reset-password?token=${token}`;
 
         try {
-            await sendPasswordResetEmail(user.email, resetUrl);
+            await sendPasswordResetEmail(user.email ?? '', resetUrl);
         } catch (mailErr) {
             console.error('Password reset email failed:', mailErr);
             // Don't expose mail errors to the client

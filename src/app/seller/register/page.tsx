@@ -100,7 +100,7 @@ export default function SellerRegisterPage() {
                 {/* Benefits */}
                 <div className="grid grid-cols-3 gap-4 mb-8">
                     {(() => {
-                        const b = benefitsI18n[lang] || benefitsI18n.en;
+                        const b = benefitsI18n[lang] ?? benefitsI18n['en']!;
                         return [
                             { icon: '🌏', ...b.market },
                             { icon: '🌐', ...b.lang },

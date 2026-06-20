@@ -329,7 +329,7 @@ export async function PATCH(
                 await tx.productImage.deleteMany({ where: { id: { in: toDelete } } });
             }
             for (let idx = 0; idx < capped.length; idx++) {
-                const it = capped[idx];
+                const it = capped[idx]!; // bounded by capped.length
                 const alt = it.alt?.trim() || null;
                 if (it.id) {
                     await tx.productImage.update({
@@ -455,8 +455,8 @@ export async function DELETE(
         prisma.productImage.deleteMany(      { where: { productId: product.id } }),
         prisma.productVariant.deleteMany(    { where: { productId: product.id } }),
         prisma.productOption.deleteMany(     { where: { productId: product.id } }),
-        prisma.wishlistItem.deleteMany(      { where: { productId: product.id } }),
-        prisma.recentlyViewed.deleteMany(    { where: { productId: product.id } }),
+        prisma.wishlist.deleteMany(          { where: { productId: product.id } }),
+        // recentlyViewed is localStorage-only (no DB table)
         prisma.product.delete(               { where: { id: product.id } }),
     ]);
 

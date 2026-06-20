@@ -15,7 +15,7 @@ export async function POST(req: Request) {
     }
     const pwResult = PasswordSchema.safeParse(newPassword);
     if (!pwResult.success) {
-        return NextResponse.json({ error: pwResult.error.errors[0]?.message ?? '비밀번호 조건을 확인하세요.' }, { status: 400 });
+        return NextResponse.json({ error: pwResult.error.issues[0]?.message ?? '비밀번호 조건을 확인하세요.' }, { status: 400 });
     }
 
     const user = await prisma.user.findUnique({ where: { email: session.user.email! } });

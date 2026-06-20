@@ -200,8 +200,7 @@ export default function FlashSalePage() {
             name:      item.name,
             priceUsd:  item.salePriceUsd,
             imageUrl:  item.imageUrl ?? '',
-            qty:       1,
-        });
+        }, 1);
     };
 
     // 가장 빨리 끝나는 세일 기준 전체 카운트다운

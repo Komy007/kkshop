@@ -30,7 +30,7 @@ export async function POST(request: Request) {
         // --- Zod 입력 검증 ---
         const parsed = CreateOrderSchema.safeParse(body);
         if (!parsed.success) {
-            const msg = parsed.error.errors[0]?.message ?? '주문 정보가 올바르지 않습니다.';
+            const msg = parsed.error.issues[0]?.message ?? '주문 정보가 올바르지 않습니다.';
             return NextResponse.json({ error: msg }, { status: 400 });
         }
         const {
@@ -66,7 +66,7 @@ export async function POST(request: Request) {
             ? Math.max(pointsConfig.redeemRate, 1)
             : 1000;
 
-        const pts = parseInt(pointsUsed) || 0;
+        const pts = Number(pointsUsed) || 0;
         if (pts > 0 && pts > user.pointBalance) {
             return NextResponse.json({ error: 'Not enough points' }, { status: 400 });
         }
@@ -239,11 +239,11 @@ export async function POST(request: Request) {
                     userId,
                     customerName,
                     customerPhone,
-                    customerEmail,
+                    customerEmail: customerEmail ?? null,
                     province: province ?? null,
                     address,
-                    detailAddress,
-                    notes,
+                    detailAddress: detailAddress ?? null,
+                    notes: notes ?? null,
                     subtotalUsd,
                     shippingFee,
                     discountAmount,

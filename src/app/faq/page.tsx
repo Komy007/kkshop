@@ -9,7 +9,7 @@ import Footer from '@/components/Footer';
 interface FaqItem { q: string; a: string }
 interface FaqCategory { icon: React.ElementType; title: string; items: FaqItem[] }
 
-const faqData: Record<string, FaqCategory[]> = {
+const faqData = {
     en: [
         {
             icon: ShoppingBag, title: 'Shopping & Orders',
@@ -273,26 +273,29 @@ function AccordionItem({ item, isOpen, toggle }: { item: FaqItem; isOpen: boolea
     );
 }
 
-const pageTitle: Record<string, { title: string; subtitle: string }> = {
+const pageTitle = {
     en: { title: 'Frequently Asked Questions', subtitle: 'Find answers to common questions about KKShop' },
     ko: { title: '자주 묻는 질문', subtitle: 'KKShop에 대해 자주 묻는 질문들' },
     km: { title: 'សំណួរដែលសួរញឹកញាប់', subtitle: 'ស្វែងរកចម្លើយចំពោះសំណួរទូទៅ' },
     zh: { title: '常见问题', subtitle: '查找关于KKShop的常见问题解答' },
 };
 
-const contactCta: Record<string, { text: string; btn: string }> = {
+const contactCta = {
     en: { text: "Can't find what you're looking for?", btn: 'Contact Us' },
     ko: { text: '찾으시는 답변이 없으신가요?', btn: '문의하기' },
     km: { text: 'រកមិនឃើញអ្វីដែលអ្នកកំពុងស្វែងរកទេ?', btn: 'ទាក់ទងយើង' },
     zh: { text: '没找到您需要的答案？', btn: '联系我们' },
 };
 
+type FaqLang = keyof typeof faqData; // 'en' | 'ko' | 'km' | 'zh'
+
 export default function FaqPage() {
     const store = useSafeAppStore();
-    const lang = store?.language || 'en';
-    const categories = faqData[lang] || faqData.en;
-    const title = pageTitle[lang] || pageTitle.en;
-    const cta = contactCta[lang] || contactCta.en;
+    const rawLang = store?.language || 'en';
+    const lang: FaqLang = (rawLang in faqData ? rawLang : 'en') as FaqLang;
+    const categories = faqData[lang];
+    const title = pageTitle[lang];
+    const cta = contactCta[lang];
     const [openKey, setOpenKey] = useState<string | null>(null);
 
     const toggle = (key: string) => setOpenKey(prev => (prev === key ? null : key));

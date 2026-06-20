@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const parsed = SupplierRegisterSchema.safeParse(body);
     if (!parsed.success) {
-        const msg = parsed.error.errors[0]?.message ?? '입력 정보를 확인해 주세요.';
+        const msg = parsed.error.issues[0]?.message ?? '입력 정보를 확인해 주세요.';
         return NextResponse.json({ error: msg }, { status: 400 });
     }
     const { companyName, brandName, country, phone, contactEmail, description, ceoName, businessNumber, businessAddress } = parsed.data;

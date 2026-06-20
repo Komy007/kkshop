@@ -337,7 +337,8 @@ export default function EditProductPage() {
     const reorderMain = (from: number, to: number) => {
         setMainImageList(prev => {
             const arr = [...prev];
-            const [m] = arr.splice(from, 1);
+            // splice(from,1)[0] は有効インデックスが保証されるので ! アサーション使用
+            const m = arr.splice(from, 1)[0]!;
             arr.splice(to, 0, m);
             return arr;
         });
@@ -345,7 +346,7 @@ export default function EditProductPage() {
     const reorderDetail = (from: number, to: number) => {
         setDetailImageList(prev => {
             const arr = [...prev];
-            const [m] = arr.splice(from, 1);
+            const m = arr.splice(from, 1)[0]!;
             arr.splice(to, 0, m);
             return arr;
         });
@@ -362,7 +363,8 @@ export default function EditProductPage() {
         const endpoint = square ? '/api/upload?crop=square' : '/api/upload';
         for (const it of list) {
             if (it.existingId && it.url) {
-                out.push({ id: it.existingId, url: it.url, alt: it.alt });
+                // exactOptionalPropertyTypes: undefined 값은 키를 생략해야 함
+                out.push({ id: it.existingId, url: it.url, ...(it.alt !== undefined && { alt: it.alt }) });
                 continue;
             }
             if (it.file) {
@@ -370,9 +372,9 @@ export default function EditProductPage() {
                 fd.append('file', it.file);
                 const res = await fetch(endpoint, { method: 'POST', body: fd });
                 const data = await res.json();
-                if (data.url) out.push({ url: data.url, alt: it.alt });
+                if (data.url) out.push({ url: data.url, ...(it.alt !== undefined && { alt: it.alt }) });
             } else if (it.url) {
-                out.push({ url: it.url, alt: it.alt });
+                out.push({ url: it.url, ...(it.alt !== undefined && { alt: it.alt }) });
             }
         }
         return out;
@@ -399,13 +401,19 @@ export default function EditProductPage() {
                 body: JSON.stringify({
                     ...form,
                     // When retranslate=true: use KO fields from langTranslations as baseLang source
-                    name: langTranslations.ko.name || form.name,
-                    shortDesc: langTranslations.ko.shortDesc || form.shortDesc,
-                    detailDesc: langTranslations.ko.detailDesc || form.detailDesc,
-                    ingredients: langTranslations.ko.ingredients || form.ingredients,
-                    howToUse: langTranslations.ko.howToUse || form.howToUse,
-                    benefits: langTranslations.ko.benefits || form.benefits,
-                    seoKeywords: langTranslations.ko.seoKeywords || form.seoKeywords,
+                    // langTranslations['ko'] — noUncheckedIndexedAccess で | undefined になるため ?? で保護
+                    ...(() => {
+                        const ko = langTranslations['ko'] ?? ({} as LangFields);
+                        return {
+                            name:        ko.name        || form.name,
+                            shortDesc:   ko.shortDesc   || form.shortDesc,
+                            detailDesc:  ko.detailDesc  || form.detailDesc,
+                            ingredients: ko.ingredients || form.ingredients,
+                            howToUse:    ko.howToUse    || form.howToUse,
+                            benefits:    ko.benefits    || form.benefits,
+                            seoKeywords: ko.seoKeywords || form.seoKeywords,
+                        };
+                    })(),
                     baseLang: 'ko',
                     isNew: form.isNew,
                     isHotSale: form.isHotSale,
@@ -540,8 +548,8 @@ export default function EditProductPage() {
                                     id: img.existingId ?? img.preview,
                                     src: img.preview,
                                     borderColor: img.file ? 'border-blue-200' : 'border-gray-200',
-                                    badge: img.file ? 'NEW' : undefined,
-                                    badgeColor: img.file ? 'bg-blue-500' : undefined,
+                                    // exactOptionalPropertyTypes: undefined 불가 → 조건부 spread
+                                    ...(img.file && { badge: 'NEW', badgeColor: 'bg-blue-500' }),
                                 }))}
                                 onReorder={reorderMain}
                                 onRemove={removeMainImage}
@@ -600,8 +608,7 @@ export default function EditProductPage() {
                                     id: img.existingId ?? img.preview,
                                     src: img.preview,
                                     borderColor: img.file ? 'border-purple-200' : 'border-gray-200',
-                                    badge: img.file ? 'NEW' : undefined,
-                                    badgeColor: img.file ? 'bg-purple-500' : undefined,
+                                    ...(img.file && { badge: 'NEW', badgeColor: 'bg-purple-500' }),
                                 }))}
                                 onReorder={reorderDetail}
                                 onRemove={removeDetailImage}
@@ -648,7 +655,7 @@ export default function EditProductPage() {
                                                 <div key={img.existingId ?? img.preview} className="flex items-center gap-3">
                                                     <img src={img.preview} className="w-12 h-12 object-cover rounded-lg border border-gray-200 flex-shrink-0" />
                                                     <input type="text" value={img.alt || ''} onChange={e => setMainAlt(i, e.target.value)}
-                                                        placeholder={`${langTranslations.ko.name || form.name || 'Product'} - ${i + 1}`} maxLength={255}
+                                                        placeholder={`${langTranslations['ko']?.name || form.name || 'Product'} - ${i + 1}`} maxLength={255}
                                                         className="flex-1 border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" />
                                                 </div>
                                             ))}
@@ -663,7 +670,7 @@ export default function EditProductPage() {
                                                 <div key={img.existingId ?? img.preview} className="flex items-center gap-3">
                                                     <img src={img.preview} className="w-12 h-12 object-cover rounded-lg border border-gray-200 flex-shrink-0" />
                                                     <input type="text" value={img.alt || ''} onChange={e => setDetailAlt(i, e.target.value)}
-                                                        placeholder={`${langTranslations.ko.name || form.name || 'Product'} detail ${i + 1}`} maxLength={255}
+                                                        placeholder={`${langTranslations['ko']?.name || form.name || 'Product'} detail ${i + 1}`} maxLength={255}
                                                         className="flex-1 border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none" />
                                                 </div>
                                             ))}
@@ -1132,12 +1139,13 @@ export default function EditProductPage() {
                                 benefits:    { en: 'Benefits / Features', ko: '효능/특징', rows: 2 },
                                 seoKeywords: { en: 'SEO Keywords', ko: 'SEO 키워드', rows: 1 },
                             };
-                            const lbl = labels[field];
+                            // field は as const 配列由来で labels の全キーに一致するため ! アサーション
+                            const lbl = labels[field]!;
                             const rows = lbl.rows ?? 2;
                             const val = langTranslations[activeLangTab]?.[field] ?? '';
                             const onChange = (v: string) => setLangTranslations(prev => ({
                                 ...prev,
-                                [activeLangTab]: { ...prev[activeLangTab], [field]: v },
+                                [activeLangTab]: { ...(prev[activeLangTab] ?? {}), [field]: v } as LangFields,
                             }));
                             return (
                                 <div key={field}>

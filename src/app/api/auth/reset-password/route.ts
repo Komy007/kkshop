@@ -14,7 +14,7 @@ export async function POST(req: Request) {
 
         const pwResult = PasswordSchema.safeParse(password);
         if (!pwResult.success) {
-            return NextResponse.json({ error: pwResult.error.errors[0]?.message ?? 'Invalid password' }, { status: 400 });
+            return NextResponse.json({ error: pwResult.error.issues[0]?.message ?? 'Invalid password' }, { status: 400 });
         }
 
         const hashedPassword = await bcrypt.hash(password, 12);

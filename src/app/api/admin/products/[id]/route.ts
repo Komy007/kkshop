@@ -432,7 +432,7 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
 
                 // Upsert each item with the new sortOrder
                 for (let idx = 0; idx < capped.length; idx++) {
-                    const it = capped[idx];
+                    const it = capped[idx]!; // bounded by capped.length
                     const alt = it.alt?.trim() || null;
                     if (it.id) {
                         await tx.productImage.update({

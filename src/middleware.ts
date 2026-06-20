@@ -31,7 +31,7 @@ export default middleware((req: any) => {
 
     // Redirect all legacy /supplier/* paths to the canonical /seller/* equivalent
     if (isSupplierOldRoute) {
-        const newPath = nextUrl.pathname.replace(/^\/supplier(\/register)?.*/, (_, reg) =>
+        const newPath = nextUrl.pathname.replace(/^\/supplier(\/register)?.*/, (_: string, reg: string | undefined) =>
             reg ? '/seller/register' : '/seller'
         );
         return Response.redirect(new URL(newPath, nextUrl));

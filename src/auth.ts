@@ -47,9 +47,10 @@ const nextAuthEnv = NextAuth({
                 const isValid = verifyTelegramAuth({
                     id:         Number(credentials.id),
                     first_name: String(credentials.first_name || ''),
-                    last_name:  credentials.last_name  ? String(credentials.last_name)  : undefined,
-                    username:   credentials.username   ? String(credentials.username)   : undefined,
-                    photo_url:  credentials.photo_url  ? String(credentials.photo_url)  : undefined,
+                    // exactOptionalPropertyTypes: 조건부 ternary spread 사용 (&&는 false가 비객체라 오류)
+                    ...(credentials.last_name  ? { last_name:  String(credentials.last_name)  } : {}),
+                    ...(credentials.username   ? { username:   String(credentials.username)   } : {}),
+                    ...(credentials.photo_url  ? { photo_url:  String(credentials.photo_url)  } : {}),
                     auth_date:  Number(credentials.auth_date),
                     hash:       String(credentials.hash),
                 });
@@ -100,7 +101,7 @@ const nextAuthEnv = NextAuth({
 
                 // Rate limiting by IP
                 const forwarded = (req as any)?.headers?.['x-forwarded-for'];
-                const ip = (typeof forwarded === 'string' ? forwarded.split(',')[0] : '').trim() || 'unknown';
+                const ip = (typeof forwarded === 'string' ? (forwarded.split(',')[0] ?? '') : '').trim() || 'unknown';
                 const rl = await checkRateLimit(ip, 'login', 10, 15 * 60 * 1000);
                 if (!rl.allowed) {
                     throw new Error('Too many login attempts. Please wait 15 minutes.');

@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { CheckCircle2, ShoppingBag, MapPin, Package, Loader2 } from 'lucide-react';
 import { useSafeAppStore } from '@/store/useAppStore';
 
-const t: Record<string, Record<string, string>> = {
+const t = {
     en: {
         title: 'Order Complete!',
         subtitle: 'Thank you for your purchase.',
@@ -87,8 +87,11 @@ function OrderCompleteContent() {
     const searchParams = useSearchParams();
     const orderId = searchParams.get('orderId');
     const { data: session, status: sessionStatus } = useSession();
-    const language = useSafeAppStore(s => s.language) || 'en';
-    const tx = t[language] ?? t['en'];
+    const appStore = useSafeAppStore();
+    const rawLang = appStore?.language || 'en';
+    type TKey = keyof typeof t;
+    const lang: TKey = (rawLang in t ? rawLang : 'en') as TKey;
+    const tx = t[lang];
 
     const [order, setOrder] = useState<OrderData | null>(null);
     const [loading, setLoading] = useState(true);
