@@ -5,6 +5,7 @@ import { BarChart2, Loader2, RefreshCw, TrendingUp, ShoppingBag, Users, DollarSi
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
+  LineChart, Line,
 } from 'recharts';
 
 interface SummaryCard {
@@ -36,11 +37,17 @@ interface CategoryRevenue {
   revenue: number;
 }
 
+interface MemberGrowth {
+  date: string;
+  newMembers: number;
+}
+
 interface AnalyticsData {
   summary: SummaryCard;
   dailyRevenue: DailyRevenue[];
   topProducts: TopProduct[];
   categoryRevenue: CategoryRevenue[];
+  memberGrowth: MemberGrowth[];
 }
 
 const PIE_COLORS = ['#e91e8c', '#6366f1', '#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
@@ -61,7 +68,7 @@ function StatCard({
   icon: React.ReactNode;
   label: string;
   value: string;
-  sub?: string;
+  sub?: string | undefined;
   color: string;
 }) {
   return (
@@ -83,7 +90,7 @@ const CustomBarTooltip = ({ active, payload, label }: { active?: boolean; payloa
     return (
       <div className="bg-white border border-gray-200 rounded-xl shadow-lg px-4 py-3 text-sm">
         <p className="font-semibold text-gray-700 mb-1">{label}</p>
-        <p className="text-blue-600 font-bold">${payload[0].value.toFixed(2)}</p>
+        <p className="text-blue-600 font-bold">${(payload[0]?.value ?? 0).toFixed(2)}</p>
       </div>
     );
   }
@@ -94,8 +101,20 @@ const CustomPieTooltip = ({ active, payload }: { active?: boolean; payload?: { n
   if (active && payload && payload.length) {
     return (
       <div className="bg-white border border-gray-200 rounded-xl shadow-lg px-4 py-3 text-sm">
-        <p className="font-semibold text-gray-700">{payload[0].name}</p>
-        <p className="text-pink-600 font-bold">${payload[0].value.toFixed(2)}</p>
+        <p className="font-semibold text-gray-700">{payload[0]?.name}</p>
+        <p className="text-pink-600 font-bold">${(payload[0]?.value ?? 0).toFixed(2)}</p>
+      </div>
+    );
+  }
+  return null;
+};
+
+const CustomLineTooltip = ({ active, payload, label }: { active?: boolean; payload?: { value: number }[]; label?: string }) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-white border border-gray-200 rounded-xl shadow-lg px-4 py-3 text-sm">
+        <p className="font-semibold text-gray-700 mb-1">{label}</p>
+        <p className="text-emerald-600 font-bold">+{payload[0]?.value ?? 0} members</p>
       </div>
     );
   }
@@ -243,6 +262,45 @@ export default function AnalyticsPage() {
             )}
           </div>
 
+          {/* Member Growth Line Chart */}
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+            <h2 className="text-base font-bold text-gray-900 mb-5 flex items-center gap-2">
+              <Users className="w-4 h-4 text-emerald-500" /> Member Growth / 신규 회원 추이
+            </h2>
+            {data.memberGrowth.length === 0 ? (
+              <div className="flex items-center justify-center h-48 text-gray-400 text-sm">No data</div>
+            ) : (
+              <ResponsiveContainer width="100%" height={220}>
+                <LineChart data={data.memberGrowth} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis
+                    dataKey="date"
+                    tickFormatter={fmtDate}
+                    tick={{ fontSize: 11, fill: '#9ca3af' }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    allowDecimals={false}
+                    tick={{ fontSize: 11, fill: '#9ca3af' }}
+                    axisLine={false}
+                    tickLine={false}
+                    width={35}
+                  />
+                  <Tooltip content={<CustomLineTooltip />} />
+                  <Line
+                    type="monotone"
+                    dataKey="newMembers"
+                    stroke="#10b981"
+                    strokeWidth={2}
+                    dot={{ r: 3, fill: '#10b981' }}
+                    activeDot={{ r: 5 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+
           {/* Bottom row: Top Products + Category Pie */}
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
             {/* Top 10 Products */}
@@ -304,7 +362,7 @@ export default function AnalyticsPage() {
                       label={false}
                     >
                       {data.categoryRevenue.map((_, index) => (
-                        <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                        <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length] ?? '#e91e8c'} />
                       ))}
                     </Pie>
                     <Tooltip content={<CustomPieTooltip />} />

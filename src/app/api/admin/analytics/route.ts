@@ -39,6 +39,12 @@ export async function GET(req: NextRequest) {
     startDate.setDate(startDate.getDate() - days);
     startDate.setHours(0, 0, 0, 0);
 
+    // 직전 동일 기간 (이전 기간 비교용)
+    const prevEndDate   = new Date(startDate);
+    const prevStartDate = new Date(startDate);
+    prevStartDate.setDate(prevStartDate.getDate() - days);
+    prevStartDate.setHours(0, 0, 0, 0);
+
     const excludedStatuses = ['CANCELLED', 'REFUNDED'];
 
     // -----------------------------------------------------------------------
@@ -188,12 +194,43 @@ export async function GET(req: NextRequest) {
       where: { createdAt: { gte: startDate } },
     });
 
+    // -----------------------------------------------------------------------
+    // 6. 직전 동일 기간 매출/주문 (이전 기간 비교)
+    // -----------------------------------------------------------------------
+    const prevSummaryRows = await prisma.$queryRaw<SummaryRow[]>`
+      SELECT
+        SUM(total_usd)::text      AS total_revenue,
+        COUNT(*)                  AS total_orders,
+        AVG(total_usd)::text      AS avg_order_value
+      FROM orders
+      WHERE
+        status NOT IN (${excludedStatuses[0]}, ${excludedStatuses[1]})
+        AND created_at >= ${prevStartDate}
+        AND created_at <  ${prevEndDate}
+    `;
+
+    const prevRevenue = parseFloat(prevSummaryRows[0]?.total_revenue ?? '0');
+    const prevOrders  = Number(prevSummaryRows[0]?.total_orders ?? 0);
+
     const summaryRow = summaryRows[0];
+    const curRevenue = parseFloat(summaryRow?.total_revenue ?? '0');
+    const curOrders  = Number(summaryRow?.total_orders ?? 0);
+
+    // 직전 기간이 0이면 변화율 계산 불가 → undefined
+    const revenueChange = prevRevenue > 0
+      ? Math.round(((curRevenue - prevRevenue) / prevRevenue) * 100)
+      : undefined;
+    const ordersChange = prevOrders > 0
+      ? Math.round(((curOrders - prevOrders) / prevOrders) * 100)
+      : undefined;
+
     const summary = {
-      totalRevenue: parseFloat(summaryRow?.total_revenue ?? '0'),
-      totalOrders: Number(summaryRow?.total_orders ?? 0),
+      totalRevenue:  curRevenue,
+      totalOrders:   curOrders,
       avgOrderValue: parseFloat(summaryRow?.avg_order_value ?? '0'),
-      newUsers: newMembersCount,
+      newUsers:      newMembersCount,
+      revenueChange,
+      ordersChange,
     };
 
     return NextResponse.json({
