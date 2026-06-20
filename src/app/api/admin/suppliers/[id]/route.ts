@@ -5,7 +5,8 @@ import { isValidCommission, clampCommission, parseCommissionRate } from '@/lib/c
 
 export const dynamic = 'force-dynamic';
 
-type RouteCtx = { params: { id: string } };
+// Next.js 16: 동적 라우트 params는 Promise — 반드시 await 후 사용 (다른 라우트와 동일 패턴)
+type RouteCtx = { params: Promise<{ id: string }> };
 
 // GET: fetch single supplier with product stats
 export async function GET(_req: Request, { params }: RouteCtx) {
@@ -14,8 +15,9 @@ export async function GET(_req: Request, { params }: RouteCtx) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
+    const { id } = await params;
     const supplier = await prisma.supplier.findUnique({
-        where: { id: params.id },
+        where: { id },
         include: {
             user: { select: { email: true, name: true, emailVerified: true } },
             _count: { select: { products: true } },
@@ -28,9 +30,9 @@ export async function GET(_req: Request, { params }: RouteCtx) {
 
     // Product stats by approval status
     const [approved, pending, rejected] = await Promise.all([
-        prisma.product.count({ where: { supplierId: params.id, approvalStatus: 'APPROVED' } }),
-        prisma.product.count({ where: { supplierId: params.id, approvalStatus: 'PENDING' } }),
-        prisma.product.count({ where: { supplierId: params.id, approvalStatus: 'REJECTED' } }),
+        prisma.product.count({ where: { supplierId: id, approvalStatus: 'APPROVED' } }),
+        prisma.product.count({ where: { supplierId: id, approvalStatus: 'PENDING' } }),
+        prisma.product.count({ where: { supplierId: id, approvalStatus: 'REJECTED' } }),
     ]);
 
     return NextResponse.json({
@@ -47,6 +49,7 @@ export async function PUT(req: Request, { params }: RouteCtx) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
+    const { id } = await params;
     const body = await req.json();
     const { companyName, brandName, businessNumber, ceoName, businessAddress,
             country, phone, contactEmail, commissionRate, description, adminNote, logoUrl } = body;
@@ -72,7 +75,7 @@ export async function PUT(req: Request, { params }: RouteCtx) {
     }
 
     const updated = await prisma.supplier.update({
-        where: { id: params.id },
+        where: { id },
         data,
         include: { user: { select: { email: true, name: true } } },
     });
@@ -87,19 +90,20 @@ export async function DELETE(_req: Request, { params }: RouteCtx) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
-    const supplier = await prisma.supplier.findUnique({ where: { id: params.id } });
+    const { id } = await params;
+    const supplier = await prisma.supplier.findUnique({ where: { id } });
     if (!supplier) {
         return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
 
     // Deactivate all products first
     await prisma.product.updateMany({
-        where: { supplierId: params.id },
+        where: { supplierId: id },
         data: { status: 'INACTIVE', approvalStatus: 'REJECTED' },
     });
 
     // Delete supplier (cascades to user via schema)
-    await prisma.supplier.delete({ where: { id: params.id } });
+    await prisma.supplier.delete({ where: { id } });
 
     return NextResponse.json({ success: true });
 }
