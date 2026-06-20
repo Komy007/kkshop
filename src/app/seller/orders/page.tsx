@@ -143,6 +143,10 @@ export default function SellerOrdersPage() {
                             const badge = STATUS_BADGE[order.status] ?? {
                                 en: order.status, hint: '', color: 'bg-gray-100 text-gray-600',
                             };
+                            // ★ 본인 상품 합계만 계산 — order.totalUsd는 타 셀러·자체상품 포함 전체합이라 사용 금지
+                            const mySubtotal = order.items.reduce(
+                                (s, it) => s + Number(it.priceUsd) * Number(it.quantity), 0
+                            );
                             return (
                                 <div key={order.id} className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
                                     <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-b bg-gray-50">
@@ -199,9 +203,10 @@ export default function SellerOrdersPage() {
                                         })}
                                     </div>
 
-                                    <div className="px-5 py-3 bg-gray-50 border-t flex items-center justify-end">
+                                    <div className="px-5 py-3 bg-gray-50 border-t flex items-center justify-end gap-2">
+                                        <span className="text-xs text-gray-400">My products · 내 상품 합계</span>
                                         <div className="font-black text-gray-900">
-                                            Total: ${Number(order.totalUsd).toFixed(2)}
+                                            ${mySubtotal.toFixed(2)}
                                         </div>
                                     </div>
                                 </div>
