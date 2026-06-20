@@ -7,6 +7,7 @@ import { revalidatePath } from 'next/cache';
 import { sendOrderStatusEmail } from '@/lib/mail';
 import { logAudit } from '@/lib/audit';
 import { auth } from '@/auth';
+import { notifySuppliersOfOrder } from '@/lib/sellerNotify';
 
 export const dynamic = 'force-dynamic';
 
@@ -156,6 +157,14 @@ async function updateOrderStatus(orderId: string, newStatus: string) {
         });
     }
 
+    // 셀러 주문 알림 — CONFIRMED 전환 시 공급사별 알림 + 이메일 (non-blocking)
+    // KHQR 연동 후: 웹훅에서도 이 함수를 동일하게 호출하면 됨 (supplierId=null 자체상품은 내부에서 무시)
+    if (newStatus === 'CONFIRMED') {
+        notifySuppliersOfOrder(orderId).catch(e =>
+            console.error('Seller notify failed (non-critical):', e)
+        );
+    }
+
     // Send customer notification email (non-blocking)
     if (current.customerEmail && ['CONFIRMED', 'SHIPPING', 'DELIVERED', 'CANCELLED'].includes(newStatus)) {
         sendOrderStatusEmail(
@@ -227,6 +236,7 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
                         product: {
                             include: {
                                 translations: { where: { langCode: 'en' }, take: 1 },
+                                supplier: { select: { companyName: true } },
                             },
                         },
                     },
@@ -307,12 +317,21 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
                                             <div className="text-gray-400 text-xs mt-0.5 truncate max-w-[140px]">{order.customerEmail}</div>
                                         </td>
                                         <td className="px-5 py-4 align-top">
-                                            <ul className="space-y-0.5">
+                                            <ul className="space-y-1">
                                                 {order.items.map(item => {
-                                                    const enName = item.product.translations[0]?.name ?? item.product.sku;
+                                                    const enName   = item.product.translations[0]?.name ?? item.product.sku;
+                                                    const isInHouse = !item.product.supplier;
+                                                    const srcLabel  = isInHouse
+                                                        ? 'In-house · 자체'
+                                                        : (item.product.supplier?.companyName ?? 'Seller');
                                                     return (
-                                                        <li key={item.id} className="text-xs text-gray-600 line-clamp-1 max-w-[200px]">
-                                                            • {enName} × {item.quantity}
+                                                        <li key={item.id} className="text-xs text-gray-600 max-w-[220px]">
+                                                            <span className="line-clamp-1">• {enName} × {item.quantity}</span>
+                                                            <span className={`inline-flex mt-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                                                                isInHouse
+                                                                    ? 'bg-blue-50 text-blue-600'
+                                                                    : 'bg-purple-50 text-purple-600'
+                                                            }`}>{srcLabel}</span>
                                                         </li>
                                                     );
                                                 })}
@@ -394,11 +413,22 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
                                 <div className="font-bold text-gray-900 text-sm">{order.customerName}</div>
                                 <div className="text-xs text-gray-400">{order.customerEmail}</div>
                             </div>
-                            <ul className="space-y-0.5 mb-3">
+                            <ul className="space-y-1 mb-3">
                                 {order.items.map(item => {
-                                    const enName = item.product.translations[0]?.name ?? item.product.sku;
+                                    const enName    = item.product.translations[0]?.name ?? item.product.sku;
+                                    const isInHouse = !item.product.supplier;
+                                    const srcLabel  = isInHouse
+                                        ? 'In-house · 자체'
+                                        : (item.product.supplier?.companyName ?? 'Seller');
                                     return (
-                                        <li key={item.id} className="text-xs text-gray-600 line-clamp-1">• {enName} × {item.quantity}</li>
+                                        <li key={item.id} className="text-xs text-gray-600">
+                                            <span className="line-clamp-1">• {enName} × {item.quantity}</span>
+                                            <span className={`inline-flex mt-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                                                isInHouse
+                                                    ? 'bg-blue-50 text-blue-600'
+                                                    : 'bg-purple-50 text-purple-600'
+                                            }`}>{srcLabel}</span>
+                                        </li>
                                     );
                                 })}
                             </ul>

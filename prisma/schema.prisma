@@ -251,8 +251,9 @@ model Supplier {
   // PENDING | APPROVED | REJECTED | SUSPENDED
   adminNote       String? @map("admin_note") @db.Text
 
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  products Product[]
+  user          User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  products      Product[]
+  notifications SellerNotification[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -788,4 +789,32 @@ model ReferralReward {
 
   @@index([referrerId])
   @@map("referral_rewards")
+}
+
+// ---------------------------------------------------------------------------
+// Seller Order Notifications (셀러 주문 알림)
+// 주문이 CONFIRMED(결제완료) 될 때 공급사별로 1건씩 생성. @@unique로 중복 방지(멱등).
+// KHQR 웹훅 연동 후에는 결산 콜백에서 notifySuppliersOfOrder(orderId)를 호출하면 동일하게 동작.
+// ---------------------------------------------------------------------------
+
+model SellerNotification {
+  id         String   @id @default(cuid())
+  supplierId String   @map("supplier_id")
+  orderId    String   @map("order_id")
+  type       String   @default("NEW_ORDER") @db.VarChar(50)   // NEW_ORDER | ...
+  title      String   @db.VarChar(200)
+  body       String   @db.Text
+  itemsJson  Json?    @map("items_json")                       // [{productName, qty, priceUsd}]
+  amountUsd  Decimal  @map("amount_usd") @db.Decimal(10, 2)  // 해당 공급사분 합계
+  isRead     Boolean  @default(false) @map("is_read")
+  emailSent  Boolean  @default(false) @map("email_sent")
+
+  supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([orderId, supplierId, type])
+  @@index([supplierId])
+  @@index([orderId])
+  @@map("seller_notifications")
 }

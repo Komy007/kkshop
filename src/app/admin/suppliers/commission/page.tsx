@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Save, CheckCircle, Percent, Building2, RefreshCcw } from 'lucide-react';
+import { Save, CheckCircle, Percent, Building2, RefreshCcw, Info } from 'lucide-react';
+import { COMMISSION_MIN, COMMISSION_MAX, COMMISSION_DEFAULT, clampCommission } from '@/lib/commission';
 
 interface Supplier {
     id:             string;
@@ -14,9 +15,9 @@ interface Supplier {
 }
 
 interface GlobalCommission {
-    defaultRate:  number;
-    minRate:      number;
-    maxRate:      number;
+    defaultRate:   number;
+    minRate:       number;
+    maxRate:       number;
     categoryRates: Record<string, number>;
 }
 
@@ -27,7 +28,12 @@ const CATEGORIES = [
 
 export default function CommissionPage() {
     const [suppliers,    setSuppliers]    = useState<Supplier[]>([]);
-    const [globalCfg,    setGlobalCfg]    = useState<GlobalCommission>({ defaultRate: 30, minRate: 10, maxRate: 50, categoryRates: {} });
+    const [globalCfg,    setGlobalCfg]    = useState<GlobalCommission>({
+        defaultRate:   COMMISSION_DEFAULT,
+        minRate:       COMMISSION_MIN,
+        maxRate:       COMMISSION_MAX,
+        categoryRates: {},
+    });
     const [loading,      setLoading]      = useState(true);
     const [savingId,     setSavingId]     = useState<string | null>(null);
     const [savingGlobal, setSavingGlobal] = useState(false);
@@ -46,7 +52,14 @@ export default function CommissionPage() {
             const gData = await gRes.json();
             setSuppliers(sData.suppliers ?? []);
             if (gData.commission_config) {
-                setGlobalCfg({ ...globalCfg, ...JSON.parse(gData.commission_config) });
+                const parsed = JSON.parse(gData.commission_config);
+                // 저장된 값도 범위 안전하게 클램프해서 적용
+                setGlobalCfg({
+                    defaultRate:   clampCommission(parsed.defaultRate   ?? COMMISSION_DEFAULT),
+                    minRate:       clampCommission(parsed.minRate       ?? COMMISSION_MIN),
+                    maxRate:       clampCommission(parsed.maxRate       ?? COMMISSION_MAX),
+                    categoryRates: parsed.categoryRates ?? {},
+                });
             }
         } finally {
             setLoading(false);
@@ -56,14 +69,15 @@ export default function CommissionPage() {
     useEffect(() => { fetchData(); }, [fetchData]);
 
     const saveSupplier = async (supplierId: string) => {
-        const rate = edits[supplierId];
-        if (rate === undefined) return;
+        const rawRate = edits[supplierId];
+        if (rawRate === undefined) return;
+        const rate = clampCommission(rawRate); // 저장 직전 범위 보정
         setSavingId(supplierId);
         try {
             await fetch('/api/admin/suppliers', {
-                method: 'PATCH',
+                method:  'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: supplierId, commissionRate: rate }),
+                body:    JSON.stringify({ id: supplierId, commissionRate: rate }),
             });
             setSuppliers(ss => ss.map(s => s.id === supplierId ? { ...s, commissionRate: rate } : s));
             const newEdits = { ...edits };
@@ -77,12 +91,22 @@ export default function CommissionPage() {
     };
 
     const saveGlobal = async () => {
+        // 저장 직전 전체 클램프
+        const safeCfg: GlobalCommission = {
+            defaultRate:   clampCommission(globalCfg.defaultRate),
+            minRate:       clampCommission(globalCfg.minRate),
+            maxRate:       clampCommission(globalCfg.maxRate),
+            categoryRates: Object.fromEntries(
+                Object.entries(globalCfg.categoryRates).map(([k, v]) => [k, clampCommission(v)])
+            ),
+        };
+        setGlobalCfg(safeCfg);
         setSavingGlobal(true);
         try {
             await fetch('/api/admin/settings', {
-                method: 'POST',
+                method:  'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ key: 'commission_config', value: JSON.stringify(globalCfg) }),
+                body:    JSON.stringify({ key: 'commission_config', value: JSON.stringify(safeCfg) }),
             });
             setSavedGlobal(true);
             setTimeout(() => setSavedGlobal(false), 2000);
@@ -91,8 +115,8 @@ export default function CommissionPage() {
         }
     };
 
-    const setCategoryRate = (cat: string, rate: number) =>
-        setGlobalCfg(c => ({ ...c, categoryRates: { ...c.categoryRates, [cat]: rate } }));
+    const setCategoryRate = (cat: string, raw: number) =>
+        setGlobalCfg(c => ({ ...c, categoryRates: { ...c.categoryRates, [cat]: raw } }));
 
     return (
         <div className="p-6 space-y-6 max-w-6xl mx-auto">
@@ -105,6 +129,15 @@ export default function CommissionPage() {
                 <button onClick={fetchData} className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-medium transition-all">
                     <RefreshCcw className="w-4 h-4" />
                 </button>
+            </div>
+
+            {/* 범위 안내 배너 */}
+            <div className="flex items-start gap-2.5 px-4 py-3 bg-blue-50 border border-blue-200 rounded-xl text-sm text-blue-700">
+                <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                <span>
+                    Commission rates are locked between <strong>{COMMISSION_MIN}% and {COMMISSION_MAX}%</strong> platform-wide.
+                    <span className="opacity-70 ml-1">· 수수료율은 {COMMISSION_MIN}%~{COMMISSION_MAX}% 범위 내에서만 설정 가능합니다.</span>
+                </span>
             </div>
 
             {/* Global Settings */}
@@ -123,22 +156,27 @@ export default function CommissionPage() {
 
                 <div className="grid md:grid-cols-3 gap-4 mb-6">
                     {[
-                        { key: 'defaultRate', label: 'Default Rate', sub: 'Applied to new suppliers' },
-                        { key: 'minRate',     label: 'Minimum Rate', sub: 'Lowest allowed per-supplier rate' },
-                        { key: 'maxRate',     label: 'Maximum Rate', sub: 'Highest allowed per-supplier rate' },
+                        { key: 'defaultRate', label: 'Default Rate',  sub: 'Applied to new suppliers' },
+                        { key: 'minRate',     label: 'Minimum Rate',  sub: 'Lowest allowed per-supplier rate' },
+                        { key: 'maxRate',     label: 'Maximum Rate',  sub: 'Highest allowed per-supplier rate' },
                     ].map(field => (
                         <div key={field.key} className="bg-slate-50 rounded-xl p-4">
                             <label className="block text-xs font-semibold text-slate-600 mb-0.5">{field.label}</label>
                             <p className="text-xs text-slate-400 mb-2">{field.sub}</p>
                             <div className="flex items-center gap-2">
                                 <input
-                                    type="number" min={0} max={100} step={1}
+                                    type="number"
+                                    min={COMMISSION_MIN} max={COMMISSION_MAX} step={1}
                                     value={(globalCfg as any)[field.key]}
-                                    onChange={e => setGlobalCfg(c => ({ ...c, [field.key]: parseFloat(e.target.value) || 0 }))}
+                                    onChange={e => {
+                                        const v = parseFloat(e.target.value) || COMMISSION_MIN;
+                                        setGlobalCfg(c => ({ ...c, [field.key]: clampCommission(v) }));
+                                    }}
                                     className="w-full px-3 py-2 text-sm border border-slate-200 bg-white rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 />
                                 <span className="text-slate-500 text-sm">%</span>
                             </div>
+                            <p className="text-[10px] text-slate-400 mt-1">{COMMISSION_MIN}%–{COMMISSION_MAX}% allowed</p>
                         </div>
                     ))}
                 </div>
@@ -152,9 +190,11 @@ export default function CommissionPage() {
                                 <label className="block text-xs font-semibold text-slate-600 capitalize mb-1.5">{cat}</label>
                                 <div className="flex items-center gap-1">
                                     <input
-                                        type="number" min={0} max={100} step={1}
+                                        type="number"
+                                        min={COMMISSION_MIN} max={COMMISSION_MAX} step={1}
                                         value={globalCfg.categoryRates[cat] ?? globalCfg.defaultRate}
-                                        onChange={e => setCategoryRate(cat, parseFloat(e.target.value) || 0)}
+                                        onChange={e => setCategoryRate(cat, parseFloat(e.target.value) || COMMISSION_MIN)}
+                                        onBlur={e => setCategoryRate(cat, clampCommission(parseFloat(e.target.value) || COMMISSION_MIN))}
                                         className="w-full px-2 py-1.5 text-xs border border-slate-200 bg-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     />
                                     <span className="text-slate-500 text-xs">%</span>
@@ -170,6 +210,7 @@ export default function CommissionPage() {
                 <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-2">
                     <Building2 className="w-4 h-4 text-slate-500" />
                     <h2 className="text-sm font-bold text-slate-700">Per-Supplier Commission Override</h2>
+                    <span className="ml-auto text-xs text-slate-400">{COMMISSION_MIN}%–{COMMISSION_MAX}% only · 범위 제한</span>
                 </div>
 
                 {loading ? (
@@ -189,9 +230,11 @@ export default function CommissionPage() {
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <input
-                                            type="number" min={globalCfg.minRate} max={globalCfg.maxRate} step={1}
+                                            type="number"
+                                            min={COMMISSION_MIN} max={COMMISSION_MAX} step={1}
                                             value={current}
-                                            onChange={e => setEdits(ed => ({ ...ed, [supplier.id]: parseFloat(e.target.value) || 0 }))}
+                                            onChange={e => setEdits(ed => ({ ...ed, [supplier.id]: parseFloat(e.target.value) || COMMISSION_MIN }))}
+                                            onBlur={e => setEdits(ed => ({ ...ed, [supplier.id]: clampCommission(parseFloat(e.target.value) || COMMISSION_MIN) }))}
                                             className={`w-20 px-3 py-1.5 text-sm border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-right ${isDirty ? 'border-blue-400 bg-blue-50' : 'border-slate-200'}`}
                                         />
                                         <span className="text-sm text-slate-500">%</span>

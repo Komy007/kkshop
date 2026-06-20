@@ -484,3 +484,95 @@ export async function sendSupplierStatusEmail(to: string, companyName: string, n
     const subjectMap = { APPROVED: 'Congratulations — Your supplier account is approved! 🎉', REJECTED: 'Supplier Application Update', SUSPENDED: 'Supplier Account Suspended' };
     await transporter.sendMail({ from: fromAddress, to, subject: `[KKShop] ${subjectMap[newStatus]}`, html });
 }
+
+export async function sendSellerOrderEmail(
+    to: string,
+    companyName: string,
+    payload: {
+        orderId:        string;
+        items:          { productName: string; qty: number; priceUsd: number }[];
+        amountUsd:      number;
+        commissionRate: number;
+    }
+): Promise<void> {
+    try {
+        const { transporter, fromAddress } = await getTransporterAndFrom();
+        const baseUrl    = process.env.NEXTAUTH_URL || 'https://kkshop.cc';
+        const shortId    = payload.orderId.slice(0, 8).toUpperCase();
+        const net        = payload.amountUsd * (1 - payload.commissionRate / 100);
+        const safeCompany = escHtml(companyName);
+
+        const itemRows = payload.items.map(i => `
+            <tr style="border-bottom:1px solid #f3f4f6;">
+                <td style="padding:8px 0;font-size:13px;color:#374151;">${escHtml(i.productName)}</td>
+                <td style="padding:8px 12px;font-size:13px;color:#374151;text-align:center;">${i.qty}</td>
+                <td style="padding:8px 0;font-size:13px;color:#374151;text-align:right;">$${(i.priceUsd * i.qty).toFixed(2)}</td>
+            </tr>`).join('');
+
+        const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f9fafb;font-family:Arial,sans-serif;">
+  <div style="max-width:520px;margin:32px auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.08);">
+    <div style="background:linear-gradient(135deg,#0d9488,#0f766e);padding:28px 32px;">
+      <p style="margin:0 0 4px;font-size:12px;color:rgba(255,255,255,0.8);text-transform:uppercase;letter-spacing:1px;">New Order — Payment Confirmed</p>
+      <h1 style="margin:0;font-size:22px;color:#fff;font-weight:700;">Order #${shortId} 🛍️</h1>
+      <p style="margin:6px 0 0;color:rgba(255,255,255,0.8);font-size:13px;">결제가 확인되었습니다. 출하를 준비해 주세요.</p>
+    </div>
+    <div style="padding:28px 32px;">
+      <p style="margin:0 0 16px;font-size:15px;color:#374151;">Hello <strong>${safeCompany}</strong>,</p>
+      <p style="margin:0 0 20px;font-size:14px;color:#555;line-height:1.6;">
+        A customer order has been confirmed and payment has been received.
+        Please prepare the following items for shipment.
+      </p>
+
+      <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
+        <thead>
+          <tr style="background:#f9fafb;">
+            <th style="padding:8px 0;font-size:11px;color:#6b7280;text-transform:uppercase;text-align:left;">Product</th>
+            <th style="padding:8px 12px;font-size:11px;color:#6b7280;text-transform:uppercase;text-align:center;">Qty</th>
+            <th style="padding:8px 0;font-size:11px;color:#6b7280;text-transform:uppercase;text-align:right;">Subtotal</th>
+          </tr>
+        </thead>
+        <tbody>${itemRows}</tbody>
+      </table>
+
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:14px 18px;margin-bottom:20px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+          <span style="font-size:13px;color:#374151;">Gross amount · 총액</span>
+          <strong style="font-size:13px;color:#111827;">$${payload.amountUsd.toFixed(2)}</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+          <span style="font-size:13px;color:#374151;">Commission (${payload.commissionRate}%) · 수수료</span>
+          <span style="font-size:13px;color:#ef4444;">-$${(payload.amountUsd * payload.commissionRate / 100).toFixed(2)}</span>
+        </div>
+        <div style="border-top:1px solid #bbf7d0;margin-top:8px;padding-top:8px;display:flex;justify-content:space-between;">
+          <span style="font-size:14px;font-weight:700;color:#15803d;">Your payout · 정산액</span>
+          <strong style="font-size:14px;color:#15803d;">$${net.toFixed(2)}</strong>
+        </div>
+      </div>
+
+      <div style="text-align:center;margin-top:24px;">
+        <a href="${baseUrl}/seller/orders?status=CONFIRMED"
+           style="display:inline-block;background:linear-gradient(135deg,#0d9488,#0f766e);color:#fff;padding:13px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;">
+          View Order &amp; Prepare Shipment →
+        </a>
+      </div>
+      <p style="margin:16px 0 0;font-size:12px;color:#9ca3af;text-align:center;">
+        Payouts are settled after the order is delivered. 배송 완료 후 정산됩니다.
+      </p>
+    </div>
+    <div style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:14px 32px;text-align:center;">
+      <p style="margin:0;font-size:11px;color:#9ca3af;">&copy; ${new Date().getFullYear()} KKShop &middot; Cambodia K-Beauty</p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+        await transporter.sendMail({ from: fromAddress, to, subject: `[KKShop Seller] New Order #${shortId} — Prepare for Shipment`, html });
+    } catch (e) {
+        // 호출자에서 이미 catch — 여기서는 re-throw
+        throw e;
+    }
+}

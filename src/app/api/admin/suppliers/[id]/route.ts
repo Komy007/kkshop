@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/api';
 import { auth } from '@/auth';
+import { isValidCommission, clampCommission, parseCommissionRate } from '@/lib/commission';
 
 export const dynamic = 'force-dynamic';
 
@@ -63,11 +64,11 @@ export async function PUT(req: Request, { params }: RouteCtx) {
     if (description !== undefined) data.description = description || null;
     if (adminNote !== undefined) data.adminNote = adminNote || null;
     if (commissionRate !== undefined) {
-        const rate = parseFloat(commissionRate);
-        if (isNaN(rate) || rate < 0 || rate > 100) {
-            return NextResponse.json({ error: 'Commission rate must be 0-100' }, { status: 400 });
+        const rate = parseCommissionRate(commissionRate);
+        if (!isValidCommission(rate)) {
+            return NextResponse.json({ error: '커미션 비율은 9~30% 사이여야 합니다. (Commission must be 9–30%)' }, { status: 400 });
         }
-        data.commissionRate = rate;
+        data.commissionRate = clampCommission(rate);
     }
 
     const updated = await prisma.supplier.update({

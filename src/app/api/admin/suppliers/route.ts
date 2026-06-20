@@ -4,6 +4,7 @@ import { auth } from '@/auth';
 import bcrypt from 'bcryptjs';
 import { sendSupplierStatusEmail } from '@/lib/mail';
 import { logAudit, getIpFromRequest } from '@/lib/audit';
+import { isValidCommission, clampCommission, parseCommissionRate, COMMISSION_DEFAULT } from '@/lib/commission';
 
 // GET: List all suppliers (ADMIN/SUPERADMIN only)
 export async function GET(req: NextRequest) {
@@ -46,11 +47,11 @@ export async function PATCH(req: NextRequest) {
         return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
     }
 
-    // Validate commissionRate is within 0–100%
+    // Validate commissionRate is within 9–30%
     if (commissionRate !== undefined) {
-        const rate = parseFloat(commissionRate);
-        if (isNaN(rate) || rate < 0 || rate > 100) {
-            return NextResponse.json({ error: '커미션 비율은 0~100% 사이여야 합니다.' }, { status: 400 });
+        const rate = parseCommissionRate(commissionRate);
+        if (!isValidCommission(rate)) {
+            return NextResponse.json({ error: '커미션 비율은 9~30% 사이여야 합니다. (Commission must be 9–30%)' }, { status: 400 });
         }
     }
 
@@ -60,7 +61,7 @@ export async function PATCH(req: NextRequest) {
             where: { id },
             data: {
                 status,
-                ...(commissionRate !== undefined && { commissionRate: parseFloat(commissionRate) }),
+                ...(commissionRate !== undefined && { commissionRate: clampCommission(parseCommissionRate(commissionRate)) }),
                 ...(adminNote !== undefined && { adminNote }),
             },
             include: { user: { select: { email: true } } },
@@ -152,11 +153,11 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: '비밀번호는 최소 8자리 이상이어야 합니다.' }, { status: 400 });
         }
 
-        // Validate commissionRate
+        // Validate commissionRate is within 9–30%
         if (commissionRate !== undefined && commissionRate !== '') {
-            const rate = parseFloat(commissionRate);
-            if (isNaN(rate) || rate < 0 || rate > 100) {
-                return NextResponse.json({ error: '커미션 비율은 0~100% 사이여야 합니다.' }, { status: 400 });
+            const rate = parseCommissionRate(commissionRate);
+            if (!isValidCommission(rate)) {
+                return NextResponse.json({ error: '커미션 비율은 9~30% 사이여야 합니다. (Commission must be 9–30%)' }, { status: 400 });
             }
         }
 
@@ -195,7 +196,7 @@ export async function POST(req: NextRequest) {
                 phone: phone || null,
                 contactEmail: contactEmail.toLowerCase(),
                 description: description || null,
-                commissionRate: commissionRate ? parseFloat(commissionRate) : 30,
+                commissionRate: commissionRate ? clampCommission(parseCommissionRate(commissionRate)) : COMMISSION_DEFAULT,
                 status: 'APPROVED',          // SUPERADMIN 직접 생성 → 즉시 승인
                 adminNote: 'SUPERADMIN이 직접 생성 — 자동 승인',
             },

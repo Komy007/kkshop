@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/api';
+import { parseCommissionRate } from '@/lib/commission';
 
+// 주문 라이프사이클: PENDING(결제대기/미입금) → CONFIRMED(결제완료/출하대상) → SHIPPING → DELIVERED(정산기준)
+// 추후 KHQR 결산 로직은 어드민의 수동 PENDING→CONFIRMED 전환 자리에 그대로 들어온다.
+// 정산 기준: DELIVERED 상태의 주문 아이템만 집계, commissionRate 적용, 수익 = gross - commission.
 export async function GET(req: NextRequest) {
     const session = await auth();
     if (session?.user?.role !== 'SUPPLIER') {
@@ -27,7 +31,8 @@ export async function GET(req: NextRequest) {
     }
 
     const productIds: bigint[] = (supplier.products as any[]).map((p: any) => p.id as bigint);
-    const commissionRate: number = supplier.commissionRate;
+    // parseCommissionRate: Prisma Decimal → number 안전 변환 (commission.ts SSOT)
+    const commissionRate: number = parseCommissionRate(supplier.commissionRate);
 
     const orderItems: any[] = await prisma.orderItem.findMany({
         where: {
