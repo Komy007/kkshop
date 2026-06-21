@@ -12,6 +12,7 @@ interface CarouselProduct {
     hotSalePrice: number | null;
     isHotSale: boolean;
     imageUrl: string | null;
+    bgColor?: string | null;
     reviewAvg: number;
     reviewCount: number;
     categorySlug: string | null;
@@ -89,27 +90,32 @@ function ProductSlide({ slide, priority = false }: { slide: ProductSlideData; pr
         <Link href={`/products/${p.id}`} className="block relative w-full h-full overflow-hidden bg-neutral-100">
             {p.imageUrl ? (
                 <>
-                    {/* Blurred full-bleed background — extends the photo's own colours */}
-                    <Image
-                        src={p.imageUrl}
-                        alt=""
-                        aria-hidden
-                        fill
-                        sizes="(max-width: 640px) 100vw, 50vw"
-                        className="object-cover scale-110 blur-2xl"
-                        priority={priority}
-                    />
-                    {/* Soft wash to unify and lift contrast a touch */}
-                    <div className="absolute inset-0 bg-black/5 pointer-events-none" />
-                    {/* Sharp product image — centred */}
-                    <div className="absolute inset-x-8 top-2 bottom-2">
+                    {/* Background: extracted colour (seamless) or blurred photo (fallback) */}
+                    {p.bgColor ? (
+                        <div className="absolute inset-0" style={{ backgroundColor: p.bgColor }} />
+                    ) : (
+                        <>
+                            <Image
+                                src={p.imageUrl}
+                                alt=""
+                                aria-hidden
+                                fill
+                                sizes="(max-width: 640px) 100vw, 50vw"
+                                className="object-cover scale-110 blur-2xl"
+                                priority={priority}
+                            />
+                            <div className="absolute inset-0 bg-black/5 pointer-events-none" />
+                        </>
+                    )}
+                    {/* Sharp product image — almost fills the box */}
+                    <div className="absolute inset-x-3 top-1 bottom-1">
                         <div className="relative w-full h-full">
                             <Image
                                 src={p.imageUrl}
                                 alt={p.name}
                                 fill
                                 sizes="(max-width: 640px) 80vw, 40vw"
-                                className="object-contain drop-shadow-[0_8px_24px_rgba(0,0,0,0.35)]"
+                                className="object-contain drop-shadow-[0_8px_24px_rgba(0,0,0,0.25)]"
                                 priority={priority}
                             />
                         </div>
