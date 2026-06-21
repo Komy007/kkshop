@@ -1,11 +1,11 @@
 import NextAuth from "next-auth"
 import authConfig from "./auth.config"
 
-// We initialize NextAuth with the edge-compatible config for middleware
+// We initialize NextAuth with the edge-compatible config for proxy
 const nextAuthEnv = NextAuth(authConfig);
-export const middleware = nextAuthEnv.auth as any;
+export const proxy = nextAuthEnv.auth as any;
 
-export default middleware((req: any) => {
+export default proxy((req: any) => {
     const { nextUrl } = req
     const isLoggedIn = !!req.auth
     const isApiAuthRoute = nextUrl.pathname.startsWith('/api/auth')
@@ -26,7 +26,7 @@ export default middleware((req: any) => {
         );
     }
 
-    // Skip middleware for other API routes (handled by route handlers)
+    // Skip proxy for other API routes (handled by route handlers)
     if (nextUrl.pathname.startsWith('/api')) return
 
     // Redirect all legacy /supplier/* paths to the canonical /seller/* equivalent
@@ -94,7 +94,7 @@ export default middleware((req: any) => {
             if (isSellerRoute) {
                 return Response.redirect(new URL('/admin/products', nextUrl));
             }
-            
+
             // ADMIN restricted paths
             const adminAllowedPrefixes = [
                 '/admin/products',
@@ -134,7 +134,7 @@ export default middleware((req: any) => {
     if (isLoggedIn && req.auth?.user?.role === 'SUPPLIER') {
         return Response.redirect(new URL('/seller', nextUrl));
     }
-    
+
     // --- Onboarding: Mandatory for everyone logged in without a phone (Google users) ---
     const isOnboardingRoute = nextUrl.pathname === '/onboarding';
     if (isLoggedIn && (req.auth?.user as any)?.needsOnboarding && !isOnboardingRoute && !isAdminLoginRoute) {
@@ -144,7 +144,7 @@ export default middleware((req: any) => {
     return;
 }) as any;
 
-// Specify which routes the middleware should run on
+// Specify which routes the proxy should run on
 // 1) All pages (excluding static assets)
 // 2) /api/admin/* explicitly (for 2FA enforcement) — but NOT /api/auth/*
 export const config = {
