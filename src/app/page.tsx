@@ -500,7 +500,7 @@ function PurchaseTicker({ t }: { t: any }) {
 
     if (!loaded || items.length === 0) return null;
 
-    const item = items[idx]!; // idx < items.length보장 (위에서 items.length === 0 체크)
+    const item = items[idx % items.length]!; // modulo로 stale idx에도 항상 유효 범위 보장 (위에서 length===0 가드)
     const timeStr = item.minutesAgo < 60
         ? `${item.minutesAgo}${t.tickerMinAgo}`
         : `${Math.floor(item.minutesAgo / 60)}${t.tickerHrAgo}`;

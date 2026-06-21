@@ -58,11 +58,13 @@ export async function POST(req: Request) {
         const baseUrl = process.env.NEXTAUTH_URL || 'https://kkshop.cc';
         const resetUrl = `${baseUrl}/reset-password?token=${token}`;
 
-        try {
-            await sendPasswordResetEmail(user.email ?? '', resetUrl);
-        } catch (mailErr) {
-            console.error('Password reset email failed:', mailErr);
-            // Don't expose mail errors to the client
+        if (user.email) {
+            try {
+                await sendPasswordResetEmail(user.email, resetUrl);
+            } catch (mailErr) {
+                console.error('Password reset email failed:', mailErr);
+                // Don't expose mail errors to the client
+            }
         }
 
         return NextResponse.json({ success: true });

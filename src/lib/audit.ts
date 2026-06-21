@@ -1,4 +1,5 @@
 import { prisma } from './api';
+import { Prisma } from '@prisma/client';
 
 export type AuditAction =
     // 상품
@@ -39,7 +40,7 @@ export async function logAudit(params: LogAuditParams): Promise<void> {
                 action: params.action,
                 resource: params.resource ?? null,
                 resourceId: params.resourceId ?? null,
-                ...(params.details !== undefined ? { details: params.details as any } : {}),
+                ...(params.details !== undefined ? { details: params.details as Prisma.InputJsonValue } : {}),
                 ipAddress: params.ipAddress ?? null,
             },
         });
