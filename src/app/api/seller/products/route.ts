@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/api';
 import { auth } from '@/auth';
 import { translate, detectLanguage } from '@/lib/translate';
+import { getDominantBgColor } from '@/lib/imageColor';
 
 const PAGE_SIZE = 30;
 
@@ -180,6 +181,13 @@ export async function POST(req: Request) {
         sortOrder: i,
     }));
 
+    // 배경색 사전 추출
+    const firstSellerImageUrl: string | null = imageUrls[0] || null;
+    let sellerBgColor: string | null = null;
+    if (firstSellerImageUrl) {
+        sellerBgColor = await getDominantBgColor(firstSellerImageUrl);
+    }
+
     const product = await prisma.product.create({
         data: {
             sku,
@@ -201,7 +209,8 @@ export async function POST(req: Request) {
             heightCm: heightCm ?? null,
             status: 'INACTIVE',
             approvalStatus: 'PENDING',
-            imageUrl: imageUrls[0] || null,
+            imageUrl: firstSellerImageUrl,
+            ...(sellerBgColor !== null ? { bgColor: sellerBgColor } : {}),
             translations: { create: [trKo, trEn, trKm, trZh] },
             ...((imageUrls.length > 0 || detailImageUrls.length > 0) && {
                 images: {

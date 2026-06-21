@@ -4,6 +4,7 @@ import { auth } from '@/auth';
 import { Translate } from '@google-cloud/translate/build/src/v2';
 import { deleteGCSFiles } from '@/lib/gcs';
 import { logAudit, getIpFromRequest } from '@/lib/audit';
+import { getDominantBgColor } from '@/lib/imageColor';
 
 export const dynamic = 'force-dynamic';
 
@@ -470,6 +471,22 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
                 });
             }
         });
+
+        // 이미지가 변경됐을 때 bgColor 비동기 갱신 (응답 차단 없음)
+        if (Array.isArray(mainImages) || imageUrls.length > 0) {
+            prisma.productImage.findFirst({
+                where: { productId, imageType: 'MAIN' },
+                orderBy: { sortOrder: 'asc' },
+                select: { url: true },
+            }).then(async (firstImg) => {
+                const imgUrl = firstImg?.url ?? null;
+                if (!imgUrl) return;
+                const newBgColor = await getDominantBgColor(imgUrl);
+                if (newBgColor !== null) {
+                    await prisma.product.update({ where: { id: productId }, data: { bgColor: newBgColor } });
+                }
+            }).catch(() => {});
+        }
 
         // Audit log for product modification
         logAudit({

@@ -3,6 +3,7 @@ import { prisma } from '@/lib/api';
 import { auth } from '@/auth';
 import { Translate } from '@google-cloud/translate/build/src/v2';
 import { detectLanguage } from '@/lib/translate';
+import { getDominantBgColor } from '@/lib/imageColor';
 
 const translateClient = new Translate();
 
@@ -405,6 +406,21 @@ export async function PATCH(
             }
         }
     });
+
+    // 이미지가 변경됐을 때 bgColor 비동기 갱신 (응답 차단 없음)
+    if (Array.isArray(mainImages) || imageUrls.length > 0) {
+        prisma.productImage.findFirst({
+            where: { productId: product.id, imageType: 'MAIN' },
+            orderBy: { sortOrder: 'asc' },
+            select: { url: true },
+        }).then(async (firstImg) => {
+            if (!firstImg?.url) return;
+            const newBgColor = await getDominantBgColor(firstImg.url);
+            if (newBgColor !== null) {
+                await prisma.product.update({ where: { id: product.id }, data: { bgColor: newBgColor } });
+            }
+        }).catch(() => {});
+    }
 
     return NextResponse.json({ success: true, message: '수정 완료. 관리자 검수 후 판매됩니다.' });
 }

@@ -3,6 +3,7 @@ import { prisma } from '@/lib/api';
 import { auth } from '@/auth';
 import { Translate } from '@google-cloud/translate/build/src/v2';
 import { deleteGCSFiles } from '@/lib/gcs';
+import { getDominantBgColor } from '@/lib/imageColor';
 
 export const dynamic = 'force-dynamic';
 
@@ -377,6 +378,13 @@ export async function POST(req: Request) {
             }
         }
 
+        // 배경색 사전 추출 (트랜잭션 외부 — 네트워크 요청)
+        const firstImageUrl: string | null = imageUrls[0] || null;
+        let bgColor: string | null = null;
+        if (firstImageUrl) {
+            bgColor = await getDominantBgColor(firstImageUrl);
+        }
+
         // 3. Save to Database using Prisma Transaction
         const newProduct = await prisma.$transaction(async (tx) => {
             // Create root Product object
@@ -387,7 +395,7 @@ export async function POST(req: Request) {
                     stockQty: parseInt(stockQty) || 0,
                     categoryId: categoryId ? BigInt(categoryId) : null,
                     status: 'ACTIVE',
-                    imageUrl: imageUrls[0] || null,
+                    imageUrl: firstImageUrl,
                     supplierId: supplierId || null,
                     brandName: brandName || null,
                     volume: volume || null,
@@ -402,6 +410,7 @@ export async function POST(req: Request) {
                     hotSaleStartAt: hotSaleStartAt ? new Date(hotSaleStartAt) : null,
                     hotSaleEndAt: hotSaleEndAt ? new Date(hotSaleEndAt) : null,
                     costPrice: costPrice ? parseFloat(costPrice) : null,
+                    ...(bgColor !== null ? { bgColor } : {}),
                 }
             });
 
