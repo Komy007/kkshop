@@ -104,6 +104,8 @@ model Product {
   displayPriority     Int      @default(0) @map("display_priority")
   // Today's Picks — admin manually curates homepage Today's Picks section
   isTodayPick         Boolean  @default(false) @map("is_today_pick")
+  // Carousel background colour — sampled from the image border ring (not the product itself)
+  bgColor             String?  @map("bg_color") @db.VarChar(9)
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
