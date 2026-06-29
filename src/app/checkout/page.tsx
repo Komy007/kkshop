@@ -10,6 +10,7 @@ import Footer from '@/components/Footer';
 
 const checkoutTranslations: Record<string, any> = {
     en: {
+        paymentNotice: 'Payment is not yet connected. It will be activated at official launch.',
         title: 'Checkout',
         shipping: 'Shipping Information',
         recipient: 'Recipient Name',
@@ -56,6 +57,7 @@ const checkoutTranslations: Record<string, any> = {
         selectSavedAddress: 'Select a saved address...',
     },
     ko: {
+        paymentNotice: '현재 결제를 연결하지 않았습니다. 정식 오픈 시 연결됩니다.',
         title: '주문 / 결제',
         shipping: '배송지 정보',
         recipient: '수령인',
@@ -102,6 +104,7 @@ const checkoutTranslations: Record<string, any> = {
         selectSavedAddress: '저장된 주소를 선택하세요...',
     },
     km: {
+        paymentNotice: 'ការទូទាត់មិនទាន់ត្រូវបានភ្ជាប់នៅឡើយ។ វានឹងត្រូវបានដំណើរការនៅពេលបើកដំណើរការផ្លូវការ។',
         title: 'ការទូទាត់',
         shipping: 'ព័ត៌មានដឹកជញ្ជូន',
         recipient: 'ឈ្មោះអ្នកទទួល',
@@ -148,6 +151,7 @@ const checkoutTranslations: Record<string, any> = {
         selectSavedAddress: 'ជ្រើសរើសអាសយដ្ឋានដែលបានរក្សា...',
     },
     zh: {
+        paymentNotice: '当前尚未连接支付功能，正式开放时将会开通。',
         title: '结账',
         shipping: '收货信息',
         recipient: '收货人',
@@ -477,10 +481,21 @@ export default function CheckoutPage() {
     return (
         <main className="min-h-screen bg-gray-50 text-gray-900 pb-20 pt-4">
             <div className="max-w-6xl mx-auto px-3 sm:px-6 lg:px-8">
-                <h1 className="text-xl sm:text-2xl font-black mb-6 flex items-center gap-3">
+                <h1 className="text-xl sm:text-2xl font-black mb-4 flex items-center gap-3">
                     <ShoppingBag className="w-6 h-6 text-brand-primary flex-shrink-0" />
                     {t.title}
                 </h1>
+
+                {/* Payment not connected notice */}
+                <div className="mb-6 flex items-start gap-3 bg-amber-50 border-2 border-amber-300 rounded-2xl px-5 py-4">
+                    <Clock className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                        <p className="text-sm font-bold text-amber-800">{t.paymentNotice}</p>
+                        <p className="text-xs text-amber-600 mt-0.5">
+                            {checkoutTranslations.en.paymentNotice} · {checkoutTranslations.ko.paymentNotice}
+                        </p>
+                    </div>
+                </div>
 
                 <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                     {/* ── Left Column ── */}
