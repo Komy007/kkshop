@@ -38,8 +38,8 @@ const notices: Record<string, { title: string; body: string; sub: string; backCa
 
 export default function CheckoutPage() {
     const store = useSafeAppStore();
-    const lang = store?.language || 'en';
-    const t = notices[lang] || notices.en;
+    const lang = (store?.language && notices[store.language]) ? store.language : 'en';
+    const t = notices[lang]!;
 
     return (
         <main className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4 py-16">
